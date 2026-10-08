@@ -151,6 +151,32 @@ abstract class Kit
         return $urls;
     }
 
+    /** Style-Editor des Kits */
+    final public function design(): Design
+    {
+        return Design::for($this);
+    }
+
+    /**
+     * Stylesheets der gewählten Design-Optionen (kit.php → 'design_css': css/opt-{option}-{wert}.css, sofern vorhanden).
+     *
+     * @return list<string> URLs
+     */
+    final public function designCss(?array $values = null): array
+    {
+        $design = $this->design();
+        $values ??= $design->values();
+        $out = [];
+        foreach ((array) ($this->definition()['design_css'] ?? []) as $opt) {
+            $file = 'css/opt-' . $opt . '-' . preg_replace('~[^a-z]~', '', (string) ($values[$opt] ?? '')) . '.css';
+            if (is_file($this->assetPath($file))) {
+                $out[] = $this->assetUrl($file);
+            }
+        }
+
+        return $out;
+    }
+
     final public function isDark(string $background): bool
     {
         return in_array($background, $this->darkBackgrounds(), true);

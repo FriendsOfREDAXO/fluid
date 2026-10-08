@@ -59,6 +59,7 @@ final class Toolbar
             'user' => $user->name ?: $user->login,
             'modules' => $modules,
             'state' => Api::state($article),
+            'design' => $user->admin ? self::designSchema($article) : null,
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),
             'rteCss' => $addon->getAssetsUrl('rte.css') . '?v=' . self::version('rte.css'),
         ];
@@ -74,6 +75,18 @@ final class Toolbar
         $pos = strripos($html, '</body>');
 
         return false === $pos ? $html : substr($html, 0, $pos) . $body . substr($html, $pos);
+    }
+
+    /** Style-Editor: Schema des Kits der Seite (nur Administration) */
+    private static function designSchema(Article $article): ?array
+    {
+        foreach (Module::getAll() as $m) {
+            if ($m instanceof BlockModule && Template::checkModuleAllowed((string) $article->templateKey, 1, $m->key)) {
+                return $m->kit()->design()->schema();
+            }
+        }
+
+        return null;
     }
 
     private static function version(string $file): string

@@ -67,6 +67,7 @@
         ${cfg.editing ? `
         <button type="button" class="btn" data-save aria-disabled="true">Speichern</button>
         <button type="button" class="btn btn--primary" data-publish>Veröffentlichen</button>` : ''}
+        ${cfg.design ? '<button type="button" class="btn" data-design-open aria-expanded="false">Design</button>' : ''}
         <div class="more">
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
@@ -106,9 +107,20 @@
       <div class="dlg__actions"><button type="button" class="btn" data-dlg-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-dlg-ok>OK</button></div></div>
     </div>`);
   const toast = h('<div class="toast" role="status" aria-live="polite" hidden></div>');
+  const dpanel = h(`
+    <aside class="panel dpanel" hidden aria-labelledby="fluid-design-title">
+      <header class="panel__head"><h2 id="fluid-design-title">Design</h2><button type="button" class="btn btn--icon" data-design-close aria-label="Schließen">✕</button></header>
+      <div class="panel__body" data-design-body></div>
+      <footer class="panel__foot">
+        <button type="button" class="btn" data-design-reset title="Standard des Kits">Standard</button>
+        <span class="dpanel__space"></span>
+        <button type="button" class="btn" data-design-cancel>Abbrechen</button>
+        <button type="button" class="btn btn--primary" data-design-save>Speichern</button>
+      </footer>
+    </aside>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, picker, dialog, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, picker, dialog, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -209,7 +221,138 @@
   });
 
   render();
+  if (cfg.design) initDesign();
   if (!cfg.editing) return;
+
+
+  // ================================================================== Style-Editor (Design)
+  // Werte → Server (Design::css/classes) → live auf der Seite: <style id="fluid-design-preview">, Klassen am <html>,
+  // Schriften und Options-Stylesheets. „Speichern“ gilt für die ganze Website.
+  function initDesign() {
+    const D = cfg.design;
+    let saved = { ...D.values };
+    let values = { ...D.values };
+    let timer = 0;
+    let seq = 0;
+    const body = $('[data-design-body]');
+    const openBtn = $('[data-design-open]');
+    const sw = (c) => `<span class="sw" style="background:${esc(c)}"></span>`;
+
+    const control = (t) => {
+      const v = values[t.name];
+      const id = 'fd-' + t.name;
+      const help = t.help ? `<p class="help-block">${esc(t.help)}</p>` : '';
+      let input = '';
+      if (t.type === 'color') {
+        input = `<span class="dcolor"><input type="color" id="${id}" data-token="${esc(t.name)}" value="${esc(v)}" aria-label="${esc(t.label)} (hell)"><code>${esc(v)}</code>`
+          + (t.dark ? `<input type="color" data-token="${esc(t.name)}@dark" value="${esc(values[t.name + '@dark'] || t.dark)}" title="Im dunklen Farbschema" aria-label="${esc(t.label)} (dunkel)"><span class="dcolor__dark">dunkel</span>` : '') + '</span>';
+      } else if (t.type === 'range') {
+        input = `<span class="drange"><input type="range" id="${id}" data-token="${esc(t.name)}" min="${t.min ?? 0}" max="${t.max ?? 100}" step="${t.step ?? 1}" value="${esc(v)}"><output>${esc(v)}${esc(t.unit || '')}</output></span>`;
+      } else if (t.type === 'choice' || t.type === 'font') {
+        const opts = t.type === 'font' ? Object.fromEntries(Object.entries(D.fonts).map(([k, f]) => [k, f.label])) : t.options;
+        input = `<select class="form-control" id="${id}" data-token="${esc(t.name)}">${Object.entries(opts || {}).map(([k, l]) => `<option value="${esc(k)}"${String(v) === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+      } else if (t.type === 'bool') {
+        return `<div class="dfield"><label class="blocks-form__check"><input type="checkbox" data-token="${esc(t.name)}"${v ? ' checked' : ''}> ${esc(t.label)}</label>${help}</div>`;
+      }
+      return `<div class="dfield"><label class="control-label" for="${id}">${esc(t.label)}</label>${input}${help}</div>`;
+    };
+
+    const draw = () => {
+      const presets = Object.entries(D.presets).map(([k, p]) => `<button type="button" class="dpreset" data-preset="${esc(k)}" title="${esc(p.description)}">
+          <span class="dpreset__sw">${sw(p.values.accent || '#000')}${sw(p.values.highlight || '#fff')}${sw(p.values.ink || '#000')}${sw(p.values.background || '#fff')}</span>
+          <span class="dpreset__label">${esc(p.label)}</span></button>`).join('');
+      body.innerHTML = `<details class="dgroup" open><summary>Vorlagen</summary><div class="dpresets">${presets}</div></details>`
+        + D.groups.map((g, i) => `<details class="dgroup"${i === 0 ? ' open' : ''}><summary>${esc(g.label)}</summary>${g.tokens.map(control).join('')}</details>`).join('')
+        + '<div class="dchecks" data-design-checks aria-live="polite"></div>';
+    };
+
+    const applyPreview = (res) => {
+      const html = document.documentElement;
+      // Klassen des Designs austauschen (übrige Klassen der Seite bleiben)
+      (html.dataset.fluidClasses || '').split(/\s+/).filter(Boolean).forEach((c) => html.classList.remove(c));
+      res.classes.split(/\s+/).filter(Boolean).forEach((c) => html.classList.add(c));
+      html.dataset.fluidClasses = res.classes;
+      const bg = values.background || '#ffffff';
+      const n = (i) => parseInt(bg.slice(i, i + 2), 16) / 255;
+      html.classList.toggle('is-darkbase', 0.2126 * n(1) + 0.7152 * n(3) + 0.0722 * n(5) < 0.18);
+      html.classList.toggle('head-serif', ['fraunces', 'newsreader', 'instrument-serif', 'roboto-slab'].includes(values.font_head));
+      // Variablen
+      let st = document.getElementById('fluid-design-preview');
+      if (!st) { st = document.createElement('style'); st.id = 'fluid-design-preview'; document.head.append(st); }
+      st.textContent = res.css;
+      // Schriften und Options-Stylesheets
+      res.fonts.forEach((href) => {
+        if (!document.querySelector(`link[data-fluid-font][href="${CSS.escape(href)}"]`)) {
+          const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.dataset.fluidFont = ''; document.head.append(l);
+        }
+      });
+      const want = new Set(res.opt);
+      document.querySelectorAll('link[data-fluid-opt]').forEach((l) => { if (!want.has(l.getAttribute('href'))) l.remove(); else want.delete(l.getAttribute('href')); });
+      want.forEach((href) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.dataset.fluidOpt = ''; document.head.append(l); });
+      // Kopf- und Fußvariante: Klasse am Element (Markup ist für alle Varianten gleich)
+      document.querySelectorAll('[data-header]').forEach((el) => { el.className = el.className.replace(/\bhdr--[a-z]+/, 'hdr--' + values.header); });
+      document.querySelectorAll('footer.ftr').forEach((el) => el.classList.replace([...el.classList].find((c) => c.startsWith('ftr--')) || 'ftr--columns', 'ftr--' + values.footer));
+      const checks = $('[data-design-checks]');
+      if (checks) checks.innerHTML = res.checks.length
+        ? '<p><strong>Kontrast prüfen:</strong></p><ul>' + res.checks.map((c) => `<li>${esc(D.groups.flatMap((g) => g.tokens).find((t) => t.name === c.token)?.label || c.token)} (${c.mode === 'dark' ? 'dunkel' : 'hell'}): ${String(c.ratio).replace('.', ',')} : 1 – mindestens ${String(c.min).replace('.', ',')} : 1</li>`).join('') + '</ul>'
+        : '';
+    };
+
+    const preview = () => {
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const my = ++seq;
+        try {
+          const res = await api('design', { values: JSON.stringify(values) });
+          if (my === seq) applyPreview(res);
+        } catch (err) { say(err.message, true); }
+      }, 120);
+    };
+
+    body.addEventListener('input', (e) => {
+      const el = e.target.closest('[data-token]');
+      if (!el) return;
+      const v = el.type === 'checkbox' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
+      values[el.dataset.token] = v;
+      if (el.type === 'color') el.parentElement.querySelector('code').textContent = el.value;
+      if (el.type === 'range') el.nextElementSibling.textContent = el.value + (D.groups.flatMap((g) => g.tokens).find((t) => t.name === el.dataset.token)?.unit || '');
+      preview();
+    });
+    body.addEventListener('change', (e) => e.target.matches('select[data-token],input[type=checkbox][data-token]') && body.dispatchEvent(new Event('input')));
+    body.addEventListener('click', (e) => {
+      const p = e.target.closest('[data-preset]');
+      if (!p) return;
+      values = { ...values, ...D.presets[p.dataset.preset].values };
+      const open = [...body.querySelectorAll('details')].map((d) => d.open);
+      draw();
+      body.querySelectorAll('details').forEach((d, i) => (d.open = open[i] ?? d.open));
+      body.querySelector(`[data-preset="${CSS.escape(p.dataset.preset)}"]`)?.classList.add('is-active');
+      preview();
+      say(`Vorlage „${D.presets[p.dataset.preset].label}“ – Vorschau. Speichern übernimmt sie für die Website.`);
+    });
+
+    const close = () => { dpanel.hidden = true; openBtn?.setAttribute('aria-expanded', 'false'); document.documentElement.classList.remove('blocks-panel-open'); };
+    openBtn?.addEventListener('click', () => {
+      if (!dpanel.hidden) return close();
+      if (!panel.hidden) return say('Bitte zuerst die Seitenleiste des Blocks schließen.', true);
+      draw();
+      dpanel.hidden = false;
+      openBtn.setAttribute('aria-expanded', 'true');
+      document.documentElement.classList.add('blocks-panel-open');
+    });
+    $('[data-design-close]').addEventListener('click', () => { values = { ...saved }; preview(); close(); });
+    $('[data-design-cancel]').addEventListener('click', () => { values = { ...saved }; preview(); close(); });
+    $('[data-design-reset]').addEventListener('click', () => { values = { ...D.defaults }; draw(); preview(); });
+    $('[data-design-save]').addEventListener('click', async () => {
+      try {
+        const res = await api('design_save', { values: JSON.stringify(values) });
+        saved = { ...values };
+        applyPreview(res);
+        say(res.message);
+        close();
+      } catch (err) { say(err.message, true); }
+    });
+  }
 
   // ================================================================== Bearbeiten-Modus
 

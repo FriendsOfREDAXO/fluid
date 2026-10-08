@@ -18,7 +18,16 @@ return static function (ArticleContent $content): void {
     $home = Article::getSiteStartArticle()?->getUrl() ?? '/';
     $menu = FluidTemplate::menu();
     $title = $isHome ? $name : $article->name . ' – ' . $name;
-    $css = [$kit->assetUrl('css/site.css'), ...$kit->blockCss(Editing::active())];
+    $design = $kit->design();
+    $css = [$kit->assetUrl('css/site.css'), ...$kit->designCss(), ...$kit->blockCss(Editing::active())];
+    $designClasses = $design->classes();
+    // dunkler Grundton bzw. Serifen-Überschriften (wie fluid_html_class in Studio)
+    $bg = (string) $design->get('background');
+    $rgb = sscanf($bg, '#%02x%02x%02x') ?: [255, 255, 255];
+    $extra = (0.2126 * $rgb[0] + 0.7152 * $rgb[1] + 0.0722 * $rgb[2]) / 255 < 0.18 ? ' is-darkbase' : '';
+    $extra .= in_array((string) $design->get('font_head'), ['fraunces', 'newsreader', 'instrument-serif', 'roboto-slab'], true) ? ' head-serif' : '';
+    $header = (string) $design->get('header') ?: 'inline';
+    $footer = (string) $design->get('footer') ?: 'columns';
     $navItem = static function (array $m): string {
         $cur = $m['current'] ? ' aria-current="page"' : '';
         if (!$m['children']) {
@@ -37,14 +46,15 @@ return static function (ArticleContent $content): void {
         . '<span class="brand__mark" aria-hidden="true">' . e(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>'
         . '<span class="brand__name">' . e($name) . '</span><span class="sr-only"> – ' . e(lt('Startseite')) . '</span></a>';
 ?><!doctype html>
-<html lang="<?= e(Language::getCurrent()?->code ?? 'de') ?>" class="no-js sec2-sections hcase-normal em-accent ln-underline btn-solid cards-elevated eb-line img-radius imgfx-none hov-lift ic-soft icp-top div-none hdr-inline logo-m hh-auto sw-wide st-branch hdr-sticky hbg-surface nl-pill meta-off ft-columns fbg-surface pagebg-plain secs-flush has-dark">
+<html lang="<?= e(Language::getCurrent()?->code ?? 'de') ?>" class="no-js <?= e($designClasses . $extra) ?>" data-fluid-classes="<?= e($designClasses) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?></title>
 <meta name="color-scheme" content="light dark">
-<?php foreach ($css as $href): ?><link rel="stylesheet" href="<?= e($href) ?>">
+<?php foreach ($css as $href): ?><link rel="stylesheet" href="<?= e($href) ?>"<?= str_contains($href, '/opt-') ? ' data-fluid-opt' : '' ?>>
 <?php endforeach; ?>
+<?= $design->head() ?>
 <?php if (!Editing::active()): ?><script src="<?= e($kit->assetUrl('js/site.js')) ?>" defer></script>
 <?php foreach ($kit->blockJs() as $js): ?><script src="<?= e($js) ?>" defer></script>
 <?php endforeach; ?>
@@ -53,7 +63,7 @@ return static function (ArticleContent $content): void {
 <body class="<?= $isHome ? 'is-home' : 'is-sub' ?>">
 <a class="skip" id="top" href="#main"><?= e(lt('Zum Inhalt springen')) ?></a>
 <div class="page">
-<header class="hdr hdr--inline fit-60" data-header>
+<header class="hdr hdr--<?= e($header) ?> fit-60" data-header>
   <div class="hdr__bar">
     <?= $brand('hdr__brand') ?>
     <?php if ($menu): ?>
@@ -72,8 +82,14 @@ return static function (ArticleContent $content): void {
 <main id="main" tabindex="-1">
 <?= $main ?>
 </main>
-<footer class="ftr ftr--columns">
+<footer class="ftr ftr--<?= e($footer) ?>">
   <div class="wrap">
+  <?php if ('simple' === $footer): ?>
+    <div class="ftr__row">
+      <?= $brand('brand--footer') ?>
+      <?php if ($menu): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?php foreach ($menu as $m): ?><li><a href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?></ul></nav><?php endif; ?>
+    </div>
+  <?php else: ?>
     <div class="ftr__grid">
       <div class="ftr__about"><?= $brand('brand--footer') ?></div>
       <?php if ($menu): ?>
@@ -83,6 +99,7 @@ return static function (ArticleContent $content): void {
       </nav>
       <?php endif; ?>
     </div>
+  <?php endif; ?>
     <div class="ftr__bottom"><p class="ftr__copy">© <?= e(date('Y')) ?> <?= e($name) ?></p></div>
   </div>
 </footer>

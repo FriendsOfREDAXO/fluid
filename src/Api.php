@@ -55,6 +55,8 @@ final class Api
                 'delete' => self::delete($article),
                 'publish' => self::publish($article),
                 'discard' => self::discard($article),
+                'design' => self::design($article, $user, false),
+                'design_save' => self::design($article, $user, true),
                 default => self::fail('Unbekannte Aktion.', 400),
             });
             self::send(['ok' => true, 'state' => self::state($article)] + $result);
@@ -277,6 +279,43 @@ final class Api
         ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::LIVE, ArticleRevision::WORK);
 
         return ['reload' => true];
+    }
+
+    /**
+     * Style-Editor: Vorschau (CSS, Klassen, Schriften, Options-Stylesheets für die übergebenen Werte) bzw. Speichern.
+     * Nur Administration – das Design gilt für die ganze Website.
+     */
+    private static function design(Article $article, User $user, bool $save): array
+    {
+        if (!$user->admin) {
+            self::fail('Das Design dürfen nur Admins ändern.', 403);
+        }
+        $template = $article->templateKey ? Template::get($article->templateKey) : null;
+        $kit = null;
+        foreach (Module::getAll() as $m) {
+            if ($m instanceof BlockModule && $template && Template::checkModuleAllowed($template->key, 1, $m->key)) {
+                $kit = $m->kit();
+                break;
+            }
+        }
+        if (!$kit) {
+            self::fail('Diese Seite nutzt kein Kit mit Style-Editor.');
+        }
+        $design = $kit->design();
+        $raw = json_decode(Request::post('values', 'string', ''), true);
+        $values = $design->normalize(is_array($raw) ? $raw : $design->values());
+        if ($save) {
+            $design->save($values);
+        }
+
+        return [
+            'css' => $design->css($values),
+            'classes' => $design->classes($values),
+            'fonts' => $design->fontLinks($values),
+            'opt' => $kit->designCss($values),
+            'checks' => array_values(array_filter($design->checks($values), static fn (array $c) => !$c['ok'])),
+            'message' => $save ? 'Design gespeichert – gilt für die ganze Website.' : '',
+        ];
     }
 
     // ------------------------------------------------------------------ Hilfen
