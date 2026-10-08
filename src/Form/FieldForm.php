@@ -3,8 +3,6 @@
 namespace FriendsOfRedaxo\Blocks\Form;
 
 use FriendsOfRedaxo\Blocks\BlockModule;
-use Redaxo\Core\Core;
-use Redaxo\Core\RexVar\MediaVar;
 
 use function array_key_exists;
 use function array_values;
@@ -99,10 +97,9 @@ final class FieldForm
             'select' => self::select($name, (array) ($f['options'] ?? []), (string) $value, ['id' => $id], !$req),
             'bool' => '<input type="hidden" name="' . $n . '" value="0"><label class="blocks-form__check"><input type="checkbox" id="' . $id . '" name="' . $n . '" value="1"' . ($value ? ' checked' : '') . '> ' . escape($label) . '</label>',
             'number' => '<input class="form-control" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
-            'media', 'file' => $backend && Core::getUser()
-                ? MediaVar::getWidget(str_replace(['[', ']'], ['_', ''], $id), $name, (string) $value, null, 'media' === $type ? ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'] : [], 'media' === $type)
-                : '<div class="blocks-media" data-blocks-media><input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="Dateiname aus dem Medienpool"><button type="button" class="blocks-btn" data-blocks-media-open>Auswählen</button></div>',
-            'link' => '<input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="redaxo://12, https://…, #anker, tel: oder mailto:">',
+            // Medienpool und Linkmap (REDAXO-Popups); ID aus dem Feldnamen, damit neue Einträge von Wiederholgruppen eindeutig bleiben
+            'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend),
+            'link' => Picker::link(self::nameId($name), $name, (string) $value, $backend),
             'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
             default => '<input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
         };
@@ -115,7 +112,7 @@ final class FieldForm
                 . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</fieldset>';
         }
 
-        return '<label class="control-label" for="' . $id . '">' . escape($label) . ('' !== $req ? ' <span aria-hidden="true">*</span>' : '') . '</label>'
+        return '<label class="control-label" id="' . $id . '-label" for="' . $id . '">' . escape($label) . ('' !== $req ? ' <span aria-hidden="true">*</span>' : '') . '</label>'
             . $input . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '');
     }
 
@@ -176,6 +173,12 @@ final class FieldForm
         }
 
         return $h . '</select>';
+    }
+
+    /** Element-ID aus dem Feldnamen (`f[1][items][__i__][image]` → `blocks_f_1_items___i___image`) */
+    private static function nameId(string $name): string
+    {
+        return 'blocks_' . trim((string) preg_replace('~[^A-Za-z0-9_]+~', '_', $name), '_');
     }
 
     private static function row(string $label, string $control, string $help, bool $half): string

@@ -50,6 +50,7 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
   root.append(h(`<link rel="stylesheet" href="${esc(unamp(cfg.css))}">`));
+  root.append(h(`<link rel="stylesheet" href="${esc(unamp(cfg.rteCss))}">`));
   const bar = h(`
     <header class="bar" role="toolbar" aria-label="Bearbeiten">
       <a class="brand" href="${esc(unamp(cfg.backendUrl))}" title="Im Backend öffnen">R</a>
@@ -105,7 +106,9 @@
       <div class="dlg__actions"><button type="button" class="btn" data-dlg-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-dlg-ok>OK</button></div></div>
     </div>`);
   const toast = h('<div class="toast" role="status" aria-live="polite" hidden></div>');
-  root.append(bar, blockbar, addbtn, panel, picker, dialog, toast);
+  // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
+  const layer = h('<div class="layer"></div>');
+  root.append(bar, blockbar, addbtn, panel, picker, dialog, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -511,6 +514,7 @@
       $('[data-panel-title]').textContent = res.label;
       form.innerHTML = res.html;
       window.BlocksForm?.init(form, schedulePreview);
+      Rich?.initFields(form);
       panel.hidden = false;
       document.documentElement.classList.add('blocks-panel-open');
       sec.setAttribute('data-blocks-panel', '');
@@ -581,34 +585,21 @@
 
   form.addEventListener('input', () => schedulePreview());
   form.addEventListener('change', () => schedulePreview());
+  form.addEventListener('click', (e) => e.target.closest('[data-blocks-add]') && setTimeout(() => Rich?.initFields(form)));
 
-  // Medienpool im Popup (Backend-Seite) – Auswahl kommt über „rex:selectMedia“ zurück
-  let mediaInput = null;
-  let mediaWin = null;
-  form.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-blocks-media-open]');
-    if (!btn) return;
-    mediaInput = btn.closest('[data-blocks-media]').querySelector('input');
-    mediaWin = window.open(unamp(cfg.mediapoolUrl), 'blocks_mediapool', 'width=1100,height=760');
+  // ------------------------------------------------------------------ Formatierung (Studio-Editor, assets/rte.js)
+
+  const Rich = window.BlocksRich;
+  Rich?.setLayer(layer);
+  const inline = Rich?.inlineBar({ minTop: () => bar.offsetHeight });
+  main.addEventListener('focusin', (e) => {
+    const el = e.target.closest?.('[data-edit][data-edit-mode="rich"]');
+    if (el && inline) inline.show(el, 'rich');
   });
-  // Minimaler jQuery-Ersatz für die Rückmeldung des Medienpools (mediapool.js ruft opener.jQuery … auf)
-  if (!window.jQuery) {
-    const jq = (el) => ({
-      trigger(ev, args) {
-        if (el === window && ev?.type === 'rex:selectMedia' && mediaInput) {
-          mediaInput.value = args[0];
-          mediaInput.dispatchEvent(new Event('change', { bubbles: true }));
-          ev.preventDefault();
-          mediaWin?.close();
-        }
-      },
-      on() {},
-    });
-    jq.Event = (type) => ({ type, prevented: false, preventDefault() { this.prevented = true; }, isDefaultPrevented() { return this.prevented; } });
-    jq._data = () => ({});
-    window.jQuery = jq;
-    window.rex = window.rex || {};
-  }
+  main.addEventListener('focusout', (e) => {
+    if (e.target.closest?.('[data-edit][data-edit-mode="rich"]')) inline?.hideSoon();
+  });
+  ['keyup', 'mouseup'].forEach((ev) => main.addEventListener(ev, () => inline?.update()));
 
   // ------------------------------------------------------------------ Start
 

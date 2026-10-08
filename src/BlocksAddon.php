@@ -4,12 +4,16 @@ namespace FriendsOfRedaxo\Blocks;
 
 use Override;
 use Redaxo\Core\Addon\Addon;
+use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\ArticleRevision;
+use Redaxo\Core\Content\Module;
+use Redaxo\Core\Content\Template;
 use Redaxo\Core\Core;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\ExtensionPoint\ExtensionLevel;
 use Redaxo\Core\ExtensionPoint\ExtensionPoint;
+use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\Http\Request;
 use Redaxo\Core\Util\Type;
 use Redaxo\Core\View\Asset;
@@ -21,7 +25,22 @@ final class BlocksAddon extends Addon
     {
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'content')) {
             Asset::addCssFile($this->getAssetsUrl('form.css'));
+            Asset::addCssFile($this->getAssetsUrl('rte.css'));
             Asset::addJsFile($this->getAssetsUrl('form.js'));
+            Asset::addJsFile($this->getAssetsUrl('rte.js'));
+            // Absprung „Auf der Website bearbeiten“ über den Slices – nur bei Artikeln mit Block-Template
+            Extension::register('STRUCTURE_CONTENT_BEFORE_SLICES', static function (ExtensionPoint $ep): string {
+                $article = Article::get((int) $ep->getParam('article_id'), (int) $ep->getParam('language'));
+                $template = $article?->templateKey ? Template::get($article->templateKey) : null;
+                $blocks = array_filter(Module::getAll(), static fn (Module $m) => $m instanceof BlockModule && $template && Template::checkModuleAllowed($template->key, 1, $m->key));
+                if (!$article || !$blocks) {
+                    return (string) $ep->subject;
+                }
+                $url = Url::article($article->id, $article->languageId, [Editing::PARAM => 1]);
+
+                return (string) $ep->subject . Links::json($article->languageId) . '<p class="blocks-frontend-link"><a class="btn btn-primary" href="' . $url . '" target="_blank" rel="noopener">'
+                    . '<i class="rex-icon fa-pen-to-square"></i> Auf der Website bearbeiten</a></p>';
+            });
         }
 
         if (!Core::isFrontend()) {

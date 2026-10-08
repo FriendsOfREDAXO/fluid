@@ -37,6 +37,7 @@
       list.append(item);
       item.open = true;
       item.querySelectorAll('[data-blocks-repeater]').forEach((r) => initRepeater(r, changed));
+      initPickers(item, changed);
       item.querySelector('input:not([type=hidden]),textarea,select')?.focus();
       sync();
       changed();
@@ -60,7 +61,83 @@
     sync();
   }
 
+  // ------------------------------------------------------------------ Medienpool und Linkmap (REDAXO-Popups)
+  // Die Popups lösen am öffnenden Fenster „rex:selectMedia“ (Datei, Titel) bzw. „rex:selectLink“ (redaxo://ID, Name) aus.
+  // Auf der Website gibt es kein jQuery: dafür genügt ein kleiner Ersatz mit on/trigger/Event.
+  // Die Popups lösen das Event an IHREM Fenster aus (opener.jQuery(window).trigger …) und binden die Handler bei jedem Laden
+  // neu aus opener.rex.popupEvents[Fenstername] (rex_retain_popup_event_handlers in standard.js) – dort hängt unser Handler.
+  if (!window.jQuery) {
+    const handlers = {};
+    const jq = () => ({
+      on(name, fn) { name.split(' ').forEach((n) => { (handlers[n] ||= []).includes(fn) || handlers[n].push(fn); }); return this; },
+      trigger(ev, args = []) { (handlers[ev.type] || []).forEach((fn) => fn(ev, ...args)); return this; },
+    });
+    jq.Event = (type) => ({ type, prevented: false, preventDefault() { this.prevented = true; }, isDefaultPrevented() { return this.prevented; } });
+    jq._data = () => ({});
+    window.jQuery = jq;
+  }
+  window.rex = window.rex || {};
+
+  const POPUP = 'blocks_pick';
+  let pending = null;   // { resolve, win }
+  const onSelect = (ev, value, name) => {
+    if (!pending) return;
+    ev.preventDefault();
+    const p = pending;
+    pending = null;
+    try { p.win?.close(); } catch {}
+    p.resolve({ value: String(value), name: name || '' });
+  };
+
+  /** Popup öffnen; Ergebnis: { value, name } oder null (Fenster ohne Auswahl geschlossen) */
+  function pick(url) {
+    if (pending) pending.resolve(null);
+    // erst beim Öffnen setzen: das Backend legt window.rex ggf. später neu an
+    window.rex = window.rex || {};
+    window.rex.popupEvents = window.rex.popupEvents || {};
+    window.rex.popupEvents[POPUP] = { 'rex:selectMedia': [onSelect], 'rex:selectLink': [onSelect] };
+    return new Promise((resolve) => {
+      const win = window.open(String(url).replace(/&amp;/g, '&'), POPUP, 'width=1100,height=760,resizable=yes,scrollbars=yes');
+      pending = { resolve, win };
+      const timer = setInterval(() => {
+        if (!win || win.closed) {
+          clearInterval(timer);
+          if (pending?.win === win) { pending = null; resolve(null); }
+        }
+      }, 500);
+    });
+  }
+
+  function initPickers(scope, changed) {
+    scope.querySelectorAll('[data-blocks-pick]').forEach((box) => {
+      if (box.dataset.blocksReady) return;
+      box.dataset.blocksReady = '1';
+      const input = box.querySelector('input');
+      const thumb = box.querySelector('[data-blocks-pick-thumb]');
+      const label = box.querySelector('[data-blocks-pick-name]');
+      const set = (value, name = '') => {
+        input.value = value;
+        if (thumb) {
+          const img = /\.(jpe?g|png|gif|webp|avif|svg)$/i.test(value);
+          thumb.hidden = !value || !img;
+          thumb.innerHTML = value && img ? `<img src="${box.dataset.preview.replace(/&amp;/g, '&').replace('__FILE__', encodeURIComponent(value))}" alt="">` : '';
+        }
+        if (label) label.textContent = /^redaxo:\/\//.test(value) ? name : '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+        changed();
+      };
+      box.querySelector('[data-blocks-pick-open]')?.addEventListener('click', async () => {
+        const res = await pick(box.dataset.url);
+        if (res) set(res.value, res.name);
+      });
+      box.querySelector('[data-blocks-pick-clear]')?.addEventListener('click', () => set(''));
+      input.addEventListener('input', () => { if (label && !/^redaxo:\/\//.test(input.value)) label.textContent = ''; });
+    });
+  }
+
   function init(scope, changed = () => {}) {
+    initPickers(scope, changed);
     scope.querySelectorAll('[data-blocks-form]').forEach((form) => {
       variantFields(form);
       if (!form.dataset.blocksReady) {
@@ -72,6 +149,7 @@
   }
 
   window.BlocksForm = { init };
+  window.BlocksPick = { pick };
 
   // Backend: REDAXO lädt Seiten per PJAX nach und meldet das mit „rex:ready“
   if (window.jQuery) {

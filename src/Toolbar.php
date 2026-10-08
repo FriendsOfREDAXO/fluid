@@ -59,11 +59,14 @@ final class Toolbar
             'modules' => $modules,
             'state' => Api::state($article),
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),
+            'rteCss' => $addon->getAssetsUrl('rte.css') . '?v=' . self::version('rte.css'),
         ];
 
         $head = '<link rel="stylesheet" href="' . escape($addon->getAssetsUrl('editor/editor.css') . '?v=' . self::version('editor/editor.css')) . '" data-blocks-editor>';
         $body = '<script type="application/json" id="blocks-editor-config">' . json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>'
+            . ($editing ? Links::json($article->languageId) : '')
             . '<script src="' . escape($addon->getAssetsUrl('form.js') . '?v=' . self::version('form.js')) . '" defer></script>'
+            . '<script src="' . escape($addon->getAssetsUrl('rte.js') . '?v=' . self::version('rte.js')) . '" defer></script>'
             . '<script src="' . escape($addon->getAssetsUrl('editor/editor.js') . '?v=' . self::version('editor/editor.js')) . '" defer></script>';
 
         $html = preg_replace('~</head>~i', $head . '</head>', $html, 1) ?? $html;

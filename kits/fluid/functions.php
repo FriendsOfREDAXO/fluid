@@ -12,8 +12,6 @@ use FriendsOfRedaxo\Blocks\Editing;
 use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidKit;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\MediaPool\Media;
-use Redaxo\Core\Util\Str;
-use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
 use function Redaxo\Core\View\escape;
 
@@ -99,26 +97,10 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
         . (!empty($opt['class']) ? ' class="' . e($opt['class']) . '"' : '') . '>';
 }
 
-/** Rich Text sicher ausgeben (Sanitizer des Cores mit den Elementen der Formatierungsleiste) */
+/** Rich Text sicher ausgeben (Klassenvertrag der Formatierungsleiste, RichText) */
 function rich(?string $html): string
 {
-    static $config = null;
-    $config ??= new HtmlSanitizerConfig()
-        ->allowElement('p')->allowElement('br')->allowElement('strong')->allowElement('b')->allowElement('em')->allowElement('i')
-        ->allowElement('u')->allowElement('s')->allowElement('h2', ['id'])->allowElement('h3', ['id'])->allowElement('h4', ['id'])
-        ->allowElement('ul')->allowElement('ol')->allowElement('li')->allowElement('blockquote')->allowElement('code')
-        ->allowElement('a', ['href', 'title', 'target', 'rel'])->allowElement('mark')->allowElement('sub')->allowElement('sup')
-        ->allowRelativeLinks()->allowLinkSchemes(['http', 'https', 'mailto', 'tel'])->withMaxInputLength(-1);
-    $html = trim((string) $html);
-    if ('' === $html) {
-        return '';
-    }
-    // Reiner Text aus einem Textfeld → Absätze
-    if (!preg_match('~<(p|h[2-4]|ul|ol|blockquote)\b~i', $html)) {
-        $html = '<p>' . preg_replace('~\R{2,}~', '</p><p>', nl2br(e($html), false)) . '</p>';
-    }
-
-    return Str::sanitizeHtml($html, $config);
+    return \FriendsOfRedaxo\Blocks\RichText::html($html);
 }
 
 /** Link-Wert eines Feldes → Adresse: redaxo://12, page:12, 12, https://…, #anker, tel:, mailto: */

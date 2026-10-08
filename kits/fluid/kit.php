@@ -36,7 +36,8 @@ return [
     'assets' => [
         'css/hero-x.css' => ['hero:fullbleed', 'hero:cards', 'hero:type'],
         'css/hx-scale.css' => ['hero:scale'], 'css/hx-collage.css' => ['hero:collage'], 'css/hx-compare.css' => ['hero:compare'],   // neue Einstiege
-        'css/prose.css' => ['richtext', 'tabs', 'faq', 'media_text', '@rich'],   // @rich: Rich-Text-Stile in anderen Blöcken (Core\Sanitizer::styled)
+        'css/prose.css' => ['richtext', 'tabs', 'faq', 'media_text', '@rich'],
+        'css/rich-extra.css' => ['richtext', 'faq', 'media_text'],   // Absatz-Stile der Formatierungsleiste (Tipp, Achtung, Dachzeile, Zentriert)   // @rich: Rich-Text-Stile in anderen Blöcken (Core\Sanitizer::styled)
         'css/b-article.css' => ['richtext:article', 'richtext:columns'],
         'css/b-features.css' => ['features'],
         'css/b-media-text.css' => ['media_text'],
