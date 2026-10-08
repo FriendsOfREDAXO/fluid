@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\StructurePermission;
@@ -13,14 +13,14 @@ use Redaxo\Core\Security\User;
  * Zustand „Bearbeiten auf der Website“ für die laufende Anfrage.
  *
  * - `user()`: angemeldeter Backend-Benutzer mit Recht auf den aktuellen Artikel (sonst null) – nur dann gibt es die Leiste.
- * - `active()`: Bearbeiten-Modus (`?blocks_edit=1`) – Blöcke geben dann `data-edit`-Attribute aus und die Seite wird
+ * - `active()`: Bearbeiten-Modus (`?fluid_edit=1`) – Blöcke geben dann `data-edit`-Attribute aus und die Seite wird
  *   live aus der Datenbank gerendert (Arbeitsversion), nicht aus dem Cache.
  *
  * Außerhalb des Frontends (Backend, Cache-Erzeugung, Konsole) ist beides immer aus, damit der Cache nie Bearbeiten-Markup enthält.
  */
 final class Editing
 {
-    public const string PARAM = 'blocks_edit';
+    public const string PARAM = 'fluid_edit';
 
     private static ?User $user = null;
     private static bool $resolved = false;

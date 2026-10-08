@@ -3,7 +3,7 @@
  * Zitat / Stimmen: single (Pull-Quote, große Schrift in Container-Einheiten) · grid (Mauerwerk mit CSS-Spalten,
  * column-width – keine Spaltenzahl) · reel (wischbares Band, scroll-snap; js/reel.js ergänzt Pfeile) ·
  * marquee (Laufband wie bei Logos: Liste doppelt, zweite Hälfte aria-hidden; hält bei Maus/Fokus; ohne Bewegung umbrechend).
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'single';
 $items = array_values(array_filter((array) ($d['items'] ?? []), fn($i) => trim((string) ($i['text'] ?? '')) !== ''));

@@ -1,5 +1,5 @@
 /*
- * friendsofredaxo/blocks – Formatierungsleiste (aus KLXM Studio) für Backend und Website: window.BlocksRich.
+ * friendsofredaxo/fluid – Formatierungsleiste (aus KLXM Studio) für Backend und Website: window.BlocksRich.
  *   initFields(scope)  textarea[data-blocks-rich] → Feld mit Leiste (.rte > .rte-bar + .rte-area), Wert im Textfeld
  *   inlineBar()        schwebende Leiste für [data-edit-mode="rich"] direkt auf der Website
  *   setLayer(el)       Ebene für Menüs/Dialoge (Shadow DOM des Editors)

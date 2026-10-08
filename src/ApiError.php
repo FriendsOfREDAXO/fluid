@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
 use RuntimeException;
 

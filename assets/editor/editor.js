@@ -1,5 +1,5 @@
 /*
- * friendsofredaxo/blocks – Bearbeiten direkt auf der Website.
+ * friendsofredaxo/fluid – Bearbeiten direkt auf der Website.
  *
  * Nur für angemeldete Backend-Benutzer geladen (Toolbar::inject). Oberfläche im Shadow DOM (#blocks-ui), damit das CSS
  * der Website sie nicht beeinflusst. Blöcke kennzeichnet der Server im Bearbeiten-Modus mit

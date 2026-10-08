@@ -1,8 +1,8 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Kit\Fluid;
+namespace FriendsOfRedaxo\Fluid\Kit\Fluid;
 
-use FriendsOfRedaxo\Blocks\BlockModule;
+use FriendsOfRedaxo\Fluid\BlockModule;
 use Override;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\AsTemplate;

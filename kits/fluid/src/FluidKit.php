@@ -1,8 +1,8 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Kit\Fluid;
+namespace FriendsOfRedaxo\Fluid\Kit\Fluid;
 
-use FriendsOfRedaxo\Blocks\Kit;
+use FriendsOfRedaxo\Fluid\Kit;
 use Override;
 
 /** Kit „fluid“: breakpointlos, für viele Projektarten (aus KLXM Studio). */

@@ -7,7 +7,7 @@
  *   scale    Fließende Skala: Überschrift füllt ihre Spalte (cqi), Seitenspalte + Stufenleiste ab 48 rem Platz (css/hx-scale.css)
  *   collage  Collage: 1–5 Bilder (Bild + Feld „gallery“) im Raster mit schwebender Textkarte ab 52 rem (css/hx-collage.css)
  *   compare  Vorher/Nachher mit Regler (Core\Blocks\Hero::compare, Tastatur: Pfeile, Pos1/Ende) (css/hx-compare.css)
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'split';
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:5';

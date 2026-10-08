@@ -1,10 +1,10 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Kit\Fluid\Module;
+namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
-use FriendsOfRedaxo\Blocks\Kit;
-use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidKit;
-use FriendsOfRedaxo\Blocks\LayoutBlock;
+use FriendsOfRedaxo\Fluid\Kit;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\LayoutBlock;
 use Override;
 use Redaxo\Core\Content\AsModule;
 

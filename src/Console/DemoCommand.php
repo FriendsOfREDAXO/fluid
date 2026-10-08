@@ -1,10 +1,10 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Console;
+namespace FriendsOfRedaxo\Fluid\Console;
 
-use FriendsOfRedaxo\Blocks\BlockModule;
-use FriendsOfRedaxo\Blocks\BlocksAddon;
-use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\BlockModule;
+use FriendsOfRedaxo\Fluid\FluidAddon;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
 use Redaxo\Core\Console\Command\AbstractCommand;
 use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleHandler;
@@ -27,7 +27,7 @@ use function is_string;
  * Legt die Demo-Seiten eines Kits an (Startartikel + Kategorien fürs Menü + Blöcke).
  * Blocktypen, die das Kit (noch) nicht anbietet, werden übersprungen.
  */
-#[AsCommand(name: 'blocks:demo', description: 'Legt die Demo-Seiten des Kits „fluid“ an (nur für leere Testinstallationen)')]
+#[AsCommand(name: 'fluid:demo', description: 'Legt die Demo-Seiten des Kits „fluid“ an (nur für leere Testinstallationen)')]
 final class DemoCommand extends AbstractCommand
 {
     public function __invoke(SymfonyStyle $io, #[Option(description: 'Auch anlegen, wenn schon Artikel existieren')] bool $force = false): int
@@ -87,13 +87,13 @@ final class DemoCommand extends AbstractCommand
                     $skipped[$block['type']] = true;
                     continue;
                 }
-                foreach ([ArticleRevision::LIVE, BlocksAddon::revision()] as $rev) {
+                foreach ([ArticleRevision::LIVE, FluidAddon::revision()] as $rev) {
                     ContentHandler::addSlice($articleId, $lang, 1, $key, [
                         'revision' => $rev,
                         'value1' => json_encode($mapLinks($block['data'] ?? []), JSON_UNESCAPED_UNICODE),
                         'value2' => json_encode($block['tunes'] ?? [], JSON_UNESCAPED_UNICODE),
                     ]);
-                    if (ArticleRevision::LIVE === BlocksAddon::revision()) {
+                    if (ArticleRevision::LIVE === FluidAddon::revision()) {
                         break;
                     }
                 }

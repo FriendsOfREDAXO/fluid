@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\Module;
@@ -27,7 +27,7 @@ final class Toolbar
         }
 
         $editing = Editing::requested();
-        $addon = BlocksAddon::instance();
+        $addon = FluidAddon::instance();
         $perm = $user->getComplexPerm('modules');
         $modules = [];
         foreach (Module::getAll() as $module) {
@@ -78,7 +78,7 @@ final class Toolbar
 
     private static function version(string $file): string
     {
-        $path = BlocksAddon::instance()->getPath('assets/' . $file);
+        $path = FluidAddon::instance()->getPath('assets/' . $file);
 
         return is_file($path) ? substr(md5((string) filemtime($path)), 0, 8) : '0';
     }

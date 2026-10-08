@@ -1,6 +1,6 @@
 <?php
 /*
- * Kit „fluid“ für friendsofredaxo/blocks – übernommen aus KLXM Studio (MIT): breakpointlos, Container-Queries,
+ * Kit „fluid“ für friendsofredaxo/fluid – übernommen aus KLXM Studio (MIT): breakpointlos, Container-Queries,
  * fließende Schrift- und Abstandsstufen. Felder im Format der Studio-Kits (siehe FieldForm).
  */
 

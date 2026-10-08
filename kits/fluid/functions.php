@@ -7,9 +7,9 @@
  * (Medienpool statt Mediathek, REDAXO-Links, Sanitizer des Cores). Prototyp – im Paket kommen sie in einen Namespace.
  */
 
-use FriendsOfRedaxo\Blocks\Block;
-use FriendsOfRedaxo\Blocks\Editing;
-use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\Block;
+use FriendsOfRedaxo\Fluid\Editing;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\MediaPool\Media;
 
@@ -100,7 +100,7 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
 /** Rich Text sicher ausgeben (Klassenvertrag der Formatierungsleiste, RichText) */
 function rich(?string $html): string
 {
-    return \FriendsOfRedaxo\Blocks\RichText::html($html);
+    return \FriendsOfRedaxo\Fluid\RichText::html($html);
 }
 
 /** Link-Wert eines Feldes → Adresse: redaxo://12, page:12, 12, https://…, #anker, tel:, mailto: */

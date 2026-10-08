@@ -1,8 +1,8 @@
 <?php
 
-use FriendsOfRedaxo\Blocks\Editing;
-use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidKit;
-use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidTemplate;
+use FriendsOfRedaxo\Fluid\Editing;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidTemplate;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Core;

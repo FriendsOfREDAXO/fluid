@@ -1,5 +1,5 @@
 <?php
-/** Kennzahlen: row (große Zahlen, Trennlinien) · cards · split (Überschrift neben den Zahlen, Sidebar-Muster). @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d */
+/** Kennzahlen: row (große Zahlen, Trennlinien) · cards · split (Überschrift neben den Zahlen, Sidebar-Muster). @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d */
 $v = $b->variant() ?: 'row';
 $items = array_values((array) ($d['items'] ?? []));
 ?>

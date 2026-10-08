@@ -2,7 +2,7 @@
 /**
  * Merkmale / Leistungen. Raster ohne Spaltenzahl: repeat(auto-fit, minmax(min(100%, Mindestbreite), 1fr)).
  * Jede Karte ist ein Container und stellt sich auf ihre eigene Breite ein (Liste: Symbol neben dem Text, wenn Platz ist).
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'cards';
 $items = array_values((array) ($d['items'] ?? []));

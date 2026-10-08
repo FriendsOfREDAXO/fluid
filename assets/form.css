@@ -1,4 +1,4 @@
-/* friendsofredaxo/blocks – Block-Formulare im Backend (Slice bearbeiten) */
+/* friendsofredaxo/fluid – Block-Formulare im Backend (Slice bearbeiten) */
 .blocks-form { container-type: inline-size; }
 .blocks-form__intro { margin: 0 0 12px; color: #6c7a89; }
 .blocks-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }

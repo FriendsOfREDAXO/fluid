@@ -2,7 +2,7 @@
 /**
  * Karten: image (Bild oben) · overlay (Text auf dem Bild) · horizontal (quer – jede Karte ist ein Container und stellt sich
  * erst ab ~30 rem Kartenbreite quer) · reel (wischbares Band mit scroll-snap, ohne Bibliothek; js/reel.js ergänzt Pfeile).
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'image';
 $ratio = (string) ($d['ratio'] ?? '') ?: '3:2';

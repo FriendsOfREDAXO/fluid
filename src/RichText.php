@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Util\Str;

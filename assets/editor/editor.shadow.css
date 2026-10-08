@@ -1,4 +1,4 @@
-/* friendsofredaxo/blocks – Oberfläche des Editors im Shadow DOM (#blocks-ui) */
+/* friendsofredaxo/fluid – Oberfläche des Editors im Shadow DOM (#blocks-ui) */
 :host {
   all: initial;
   --accent: #4b5bd6;

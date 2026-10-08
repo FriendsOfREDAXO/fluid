@@ -1,5 +1,5 @@
 <?php
-/** Handlungsaufruf: band · box · split (mit Bild, Switcher) · big (großer Schriftzug in Container-Einheiten). @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d */
+/** Handlungsaufruf: band · box · split (mit Bild, Switcher) · big (großer Schriftzug in Container-Einheiten). @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d */
 $v = in_array($b->variant(), ['band', 'box', 'split', 'big'], true) ? $b->variant() : 'band';
 $pic = $v === 'split' ? fluid_image($d['image'] ?? null, '(min-width: 1080px) 560px, 100vw', '4:3', 'cta__media') : '';
 ?>

@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Form;
+namespace FriendsOfRedaxo\Fluid\Form;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\Category;

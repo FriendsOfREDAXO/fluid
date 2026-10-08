@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Filesystem\Url;
 
@@ -90,7 +90,7 @@ abstract class Kit
 
     final public function assetUrl(string $file): string
     {
-        $url = Url::addonAssets('blocks', 'kits/' . $this->key() . '/' . $file);
+        $url = Url::addonAssets('fluid', 'kits/' . $this->key() . '/' . $file);
         $local = $this->assetPath($file);
 
         return is_file($local) ? $url . '?v=' . substr(md5((string) filemtime($local)), 0, 8) : $url;

@@ -2,7 +2,7 @@
 /**
  * Text + Bild. auto: wechselt die Seite, wenn der vorige Block auch „Text + Bild“ (abwechselnd) war · right/left ·
  * split: randlos 50/50 (Switcher: nebeneinander, solange beide Hälften ≥ 22 rem breit sind) · overlap: Karte über großem Bild.
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'auto';
 $ratio = (string) ($d['ratio'] ?? '') ?: '4:3';

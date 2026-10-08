@@ -1,6 +1,6 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
 use Override;
 use Redaxo\Core\Addon\Addon;
@@ -20,7 +20,7 @@ use Redaxo\Core\Http\Request;
 use Redaxo\Core\Util\Type;
 use Redaxo\Core\View\Asset;
 
-final class BlocksAddon extends Addon
+final class FluidAddon extends Addon
 {
     #[Override]
     public function boot(): void
@@ -63,7 +63,7 @@ final class BlocksAddon extends Addon
             return;
         }
 
-        // Endpunkte des Editors (?blocks_api=…): vor der Ausgabe der Seite beantworten
+        // Endpunkte des Editors (?fluid_api=…): vor der Ausgabe der Seite beantworten
         if ('' !== Request::get(Api::PARAM, 'string')) {
             Extension::register('FE_OUTPUT', static fn () => Api::handle());
         }

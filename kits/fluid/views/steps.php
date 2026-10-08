@@ -3,7 +3,7 @@
  * Ablauf: numbers (Raster, auto-fit) · timeline (senkrechte Linie; ab genug Containerbreite Datum links) ·
  * process (Schritte mit Pfeilen – nebeneinander, wenn Platz ist, sonst untereinander mit Pfeil nach unten).
  * Felder marker (Kreise), colors (Farben), motion (Animation) – Klassen steps--m-*, steps--c-*, steps--a-* (assets/css/b-steps.css).
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = in_array($b->variant(), ['numbers', 'timeline', 'process'], true) ? $b->variant() : 'numbers';
 $items = array_values(array_filter((array) ($d['items'] ?? []), fn($i) => trim((string) ($i['title'] ?? '')) !== ''));

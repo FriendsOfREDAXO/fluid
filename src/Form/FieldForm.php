@@ -1,8 +1,8 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Form;
+namespace FriendsOfRedaxo\Fluid\Form;
 
-use FriendsOfRedaxo\Blocks\BlockModule;
+use FriendsOfRedaxo\Fluid\BlockModule;
 
 use function array_key_exists;
 use function array_values;

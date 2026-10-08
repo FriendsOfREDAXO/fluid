@@ -1,8 +1,8 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks;
+namespace FriendsOfRedaxo\Fluid;
 
-use FriendsOfRedaxo\Blocks\Form\FieldForm;
+use FriendsOfRedaxo\Fluid\Form\FieldForm;
 use Override;
 use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\Module;

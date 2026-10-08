@@ -2,7 +2,7 @@
 /**
  * Fließtext / Artikel. standard: Lesebreite · article: Lesebreite + Inhaltsverzeichnis als Seitenspalte (Sidebar-Muster:
  * steht neben dem Text, sobald Platz ist, sonst darüber) · columns: CSS-Spalten mit Mindestbreite (column-width).
- * @var \FriendsOfRedaxo\Blocks\Block $b  @var array $d
+ * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'standard';
 $html = rich((string) $d['text']);

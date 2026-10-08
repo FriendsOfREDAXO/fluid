@@ -1,5 +1,5 @@
 /*
- * friendsofredaxo/blocks – Verhalten der Block-Formulare (FieldForm): Felder je Variante, Wiederholgruppen.
+ * friendsofredaxo/fluid – Verhalten der Block-Formulare (FieldForm): Felder je Variante, Wiederholgruppen.
  * Gemeinsam für das Backend (Slice bearbeiten) und den Editor auf der Website (window.BlocksForm.init).
  */
 (() => {

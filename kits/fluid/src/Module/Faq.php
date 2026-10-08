@@ -1,8 +1,8 @@
 <?php
 
-namespace FriendsOfRedaxo\Blocks\Kit\Fluid\Module;
+namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
-use FriendsOfRedaxo\Blocks\Kit\Fluid\FluidBlock;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
 
 #[AsModule('fluid.faq', 'Fragen & Antworten')]
