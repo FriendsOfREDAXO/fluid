@@ -1,0 +1,25 @@
+{
+    "name": "friendsofredaxo/blocks",
+    "description": "Blöcke mit Feldschema und Bearbeiten direkt auf der Website für REDAXO 6",
+    "type": "redaxo-addon",
+    "license": "MIT",
+    "authors": [
+        {"name": "Thomas Skerbis", "homepage": "https://klxm.de"},
+        {"name": "Friends Of REDAXO", "homepage": "https://friendsofredaxo.github.io"}
+    ],
+    "require": {
+        "php": "^8.5",
+        "redaxo/core": "^6.0@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "FriendsOfRedaxo\\Blocks\\": "src/",
+            "FriendsOfRedaxo\\Blocks\\Kit\\Fluid\\": "kits/fluid/src/"
+        }
+    },
+    "extra": {
+        "redaxo": {
+            "addon-class": "FriendsOfRedaxo\\Blocks\\BlocksAddon"
+        }
+    }
+}

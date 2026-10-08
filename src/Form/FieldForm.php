@@ -1,0 +1,220 @@
+<?php
+
+namespace FriendsOfRedaxo\Blocks\Form;
+
+use FriendsOfRedaxo\Blocks\BlockModule;
+use Redaxo\Core\Core;
+use Redaxo\Core\RexVar\MediaVar;
+
+use function array_key_exists;
+use function array_values;
+use function count;
+use function implode;
+use function in_array;
+use function is_array;
+use function Redaxo\Core\View\escape;
+
+/**
+ * Formular aus dem Feldschema eines Blocks (Format der Studio-Kits).
+ *
+ * Feldtypen: text, textarea, richtext, select, bool, number, media, file, link, icon, repeater.
+ * Optionen je Feld: name, label, type, help, required, default, max, rows, placeholder, options, width (half),
+ * variants (nur bei diesen Varianten sichtbar), fields/item_label/title_field/max_items (repeater).
+ *
+ * Feldnamen: `{prefix}[1][feld]` für die Felder, `{prefix}[2][option]` für die Abschnitts-Optionen. Im Backend ist der
+ * Präfix `REX_INPUT_VALUE` – REDAXO speichert die Arrays dann als JSON in value1/value2.
+ */
+final class FieldForm
+{
+    private static int $uid = 0;
+
+    /**
+     * @param array<string, mixed> $data
+     * @param array<string, mixed> $tunes
+     */
+    public static function render(BlockModule $module, array $data, array $tunes, string $prefix, bool $backend = true): string
+    {
+        $variants = $module->variants();
+        $data = self::withDefaults($module->fields(), $data, $variants);
+        $variant = (string) ($data['variant'] ?? '');
+
+        $h = '<div class="blocks-form" data-blocks-form data-variant="' . escape($variant) . '">';
+        $help = (string) ($module->definition()['help'] ?? '');
+        if ('' !== $help) {
+            $h .= '<p class="blocks-form__intro">' . escape($help) . '</p>';
+        }
+        if ($variants) {
+            $h .= self::row('Darstellung', self::select($prefix . '[1][variant]', $variants, $variant, ['data-blocks-variant' => '']), '', false);
+        }
+        $h .= self::fields($module->fields(), $data, $prefix . '[1]', $backend);
+
+        // Abschnitts-Optionen
+        $bgs = $module->kit()->backgrounds();
+        $bg = (string) ($tunes['background'] ?? ($module->definition()['background'] ?? 'white'));
+        $h .= '<details class="blocks-form__tunes"><summary>Abschnitt</summary><div class="blocks-form__grid">';
+        $h .= self::row('Hintergrund', self::select($prefix . '[2][background]', $bgs, $bg), '', true);
+        $h .= self::row('Sprungmarke (Anker)', '<input class="form-control" type="text" name="' . escape($prefix . '[2][anchor]') . '" value="' . escape((string) ($tunes['anchor'] ?? '')) . '" pattern="[a-z0-9\-]*" placeholder="z. B. kontakt">', 'Nur Kleinbuchstaben, Ziffern und Bindestriche.', true);
+        $space = ['none' => 'Kein', 'small' => 'Klein', 'normal' => 'Normal', 'large' => 'Groß'];
+        $h .= self::row('Abstand oben', self::select($prefix . '[2][spaceTop]', $space, (string) ($tunes['spaceTop'] ?? 'normal')), '', true);
+        $h .= self::row('Abstand unten', self::select($prefix . '[2][spaceBottom]', $space, (string) ($tunes['spaceBottom'] ?? 'normal')), '', true);
+        $h .= '</div></details>';
+
+        return $h . '</div>';
+    }
+
+    /**
+     * @param list<array<string, mixed>> $fields
+     * @param array<string, mixed> $data
+     */
+    private static function fields(array $fields, array $data, string $base, bool $backend): string
+    {
+        $h = '<div class="blocks-form__grid">';
+        foreach ($fields as $f) {
+            $name = (string) $f['name'];
+            $only = isset($f['variants']) ? ' data-variants="' . escape(implode(' ', (array) $f['variants'])) . '"' : '';
+            $half = 'half' === ($f['width'] ?? '');
+            $h .= '<div class="blocks-form__field' . ($half ? ' is-half' : '') . '"' . $only . '>'
+                . self::control($f, $data[$name] ?? null, $base . '[' . $name . ']', $backend)
+                . '</div>';
+        }
+
+        return $h . '</div>';
+    }
+
+    /** @param array<string, mixed> $f */
+    private static function control(array $f, mixed $value, string $name, bool $backend): string
+    {
+        $type = (string) ($f['type'] ?? 'text');
+        $label = (string) ($f['label'] ?? $f['name']);
+        $help = (string) ($f['help'] ?? '');
+        $req = !empty($f['required']) ? ' required' : '';
+        $ph = isset($f['placeholder']) ? ' placeholder="' . escape((string) $f['placeholder']) . '"' : '';
+        $max = isset($f['max']) ? ' maxlength="' . (int) $f['max'] . '"' : '';
+        $id = 'blocks-f' . ++self::$uid;
+        $n = escape($name);
+
+        $input = match ($type) {
+            'textarea' => '<textarea class="form-control" id="' . $id . '" name="' . $n . '" rows="' . (int) ($f['rows'] ?? 3) . '"' . $req . $max . $ph . '>' . escape((string) $value) . '</textarea>',
+            'richtext' => '<textarea class="form-control blocks-rich" id="' . $id . '" name="' . $n . '" rows="8" data-blocks-rich' . $req . '>' . escape((string) $value) . '</textarea>',
+            'select' => self::select($name, (array) ($f['options'] ?? []), (string) $value, ['id' => $id], !$req),
+            'bool' => '<input type="hidden" name="' . $n . '" value="0"><label class="blocks-form__check"><input type="checkbox" id="' . $id . '" name="' . $n . '" value="1"' . ($value ? ' checked' : '') . '> ' . escape($label) . '</label>',
+            'number' => '<input class="form-control" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
+            'media', 'file' => $backend && Core::getUser()
+                ? MediaVar::getWidget(str_replace(['[', ']'], ['_', ''], $id), $name, (string) $value, null, 'media' === $type ? ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'] : [], 'media' === $type)
+                : '<div class="blocks-media" data-blocks-media><input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="Dateiname aus dem Medienpool"><button type="button" class="blocks-btn" data-blocks-media-open>Auswählen</button></div>',
+            'link' => '<input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="redaxo://12, https://…, #anker, tel: oder mailto:">',
+            'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
+            default => '<input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
+        };
+
+        if ('bool' === $type) {
+            return $input . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '');
+        }
+        if ('repeater' === $type) {
+            return '<fieldset class="blocks-form__repeater"><legend>' . escape($label) . '</legend>' . $input
+                . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</fieldset>';
+        }
+
+        return '<label class="control-label" for="' . $id . '">' . escape($label) . ('' !== $req ? ' <span aria-hidden="true">*</span>' : '') . '</label>'
+            . $input . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '');
+    }
+
+    /**
+     * @param array<string, mixed> $f
+     * @param array<array-key, mixed> $items
+     */
+    private static function repeater(array $f, array $items, string $name, bool $backend): string
+    {
+        /** @var list<array<string, mixed>> $sub */
+        $sub = $f['fields'] ?? [];
+        $itemLabel = (string) ($f['item_label'] ?? 'Eintrag');
+        $titleField = (string) ($f['title_field'] ?? ($sub[0]['name'] ?? ''));
+        $maxItems = (int) ($f['max_items'] ?? 0);
+
+        $row = static function (array $item, string $key) use ($sub, $name, $itemLabel, $titleField, $backend): string {
+            $title = trim((string) ($item[$titleField] ?? ''));
+
+            return '<details class="blocks-rep__item" data-blocks-item' . ('' === $title ? ' open' : '') . '>'
+                . '<summary><span class="blocks-rep__title" data-blocks-item-title data-field="' . escape($titleField) . '">' . escape('' !== $title ? $title : $itemLabel) . '</span>'
+                . '<span class="blocks-rep__tools">'
+                . '<button type="button" class="blocks-btn" data-blocks-up title="Nach oben">↑</button>'
+                . '<button type="button" class="blocks-btn" data-blocks-down title="Nach unten">↓</button>'
+                . '<button type="button" class="blocks-btn blocks-btn--danger" data-blocks-remove title="Entfernen">✕</button>'
+                . '</span></summary>'
+                . self::fields($sub, self::withDefaults($sub, $item), $name . '[' . $key . ']', $backend)
+                . '</details>';
+        };
+
+        $h = '<div class="blocks-rep" data-blocks-repeater data-max="' . $maxItems . '">';
+        $h .= '<div class="blocks-rep__list" data-blocks-list>';
+        foreach (array_values($items) as $i => $item) {
+            $h .= $row(is_array($item) ? $item : [], (string) $i);
+        }
+        $h .= '</div>';
+        $h .= '<template data-blocks-template>' . $row([], '__i__') . '</template>';
+        $h .= '<button type="button" class="blocks-btn blocks-btn--add" data-blocks-add' . ($maxItems && count($items) >= $maxItems ? ' disabled' : '') . '>+ ' . escape($itemLabel) . '</button>';
+
+        return $h . '</div>';
+    }
+
+    /**
+     * @param array<array-key, mixed> $options
+     * @param array<string, string> $attrs
+     */
+    private static function select(string $name, array $options, string $value, array $attrs = [], bool $empty = false): string
+    {
+        $a = '';
+        foreach ($attrs as $k => $v) {
+            $a .= ' ' . $k . ('' !== $v ? '="' . escape($v) . '"' : '');
+        }
+        $h = '<select class="form-control" name="' . escape($name) . '"' . $a . '>';
+        if ($empty) {
+            $h .= '<option value="">–</option>';
+        }
+        foreach ($options as $k => $label) {
+            $h .= '<option value="' . escape((string) $k) . '"' . ((string) $k === $value ? ' selected' : '') . '>' . escape((string) $label) . '</option>';
+        }
+
+        return $h . '</select>';
+    }
+
+    private static function row(string $label, string $control, string $help, bool $half): string
+    {
+        return '<div class="blocks-form__field' . ($half ? ' is-half' : '') . '"><label class="control-label">' . escape($label) . '</label>' . $control
+            . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</div>';
+    }
+
+    /**
+     * Daten mit Standardwerten auffüllen; Listen neu nummerieren.
+     *
+     * @param list<array<string, mixed>> $fields
+     * @param array<string, mixed> $data
+     * @param array<string, string> $variants
+     * @return array<string, mixed>
+     */
+    public static function withDefaults(array $fields, array $data, array $variants = []): array
+    {
+        foreach ($fields as $f) {
+            $name = (string) $f['name'];
+            $type = (string) ($f['type'] ?? 'text');
+            if ('repeater' === $type) {
+                $items = is_array($data[$name] ?? null) ? array_values($data[$name]) : [];
+                /** @var list<array<string, mixed>> $sub */
+                $sub = $f['fields'] ?? [];
+                $data[$name] = array_map(static fn ($it) => self::withDefaults($sub, is_array($it) ? $it : []), $items);
+                continue;
+            }
+            if (!array_key_exists($name, $data) || null === $data[$name]) {
+                $data[$name] = $f['default'] ?? ('bool' === $type ? false : '');
+            }
+            if ('bool' === $type) {
+                $data[$name] = in_array($data[$name], [true, 1, '1', 'on'], true);
+            }
+        }
+        if ($variants && !isset($variants[(string) ($data['variant'] ?? '')])) {
+            $data['variant'] = (string) array_key_first($variants);
+        }
+
+        return $data;
+    }
+}
