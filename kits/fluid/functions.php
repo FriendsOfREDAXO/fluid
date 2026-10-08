@@ -229,8 +229,9 @@ function fluid_image(?string $id, string $sizes, string $ratio, string $class = 
 
 function fluid_title(string $text): string
 {
+    // Bearbeiten: Hervorhebung sichtbar, Sternchen dezent – beim Auslesen (innerText) bleibt „*Wort*“ erhalten
     if (is_editing()) {
-        return e($text);
+        return preg_replace('~\*([^*]+)\*~u', '<span class="hl-mark">*</span><em class="hl">$1</em><span class="hl-mark">*</span>', e($text)) ?? e($text);
     }
 
     return preg_replace('~\*([^*]+)\*~u', '<em class="hl">$1</em>', e($text)) ?? e($text);

@@ -36,7 +36,12 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Auch anlegen, wenn schon Artikel existieren')] bool $force = false,
         #[Option(description: 'Alle Kategorien, Artikel und Slices vorher löschen (nur Testinstallationen!)')] bool $replace = false,
         #[Option(description: 'Inhalte: fluid (Beispiel-Agentur) oder redaxo6 (Seite über REDAXO 6)')] string $set = 'fluid',
+        #[Option(description: 'Design des Kits auf den Standard zurücksetzen')] bool $resetDesign = false,
     ): int {
+        if ($resetDesign) {
+            FluidAddon::instance()->removeConfig('design.' . FluidKit::instance()->key());
+            $io->note('Design zurückgesetzt.');
+        }
         $sql = Sql::factory();
         if ($replace) {
             foreach (['rex_article_slice_history', 'rex_article_slice', 'rex_article_translation', 'rex_category_translation', 'rex_article', 'rex_category'] as $table) {

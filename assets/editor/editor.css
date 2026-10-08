@@ -61,3 +61,6 @@ html.blocks-editing .lay-item[data-offline] { opacity: .45; }
 }
 [data-blocks-coladd]:hover { background: color-mix(in srgb, var(--blocks-accent) 14%, transparent); }
 .blocks-invalid { font: 600 13px/1.4 system-ui, sans-serif; color: #b42318; }
+
+/* Hervorhebung *Wort* in Überschriften: Sternchen beim Bearbeiten nur angedeutet */
+html.blocks-editing .hl-mark { font-size: .35em; vertical-align: super; opacity: .35; }

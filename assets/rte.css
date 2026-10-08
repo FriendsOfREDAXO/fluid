@@ -291,3 +291,6 @@ html.adm-ui[data-theme=dark] .rte-area mark{background:#6B5A12;color:#FFF7D6}
 .lp__meta{color:var(--adm-t3);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lp__badge{flex:none;padding:1px 6px;border-radius:4px;background:var(--adm-fill-2,#E4E4E8);color:var(--adm-t2);font-size:11px;font-weight:700}
 .lp__badge--draft{background:var(--adm-warn-bg,#FFF4E5);color:var(--adm-warn)}
+
+/* Schwebende Leiste beim Bearbeiten auf der Website: immer fixiert (Reihenfolge der Studio-Regeln oben) */
+.cms-inline-bar.rte-bar{position:fixed;z-index:2147483050}
