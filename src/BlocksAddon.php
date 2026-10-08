@@ -28,6 +28,11 @@ final class BlocksAddon extends Addon
             return;
         }
 
+        // Endpunkte des Editors (?blocks_api=…): vor der Ausgabe der Seite beantworten
+        if ('' !== Request::get(Api::PARAM, 'string')) {
+            Extension::register('FE_OUTPUT', static fn () => Api::handle());
+        }
+
         // Bearbeiten-Modus: Artikel live aus der Datenbank (Arbeitsversion, sofern eingeschaltet) statt aus dem Cache
         Extension::register('ART_INIT', static function (ExtensionPoint $ep): void {
             if (!Editing::requested()) {
@@ -38,6 +43,15 @@ final class BlocksAddon extends Addon
             $article->eval = true;
             $article->sliceRevision = self::revision();
         });
+
+        // Im Bearbeiten-Modus auch Offline-Blöcke zeigen (gekennzeichnet), damit sie sich wieder einschalten lassen
+        Extension::register('ART_SLICES_QUERY', static function (ExtensionPoint $ep): ?string {
+            if (!Editing::active()) {
+                return null;
+            }
+
+            return str_replace(' AND rex_article_slice.status = 1', '', (string) $ep->subject);
+        }, ExtensionLevel::Late);
 
         // Leiste und Editor nur für angemeldete Redaktion – Besucher bekommen kein zusätzliches Markup
         Extension::register('OUTPUT_FILTER', static function (ExtensionPoint $ep): string {

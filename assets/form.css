@@ -1,0 +1,25 @@
+/* friendsofredaxo/blocks – Block-Formulare im Backend (Slice bearbeiten) */
+.blocks-form { container-type: inline-size; }
+.blocks-form__intro { margin: 0 0 12px; color: #6c7a89; }
+.blocks-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+.blocks-form__field { grid-column: 1 / -1; min-width: 0; margin-bottom: 10px; }
+.blocks-form__field.is-half { grid-column: span 1; }
+.blocks-form__field[hidden] { display: none; }
+@container (max-width: 520px) { .blocks-form__field.is-half { grid-column: 1 / -1; } }
+.blocks-form__field > .control-label { display: block; margin-bottom: 4px; }
+.blocks-form__check { font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.blocks-form__tunes { margin-top: 12px; padding-top: 10px; border-top: 1px solid #dfe3e9; }
+.blocks-form__tunes > summary { cursor: pointer; font-weight: 700; margin-bottom: 10px; }
+.blocks-form__repeater { border: 1px solid #dfe3e9; border-radius: 6px; padding: 10px 12px; }
+.blocks-form__repeater > legend { width: auto; border: 0; margin: 0; padding: 0 4px; font-size: inherit; font-weight: 700; }
+.blocks-rep__list { display: grid; gap: 8px; margin-bottom: 8px; }
+.blocks-rep__item { border: 1px solid #dfe3e9; border-radius: 6px; background: #f7f9fb; }
+.blocks-rep__item > summary { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; list-style: none; }
+.blocks-rep__item > summary::-webkit-details-marker { display: none; }
+.blocks-rep__item > .blocks-form__grid { padding: 8px 10px 4px; }
+.blocks-rep__title { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.blocks-rep__tools { display: flex; gap: 2px; }
+.blocks-btn { min-height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #c9d1db; border-radius: 4px; background: #fff; cursor: pointer; }
+.blocks-btn--danger:hover { color: #fff; background: #d9534f; border-color: #d9534f; }
+.blocks-btn--add { font-weight: 600; }
+.blocks-media { display: flex; gap: 6px; }

@@ -1,0 +1,49 @@
+/*
+ * friendsofredaxo/blocks – Markierungen auf der Website (Light DOM). Leiste, Seitenleiste und Dialoge liegen im
+ * Shadow DOM (editor.shadow.css). Nur für angemeldete Redaktion geladen.
+ */
+:root {
+  --blocks-bar-h: 52px;
+  --blocks-accent: #4b5bd6;
+  --blocks-panel-w: min(440px, 100vw);
+}
+
+html.blocks-has-bar body { padding-top: var(--blocks-bar-h); }
+/* Klebende Köpfe der Kits rücken unter die Leiste */
+html.blocks-has-bar [data-header],
+html.blocks-has-bar .hdr { top: var(--blocks-bar-h); }
+
+/* Seitenleiste offen: Website wird schmaler statt verdeckt */
+html.blocks-panel-open body { margin-right: var(--blocks-panel-w); }
+@media (max-width: 760px) {
+  html.blocks-panel-open body { margin-right: 0; }
+}
+
+html.blocks-editing section[data-block] { position: relative; outline-offset: -2px; }
+html.blocks-editing section[data-block]:hover { outline: 1px dashed color-mix(in srgb, var(--blocks-accent) 55%, transparent); }
+html.blocks-editing section[data-block][data-blocks-selected],
+html.blocks-editing section[data-block][data-blocks-panel] { outline: 2px solid var(--blocks-accent); }
+html.blocks-editing section[data-block][data-offline] { opacity: .45; }
+html.blocks-editing section[data-block][data-offline]::after {
+  content: "Offline"; position: absolute; top: 12px; right: 12px; z-index: 5;
+  font: 600 12px/1 system-ui, sans-serif; padding: 6px 8px; border-radius: 6px;
+  background: #222; color: #fff;
+}
+
+/* Texte direkt bearbeiten */
+html.blocks-editing [data-blocks-editable] { cursor: text; border-radius: 3px; transition: box-shadow .12s; }
+html.blocks-editing [data-blocks-editable]:hover { box-shadow: 0 0 0 1px color-mix(in srgb, var(--blocks-accent) 50%, transparent); }
+html.blocks-editing [data-blocks-editable]:focus { outline: none; box-shadow: 0 0 0 2px var(--blocks-accent); }
+html.blocks-editing [data-blocks-editable]:empty { min-width: 4ch; min-height: 1em; display: inline-block; }
+html.blocks-editing [data-blocks-editable]:empty::before { content: "…"; opacity: .4; }
+
+/* Leere Seite */
+[data-blocks-empty] {
+  margin: 48px auto; max-width: 560px; padding: 32px; text-align: center;
+  border: 2px dashed color-mix(in srgb, var(--blocks-accent) 50%, transparent); border-radius: 12px;
+  font: 16px/1.5 system-ui, sans-serif;
+}
+[data-blocks-empty] button {
+  font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 0;
+  background: var(--blocks-accent); color: #fff; cursor: pointer;
+}
