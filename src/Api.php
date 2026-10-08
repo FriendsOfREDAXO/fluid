@@ -18,6 +18,9 @@ use Redaxo\Core\Security\CsrfToken;
 use Redaxo\Core\Security\User;
 use Throwable;
 
+use function count;
+use function in_array;
+
 use function is_array;
 
 /**
@@ -96,8 +99,15 @@ final class Api
     {
         [$slice, $module] = self::slice($article);
         [$data, $tunes] = self::input($slice);
+        $parent = Layout::parentOf($slice);
+        if ($parent && Layout::col($slice) === (int) ($tunes['col'] ?? 0)) {
+            $pm = Module::get($parent->moduleKey);
+            $bg = $pm instanceof BlockModule ? (string) $pm->block($parent)->tunes['background'] : '';
 
-        return ['html' => $module->renderBlock($slice, $data, $tunes)];
+            return ['html' => $module->renderChild($slice, $bg, $data, $tunes), 'target' => $slice->id];
+        }
+
+        return ['html' => $module->renderBlock($slice, $data, $tunes), 'target' => $slice->id];
     }
 
     /** Speichern: ganzes Formular (`f[1]`, `f[2]`) oder einzelne Felder direkt auf der Seite (`patch[pfad] = wert`) */
@@ -116,9 +126,7 @@ final class Api
         $sql->update();
         self::changed($article, $slice->id, 'slice_updated');
 
-        $fresh = self::reload($article, $slice->id);
-
-        return ['html' => $module->renderBlock($fresh)];
+        return self::render($article, $slice->id, true);
     }
 
     private static function add(Article $article, User $user): array
@@ -133,14 +141,27 @@ final class Api
             self::fail('Dieser Block ist im Template der Seite nicht erlaubt.', 403);
         }
         $after = Request::post('after', 'int', 0);
+        $col = max(0, min(4, Request::post('col', 'int', 0)));
+        if ($col > 0 && !$module->nestable()) {
+            self::fail('Dieser Block kann nicht in einer Spalte stehen.');
+        }
         $priority = 1;
         if ($after > 0) {
             $prev = ArticleSlice::getArticleSliceById($after, $article->languageId, BlocksAddon::revision());
+            // Hinter einem Layout auf oberster Ebene bzw. „in diese Spalte“ des Layouts: ans Ende seiner Gruppe
+            if ($prev && ((0 === $col && (Layout::isLayout($prev) || null !== Layout::parentOf($prev))) || ($col > 0 && Layout::isLayout($prev)))) {
+                $group = Layout::isLayout($prev) ? $prev : Layout::parentOf($prev);
+                $kids = Layout::children($group);
+                $prev = $kids ? end($kids) : $group;
+            }
             $priority = $prev ? $prev->priority + 1 : 1;
         }
         // Standardwerte der Felder (Variante, Auswahlfelder …) gleich mit speichern
         $data = Form\FieldForm::withDefaults($module->fields(), [], $module->variants());
-        $tunes = isset($module->definition()['background']) ? ['background' => $module->definition()['background']] : [];
+        $tunes = isset($module->definition()['background']) && 0 === $col ? ['background' => $module->definition()['background']] : [];
+        if ($col > 0) {
+            $tunes['col'] = $col;
+        }
         ContentHandler::addSlice($article->id, $article->languageId, 1, $module->key, [
             'revision' => BlocksAddon::revision(),
             'priority' => $priority,
@@ -151,16 +172,71 @@ final class Api
             'SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? AND module = ? ORDER BY createdate DESC, id DESC LIMIT 1',
             [$article->id, $article->languageId, BlocksAddon::revision(), $module->key],
         )[0]['id'];
-        $slice = self::reload($article, $id);
-
-        return ['html' => $module->renderBlock($slice), 'slice' => $id];
+        return ['slice' => $id] + self::render($article, $id, false);
     }
 
+    /**
+     * Verschieben: Blöcke auf oberster Ebene samt Spalten-Blöcken (Layout = Gruppe), Spalten-Blöcke innerhalb ihrer Spalte.
+     * Danach Prioritäten neu durchnummeriert.
+     */
     private static function move(Article $article): array
     {
         [$slice] = self::slice($article);
-        $dir = 'up' === Request::post('dir', 'string') ? 'moveup' : 'movedown';
-        ContentHandler::moveSlice($slice->id, $article->languageId, $dir);
+        $up = 'up' === Request::post('dir', 'string');
+        $rows = Sql::factory()->getArray(
+            'SELECT id, value2 FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND ctype_id = ? AND revision = ? ORDER BY priority',
+            [$article->id, $article->languageId, $slice->contentSectionId, BlocksAddon::revision()],
+        );
+        $ids = array_map(static fn (array $r) => (int) $r['id'], $rows);
+        $cols = array_map(static fn (array $r) => max(0, (int) (BlockModule::decode((string) $r['value2'])['col'] ?? 0)), $rows);
+        $layouts = array_map(static fn (int $id) => Layout::isLayout(ArticleSlice::getArticleSliceById($id, $article->languageId, BlocksAddon::revision())), $ids);
+
+        // Einheiten: Slice auf oberster Ebene + folgende Spalten-Blöcke, wenn er ein Layout ist
+        $units = [];
+        $owner = [];   // Index → [Einheit, Spalte] für Spalten-Blöcke
+        for ($i = 0, $n = count($ids); $i < $n; ++$i) {
+            $unit = [$ids[$i]];
+            if ($layouts[$i]) {
+                while ($i + 1 < $n && $cols[$i + 1] > 0) {
+                    $unit[] = $ids[++$i];
+                }
+            }
+            $units[] = $unit;
+        }
+
+        $pos = array_search($slice->id, $ids, true);
+        $inLayout = null !== Layout::parentOf($slice);
+        if (!$inLayout) {
+            $u = array_find_key($units, static fn (array $unit) => $unit[0] === $slice->id);
+            $v = $up ? $u - 1 : $u + 1;
+            if (null === $u || !isset($units[$v])) {
+                self::fail($up ? 'Der Block steht schon oben.' : 'Der Block steht schon unten.');
+            }
+            [$units[$u], $units[$v]] = [$units[$v], $units[$u]];
+        } else {
+            // Nachbar in derselben Spalte derselben Gruppe tauschen
+            $u = array_find_key($units, static fn (array $unit) => in_array($slice->id, $unit, true));
+            $unit = $units[$u];
+            $col = Layout::col($slice);
+            $same = array_values(array_filter($unit, static fn (int $id) => $id !== $unit[0] && $cols[array_search($id, $ids, true)] === $col));
+            $k = array_search($slice->id, $same, true);
+            $other = $same[$up ? $k - 1 : $k + 1] ?? null;
+            if (null === $other) {
+                self::fail($up ? 'Der Block steht schon oben in der Spalte.' : 'Der Block steht schon unten in der Spalte.');
+            }
+            $a = array_search($slice->id, $unit, true);
+            $b = array_search($other, $unit, true);
+            [$unit[$a], $unit[$b]] = [$unit[$b], $unit[$a]];
+            $units[$u] = $unit;
+        }
+        unset($pos);
+
+        $prio = 0;
+        $upd = Sql::factory();
+        foreach (array_merge(...$units) as $id) {
+            $upd->setQuery('UPDATE rex_article_slice SET priority = ? WHERE id = ?', [++$prio, $id]);
+        }
+        ArticleCache::delete($article->id, $article->languageId);
 
         return [];
     }
@@ -169,17 +245,17 @@ final class Api
     {
         [$slice, $module] = self::slice($article);
         ContentHandler::sliceStatus($slice->id, 1 === $slice->status ? 0 : 1);
-        $fresh = self::reload($article, $slice->id);
 
-        return ['html' => $module->renderBlock($fresh), 'online' => 1 === $fresh->status];
+        return ['online' => 1 !== $slice->status] + self::render($article, $slice->id, false);
     }
 
     private static function delete(Article $article): array
     {
         [$slice] = self::slice($article);
-        ContentHandler::deleteSlice($slice->id);
+        $layout = Layout::isLayout($slice);
+        ContentHandler::deleteSlice($slice->id);   // Spalten-Blöcke eines Layouts: BlocksAddon (SLICE_DELETE)
 
-        return [];
+        return $layout ? ['reload' => true] : [];
     }
 
     private static function publish(Article $article): array
@@ -204,6 +280,35 @@ final class Api
     }
 
     // ------------------------------------------------------------------ Hilfen
+
+    /**
+     * HTML eines Blocks nach einer Änderung: Abschnitt bzw. Spalten-Block. Mit $wholeLayout das ganze Layout
+     * (z. B. wenn ein Block die Spalte gewechselt hat). `target` = data-block, das ersetzt wird.
+     *
+     * @return array{html: string, target: int}
+     */
+    private static function render(Article $article, int $id, bool $wholeLayout): array
+    {
+        $slice = self::reload($article, $id);
+        $module = Module::get($slice->moduleKey);
+        if (!$module instanceof BlockModule) {
+            return ['html' => '', 'target' => $id];
+        }
+        $parent = Layout::parentOf($slice);
+        if ($parent && !$wholeLayout) {
+            $pm = Module::get($parent->moduleKey);
+            $bg = $pm instanceof BlockModule ? (string) $pm->block($parent)->tunes['background'] : '';
+
+            return ['html' => $module->renderChild($slice, $bg), 'target' => $id];
+        }
+        if ($parent) {
+            $pm = Module::get($parent->moduleKey);
+
+            return ['html' => $pm instanceof BlockModule ? $pm->renderBlock($parent) : '', 'target' => $parent->id];
+        }
+
+        return ['html' => $module->renderBlock($slice), 'target' => $id];
+    }
 
     /** @return array{ArticleSlice, BlockModule} */
     private static function slice(Article $article): array

@@ -6,7 +6,10 @@ use FriendsOfRedaxo\Blocks\Form\FieldForm;
 use Override;
 use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\Module;
+use Redaxo\Core\Core;
+use Redaxo\Core\Http\Request;
 
+use function in_array;
 use function is_array;
 use function json_decode;
 use function Redaxo\Core\View\escape;
@@ -82,17 +85,39 @@ abstract class BlockModule extends Module
     #[Override]
     public function output(ArticleSlice $slice): string
     {
+        $parent = Layout::parentOf($slice);
+        // Slice-Liste im Backend: Spalten-Blöcke mit Hinweis auf ihre Spalte, Layouts als Kurzinfo (keine doppelte Ausgabe)
+        if (self::backendPreview()) {
+            $badge = $parent ? '<p class="blocks-be-col"><i class="rex-icon fa-table-columns"></i> Spalte ' . Layout::col($slice) . ' im Layout darüber</p>' : '';
+
+            return $badge . $this->renderBlock($slice);
+        }
+        // Spalten-Blöcke gibt ihr Layout aus (Layout::render)
+        if (null !== $parent) {
+            return '';
+        }
+
         return $this->renderBlock($slice);
     }
 
-    /** Ausgabe eines Slices, optional mit anderen Daten (Vorschau beim Bearbeiten) */
-    public function renderBlock(ArticleSlice $slice, ?array $data = null, ?array $tunes = null, int $depth = 0): string
+    /** Vorschau in der Slice-Liste des Backends (nicht für den Cache – der entsteht im Frontend) */
+    public static function backendPreview(): bool
     {
-        $b = $this->block($slice, $data, $tunes, $depth);
-        $this->kit()->markUsed($b->type, $b->variant());
-        $d = $b->data;
+        return Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'content');
+    }
 
-        $inner = (static function (string $__file, Block $b, array $d): string {
+    /** Darf der Block (in dieser Variante) in einer Layout-Spalte stehen? (Kit: 'nestable' => true | ['variante', …]) */
+    public function nestable(string $variant = ''): bool
+    {
+        $n = $this->definition()['nestable'] ?? false;
+
+        return true === $n || (is_array($n) && ('' === $variant || in_array($variant, $n, true)));
+    }
+
+    /** Inhalt des Blocks (View des Kits) – ohne Abschnitts-Hülle */
+    protected function renderInner(Block $b): string
+    {
+        return (static function (string $__file, Block $b, array $d): string {
             ob_start();
             try {
                 require $__file;
@@ -101,15 +126,63 @@ abstract class BlockModule extends Module
             }
 
             return $html;
-        })($this->kit()->view($b->type), $b, $d);
+        })($this->kit()->view($b->type), $b, $b->data);
+    }
 
-        $titled = '' !== trim((string) ($d['title'] ?? ''));
-        $attrs = Editing::active()
-            ? ' data-block="' . $slice->id . '" data-type="' . escape($b->type) . '" data-label="' . escape((string) ($this->definition()['label'] ?? $this->name)) . '"' . (1 !== $slice->status ? ' data-offline' : '')
+    /** Attribute für den Editor (nur im Bearbeiten-Modus) */
+    protected function editAttrs(ArticleSlice $slice, string $type, ?int $col = null): string
+    {
+        if (!Editing::active()) {
+            return '';
+        }
+
+        return ' data-block="' . $slice->id . '" data-type="' . escape($type) . '" data-label="' . escape((string) ($this->definition()['label'] ?? $this->name)) . '"'
+            . (null !== $col ? ' data-col="' . $col . '"' : '')
+            . ($this instanceof LayoutBlock ? ' data-layout' : '')
+            . (1 !== $slice->status ? ' data-offline' : '');
+    }
+
+    /**
+     * Block in einer Layout-Spalte: ohne eigenen Abschnitt, Hintergrund wie das Layout – ein eigener, anderer Hintergrund
+     * macht ihn zur Karte (Klassen sec + bg-*, wie bei Studio).
+     */
+    public function renderChild(ArticleSlice $slice, string $parentBg, ?array $data = null, ?array $tunes = null): string
+    {
+        $t = $tunes ?? $this->tunes($slice);
+        $own = (string) ($t['background'] ?? '');
+        $card = '' !== $own && $own !== $parentBg && isset($this->kit()->backgrounds()[$own]);
+        $t['background'] = $card ? $own : $parentBg;
+        $b = $this->block($slice, $data, $t, 6);
+        $this->kit()->markUsed($b->type, $b->variant());
+        $inner = $this->renderInner($b);
+        if ('' === trim($inner) && !Editing::active()) {
+            return '';
+        }
+        $cls = ['lay-item', 'sec--' . str_replace('_', '-', $b->type)];
+        if ('' !== $b->variant()) {
+            $cls[] = 'v-' . $b->variant();
+        }
+        if ($card) {
+            array_push($cls, 'sec', 'lay-item--card', 'bg-' . $own);
+        }
+        $anchor = '' !== (string) ($t['anchor'] ?? '') ? ' id="' . escape($b->domId()) . '"' : '';
+        $invalid = !$this->nestable($b->variant()) && Editing::active()
+            ? '<p class="blocks-invalid">„' . escape((string) ($this->definition()['label'] ?? $this->name)) . '“ in dieser Darstellung ist für Spalten nicht vorgesehen.</p>'
             : '';
 
+        return '<div' . $anchor . ' class="' . escape(implode(' ', $cls)) . '"' . $this->editAttrs($slice, $b->type, Layout::col($slice)) . '>' . $invalid . $inner . "</div>\n";
+    }
+
+    /** Ausgabe eines Slices als Abschnitt, optional mit anderen Daten (Vorschau beim Bearbeiten) */
+    public function renderBlock(ArticleSlice $slice, ?array $data = null, ?array $tunes = null, int $depth = 0): string
+    {
+        $b = $this->block($slice, $data, $tunes, $depth);
+        $this->kit()->markUsed($b->type, $b->variant());
+        $inner = $this->renderInner($b);
+        $titled = '' !== trim((string) ($b->data['title'] ?? ''));
+
         return '<section id="' . escape($b->domId()) . '" class="' . escape($b->sectionClass()) . '"'
-            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . $attrs . '>'
+            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . $this->editAttrs($slice, $b->type) . '>'
             . $b->sectionBg() . $inner . "</section>\n";
     }
 

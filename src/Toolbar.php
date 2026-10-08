@@ -43,6 +43,7 @@ final class Toolbar
                 'label' => (string) ($def['label'] ?? $module->name),
                 'group' => (string) ($def['group'] ?? 'Inhalt'),
                 'help' => (string) ($def['help'] ?? ''),
+                'nestable' => $module->nestable(),
             ];
         }
 

@@ -38,6 +38,7 @@ return [
         'css/hx-scale.css' => ['hero:scale'], 'css/hx-collage.css' => ['hero:collage'], 'css/hx-compare.css' => ['hero:compare'],   // neue Einstiege
         'css/prose.css' => ['richtext', 'tabs', 'faq', 'media_text', '@rich'],
         'css/rich-extra.css' => ['richtext', 'faq', 'media_text'],   // Absatz-Stile der Formatierungsleiste (Tipp, Achtung, Dachzeile, Zentriert)   // @rich: Rich-Text-Stile in anderen Blöcken (Core\Sanitizer::styled)
+        'css/layout.css' => ['layout'],
         'css/b-article.css' => ['richtext:article', 'richtext:columns'],
         'css/b-features.css' => ['features'],
         'css/b-media-text.css' => ['media_text'],
@@ -111,6 +112,7 @@ return [
             ],
         ],
         'richtext' => [
+            'nestable' => ['standard', 'columns'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Fließtext / Artikel', 'icon' => 'paragraph', 'group' => 'Inhalt',
             'help' => 'Freier Text mit Zwischenüberschriften, Listen, Zitaten und Links. „Artikel“: angenehme Lesebreite mit automatischem Inhaltsverzeichnis.',
             'variants' => ['standard' => 'Standard', 'article' => 'Artikel mit Inhaltsverzeichnis', 'columns' => 'Mehrspaltig (Zeitungssatz)'],
@@ -151,6 +153,7 @@ return [
             'drags' => [['field' => 'split', 'target' => '.mt__media', 'class' => 'mt--s-{v}', 'apply' => '.mt', 'label' => 'Aufteilung']],
         ],
         'features' => [
+            'nestable' => true,   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Merkmale / Leistungen', 'icon' => 'squares-four', 'group' => 'Inhalt',
             'help' => 'Leistungen, Vorteile oder Angebote mit Symbol oder Bild. Anzahl nebeneinander ergibt sich aus dem Platz.',
             'variants' => ['cards' => 'Karten', 'icons' => 'Große Symbole, ohne Rahmen', 'list' => 'Liste mit Symbol links', 'numbered' => 'Nummeriert'],
@@ -167,6 +170,7 @@ return [
             ],
         ],
         'cards' => [
+            'nestable' => ['image', 'horizontal', 'overlay'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Karten', 'icon' => 'copy', 'group' => 'Inhalt',
             'help' => 'Teaser mit Bild – klassisch, Text auf dem Bild, quer oder als wischbares Band (Reel). Karten stellen sich auf ihre eigene Breite ein.',
             'variants' => ['image' => 'Bild oben', 'overlay' => 'Text auf dem Bild', 'horizontal' => 'Quer (Bild links)', 'reel' => 'Wischbares Band (Reel)'],
@@ -186,6 +190,7 @@ return [
             ],
         ],
         'stats' => [
+            'nestable' => ['row', 'cards'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Kennzahlen', 'icon' => 'chart-bar', 'group' => 'Inhalt',
             'help' => 'Nur belegbare Zahlen verwenden.',
             'variants' => ['row' => 'Große Zahlen in einer Reihe', 'cards' => 'Karten', 'split' => 'Überschrift links, Zahlen rechts'],
@@ -199,6 +204,7 @@ return [
             ],
         ],
         'quote' => [
+            'nestable' => ['single', 'grid'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Zitat / Stimmen', 'icon' => 'quotes', 'group' => 'Inhalt',
             'help' => '„Groß“: ein Zitat als Blickfang (Pull-Quote). „Raster“, „Band“ und „Laufband“ für mehrere Stimmen (Laufband hält bei Maus oder Fokus an). Nur echte, freigegebene Stimmen verwenden.',
             'variants' => ['single' => 'Groß (ein Zitat)', 'grid' => 'Raster (Mauerwerk)', 'reel' => 'Wischbares Band', 'marquee' => 'Laufband (läuft langsam durch)'],
@@ -213,6 +219,7 @@ return [
             ],
         ],
         'steps' => [
+            'nestable' => ['numbers', 'timeline'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Ablauf / Zeitleiste', 'icon' => 'path', 'group' => 'Inhalt',
             'help' => 'Nummerierte Schritte, eine Zeitleiste mit Datum/Phase oder ein Prozess mit Verbindungslinien.',
             'variants' => ['numbers' => 'Nummerierte Schritte', 'timeline' => 'Zeitleiste', 'process' => 'Prozess mit Pfeilen'],
@@ -235,6 +242,7 @@ return [
             ],
         ],
         'faq' => [
+            'nestable' => ['stacked'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Fragen & Antworten', 'icon' => 'question', 'group' => 'Inhalt',
             'help' => 'Aufklappbare Fragen (ohne JavaScript). Suchmaschinen erhalten die Fragen als strukturierte Daten (FAQPage).',
             'variants' => ['split' => 'Überschrift links, Fragen rechts', 'stacked' => 'Untereinander, zentriert'],
@@ -248,6 +256,7 @@ return [
             ],
         ],
         'cta' => [
+            'nestable' => ['box', 'big'],   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Handlungsaufruf', 'icon' => 'megaphone', 'group' => 'Inhalt', 'background' => 'accent',
             'variants' => ['band' => 'Band über die volle Breite', 'box' => 'Hervorgehobene Box', 'split' => 'Mit Bild', 'big' => 'Großer Schriftzug'],
             'fields' => [

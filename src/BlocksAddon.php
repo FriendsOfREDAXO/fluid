@@ -7,9 +7,11 @@ use Redaxo\Core\Addon\Addon;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\ArticleRevision;
+use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Content\Template;
 use Redaxo\Core\Core;
+use Redaxo\Core\Database\Sql;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\ExtensionPoint\ExtensionLevel;
 use Redaxo\Core\ExtensionPoint\ExtensionPoint;
@@ -42,6 +44,20 @@ final class BlocksAddon extends Addon
                     . '<i class="rex-icon fa-pen-to-square"></i> Auf der Website bearbeiten</a></p>';
             });
         }
+
+        // Layout gelöscht (Backend oder Website): seine Spalten-Blöcke werden wieder normale Abschnitte
+        Extension::register('SLICE_DELETE', static function (ExtensionPoint $ep): void {
+            $slice = ArticleSlice::getArticleSliceById((int) $ep->getParam('slice_id'), (int) $ep->getParam('language_id'), (int) $ep->getParam('slice_revision'));
+            if (!$slice || !Layout::isLayout($slice)) {
+                return;
+            }
+            $sql = Sql::factory();
+            foreach (Layout::children($slice) as $child) {
+                $tunes = BlockModule::decode($child->getValue(2));
+                unset($tunes['col']);
+                $sql->setQuery('UPDATE rex_article_slice SET value2 = ? WHERE id = ?', [json_encode((object) $tunes, JSON_UNESCAPED_UNICODE), $child->id]);
+            }
+        });
 
         if (!Core::isFrontend()) {
             return;

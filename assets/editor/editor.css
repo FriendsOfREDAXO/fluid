@@ -47,3 +47,17 @@ html.blocks-editing [data-blocks-editable]:empty::before { content: "…"; opaci
   font: inherit; font-weight: 600; padding: 10px 16px; border-radius: 8px; border: 0;
   background: var(--blocks-accent); color: #fff; cursor: pointer;
 }
+
+/* Layout (Spalten) im Bearbeiten-Modus */
+html.blocks-editing [data-lay-col] { min-height: 80px; outline: 1px dashed color-mix(in srgb, var(--blocks-accent) 35%, transparent); outline-offset: 6px; border-radius: 4px; }
+html.blocks-editing .lay-item[data-block] { position: relative; outline-offset: 4px; }
+html.blocks-editing .lay-item[data-block]:hover { outline: 1px dashed color-mix(in srgb, var(--blocks-accent) 70%, transparent); }
+html.blocks-editing .lay-item[data-blocks-selected], html.blocks-editing .lay-item[data-blocks-panel] { outline: 2px solid var(--blocks-accent); }
+html.blocks-editing .lay-item[data-offline] { opacity: .45; }
+[data-blocks-coladd] {
+  align-self: flex-start; margin-top: 4px; padding: 8px 12px; border: 1px dashed var(--blocks-accent); border-radius: 8px;
+  background: color-mix(in srgb, var(--blocks-accent) 6%, transparent); color: var(--blocks-accent);
+  font: 600 13px/1.2 system-ui, sans-serif; cursor: pointer;
+}
+[data-blocks-coladd]:hover { background: color-mix(in srgb, var(--blocks-accent) 14%, transparent); }
+.blocks-invalid { font: 600 13px/1.4 system-ui, sans-serif; color: #b42318; }

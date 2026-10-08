@@ -48,13 +48,17 @@ final class FieldForm
 
         // Abschnitts-Optionen
         $bgs = $module->kit()->backgrounds();
-        $bg = (string) ($tunes['background'] ?? ($module->definition()['background'] ?? 'white'));
         $h .= '<details class="blocks-form__tunes"><summary>Abschnitt</summary><div class="blocks-form__grid">';
-        $h .= self::row('Hintergrund', self::select($prefix . '[2][background]', $bgs, $bg), '', true);
+        $h .= self::row('Hintergrund', self::select($prefix . '[2][background]', ['' => 'Standard'] + $bgs, (string) ($tunes['background'] ?? '')), 'In einer Layout-Spalte: ein anderer Hintergrund als das Layout macht den Block zur Karte.', true);
         $h .= self::row('Sprungmarke (Anker)', '<input class="form-control" type="text" name="' . escape($prefix . '[2][anchor]') . '" value="' . escape((string) ($tunes['anchor'] ?? '')) . '" pattern="[a-z0-9\-]*" placeholder="z. B. kontakt">', 'Nur Kleinbuchstaben, Ziffern und Bindestriche.', true);
         $space = ['none' => 'Kein', 'small' => 'Klein', 'normal' => 'Normal', 'large' => 'Groß'];
         $h .= self::row('Abstand oben', self::select($prefix . '[2][spaceTop]', $space, (string) ($tunes['spaceTop'] ?? 'normal')), '', true);
         $h .= self::row('Abstand unten', self::select($prefix . '[2][spaceBottom]', $space, (string) ($tunes['spaceBottom'] ?? 'normal')), '', true);
+        if ($module->nestable()) {
+            $cols = ['' => 'Nicht in einem Layout', '1' => 'Spalte 1', '2' => 'Spalte 2', '3' => 'Spalte 3', '4' => 'Spalte 4'];
+            $h .= self::row('Spalte im Layout', self::select($prefix . '[2][col]', $cols, (string) ($tunes['col'] ?? '')),
+                'Wirkt, wenn der Block direkt hinter einem Block „Layout (Spalten)“ steht (oder hinter weiteren Blöcken dieses Layouts).', false);
+        }
         $h .= '</div></details>';
 
         return $h . '</div>';

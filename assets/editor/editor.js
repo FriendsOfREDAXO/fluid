@@ -3,7 +3,7 @@
  *
  * Nur für angemeldete Backend-Benutzer geladen (Toolbar::inject). Oberfläche im Shadow DOM (#blocks-ui), damit das CSS
  * der Website sie nicht beeinflusst. Blöcke kennzeichnet der Server im Bearbeiten-Modus mit
- * section[data-block][data-type][data-label], Textfelder mit [data-edit="pfad"] (+ data-edit-mode="rich|lines").
+ * [data-block][data-type][data-label] (Abschnitte bzw. Blöcke in Layout-Spalten mit data-col), Textfelder mit [data-edit="pfad"].
  */
 (() => {
   'use strict';
@@ -213,7 +213,10 @@
 
   // ================================================================== Bearbeiten-Modus
 
-  const blocks = () => [...main.querySelectorAll('section[data-block]')];
+  const blocks = () => [...main.querySelectorAll('[data-block]')];
+  // Geschwister für „nach oben/unten“: Abschnitte untereinander bzw. Blöcke derselben Layout-Spalte
+  const siblings = (el) => [...el.parentElement.children].filter((x) => x.matches('[data-block]'));
+  const byId = (id) => main.querySelector(`[data-block="${id}"]`);
   let current = null;   // Block unter der Maus bzw. ausgewählt
   let selected = null;  // ausgewählter Block (Klick)
   let panelBlock = null;
@@ -234,7 +237,7 @@
 
   main.addEventListener('input', (e) => {
     const el = e.target.closest?.('[data-edit]');
-    const sec = el?.closest('section[data-block]');
+    const sec = el?.closest('[data-block]');
     if (!el || !sec) return;
     const mode = el.dataset.editMode || 'plain';
     const value = mode === 'rich' ? el.innerHTML : mode === 'lines' ? el.innerText.replace(/\n{3,}/g, '\n\n') : el.innerText.replace(/\s*\n\s*/g, ' ');
@@ -259,7 +262,7 @@
 
   // Links und Formulare im Inhalt im Bearbeiten-Modus nicht auslösen
   main.addEventListener('click', (e) => {
-    const sec = e.target.closest('section[data-block]');
+    const sec = e.target.closest('[data-block]');
     if (e.target.closest('a[href]') && sec) e.preventDefault();
     if (sec) select(sec);
   }, true);
@@ -274,7 +277,7 @@
         const sec = main.querySelector(`section[data-block="${id}"]`);
         const res = await api('save', { slice: id, patch });
         dirty.delete(id);
-        if (sec && !sec.contains(document.activeElement)) replace(sec, res.html);
+        if (sec && !sec.contains(document.activeElement)) apply(res, sec);
       }
       say('Gespeichert.');
       return true;
@@ -330,12 +333,27 @@
 
   function replace(sec, html) {
     const el = h(html);
+    const ids = [sec, ...sec.querySelectorAll('[data-block]')].map((x) => x.dataset.block);
     sec.replaceWith(el);
     initEditables(el);
-    if (current === sec) current = el;
-    if (selected === sec) select(el);
-    if (panelBlock === sec) panelBlock = el;
+    initColumns(el);
+    // Verweise auf ersetzte Blöcke (auch Spalten-Blöcke eines neu ausgegebenen Layouts) neu auflösen
+    const again = (old) => (old && ids.includes(old.dataset.block) ? byId(old.dataset.block) : old);
+    current = again(current);
+    if (selected && ids.includes(selected.dataset.block)) { const s2 = byId(selected.dataset.block); selected = null; select(s2); }
+    panelBlock = again(panelBlock);
+    panelBlock?.setAttribute('data-blocks-panel', '');
     place();
+    return el;
+  }
+
+  /** Antwort des Servers einsetzen: `target` = Block, der ersetzt wird (bei Spaltenwechsel das ganze Layout) */
+  function apply(res, sec) {
+    const wasChild = sec.hasAttribute('data-col');
+    const target = byId(res.target) || sec;
+    const el = replace(target, res.html);
+    if (sec.isConnected && !el.contains(sec) && sec !== el) sec.remove();   // in eine Spalte gewechselt: alte Stelle weg
+    if (wasChild && el.tagName === 'SECTION' && el.dataset.block === sec.dataset.block) location.reload();   // Layout verlassen
     return el;
   }
 
@@ -350,7 +368,7 @@
 
   main.addEventListener('mouseover', (e) => {
     if (!panel.hidden) return;
-    const sec = e.target.closest('section[data-block]');
+    const sec = e.target.closest('[data-block]');
     if (sec && sec !== current) {
       current = sec;
       place();
@@ -373,9 +391,10 @@
     const st = $('[data-bb-status]');
     st.textContent = offline ? 'Offline' : 'Online';
     st.classList.toggle('is-off', offline);
-    const i = blocks().indexOf(sec);
+    const sib = siblings(sec);
+    const i = sib.indexOf(sec);
     $('[data-bb-up]').disabled = i <= 0;
-    $('[data-bb-down]').disabled = i === blocks().length - 1;
+    $('[data-bb-down]').disabled = i === sib.length - 1;
     // „+“ an der Unterkante des Blocks – bei hohen Blöcken am unteren Fensterrand, solange der Block sichtbar ist
     addbtn.hidden = !panel.hidden || r.bottom < barH || r.top > innerHeight;
     addbtn.style.top = `${Math.min(r.bottom - 18, innerHeight - 52)}px`;
@@ -394,9 +413,10 @@
     try {
       await saveAll();
       await api('move', { slice: sec.dataset.block, dir });
-      const sib = dir === 'up' ? sec.previousElementSibling : sec.nextElementSibling;
-      if (sib?.matches('section[data-block]')) {
-        dir === 'up' ? sib.before(sec) : sib.after(sec);
+      const sib = siblings(sec);
+      const other = sib[sib.indexOf(sec) + (dir === 'up' ? -1 : 1)];
+      if (other) {
+        dir === 'up' ? other.before(sec) : other.after(sec);
         sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       }
       place();
@@ -412,7 +432,7 @@
     if (!sec) return;
     try {
       const res = await api('status', { slice: sec.dataset.block });
-      replace(sec, res.html);
+      apply(res, sec);
       say(res.online ? 'Block ist online.' : 'Block ist offline – auf der Website nicht sichtbar.');
     } catch (err) {
       say(err.message, true);
@@ -424,7 +444,8 @@
     if (!sec) return;
     if (!(await ask({ title: `„${sec.dataset.label}“ löschen?`, body: 'Der Block wird aus dem Entwurf entfernt.', ok: 'Löschen', danger: true }))) return;
     try {
-      await api('delete', { slice: sec.dataset.block });
+      const res = await api('delete', { slice: sec.dataset.block });
+      if (res.reload) { location.reload(); return; }
       dirty.delete(sec.dataset.block);
       if (panelBlock === sec) closePanel();
       sec.remove();
@@ -439,12 +460,16 @@
   // ------------------------------------------------------------------ Block einfügen
 
   let insertAfter = null;
+  let insertCol = 0;
+  let insertInto = null;   // .lay-col, in die eingefügt wird
 
-  function openPicker(after) {
+  function openPicker(after, col = 0, into = null) {
     insertAfter = after;
+    insertCol = col;
+    insertInto = into;
     const list = $('[data-picker-list]');
     const groups = {};
-    cfg.modules.forEach((m) => (groups[m.group] ||= []).push(m));
+    cfg.modules.filter((m) => !col || m.nestable).forEach((m) => (groups[m.group] ||= []).push(m));
     list.innerHTML = Object.entries(groups).map(([g, ms]) => `<p class="picker__group">${esc(g)}</p>`
       + ms.map((m) => `<button type="button" role="option" class="picker__item" data-key="${esc(m.key)}" data-q="${esc((m.label + ' ' + m.help).toLowerCase())}"><strong>${esc(m.label)}</strong>${m.help ? `<span>${esc(m.help)}</span>` : ''}</button>`).join('')).join('');
     picker.hidden = false;
@@ -455,7 +480,11 @@
   function closePicker() {
     picker.hidden = true;
   }
-  addbtn.addEventListener('click', () => openPicker(current));
+  // „+“ unter einem Block: Spalten-Block → in dieselbe Spalte dahinter, sonst als Abschnitt dahinter
+  addbtn.addEventListener('click', () => {
+    const col = Number(current?.dataset.col || 0);
+    openPicker(current, col, col ? current.parentElement : null);
+  });
   $('[data-picker-close]').addEventListener('click', closePicker);
   picker.addEventListener('click', (e) => e.target === picker && closePicker());
   $('[data-picker-q]').addEventListener('input', (e) => {
@@ -468,10 +497,16 @@
     closePicker();
     try {
       await saveAll();
-      const res = await api('add', { module: item.dataset.key, after: insertAfter?.dataset.block || 0 });
+      const res = await api('add', { module: item.dataset.key, after: insertAfter?.dataset.block || 0, col: insertCol });
       const el = h(res.html);
-      if (insertAfter?.isConnected) insertAfter.after(el);
+      if (insertInto && insertAfter?.parentElement === insertInto) insertAfter.after(el);
+      else if (insertInto) {
+        const btn = insertInto.querySelector(':scope > [data-blocks-coladd]');
+        if (btn) btn.before(el); else insertInto.append(el);
+      }
+      else if (insertAfter?.isConnected) (insertAfter.closest('section[data-block]') || insertAfter).after(el);
       else main.prepend(el);
+      insertInto?.classList.remove('lay-col--empty');
       initEditables(el);
       emptyHint();
       el.scrollIntoView({ block: 'center', behavior: 'smooth' });
@@ -495,6 +530,24 @@
       hint.querySelector('button').addEventListener('click', () => openPicker(null));
       main.prepend(hint);
     }
+  }
+
+  // „+ Block in diese Spalte“ in jeder Spalte eines Layouts (Light DOM, Stil in editor.css)
+  function initColumns(scope) {
+    const cols = scope.matches?.('[data-lay-col]') ? [scope] : [...scope.querySelectorAll('[data-lay-col]')];
+    cols.forEach((col) => {
+      if (col.querySelector(':scope > [data-blocks-coladd]')) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.dataset.blocksColadd = '';
+      b.textContent = '+ Block in diese Spalte';
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const layout = col.closest('[data-layout]');
+        openPicker(layout, Number(col.dataset.layCol), col);
+      });
+      col.append(b);
+    });
   }
 
   // ------------------------------------------------------------------ Seitenleiste: alle Felder
@@ -552,8 +605,9 @@
     render();
     try {
       const res = await api('save', fd);
-      replace(panelBlock, res.html);
+      const sec = panelBlock;
       closePanel();
+      apply(res, sec);
       say('Gespeichert.');
     } catch (err) {
       say(err.message, true);
@@ -576,7 +630,7 @@
       fd.append('slice', panelBlock.dataset.block);
       try {
         const res = await api('preview', fd);
-        if (seq === previewSeq && panelBlock) replace(panelBlock, res.html).setAttribute('data-blocks-panel', '');
+        if (seq === previewSeq && panelBlock) replace(byId(res.target) || panelBlock, res.html);
       } catch (err) {
         say(err.message, true);
       }
@@ -604,6 +658,7 @@
   // ------------------------------------------------------------------ Start
 
   initEditables(main);
+  initColumns(main);
   emptyHint();
   render();
 })();

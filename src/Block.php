@@ -27,6 +27,9 @@ final class Block
         array $tunes = [],
         public readonly ?self $prev = null,
     ) {
+        if ('' === (string) ($tunes['background'] ?? '')) {
+            unset($tunes['background']);   // leer = Standard des Blocks
+        }
         $this->tunes = $tunes + ['background' => $module->definition()['background'] ?? 'white', 'anchor' => '', 'spaceTop' => 'normal', 'spaceBottom' => 'normal'];
     }
 
