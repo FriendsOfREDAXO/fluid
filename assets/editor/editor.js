@@ -76,6 +76,8 @@
         <div class="more">
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
+            <button type="button" role="menuitem" data-page-add>Neue Seite …</button>
             ${cfg.editing && cfg.state.workVersion ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
             <a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
@@ -123,9 +125,32 @@
         <button type="button" class="btn btn--primary" data-design-save>Speichern</button>
       </footer>
     </aside>`);
+  const ppanel = h(`
+    <aside class="panel ppanel" hidden aria-labelledby="fluid-page-title">
+      <header class="panel__head"><h2 id="fluid-page-title">Seiteneinstellungen</h2><button type="button" class="btn btn--icon" data-page-close aria-label="Schließen">✕</button></header>
+      <form class="panel__body" data-page-form novalidate></form>
+      <footer class="panel__foot"><span class="dpanel__space"></span><button type="button" class="btn" data-page-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-page-save>Speichern</button></footer>
+    </aside>`);
+  const newdlg = h(`
+    <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-new-t">
+      <form class="dlg__box newpage" data-new-form novalidate>
+        <h2 id="fluid-new-t">Neue Seite</h2>
+        <label class="newpage__field"><span>Titel</span><input type="text" name="name" required maxlength="191" autocomplete="off"></label>
+        <fieldset class="newpage__field"><legend>Art</legend>
+          <label><input type="radio" name="kind" value="menu" checked> Menüpunkt <small>erscheint in der Navigation</small></label>
+          <label><input type="radio" name="kind" value="page"> Seite ohne Menüeintrag <small>z. B. Impressum, Aktion – nur per Link erreichbar</small></label>
+        </fieldset>
+        <fieldset class="newpage__field"><legend>Ort</legend>
+          <label><input type="radio" name="where" value="here" checked> ${cfg.article.category ? `Unter „${esc(cfg.article.category)}“` : 'Hier'}</label>
+          <label><input type="radio" name="where" value="root"> Oberste Ebene</label>
+        </fieldset>
+        <p class="newpage__hint">Die Seite ist zunächst offline – „Online“ schalten Sie in den Seiteneinstellungen.</p>
+        <div class="dlg__actions"><button type="button" class="btn" data-new-cancel>Abbrechen</button><button type="submit" class="btn btn--primary">Anlegen &amp; bearbeiten</button></div>
+      </form>
+    </div>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, dpanel, picker, dialog, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, picker, dialog, newdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -237,6 +262,7 @@
 
   render();
   if (cfg.design) initDesign();
+  initPage();
   if (!cfg.editing) return;
 
 
@@ -365,6 +391,75 @@
         applyPreview(res);
         say(res.message);
         close();
+      } catch (err) { say(err.message, true); }
+    });
+  }
+
+  // ------------------------------------------------------------------ Seiteneinstellungen, neue Seite
+
+  function initPage() {
+    const pform = $('[data-page-form]');
+    let pageSaved = '';
+    const snap = () => new URLSearchParams(new FormData(pform)).toString();
+    const close = () => { ppanel.hidden = true; document.documentElement.classList.remove('blocks-panel-open'); };
+    const count = () => pform.querySelectorAll('[data-count]').forEach((t) => {
+      let o = t.parentElement.querySelector('.count');
+      if (!o) { o = document.createElement('span'); o.className = 'count'; t.after(o); }
+      const n = t.value.length, max = +t.dataset.count;
+      o.textContent = `${n} / ${max} Zeichen`;
+      o.classList.toggle('is-over', n > max);
+    });
+    pform.addEventListener('input', count);
+    $('[data-page-settings]').addEventListener('click', async () => {
+      menu.hidden = true;
+      if (!panel.hidden || !dpanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
+      try {
+        const res = await api('page');
+        pform.innerHTML = res.html;
+        window.BlocksForm?.init(pform, () => {});
+        count();
+        pageSaved = snap();
+        ppanel.hidden = false;
+        document.documentElement.classList.add('blocks-panel-open');
+        pform.querySelector('input[name="name"]')?.focus();
+      } catch (err) { say(err.message, true); }
+    });
+    const cancel = async () => {
+      if (snap() !== pageSaved && !(await ask({ title: 'Änderungen verwerfen?', ok: 'Verwerfen', danger: true }))) return;
+      close();
+    };
+    $('[data-page-close]').addEventListener('click', cancel);
+    $('[data-page-cancel]').addEventListener('click', cancel);
+    const saveBtn = $('[data-page-save]');
+    saveBtn.addEventListener('click', async () => {
+      if (!pform.reportValidity()) return;
+      saveBtn.disabled = true;
+      try {
+        const res = await api('page_save', new FormData(pform));
+        say(res.message);
+        pageSaved = snap();
+        if (dirty?.size) { close(); $('.name').textContent = pform.name.value; return; }
+        location.reload();
+      } catch (err) { say(err.message, true); } finally { saveBtn.disabled = false; }
+    });
+
+    const nform = $('[data-new-form]');
+    $('[data-page-add]').addEventListener('click', () => {
+      menu.hidden = true;
+      nform.reset();
+      newdlg.hidden = false;
+      nform.name.focus();
+    });
+    $('[data-new-cancel]').addEventListener('click', () => { newdlg.hidden = true; });
+    newdlg.addEventListener('keydown', (e) => { if (e.key === 'Escape') newdlg.hidden = true; });
+    nform.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!nform.reportValidity()) return;
+      if (dirty?.size && !(await ask({ title: 'Ungespeicherte Änderungen', body: 'Die Änderungen auf dieser Seite gehen verloren. Trotzdem fortfahren?', ok: 'Fortfahren', danger: true }))) return;
+      try {
+        const res = await api('page_add', new FormData(nform));
+        dirty?.clear();
+        location.href = unamp(res.url);
       } catch (err) { say(err.message, true); }
     });
   }

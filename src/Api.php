@@ -4,6 +4,10 @@ namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleCache;
+use Redaxo\Core\Content\ArticleHandler;
+use Redaxo\Core\Content\CategoryHandler;
+use Redaxo\Core\Content\StructurePermission;
+use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\ContentHandler;
@@ -19,6 +23,7 @@ use Redaxo\Core\Security\User;
 use Throwable;
 
 use function count;
+use function Redaxo\Core\View\escape;
 use function in_array;
 
 use function is_array;
@@ -56,6 +61,9 @@ final class Api
                 'delete' => self::delete($article),
                 'publish' => self::publish($article),
                 'discard' => self::discard($article),
+                'page' => self::page($article),
+                'page_save' => self::pageSave($article),
+                'page_add' => self::pageAdd($article, $user),
                 'design' => self::design($article, $user, false),
                 'design_save' => self::design($article, $user, true),
                 default => self::fail('Unbekannte Aktion.', 400),
@@ -280,6 +288,56 @@ final class Api
         ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::LIVE, ArticleRevision::WORK);
 
         return ['reload' => true];
+    }
+
+    /** Seiteneinstellungen: Formular (HTML, Felder wie FieldForm – Bildfeld mit Medienpool/Bildeditor) */
+    private static function page(Article $article): array
+    {
+        $s = PageSettings::get($article->id, $article->languageId);
+        $f = static fn (string $label, string $control, string $help = '') => '<div class="blocks-form__field"><label class="control-label">' . escape($label) . '</label>' . $control
+            . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</div>';
+        $html = '<div class="blocks-form" data-blocks-form><div class="blocks-form__grid">'
+            . $f('Titel der Seite', '<input class="form-control" type="text" name="name" value="' . escape($article->name) . '" required maxlength="191">', $article->isStartArticle() && $article->categoryId ? 'Erscheint auch im Menü.' : '')
+            . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="online" value="1"' . ($article->isOnline() ? ' checked' : '') . '> Online – für Besucher sichtbar</label></div>'
+            . $f('Beschreibung für Suchmaschinen', '<textarea class="form-control" name="description" rows="3" maxlength="300" data-count="160">' . escape($s['description']) . '</textarea>', 'Etwa 120–160 Zeichen: worum geht es auf dieser Seite?')
+            . $f('Bild für soziale Netzwerke', Form\Picker::media('page_image', 'image', $s['image'], true, false), 'Erscheint, wenn die Seite geteilt wird (z. B. 1200 × 630 px).')
+            . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="noindex" value="1"' . ($s['noindex'] ? ' checked' : '') . '> Nicht in Suchmaschinen aufnehmen</label></div>'
+            . '</div></div>';
+
+        return ['html' => $html, 'label' => 'Seiteneinstellungen'];
+    }
+
+    private static function pageSave(Article $article): array
+    {
+        PageSettings::save($article, Request::post('name', 'string', ''), Request::post('online', 'bool', false),
+            Request::post('description', 'string', ''), Request::post('image', 'string', ''), Request::post('noindex', 'bool', false));
+
+        return ['message' => 'Seiteneinstellungen gespeichert.', 'reload' => true];
+    }
+
+    /** Neue Seite: Menüpunkt (Kategorie) oder Seite ohne Menü (Artikel) – hier oder auf oberster Ebene, zunächst offline */
+    private static function pageAdd(Article $article, User $user): array
+    {
+        $name = trim(Request::post('name', 'string', ''));
+        if ('' === $name) {
+            self::fail('Bitte einen Titel angeben.');
+        }
+        $parent = 'root' === Request::post('where', 'string', 'here') ? null : $article->categoryId;
+        $perm = $user->getComplexPerm('structure');
+        if (!$perm instanceof StructurePermission || !$perm->hasCategoryPerm($parent)) {
+            self::fail('Keine Berechtigung, hier eine Seite anzulegen.', 403);
+        }
+        $template = (string) $article->templateKey;
+        if ('menu' === Request::post('kind', 'string', 'menu')) {
+            CategoryHandler::addCategory($parent, ['catpriority' => 999, 'catname' => $name, 'status' => 0]);
+        } else {
+            ArticleHandler::addArticle(['category_id' => $parent, 'priority' => 999, 'name' => $name, 'template' => $template]);
+        }
+        $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
+        // Template des Kits übernehmen (neue Kategorien auf oberster Ebene erben keines)
+        ArticleHandler::editArticle($id, $article->languageId, ['name' => $name, 'template' => $template]);
+
+        return ['url' => Url::article($id, $article->languageId, [Editing::PARAM => 1]), 'message' => 'Seite angelegt (offline).'];
     }
 
     /**

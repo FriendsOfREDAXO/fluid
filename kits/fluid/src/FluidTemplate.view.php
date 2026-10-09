@@ -3,6 +3,7 @@
 use FriendsOfRedaxo\Fluid\Editing;
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidTemplate;
+use FriendsOfRedaxo\Fluid\PageSettings;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Core;
@@ -52,6 +53,7 @@ return static function (ArticleContent $content): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?></title>
 <meta name="color-scheme" content="light dark">
+<?= PageSettings::head($article, $name) ?>
 <?php foreach ($css as $href): ?><link rel="stylesheet" href="<?= e($href) ?>"<?= str_contains($href, '/opt-') ? ' data-fluid-opt' : '' ?>>
 <?php endforeach; ?>
 <?= $design->head() ?>

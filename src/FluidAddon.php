@@ -11,6 +11,8 @@ use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Content\Template;
 use Redaxo\Core\Core;
+use Redaxo\Core\Database\Column;
+use Redaxo\Core\Database\Table;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\ExtensionPoint\ExtensionLevel;
@@ -22,6 +24,20 @@ use Redaxo\Core\View\Asset;
 
 final class FluidAddon extends Addon
 {
+    #[Override]
+    public function install(): void
+    {
+        // Seiteneinstellungen auf der Website (PageSettings)
+        Table::get(PageSettings::TABLE)
+            ->ensureColumn(new Column('article_id', 'int(10) unsigned'))
+            ->ensureColumn(new Column('language_id', 'int(10) unsigned'))
+            ->ensureColumn(new Column('description', 'text', true))
+            ->ensureColumn(new Column('image', 'varchar(255)', true))
+            ->ensureColumn(new Column('noindex', 'tinyint(1)', false, '0'))
+            ->setPrimaryKey(['article_id', 'language_id'])
+            ->ensure();
+    }
+
     #[Override]
     public function boot(): void
     {

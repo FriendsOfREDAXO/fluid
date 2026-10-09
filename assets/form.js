@@ -140,6 +140,10 @@
       const input = box.querySelector('input');
       const thumb = box.querySelector('[data-blocks-pick-thumb]');
       const label = box.querySelector('[data-blocks-pick-name]');
+      // Bearbeiten/Anpassen/Entfernen nur mit gewählter Datei
+      const tools = () => box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust],[data-blocks-pick-clear]').forEach((b) => { b.hidden = !input.value; });
+      tools();
+      input.addEventListener('input', tools);
       const set = (value, name = '') => {
         input.value = value;
         if (thumb) {

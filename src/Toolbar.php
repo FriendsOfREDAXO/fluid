@@ -51,7 +51,7 @@ final class Toolbar
 
         $config = [
             'editing' => $editing,
-            'article' => ['id' => $article->id, 'name' => $article->name, 'language' => $article->languageId, 'online' => $article->isOnline()],
+            'article' => ['id' => $article->id, 'name' => $article->name, 'language' => $article->languageId, 'online' => $article->isOnline(), 'category' => $article->getCategory()?->name ?? ''],
             'api' => Url::article($article->id, $article->languageId, [Api::PARAM => '__action__']),
             'csrf' => CsrfToken::factory(Api::CSRF)->getValue(),
             'editUrl' => Url::article($article->id, $article->languageId, [Editing::PARAM => 1]),
