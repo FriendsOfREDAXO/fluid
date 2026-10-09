@@ -2,6 +2,7 @@
 
 namespace FriendsOfRedaxo\Fluid\Form;
 
+use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use FriendsOfRedaxo\Fluid\BlockModule;
 
 use function array_key_exists;
@@ -105,6 +106,11 @@ final class FieldForm
             'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend),
             // Medienkategorie des Medienpools (z. B. Downloads „alle Dateien einer Kategorie“)
             'mediacategory' => self::select($name, self::mediaCategories(), (string) $value, ['id' => $id], true),
+            // Tabelle aus YForm (Table Manager) – Formular-Block, Datenliste
+            'yform_table' => [] !== ($t = YFormBridge::tables())
+                ? self::select($name, $t, (string) $value, ['id' => $id, 'data-yform-table' => ''], !$req)
+                : '<p class="help-block">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Backend unter YForm › Table Manager anlegen.' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
+            'yform_field' => self::yformField($name, (string) $value, $id),
             'url' => '<input class="form-control" type="url" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $ph . ' placeholder="https://…">',
             'link' => Picker::link(self::nameId($name), $name, (string) $value, $backend),
             'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
@@ -177,6 +183,22 @@ final class FieldForm
         }
         foreach ($options as $k => $label) {
             $h .= '<option value="' . escape((string) $k) . '"' . ((string) $k === $value ? ' selected' : '') . '>' . escape((string) $label) . '</option>';
+        }
+
+        return $h . '</select>';
+    }
+
+    /** Feld einer YForm-Tabelle („tabelle.feld“), gruppiert nach Tabelle; form.js blendet die Gruppen anderer Tabellen aus */
+    private static function yformField(string $name, string $value, string $id): string
+    {
+        $h = '<select class="form-control" name="' . escape($name) . '" id="' . $id . '" data-yform-field><option value="">–</option>';
+        foreach (YFormBridge::fieldOptions() as $table => $fields) {
+            $h .= '<optgroup label="' . escape($table) . '" data-table="' . escape($table) . '">';
+            foreach ($fields as $k => $label) {
+                $v = $table . '.' . $k;
+                $h .= '<option value="' . escape($v) . '"' . ($v === $value ? ' selected' : '') . '>' . escape($label) . '</option>';
+            }
+            $h .= '</optgroup>';
         }
 
         return $h . '</select>';

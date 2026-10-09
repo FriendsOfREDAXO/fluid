@@ -182,13 +182,30 @@
     });
   }
 
+  // YForm: Feldauswahl auf die gewählte Tabelle einschränken (Optionsgruppen anderer Tabellen ausblenden)
+  function yformFields(form) {
+    const table = form.querySelector('[data-yform-table]')?.value || '';
+    form.querySelectorAll('[data-yform-field]').forEach((sel) => {
+      sel.querySelectorAll('optgroup').forEach((g) => {
+        const on = g.dataset.table === table;
+        g.hidden = !on;
+        g.disabled = !on;
+      });
+      if (sel.value && !sel.value.startsWith(table + '.')) sel.value = '';
+    });
+  }
+
   function init(scope, changed = () => {}) {
     initPickers(scope, changed);
     scope.querySelectorAll('[data-blocks-form]').forEach((form) => {
       variantFields(form);
+      yformFields(form);
       if (!form.dataset.blocksReady) {
         form.dataset.blocksReady = '1';
-        form.addEventListener('change', (e) => e.target.matches('[data-blocks-variant]') && variantFields(form));
+        form.addEventListener('change', (e) => {
+          if (e.target.matches('[data-blocks-variant]')) variantFields(form);
+          if (e.target.matches('[data-yform-table]')) yformFields(form);
+        });
       }
       form.querySelectorAll('[data-blocks-repeater]').forEach((r) => initRepeater(r, changed));
     });

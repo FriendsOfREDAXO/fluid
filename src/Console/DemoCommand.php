@@ -3,6 +3,7 @@
 namespace FriendsOfRedaxo\Fluid\Console;
 
 use FriendsOfRedaxo\Fluid\BlockModule;
+use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use FriendsOfRedaxo\Fluid\FluidAddon;
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
 use Redaxo\Core\Cache;
@@ -37,12 +38,17 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Alle Kategorien, Artikel und Slices vorher löschen (nur Testinstallationen!)')] bool $replace = false,
         #[Option(description: 'Inhalte: fluid (Beispiel-Agentur) oder redaxo6 (Seite über REDAXO 6)')] string $set = 'fluid',
         #[Option(description: 'Design des Kits auf den Standard zurücksetzen')] bool $resetDesign = false,
+        #[Option(description: 'Nur diese Demo-Seite (Slug) anhängen, z. B. daten – vorhandene Inhalte bleiben')] string $page = '',
     ): int {
         if ($resetDesign) {
             FluidAddon::instance()->removeConfig('design.' . FluidKit::instance()->key());
             $io->note('Design zurückgesetzt.');
         }
         $sql = Sql::factory();
+        if ('' !== $page) {
+            $force = true;
+            $replace = false;
+        }
         if ($replace) {
             foreach (['rex_article_slice_history', 'rex_article_slice', 'rex_article_translation', 'rex_category_translation', 'rex_article', 'rex_category'] as $table) {
                 $sql->setQuery('DELETE FROM ' . $table);
@@ -64,9 +70,22 @@ final class DemoCommand extends AbstractCommand
         $demo = require $kit->path('redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php');
         $lang = Language::getStartId();
         $ids = [];
+        // Seiten, die ein AddOn brauchen (z. B. YForm), nur anlegen, wenn es da ist
+        $demo['pages'] = array_values(array_filter($demo['pages'], static fn (array $p) => 'yform' !== ($p['requires'] ?? null) || YFormBridge::available()));
+        if ('' !== $page) {
+            $demo['pages'] = array_values(array_filter($demo['pages'], static fn (array $p) => $p['slug'] === $page));
+            if (!$demo['pages']) {
+                $io->error('Keine Demo-Seite „' . $page . '“ (oder benötigtes AddOn fehlt).');
+
+                return Command::FAILURE;
+            }
+        }
+        if (isset($demo['yform']) && YFormBridge::available()) {
+            $io->note(self::yform($demo['yform']));
+        }
 
         // 1. Seiten: Menüpunkte als Kategorien, alle übrigen als Artikel auf oberster Ebene
-        $prio = 1;
+        $prio = 1 + (int) ($sql->getArray('SELECT MAX(priority) AS p FROM rex_category')[0]['p'] ?? 0);
         foreach ($demo['pages'] as $page) {
             $slug = (string) $page['slug'];
             // Startseite und Seiten außerhalb des Menüs (Impressum, Datenschutz): Artikel auf oberster Ebene
@@ -130,4 +149,36 @@ final class DemoCommand extends AbstractCommand
 
         return Command::SUCCESS;
     }
+
+    /**
+     * YForm-Tabellen der Demo anlegen (falls noch nicht da) und mit Beispielzeilen füllen (nur leere Tabellen).
+     *
+     * @param array<string, array{name: string, fields: list<array<string, mixed>>, rows: list<array<string, mixed>>}> $tables
+     */
+    private static function yform(array $tables): string
+    {
+        $out = [];
+        foreach ($tables as $name => $t) {
+            if (!\Yakamara\YForm\Manager\Table\Table::get($name)) {
+                $prio = 0;
+                \Yakamara\YForm\Manager\Table\Api::setTable(['table_name' => $name, 'name' => $t['name'], 'status' => 1],
+                    array_map(static function (array $f) use (&$prio) { return $f + ['prio' => ++$prio]; }, $t['fields']));
+                \Yakamara\YForm\Manager\Table\Table::deleteCache();
+                $out[] = 'Tabelle ' . $name . ' angelegt';
+            }
+            // Spalten zu den Feldern anlegen (setTable legt nur die Tabelle an)
+            \Yakamara\YForm\Manager\Table\Api::generateTableAndFields(\Yakamara\YForm\Manager\Table\Table::require($name));
+            \Yakamara\YForm\Manager\Table\Table::deleteCache();
+            $sql = Sql::factory();
+            if ($t['rows'] && !$sql->getArray('SELECT id FROM ' . $sql->escapeIdentifier($name) . ' LIMIT 1')) {
+                foreach ($t['rows'] as $row) {
+                    $sql->setTable($name)->setValues($row)->insert();
+                }
+                $out[] = count($t['rows']) . ' Beispielzeilen in ' . $name;
+            }
+        }
+
+        return $out ? 'YForm: ' . implode(', ', $out) : 'YForm: Tabellen schon vorhanden.';
+    }
 }
+

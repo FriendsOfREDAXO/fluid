@@ -46,6 +46,16 @@ abstract class BlockModule extends Module
         return $this->kit()->block($this->type());
     }
 
+    /** Benötigte AddOns vorhanden? (Kit-Angabe „requires“, z. B. 'yform') – sonst fehlt der Block in der Auswahl */
+    public function available(): bool
+    {
+        return match ($this->definition()['requires'] ?? null) {
+            null => true,
+            'yform' => Data\YFormBridge::available(),
+            default => false,
+        };
+    }
+
     /** @return list<array<string, mixed>> */
     public function fields(): array
     {

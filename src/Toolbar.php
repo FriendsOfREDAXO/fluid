@@ -33,7 +33,7 @@ final class Toolbar
         $perm = $user->getComplexPerm('modules');
         $modules = [];
         foreach (Module::getAll() as $module) {
-            if (!$module instanceof BlockModule || !Template::checkModuleAllowed((string) $article->templateKey, 1, $module->key)) {
+            if (!$module instanceof BlockModule || !$module->available() || !Template::checkModuleAllowed((string) $article->templateKey, 1, $module->key)) {
                 continue;
             }
             if (!$perm instanceof ModulePermission || !$perm->hasPerm($module->key)) {

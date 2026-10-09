@@ -1,0 +1,22 @@
+/* Block „Formular“ (YForm): Markup von YForm (form-group, control-label, help-block, has-error, alert) im Stil der
+   öffentlichen Formulare des Kits (css/dataform.css, .dff). Bearbeiten-Knöpfe der Datenliste (.fdl-edit). */
+.fform--split{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:var(--f-s-xl);align-items:start}
+.fform--split .sec-head{margin-bottom:0}
+.fform__body{min-width:0}
+.fform--single .fform__body{max-width:46rem}
+.fform__note{margin-top:var(--f-s-m)}
+.fyf-wrap{min-width:0}
+.fyf .form-group{display:grid;gap:.4rem;margin:0;min-width:0}
+.fyf .control-label{color:var(--f-ink);font-size:var(--f-t-1);font-weight:650}
+.fyf .help-block{margin:0;color:var(--f-muted);font-size:var(--f-t-1)}
+.fyf .help-block .text-warning,.fyf .text-warning{color:var(--f-danger);font-weight:650}
+.fyf .has-error :is(input,select,textarea){border-color:var(--f-danger)!important;box-shadow:0 0 0 1px var(--f-danger)}
+.fyf .has-error .control-label{color:var(--f-danger)}
+.fyf .checkbox label,.fyf .radio label{display:flex;align-items:flex-start;gap:.6rem;font-weight:400;cursor:pointer}
+.fyf .checkbox input,.fyf .radio input{flex:none;width:1.35rem;height:1.35rem;margin:.1rem 0 0;accent-color:var(--f-a)}
+.fyf .alert{padding:var(--f-s-s) var(--f-s-m);border-left:4px solid var(--f-danger);border-radius:var(--f-radius);background:color-mix(in srgb,var(--f-danger) 10%,var(--f-bg));color:var(--f-ink)}
+.fyf .alert ul{margin:.4rem 0 0;padding-left:1.2em}
+.fyf button[type=submit]{display:inline-flex;align-items:center;justify-content:center;justify-self:start;min-height:2.875rem;padding:.65em calc(1.35em * var(--f-density,1));border:1.5px solid transparent;border-radius:var(--f-btn-r);background:var(--f-btn-bg);color:var(--f-btn-ink);font:600 max(1rem,calc(var(--f-t0) * .94))/1.2 var(--f-font);cursor:pointer}
+.fyf button[type=submit]:hover{background:var(--f-btn-hover,var(--f-btn-bg))}
+.dff-done:focus{outline:none}
+section:has(>.fform),section:has(>.dl),section:has(>.fdl-detail){scroll-margin-top:5.5rem}

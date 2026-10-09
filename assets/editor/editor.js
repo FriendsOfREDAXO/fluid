@@ -951,6 +951,28 @@
   });
   ['keyup', 'mouseup'].forEach((ev) => main.addEventListener(ev, () => inline?.update()));
 
+  // ------------------------------------------------------------------ YForm-Einträge (Datenliste)
+
+  // „Bearbeiten“ / „Neuer Eintrag“: YForm-Maske im Popup (wie Medienpool); nach dem Schließen den Block neu ausgeben
+  main.addEventListener('click', (e) => {
+    const a = e.target.closest?.('a.fdl-edit');
+    if (!a) return;
+    e.preventDefault();
+    const sec = a.closest('[data-block]');
+    const w = window.open(a.href, 'fluid_yform', 'width=1100,height=820,resizable=yes,scrollbars=yes');
+    if (!w) { location.href = a.href; return; }
+    w.focus();
+    const timer = setInterval(async () => {
+      if (!w.closed) return;
+      clearInterval(timer);
+      if (!sec?.isConnected) return;
+      try {
+        apply(await api('render', { slice: sec.dataset.block }), sec);
+        say('Liste aktualisiert.');
+      } catch (err) { say(err.message, true); }
+    }, 600);
+  });
+
   // ------------------------------------------------------------------ Start
 
   initEditables(main);
