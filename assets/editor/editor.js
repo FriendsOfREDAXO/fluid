@@ -104,7 +104,7 @@
   const dialog = h(`
     <div class="dlg" hidden role="alertdialog" aria-modal="true" aria-labelledby="blocks-dlg-t">
       <div class="dlg__box"><h2 id="blocks-dlg-t" data-dlg-title></h2><p data-dlg-body></p>
-      <div class="dlg__actions"><button type="button" class="btn" data-dlg-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-dlg-ok>OK</button></div></div>
+      <div class="dlg__actions"><button type="button" class="btn dlg__alt" data-dlg-alt hidden></button><button type="button" class="btn" data-dlg-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-dlg-ok>OK</button></div></div>
     </div>`);
   const toast = h('<div class="toast" role="status" aria-live="polite" hidden></div>');
   const dpanel = h(`
@@ -135,7 +135,8 @@
     say.t = setTimeout(() => (toast.hidden = true), error ? 6000 : 2500);
   }
 
-  function ask({ title, body = '', ok = 'OK', cancel = 'Abbrechen', danger = false }) {
+  /** Rückfrage: true (OK), false (Abbrechen, Esc) oder 'alt' (dritte Möglichkeit, z. B. „Verwerfen“) */
+  function ask({ title, body = '', ok = 'OK', cancel = 'Abbrechen', danger = false, alt = '' }) {
     return new Promise((resolve) => {
       $('[data-dlg-title]').textContent = title;
       $('[data-dlg-body]').textContent = body;
@@ -143,6 +144,9 @@
       okBtn.textContent = ok;
       okBtn.classList.toggle('btn--danger', danger);
       $('[data-dlg-cancel]').textContent = cancel;
+      const altBtn = $('[data-dlg-alt]');
+      altBtn.textContent = alt;
+      altBtn.hidden = !alt;
       const back = root.activeElement || document.activeElement;
       dialog.hidden = false;
       $('[data-dlg-cancel]').focus();
@@ -155,6 +159,7 @@
       };
       const onClick = (e) => {
         if (e.target.closest('[data-dlg-ok]')) done(true);
+        else if (e.target.closest('[data-dlg-alt]')) done('alt');
         else if (e.target.closest('[data-dlg-cancel]') || e.target === dialog) done(false);
       };
       const onKey = (e) => e.key === 'Escape' && (e.stopPropagation(), done(false));
@@ -215,8 +220,12 @@
     const a = e.target.closest('a[data-mode]');
     if (!a || !cfg.editing || !dirty.size) return;
     e.preventDefault();
-    if (await ask({ title: 'Ungespeicherte Änderungen', body: 'Vor dem Verlassen speichern?', ok: 'Speichern & beenden', cancel: 'Weiter bearbeiten' })) {
-      if (await saveAll()) location.href = a.href;
+    const r = await ask({ title: 'Ungespeicherte Änderungen', body: 'Vor dem Verlassen speichern? „Verwerfen“ nimmt nur die ungespeicherten Änderungen zurück – ein gespeicherter Entwurf bleibt.', ok: 'Speichern & beenden', cancel: 'Weiter bearbeiten', alt: 'Verwerfen', danger: false });
+    if (r === 'alt') {
+      dirty.clear();   // kein Nachfragen des Browsers beim Verlassen
+      location.href = a.href;
+    } else if (r === true && (await saveAll())) {
+      location.href = a.href;
     }
   });
 

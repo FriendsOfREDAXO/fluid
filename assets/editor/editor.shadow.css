@@ -159,7 +159,8 @@ textarea.form-control { resize: vertical; }
 .dlg__box { padding: 20px; gap: 8px; width: min(420px, 100%); }
 .dlg__box h2 { margin: 0; font-size: 17px; }
 .dlg__box p { margin: 0; color: var(--muted); }
-.dlg__actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.dlg__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+.dlg__alt { margin-right: auto; color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
 .toast {
   /* oben unter der Leiste: unten liegen „+ Block einfügen“ und die Aktionen auf Telefonen; Klicks gehen hindurch */
   position: fixed; z-index: 2147483200; left: 50%; top: calc(var(--bar-h) + 12px); transform: translateX(-50%); pointer-events: none;
