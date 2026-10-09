@@ -10,22 +10,23 @@ use Redaxo\Core\Http\Request;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
 use Throwable;
+use Yakamara\YForm\FieldRegistry;
 use Yakamara\YForm\Manager\Dataset;
 use Yakamara\YForm\Manager\Field;
 use Yakamara\YForm\Manager\Table\Table;
 use Yakamara\YForm\YForm;
 
 use function in_array;
-use function is_array;
 use function strlen;
 use function Redaxo\Core\View\escape;
 
 /**
  * Anbindung an YForm (yakamara/yform, optional): Formular-Block und Datenliste nutzen die Tabellen des Table Managers.
  *
- * Felder, Pflichtangaben und Prüfungen kommen aus der Tabelle (Backend: YForm › Table Manager), der Block legt nur
- * Beschriftung, Bestätigung und Benachrichtigung fest. Spamschutz ohne Cookies und ohne Session: Honigtopf-Feld und
- * Mindestzeit zwischen Anzeige und Absenden (wie die öffentlichen Formulare in KLXM Studio) – die Seite bleibt cachebar.
+ * Felder, Pflichtangaben, Prüfungen und CSRF-Schutz kommen von YForm (Tabelle im Table Manager); der Block legt nur
+ * Beschriftung, Bestätigung und Benachrichtigung fest. Zusätzlich gegen Bots: Honigtopf-Feld und Mindestzeit zwischen
+ * Anzeige und Absenden. Benachrichtigung über den Core-Mailer, solange die YForm-Aktionen email/tpl2email in 6.x noch die
+ * alte PHPMailer-API nutzen – danach auf tpl2email (E-Mail-Templates von YForm) umstellen.
  */
 final class YFormBridge
 {
@@ -102,7 +103,8 @@ final class YFormBridge
         $yform->setObjectparams('form_action', $o['action']);
         $yform->setObjectparams('form_anchor', $o['id']);
         $yform->setObjectparams('submit_btn_label', '' !== trim($o['submit'] ?? '') ? $o['submit'] : 'Absenden');
-        $yform->setObjectparams('csrf_protection', false);   // keine Session für Besucher – Schutz über Honigtopf/Zeit
+        // CSRF-Schutz von YForm (Standard, startet für Besucher eine Session); Meldung statt Sprog-Platzhalter {{ csrf.error }}
+        $yform->setObjectparams('csrf_protection_error_message', 'Die Sitzung ist abgelaufen – bitte das Formular noch einmal absenden.');
         $yform->setObjectparams('hide_field_warning_messages', false);
         $yform->setObjectparams('form_hiddenfields', ['fluid_form' => $name, 'fluid_t' => (string) time()]);
         $yform->setValueField('html', ['fluid_hp', '', '<div class="dff-hp" aria-hidden="true"><label>Bitte leer lassen <input type="text" name="fluid_hp" tabindex="-1" autocomplete="off"></label></div>']);
@@ -219,22 +221,24 @@ final class YFormBridge
         return $q->findOne();
     }
 
-    /** Wert als Text (Auswahl: Beschriftung, Datum lokal, Ja/Nein) */
+    /**
+     * Wert als Text – formatiert wie in der YForm-Datenliste (getListValue der Feldklasse: Auswahl-Beschriftung,
+     * Datumsformat und Ausgabewerte aus der Feld-Konfiguration).
+     */
     public static function text(Dataset $ds, Field $f): string
     {
         $raw = $ds->hasValue($f->getName()) ? $ds->getValue($f->getName()) : null;
-        $v = trim((string) $raw);
-        if ('' === $v) {
+        if (null === $raw || '' === trim((string) $raw)) {
             return '';
         }
+        if (!in_array($f->getTypeName(), ['choice', 'date', 'datetime', 'datestamp', 'time', 'checkbox', 'integer', 'number'], true)) {
+            return trim((string) $raw);
+        }
+        /** @var class-string $class */
+        $class = FieldRegistry::getClass('value', $f->getTypeName());
+        $out = $class::getListValue(['value' => $raw, 'subject' => $raw, 'field' => $f->getName(), 'params' => ['field' => $f->toArray(), 'fields' => []]]);
 
-        return match ($f->getTypeName()) {
-            'choice' => implode(', ', array_map(static fn (string $k) => self::choices($f)[$k] ?? $k, explode(',', $v))),
-            'checkbox' => '1' === $v ? 'Ja' : 'Nein',
-            'date' => false !== ($t = strtotime($v)) ? date('d.m.Y', $t) : $v,
-            'datetime', 'datestamp' => false !== ($t = strtotime($v)) ? date('d.m.Y, H:i', $t) . ' Uhr' : $v,
-            default => $v,
-        };
+        return trim(html_entity_decode(strip_tags(str_replace('<br />', ', ', (string) $out)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     /** Wert als HTML (Text mit Zeilenumbrüchen, E-Mail und Links anklickbar; Medien über $image) */
@@ -251,27 +255,6 @@ final class YFormBridge
             'textarea' === $f->getTypeName() && $v !== strip_tags($v) => $v,   // HTML aus einem Editor-Feld (vom Backend gepflegt)
             default => nl2br(escape($v), false),
         };
-    }
-
-    /** @return array<string, string> Auswahl-Optionen (Wert => Beschriftung) – JSON {"Label":"wert"} oder „Label=wert,…“ */
-    private static function choices(Field $f): array
-    {
-        $raw = trim((string) $f->getElement('choices'));
-        $out = [];
-        $json = json_decode($raw, true);
-        if (is_array($json)) {
-            foreach ($json as $label => $value) {
-                $out[(string) $value] = (string) $label;
-            }
-
-            return $out;
-        }
-        foreach (explode(',', $raw) as $pair) {
-            [$label, $value] = array_pad(explode('=', $pair, 2), 2, null);
-            $out[trim((string) ($value ?? $label))] = trim((string) $label);
-        }
-
-        return $out;
     }
 
     /** Bearbeiten im Backend (YForm › Daten) – für angemeldete Benutzer mit Recht auf die Tabelle */

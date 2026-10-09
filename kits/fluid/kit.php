@@ -399,7 +399,7 @@ return [
             'requires' => 'yform',
             'nestable' => true,   // Block „Layout“: in einer Spalte erlaubt
             'label' => 'Formular', 'icon' => 'envelope-simple', 'group' => 'Daten',
-            'help' => 'Formular einer YForm-Tabelle: Felder, Pflichtangaben und Prüfungen legen Sie im Backend unter YForm › Table Manager fest. Einträge werden dort gespeichert; auf Wunsch geht eine E-Mail an Sie. Spamschutz ohne Cookies.',
+            'help' => 'Formular einer YForm-Tabelle: Felder, Pflichtangaben und Prüfungen legen Sie im Backend unter YForm › Table Manager fest. Einträge werden dort gespeichert; auf Wunsch geht eine E-Mail an Sie. Schutz vor Bots und CSRF über YForm.',
             'variants' => ['single' => 'Formular unter der Überschrift', 'split' => 'Text links, Formular rechts'],
             'fields' => [
                 ...$head(),

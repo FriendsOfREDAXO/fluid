@@ -39,7 +39,19 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Inhalte: fluid (Beispiel-Agentur) oder redaxo6 (Seite über REDAXO 6)')] string $set = 'fluid',
         #[Option(description: 'Design des Kits auf den Standard zurücksetzen')] bool $resetDesign = false,
         #[Option(description: 'Nur diese Demo-Seite (Slug) anhängen, z. B. daten – vorhandene Inhalte bleiben')] string $page = '',
+        #[Option(description: 'Nur die YForm-Tabellen der Demo anlegen bzw. abgleichen (Felder über die YForm-API)')] bool $yform = false,
     ): int {
+        if ($yform) {
+            $demo = require FluidKit::instance()->path('redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php');
+            if (!isset($demo['yform']) || !YFormBridge::available()) {
+                $io->error('Keine YForm-Tabellen in dieser Demo oder YForm fehlt.');
+
+                return Command::FAILURE;
+            }
+            $io->success(self::yform($demo['yform']));
+
+            return Command::SUCCESS;
+        }
         if ($resetDesign) {
             FluidAddon::instance()->removeConfig('design.' . FluidKit::instance()->key());
             $io->note('Design zurückgesetzt.');
@@ -159,13 +171,13 @@ final class DemoCommand extends AbstractCommand
     {
         $out = [];
         foreach ($tables as $name => $t) {
-            if (!\Yakamara\YForm\Manager\Table\Table::get($name)) {
-                $prio = 0;
-                \Yakamara\YForm\Manager\Table\Api::setTable(['table_name' => $name, 'name' => $t['name'], 'status' => 1],
-                    array_map(static function (array $f) use (&$prio) { return $f + ['prio' => ++$prio]; }, $t['fields']));
-                \Yakamara\YForm\Manager\Table\Table::deleteCache();
-                $out[] = 'Tabelle ' . $name . ' angelegt';
-            }
+            // Anlegen bzw. abgleichen über die YForm-API (setTableField ergänzt fehlende Feld-Spalten wie output_values)
+            $isNew = !\Yakamara\YForm\Manager\Table\Table::get($name);
+            $prio = 0;
+            \Yakamara\YForm\Manager\Table\Api::setTable(['table_name' => $name, 'name' => $t['name'], 'status' => 1],
+                array_map(static function (array $f) use (&$prio) { return $f + ['prio' => ++$prio]; }, $t['fields']));
+            \Yakamara\YForm\Manager\Table\Table::deleteCache();
+            $out[] = 'Tabelle ' . $name . ($isNew ? ' angelegt' : ' abgeglichen');
             // Spalten zu den Feldern anlegen (setTable legt nur die Tabelle an)
             \Yakamara\YForm\Manager\Table\Api::generateTableAndFields(\Yakamara\YForm\Manager\Table\Table::require($name));
             \Yakamara\YForm\Manager\Table\Table::deleteCache();

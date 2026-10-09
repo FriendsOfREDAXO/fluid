@@ -20,11 +20,11 @@ $cta = [
 $yform = [
     'rex_yf_termin' => ['name' => 'Termine (Beispiel)', 'fields' => [
         ['type_id' => 'value', 'type_name' => 'text', 'name' => 'title', 'label' => 'Titel'],
-        ['type_id' => 'value', 'type_name' => 'date', 'name' => 'date', 'label' => 'Datum'],
+        ['type_id' => 'value', 'type_name' => 'date', 'name' => 'date', 'label' => 'Datum', 'format' => 'd.m.Y'],
         ['type_id' => 'value', 'type_name' => 'text', 'name' => 'place', 'label' => 'Ort'],
         ['type_id' => 'value', 'type_name' => 'be_media', 'name' => 'image', 'label' => 'Bild', 'types' => 'jpg,jpeg,png,webp,avif'],
         ['type_id' => 'value', 'type_name' => 'textarea', 'name' => 'text', 'label' => 'Beschreibung'],
-        ['type_id' => 'value', 'type_name' => 'checkbox', 'name' => 'online', 'label' => 'Online', 'default' => 1],
+        ['type_id' => 'value', 'type_name' => 'checkbox', 'name' => 'online', 'label' => 'Online', 'default' => 1, 'output_values' => 'Nein,Ja'],
         ['type_id' => 'validate', 'type_name' => 'empty', 'name' => 'title', 'message' => 'Bitte einen Titel angeben.'],
     ], 'rows' => [
         ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'testbild-verlauf.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => 1],
@@ -37,7 +37,7 @@ $yform = [
         ['type_id' => 'value', 'type_name' => 'email', 'name' => 'email', 'label' => 'E-Mail', 'attributes' => '{"autocomplete":"email"}'],
         ['type_id' => 'value', 'type_name' => 'choice', 'name' => 'topic', 'label' => 'Worum geht es?', 'choices' => '{"Frage zu fluid":"frage","Feedback":"feedback","Mitmachen":"mitmachen"}'],
         ['type_id' => 'value', 'type_name' => 'textarea', 'name' => 'message', 'label' => 'Nachricht'],
-        ['type_id' => 'value', 'type_name' => 'checkbox', 'name' => 'privacy', 'label' => 'Ich bin einverstanden, dass meine Angaben zur Beantwortung gespeichert werden.'],
+        ['type_id' => 'value', 'type_name' => 'checkbox', 'name' => 'privacy', 'label' => 'Ich bin einverstanden, dass meine Angaben zur Beantwortung gespeichert werden.', 'output_values' => 'Nein,Ja'],
         ['type_id' => 'value', 'type_name' => 'datestamp', 'name' => 'created', 'label' => 'Eingegangen', 'format' => 'Y-m-d H:i:s', 'only_empty' => 1],
         ['type_id' => 'validate', 'type_name' => 'empty', 'name' => 'name', 'message' => 'Bitte Ihren Namen angeben.'],
         ['type_id' => 'validate', 'type_name' => 'type', 'name' => 'email', 'type' => 'email', 'message' => 'Bitte eine gültige E-Mail-Adresse angeben.'],
@@ -214,7 +214,7 @@ return [
                 ['type' => 'form', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'split', 'eyebrow' => 'Formular', 'title' => 'Schreiben Sie uns',
                     'intro' => 'Das Formular kommt aus der YForm-Tabelle rex_yf_anfrage: Pflichtfelder, E-Mail-Prüfung und Einwilligung sind dort festgelegt. Einträge landen im Backend unter YForm.',
                     'table' => 'rex_yf_anfrage', 'submit_label' => 'Nachricht senden', 'notify' => '', 'success' => 'Vielen Dank! Ihre Nachricht ist angekommen – in dieser Demo landet sie nur in der YForm-Tabelle.',
-                    'note' => 'Spamschutz ohne Cookies: verstecktes Feld und Mindestzeit. Ihre Angaben verwenden wir nur zur Beantwortung.']],
+                    'note' => 'Ihre Angaben verwenden wir nur zur Beantwortung.']],
             ],
         ],
         // ------------------------------------------------------------------ Bausteine (Blöcke des Kits im Einsatz)
