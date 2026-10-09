@@ -36,3 +36,10 @@ textarea[data-blocks-rte] { display: none !important; }
 .blocks-form__field.is-half:has(.blocks-pick--media) { grid-column: 1 / -1; }
 
 .blocks-btn[hidden] { display: none; }
+
+/* Wiederholgruppen in schmalen Leisten: fieldset nicht breiter als die Leiste (Standard min-width: min-content),
+   lange Titel kürzen, Werkzeuge bleiben sichtbar */
+.blocks-form__repeater, .blocks-rep, .blocks-rep__list, .blocks-rep__item, .blocks-form__grid, .blocks-form__field { min-width: 0; max-width: 100%; }
+.blocks-rep__item > summary { min-width: 0; }
+.blocks-rep__title { min-width: 0; }
+.blocks-rep__tools { flex: none; }
