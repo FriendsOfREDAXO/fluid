@@ -213,3 +213,6 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Bildfelder (Medienpool, Bearbeiten) immer volle Breite */
 .blocks-form__field.is-half:has(.blocks-pick--media) { grid-column: 1 / -1; }
+
+/* Umschalter Live/Entwurf in der Ansicht */
+.modes--version a[aria-current] { color: var(--accent); }

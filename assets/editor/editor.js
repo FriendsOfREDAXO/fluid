@@ -63,6 +63,11 @@
         <a href="${esc(unamp(cfg.viewUrl))}" data-mode="view"${cfg.editing ? '' : ' aria-current="page"'}>Ansehen</a>
         <a href="${esc(unamp(cfg.editUrl))}" data-mode="edit"${cfg.editing ? ' aria-current="page"' : ''}>Bearbeiten</a>
       </nav>
+      ${!cfg.editing && cfg.state.workVersion ? `
+      <nav class="modes modes--version" aria-label="Fassung ansehen">
+        <a href="${esc(unamp(cfg.viewUrl))}"${cfg.viewingDraft ? '' : ' aria-current="page"'} title="Was Besucher sehen">Live</a>
+        <a href="${esc(unamp(cfg.draftUrl))}"${cfg.viewingDraft ? ' aria-current="page"' : ''} title="Arbeitsversion – noch nicht veröffentlicht">Entwurf</a>
+      </nav>` : ''}
       <div class="actions">
         ${cfg.editing ? `
         <button type="button" class="btn" data-save aria-disabled="true">Speichern</button>
@@ -186,6 +191,7 @@
     if (busy) [label, cls] = ['Speichert …', 'busy'];
     else if (dirty.size) [label, cls] = ['Ungespeichert', 'warn'];
     else if (state.draft) [label, cls] = ['Entwurf – nicht veröffentlicht', 'draft'];
+    if (cfg.viewingDraft) [label, cls] = [state.draft ? 'Ansicht: Entwurf (nicht veröffentlicht)' : 'Ansicht: Entwurf = live', 'draft'];
     if (!cfg.article.online) label += ' · Seite offline';
     chip.textContent = label;
     chip.dataset.state = cls;

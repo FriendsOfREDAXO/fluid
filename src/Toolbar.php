@@ -3,10 +3,12 @@
 namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
+use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Content\ModulePermission;
 use Redaxo\Core\Content\Template;
 use Redaxo\Core\Filesystem\Url;
+use Redaxo\Core\Http\Request;
 use Redaxo\Core\Security\CsrfToken;
 
 use function Redaxo\Core\View\escape;
@@ -54,6 +56,9 @@ final class Toolbar
             'csrf' => CsrfToken::factory(Api::CSRF)->getValue(),
             'editUrl' => Url::article($article->id, $article->languageId, [Editing::PARAM => 1]),
             'viewUrl' => Url::article($article->id, $article->languageId),
+            // Ansicht der Arbeitsversion (REDAXO-Core: rex_version=1, nur mit Backend-Anmeldung)
+            'draftUrl' => Url::article($article->id, $article->languageId, ['rex_version' => ArticleRevision::WORK]),
+            'viewingDraft' => !$editing && ArticleRevision::WORK === Request::get('rex_version', 'int', ArticleRevision::LIVE),
             'backendUrl' => Url::backendPage('content/edit', ['article_id' => $article->id, 'language' => $article->languageId, 'mode' => 'edit']),
             'mediapoolUrl' => Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_media']),
             'user' => $user->name ?: $user->login,
