@@ -206,10 +206,12 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Bild bearbeiten (Addon image_editor) */
 .iebtn {
-  position: fixed; z-index: 2147482950; min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px;
-  background: rgb(30 40 64 / .9); color: #fff; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgb(0 0 0 / .25);
+  position: fixed; z-index: 2147482950; display: flex; gap: 2px; padding: 3px; border-radius: 999px;
+  background: rgb(30 40 64 / .9); box-shadow: 0 6px 18px rgb(0 0 0 / .25);
 }
-.iebtn:hover { background: var(--accent); }
+.iebtn[hidden] { display: none; }
+.iebtn button { min-height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: none; color: #fff; font-weight: 600; cursor: pointer; }
+.iebtn button:hover { background: var(--accent); }
 
 /* Bildfelder (Medienpool, Bearbeiten) immer volle Breite */
 .blocks-form__field.is-half:has(.blocks-pick--media) { grid-column: 1 / -1; }

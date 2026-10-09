@@ -70,14 +70,16 @@ final class Picker
         if ($backend) {
             return '<div class="input-group">' . $input . '<span class="input-group-btn">'
                 . '<button type="button" class="btn btn-popup" data-blocks-pick-open title="' . escape($title) . '"><i class="rex-icon ' . $icon . '"></i></button>'
-                . ($edit ? '<button type="button" class="btn btn-popup" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)"><i class="rex-icon fa-crop-simple"></i></button>' : '')
+                . ($edit ? '<button type="button" class="btn btn-popup" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)"><i class="rex-icon fa-crop-simple"></i></button>'
+                    . '<button type="button" class="btn btn-popup" data-blocks-pick-adjust title="Bild anpassen (Effekte, Fokuspunkt)"><i class="rex-icon fa-sliders"></i></button>' : '')
                 . '<button type="button" class="btn btn-popup" data-blocks-pick-clear title="Entfernen"><i class="rex-icon rex-icon-delete-media"></i></button>'
                 . '</span></div>';
         }
 
         return $input . '<span class="blocks-pick__btns">'
             . '<button type="button" class="blocks-btn" data-blocks-pick-open title="' . escape($title) . '">' . escape($label) . '</button>'
-            . ($edit ? '<button type="button" class="blocks-btn" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)">Bearbeiten</button>' : '')
+            . ($edit ? '<button type="button" class="blocks-btn" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)">Bearbeiten</button>'
+                . '<button type="button" class="blocks-btn" data-blocks-pick-adjust title="Bild anpassen (Effekte, Fokuspunkt)">Anpassen</button>' : '')
             . '<button type="button" class="blocks-btn" data-blocks-pick-clear title="Entfernen" aria-label="Entfernen">✕</button>'
             . '</span>';
     }

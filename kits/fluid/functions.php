@@ -107,9 +107,11 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
     }
     $wh = $w && $h ? ' width="' . $w . '" height="' . $h . '"' : '';
     $ie = $editable && is_editing() ? ' data-ie-file="' . e($m->fileName) . '"' : '';
+    // Fokuspunkt und Einpassen (image_editor): object-position / object-fit am Bild
+    $style = $editable ? $editor::imgStyle($m->fileName) : '';
 
     return '<img src="' . e($src) . '"' . $srcset . ' alt="' . e($alt) . '"' . $wh . ($eager ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
-        . (!empty($opt['class']) ? ' class="' . e($opt['class']) . '"' : '') . $ie . '>';
+        . (!empty($opt['class']) ? ' class="' . e($opt['class']) . '"' : '') . ('' !== $style ? ' style="' . e($style) . '"' : '') . $ie . '>';
 }
 
 /** Rich Text sicher ausgeben (Klassenvertrag der Formatierungsleiste, RichText) */
@@ -233,6 +235,10 @@ function fluid_min(array $d, string $key = 'size'): string
 
 function fluid_image(?string $id, string $sizes, string $ratio, string $class = '', array $opt = []): string
 {
+    // Einpassen „Originalformat“ (image_editor): Rahmen ohne festes Seitenverhältnis
+    if ($id && class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) && 'original' === (\FriendsOfRedaxo\ImageEditor\ImageEditor::stored($id)['fit'] ?? '')) {
+        $ratio = '';
+    }
     $pic = img($id, $sizes, ('' !== $ratio ? ['ratio' => $ratio] : []) + $opt);
     $cls = 'frame' . ('' !== $ratio ? ' r-' . str_replace(':', '-', $ratio) : '') . ('' !== $class ? ' ' . $class : '');
     if ('' !== $pic) {

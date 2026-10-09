@@ -157,11 +157,12 @@
         if (res) set(res.value, res.name);
       });
       box.querySelector('[data-blocks-pick-clear]')?.addEventListener('click', () => set(''));
-      box.querySelector('[data-blocks-pick-edit]')?.addEventListener('click', async () => {
+      box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust]').forEach((btn) => btn.addEventListener('click', async () => {
         if (!input.value) return;
         try {
           const IE = await imageEditor({ api: box.dataset.ieApi, js: box.dataset.ieJs, css: box.dataset.ieCss });
-          const item = await IE.open({ file: input.value, api: box.dataset.ieApi, tool: 'crop' });
+          const opts = { file: input.value, api: box.dataset.ieApi };
+          const item = btn.hasAttribute('data-blocks-pick-adjust') ? await IE.adjust(opts) : await IE.open({ ...opts, tool: 'crop' });
           if (item && thumb) {
             thumb.hidden = false;
             thumb.innerHTML = `<img src="${item.thumb.replace(/&amp;/g, '&')}" alt="">`;
@@ -172,7 +173,7 @@
           input.reportValidity();
           setTimeout(() => input.setCustomValidity(''), 4000);
         }
-      });
+      }));
       input.addEventListener('input', () => { if (label && !/^redaxo:\/\//.test(input.value)) label.textContent = ''; });
     });
   }

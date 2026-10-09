@@ -801,7 +801,7 @@
 
   // ------------------------------------------------------------------ Bilder bearbeiten (Addon image_editor, optional)
 
-  const ieBtn = h('<button type="button" class="iebtn" hidden>✎ Bild bearbeiten</button>');
+  const ieBtn = h('<div class="iebtn" hidden><button type="button" data-ie="edit">✎ Bearbeiten</button><button type="button" data-ie="adjust">◐ Anpassen</button></div>');
   root.append(ieBtn);
   let ieImg = null;
   // Skript-Lader in form.js: CSS und Dialog gehören in diese Ebene
@@ -817,18 +817,20 @@
       ieImg = img;
       const r = img.getBoundingClientRect();
       ieBtn.style.top = `${Math.max(bar.offsetHeight + 8, r.top + 10)}px`;
-      ieBtn.style.left = `${r.right - 160}px`;
+      ieBtn.style.left = `${Math.max(8, r.right - 236)}px`;
       ieBtn.hidden = false;
     });
     window.addEventListener('scroll', () => { ieBtn.hidden = true; ieImg = null; }, { passive: true });
-    ieBtn.addEventListener('click', async () => {
+    ieBtn.addEventListener('click', async (e) => {
+      const which = e.target.closest('[data-ie]')?.dataset.ie;
       const img = ieImg;
       const sec = img?.closest('[data-block]');
-      if (!img || !sec) return;
+      if (!which || !img || !sec) return;
       ieBtn.hidden = true;
       try {
         const IE = await window.BlocksPick.imageEditor(cfg.imageEditor);
-        const item = await IE.open({ file: img.dataset.ieFile, api: cfg.imageEditor.api, tool: 'crop' });
+        const opts = { file: img.dataset.ieFile, api: cfg.imageEditor.api };
+        const item = which === 'adjust' ? await IE.adjust(opts) : await IE.open({ ...opts, tool: 'crop' });
         if (!item) return;
         const res = await api('render', { slice: sec.dataset.block });
         apply(res, sec);
