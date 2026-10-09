@@ -784,6 +784,47 @@
   form.addEventListener('change', () => schedulePreview());
   form.addEventListener('click', (e) => e.target.closest('[data-blocks-add]') && setTimeout(() => Rich?.initFields(form)));
 
+  // ------------------------------------------------------------------ Bilder bearbeiten (Addon image_editor, optional)
+
+  const ieBtn = h('<button type="button" class="iebtn" hidden>✎ Bild bearbeiten</button>');
+  root.append(ieBtn);
+  let ieImg = null;
+  // Skript-Lader in form.js: CSS und Dialog gehören in diese Ebene
+  document.addEventListener('blocks:image-editor', (e) => {
+    e.preventDefault();
+    root.append(h(`<link rel="stylesheet" href="${esc(unamp(e.detail.css))}">`));
+    window.ImageEditor.setLayer(layer);
+  });
+  if (cfg.imageEditor) {
+    main.addEventListener('mouseover', (e) => {
+      const img = e.target.closest?.('img[data-ie-file]');
+      if (!img || img === ieImg) return;
+      ieImg = img;
+      const r = img.getBoundingClientRect();
+      ieBtn.style.top = `${Math.max(bar.offsetHeight + 8, r.top + 10)}px`;
+      ieBtn.style.left = `${r.right - 160}px`;
+      ieBtn.hidden = false;
+    });
+    window.addEventListener('scroll', () => { ieBtn.hidden = true; ieImg = null; }, { passive: true });
+    ieBtn.addEventListener('click', async () => {
+      const img = ieImg;
+      const sec = img?.closest('[data-block]');
+      if (!img || !sec) return;
+      ieBtn.hidden = true;
+      try {
+        const IE = await window.BlocksPick.imageEditor(cfg.imageEditor);
+        const item = await IE.open({ file: img.dataset.ieFile, api: cfg.imageEditor.api, tool: 'crop' });
+        if (!item) return;
+        const res = await api('render', { slice: sec.dataset.block });
+        apply(res, sec);
+        say('Bild gespeichert – das Original bleibt im Medienpool erhalten.');
+      } catch (err) {
+        say(err.message, true);
+      }
+      ieImg = null;
+    });
+  }
+
   // ------------------------------------------------------------------ Formatierung (Studio-Editor, assets/rte.js)
 
   const Rich = window.BlocksRich;

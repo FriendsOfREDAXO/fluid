@@ -60,6 +60,8 @@ final class Toolbar
             'modules' => $modules,
             'state' => Api::state($article),
             'design' => $user->admin ? self::designSchema($article) : null,
+            // Addon image_editor (optional): Bilder auf der Website bearbeiten
+            'imageEditor' => class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null,
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),
             'rteCss' => $addon->getAssetsUrl('rte.css') . '?v=' . self::version('rte.css'),
         ];

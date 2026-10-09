@@ -27,12 +27,15 @@ final class Picker
         $url = Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_pick'] + ($images ? ['types' => implode(',', self::IMAGE_TYPES)] : []));
         $preview = MediaManager::getUrl('rex_media_small', '__FILE__');
         $media = '' !== $value ? Media::get($value) : null;
-        $thumb = $media && in_array(strtolower($media->getExtension()), self::IMAGE_TYPES, true) ? '<img src="' . escape(MediaManager::getUrl('rex_media_small', $media)) . '" alt="">' : '';
+        $thumb = $media && in_array(strtolower($media->getExtension()), self::IMAGE_TYPES, true) ? '<img src="' . escape(self::thumb($media->fileName)) . '" alt="">' : '';
+        // Addon image_editor: „Bearbeiten“ öffnet den Bildeditor (Zuschneiden, Drehen …) – API im jeweiligen Bereich
+        $ie = $images && class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null;
 
-        return '<div class="blocks-pick blocks-pick--media" data-blocks-pick="media" data-url="' . escape($url) . '" data-preview="' . escape($preview) . '">'
+        return '<div class="blocks-pick blocks-pick--media" data-blocks-pick="media" data-url="' . escape($url) . '" data-preview="' . escape($preview) . '"'
+            . ($ie ? ' data-ie-api="' . escape($ie['api']) . '" data-ie-js="' . escape($ie['js']) . '" data-ie-css="' . escape($ie['css']) . '"' : '') . '>'
             . '<div class="blocks-pick__row">'
             . '<span class="blocks-pick__thumb" data-blocks-pick-thumb' . ('' === $thumb ? ' hidden' : '') . '>' . $thumb . '</span>'
-            . self::group($backend, '<input class="form-control" type="text" id="' . escape($id) . '" name="' . escape($name) . '" value="' . escape($value) . '" placeholder="Datei aus dem Medienpool">', 'Medienpool öffnen', 'rex-icon-open-mediapool', 'Medienpool')
+            . self::group($backend, '<input class="form-control" type="text" id="' . escape($id) . '" name="' . escape($name) . '" value="' . escape($value) . '" placeholder="Datei aus dem Medienpool">', 'Medienpool öffnen', 'rex-icon-open-mediapool', 'Medienpool', null !== $ie)
             . '</div></div>';
     }
 
@@ -53,18 +56,28 @@ final class Picker
             . '</div>';
     }
 
+    /** Vorschaubild (mit Addon image_editor die bearbeitete Fassung) */
+    private static function thumb(string $file): string
+    {
+        return class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class)
+            ? \FriendsOfRedaxo\ImageEditor\ImageEditor::url($file, 320)
+            : MediaManager::getUrl('rex_media_small', $file);
+    }
+
     /** Eingabefeld mit Knöpfen – im Backend als Bootstrap-Gruppe wie die REDAXO-Widgets */
-    private static function group(bool $backend, string $input, string $title, string $icon, string $label): string
+    private static function group(bool $backend, string $input, string $title, string $icon, string $label, bool $edit = false): string
     {
         if ($backend) {
             return '<div class="input-group">' . $input . '<span class="input-group-btn">'
                 . '<button type="button" class="btn btn-popup" data-blocks-pick-open title="' . escape($title) . '"><i class="rex-icon ' . $icon . '"></i></button>'
+                . ($edit ? '<button type="button" class="btn btn-popup" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)"><i class="rex-icon fa-crop-simple"></i></button>' : '')
                 . '<button type="button" class="btn btn-popup" data-blocks-pick-clear title="Entfernen"><i class="rex-icon rex-icon-delete-media"></i></button>'
                 . '</span></div>';
         }
 
         return $input . '<span class="blocks-pick__btns">'
             . '<button type="button" class="blocks-btn" data-blocks-pick-open title="' . escape($title) . '">' . escape($label) . '</button>'
+            . ($edit ? '<button type="button" class="blocks-btn" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)">Bearbeiten</button>' : '')
             . '<button type="button" class="blocks-btn" data-blocks-pick-clear title="Entfernen" aria-label="Entfernen">✕</button>'
             . '</span>';
     }

@@ -51,6 +51,7 @@ final class Api
                 'save' => self::save($article, $user),
                 'add' => self::add($article, $user),
                 'move' => self::move($article),
+                'render' => self::render($article, Request::post('slice', 'int', 0), false),
                 'status' => self::status($article),
                 'delete' => self::delete($article),
                 'publish' => self::publish($article),

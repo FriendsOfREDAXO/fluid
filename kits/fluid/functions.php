@@ -82,7 +82,10 @@ function media_url(array|string|null $m, ?int $width = null): string
     return $media ? $media->getUrl() : '';
 }
 
-/** Bild aus dem Medienpool (im Prototyp ohne Bildgrößen; Alt-Text = Titel im Medienpool) */
+/**
+ * Bild aus dem Medienpool. Mit dem Addon image_editor: bearbeitete Fassung, responsiv (srcset, AVIF/WebP über den Media Manager)
+ * und im Bearbeiten-Modus der Knopf „Bild bearbeiten“ (data-ie-file). Alt-Text = Titel im Medienpool.
+ */
 function img(?string $name, string $sizes = '100vw', array $opt = []): string
 {
     $m = $name ? Media::get($name) : null;
@@ -90,11 +93,23 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
         return '';
     }
     $alt = $opt['alt'] ?? $m->title;
-    $wh = $m->width && $m->height ? ' width="' . $m->width . '" height="' . $m->height . '"' : '';
     $eager = !empty($opt['eager']);
+    $editor = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::class : null;
+    $editable = $editor && null === $editor::editable($m);
+    if ($editable) {
+        [$w, $h] = $editor::size($m->fileName);
+        $src = $editor::url($m->fileName, 1280);
+        $srcset = ' srcset="' . e($editor::srcset($m->fileName)) . '" sizes="' . e($sizes) . '"';
+    } else {
+        [$w, $h] = [(int) $m->width, (int) $m->height];
+        $src = $m->getUrl();
+        $srcset = '';
+    }
+    $wh = $w && $h ? ' width="' . $w . '" height="' . $h . '"' : '';
+    $ie = $editable && is_editing() ? ' data-ie-file="' . e($m->fileName) . '"' : '';
 
-    return '<img src="' . e($m->getUrl()) . '" alt="' . e($alt) . '"' . $wh . ($eager ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
-        . (!empty($opt['class']) ? ' class="' . e($opt['class']) . '"' : '') . '>';
+    return '<img src="' . e($src) . '"' . $srcset . ' alt="' . e($alt) . '"' . $wh . ($eager ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
+        . (!empty($opt['class']) ? ' class="' . e($opt['class']) . '"' : '') . $ie . '>';
 }
 
 /** Rich Text sicher ausgeben (Klassenvertrag der Formatierungsleiste, RichText) */

@@ -202,3 +202,13 @@ textarea[data-blocks-rte] { display: none !important; }
 .drange output { min-width: 56px; text-align: right; font-variant-numeric: tabular-nums; }
 .dchecks { margin-top: 12px; color: #b26a00; font-size: 13px; }
 .dchecks ul { margin: 4px 0 0; padding-left: 18px; }
+
+/* Bild bearbeiten (Addon image_editor) */
+.iebtn {
+  position: fixed; z-index: 2147482950; min-height: 32px; padding: 0 12px; border: 0; border-radius: 999px;
+  background: rgb(30 40 64 / .9); color: #fff; font-weight: 600; cursor: pointer; box-shadow: 0 6px 18px rgb(0 0 0 / .25);
+}
+.iebtn:hover { background: var(--accent); }
+
+/* Bildfelder (Medienpool, Bearbeiten) immer volle Breite */
+.blocks-form__field.is-half:has(.blocks-pick--media) { grid-column: 1 / -1; }

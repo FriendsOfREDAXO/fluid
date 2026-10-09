@@ -31,3 +31,6 @@
 .blocks-pick__name:empty { display: none; }
 textarea[data-blocks-rte] { display: none !important; }
 .blocks-be-col, .blocks-be-layout { margin: 0 0 8px; padding: 6px 10px; border-radius: 4px; background: #eef3fb; color: #2a5a8a; font-size: 13px; font-weight: 600; }
+
+/* Bildfelder (Medienpool, Bearbeiten) immer volle Breite */
+.blocks-form__field.is-half:has(.blocks-pick--media) { grid-column: 1 / -1; }

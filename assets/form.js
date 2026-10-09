@@ -108,6 +108,31 @@
     });
   }
 
+  // ------------------------------------------------------------------ Bildeditor (Addon image_editor, optional)
+  // Skript erst bei Bedarf laden. Der Editor auf der Website hängt Dialog und CSS in seine Shadow-DOM-Ebene
+  // (Ereignis „blocks:image-editor“); ohne Abnehmer (Backend) kommt das CSS ins Dokument.
+  let ieLoading = null;
+  async function imageEditor(cfg) {
+    if (!window.ImageEditor) {
+      ieLoading ||= new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = String(cfg.js).replace(/&amp;/g, '&');
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Bildeditor konnte nicht geladen werden.'));
+        document.head.append(s);
+      });
+      await ieLoading;
+      const ev = new CustomEvent('blocks:image-editor', { detail: cfg, cancelable: true });
+      if (document.dispatchEvent(ev)) {
+        const l = document.createElement('link');
+        l.rel = 'stylesheet';
+        l.href = String(cfg.css).replace(/&amp;/g, '&');
+        document.head.append(l);
+      }
+    }
+    return window.ImageEditor;
+  }
+
   function initPickers(scope, changed) {
     scope.querySelectorAll('[data-blocks-pick]').forEach((box) => {
       if (box.dataset.blocksReady) return;
@@ -132,6 +157,22 @@
         if (res) set(res.value, res.name);
       });
       box.querySelector('[data-blocks-pick-clear]')?.addEventListener('click', () => set(''));
+      box.querySelector('[data-blocks-pick-edit]')?.addEventListener('click', async () => {
+        if (!input.value) return;
+        try {
+          const IE = await imageEditor({ api: box.dataset.ieApi, js: box.dataset.ieJs, css: box.dataset.ieCss });
+          const item = await IE.open({ file: input.value, api: box.dataset.ieApi, tool: 'crop' });
+          if (item && thumb) {
+            thumb.hidden = false;
+            thumb.innerHTML = `<img src="${item.thumb.replace(/&amp;/g, '&')}" alt="">`;
+          }
+          if (item) { input.dispatchEvent(new Event('change', { bubbles: true })); changed(); }
+        } catch (err) {
+          input.setCustomValidity(err.message);
+          input.reportValidity();
+          setTimeout(() => input.setCustomValidity(''), 4000);
+        }
+      });
       input.addEventListener('input', () => { if (label && !/^redaxo:\/\//.test(input.value)) label.textContent = ''; });
     });
   }
@@ -149,7 +190,7 @@
   }
 
   window.BlocksForm = { init };
-  window.BlocksPick = { pick };
+  window.BlocksPick = { pick, imageEditor };
 
   // Backend: REDAXO lädt Seiten per PJAX nach und meldet das mit „rex:ready“
   if (window.jQuery) {
