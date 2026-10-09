@@ -46,6 +46,13 @@ final class FieldForm
             $h .= self::row('Darstellung', self::select($prefix . '[1][variant]', $variants, $variant, ['data-blocks-variant' => '']), '', false);
         }
         $h .= self::fields($module->fields(), $data, $prefix . '[1]', $backend);
+        // Layout: gezogene Spaltenbreiten (Griff auf der Website) beim Speichern des Formulars behalten
+        if (is_array($data['widths'] ?? null) && is_array($data['widths']['w'] ?? null)) {
+            $h .= '<input type="hidden" name="' . escape($prefix . '[1][widths][preset]') . '" value="' . escape((string) ($data['widths']['preset'] ?? '')) . '">';
+            foreach (array_values($data['widths']['w']) as $i => $w) {
+                $h .= '<input type="hidden" name="' . escape($prefix . '[1][widths][w][' . $i . ']') . '" value="' . (int) $w . '">';
+            }
+        }
 
         // Abschnitts-Optionen
         $bgs = $module->kit()->backgrounds();

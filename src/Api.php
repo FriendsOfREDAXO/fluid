@@ -441,13 +441,32 @@ final class Api
         $tunes = BlockModule::decode($slice->getValue(2));
         $f = Request::post('f', 'array', []);
         if (isset($f[1]) && is_array($f[1])) {
-            $data = self::clean($f[1]);
+            // gezogene Spaltenbreiten stehen nicht im Formular: behalten (ein anderes Raster verwirft sie beim Ausgeben)
+            $data = self::clean($f[1]) + (isset($data['widths']) ? ['widths' => $data['widths']] : []);
         }
         if (isset($f[2]) && is_array($f[2])) {
             $tunes = self::clean($f[2]);
         }
         foreach (Request::post('patch', 'array', []) as $path => $value) {
-            $data = self::setPath($data, (string) $path, (string) $value);
+            $path = (string) $path;
+            $value = (string) $value;
+            // Greifer auf der Website: Abstand oben/unten (Abschnitts-Optionen) und Spaltenbreiten des Layouts
+            if (in_array($path, ['@spaceTop', '@spaceBottom'], true)) {
+                if (in_array($value, ['none', 'small', 'normal', 'large'], true)) {
+                    $tunes[substr($path, 1)] = $value;
+                }
+                continue;
+            }
+            if ('widths' === $path) {
+                $w = Layout::cleanWidths(['preset' => Layout::preset($data), 'w' => array_map('intval', explode(',', $value))], Layout::preset($data));
+                if (null === $w) {
+                    unset($data['widths']);
+                } else {
+                    $data['widths'] = $w;
+                }
+                continue;
+            }
+            $data = self::setPath($data, $path, $value);
         }
 
         return [$data, $tunes];

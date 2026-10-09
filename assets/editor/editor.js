@@ -590,6 +590,7 @@
     sec.replaceWith(el);
     initEditables(el);
     initColumns(el);
+    initHandles(el.closest('section[data-block]') || el);
     // Verweise auf ersetzte Blöcke (auch Spalten-Blöcke eines neu ausgegebenen Layouts) neu auflösen
     const again = (old) => (old && ids.includes(old.dataset.block) ? byId(old.dataset.block) : old);
     current = again(current);
@@ -973,10 +974,207 @@
     }, 600);
   });
 
+  // ------------------------------------------------------------------ Greifer: Abstände und Spaltenbreiten (wie KLXM Studio)
+
+  /*
+   * Abstand oben/unten (violett ↕) am Rand jedes Abschnitts: Ziehen um je ~56 px wechselt Kein → Klein → Normal → Groß
+   * (Vorschau sofort über pt-/pb-Klassen). Spaltenbreiten (grün ↔) zwischen zwei Layout-Spalten: rastet auf Zwölftel ein,
+   * Nachbarspalte gleicht aus; Doppelklick bzw. Entf = Breiten des Rasters. Pfeiltasten je ein Schritt. Änderungen landen
+   * wie Text in den ungespeicherten Änderungen (dirty) – „Speichern“ übernimmt sie.
+   */
+  const HANDLE_CSS = `
+    :host{all:initial}
+    .h{--k:#7C3AED;all:unset;box-sizing:border-box;position:absolute;inset:0;display:grid;place-items:center;touch-action:none}
+    .h--y{cursor:row-resize}.h--x{cursor:col-resize}.h--cols{--k:#0F9F74}
+    .g{display:grid;place-items:center;border-radius:999px;background:var(--k);color:#fff;box-shadow:0 0 0 2px #fff,0 4px 12px rgb(0 0 0/.25);opacity:.7;transition:opacity .15s,scale .15s}
+    .g svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+    .h--y .g{width:44px;height:18px}.h--x .g{width:18px;height:44px}
+    .h:is(:hover,:focus-visible,.is-drag) .g{opacity:1;scale:1.12}
+    .h--x::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:var(--k);opacity:0;transition:opacity .15s}
+    .h--x:is(:hover,:focus-visible,.is-drag)::before{opacity:.55}
+    .h--y::before{content:"";position:absolute;left:-28px;right:-600px;top:50%;height:2px;margin-top:-1px;background:var(--k);opacity:0;transition:opacity .15s;pointer-events:none}
+    .h--y:is(:hover,:focus-visible,.is-drag)::before{opacity:.45}
+    .h:focus-visible{outline:2px solid var(--k);outline-offset:3px;border-radius:8px}
+    .t{position:absolute;left:0;top:-32px;padding:4px 9px;border-radius:999px;background:var(--k);color:#fff;font:600 12px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 4px 12px rgb(0 0 0/.2)}
+    .h--x .t{top:50%;left:50%;translate:-50% calc(-50% - 44px)}
+    .h:is(:hover,:focus-visible,.is-drag) .t{opacity:1}
+    @media (prefers-reduced-motion:reduce){.g,.t{transition:none}}`;
+  const ICON_Y = '<svg viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>';
+  const ICON_X = '<svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>';
+  const SPACE = { none: 'Kein', small: 'Klein', normal: 'Normal', large: 'Groß' };
+
+  function handleHost(parent, css, html) {
+    const host = document.createElement('div');
+    host.className = 'fluid-handle';
+    host.contentEditable = 'false';
+    host.style.cssText = css;
+    const sr = host.attachShadow({ mode: 'open' });
+    sr.innerHTML = `<style>${HANDLE_CSS}</style>${html}`;
+    parent.append(host);
+    return sr;
+  }
+
+  function patchBlock(sec, key, value) {
+    const patch = dirty.get(sec.dataset.block) || {};
+    patch[key] = value;
+    dirty.set(sec.dataset.block, patch);
+    render();
+  }
+
+  function initHandles(scope) {
+    const secs = scope.matches?.('section[data-block]') ? [scope] : [...scope.querySelectorAll('section[data-block]')];
+    secs.forEach((sec) => {
+      sec.querySelectorAll(':scope > .fluid-handle, [data-lay-col] > .fluid-handle').forEach((x) => x.remove());
+      requestAnimationFrame(() => { spaceHandles(sec); colHandles(sec); });
+    });
+  }
+
+  function spaceHandles(sec) {
+    if (!sec.isConnected) return;
+    if (getComputedStyle(sec).position === 'static') sec.style.position = 'relative';
+    for (const side of ['top', 'bottom']) {
+      const pre = side === 'top' ? 'pt-' : 'pb-', key = side === 'top' ? '@spaceTop' : '@spaceBottom';
+      const prop = side === 'top' ? 'paddingTop' : 'paddingBottom';
+      const values = ['none', 'small', 'normal', 'large'];
+      // Wirkt der Abstand hier? (Kopfbereiche haben eigene Abstände) – Klassen kurz ausprobieren, sonst kein Griff
+      const keep = sec.className, seen = new Set();
+      for (const v of values) { values.forEach((x) => sec.classList.remove(pre + x)); if (v !== 'normal') sec.classList.add(pre + v); seen.add(getComputedStyle(sec)[prop]); }
+      sec.className = keep;
+      if (seen.size < 2) continue;
+      const cur = () => {
+        const p = dirty.get(sec.dataset.block)?.[key];
+        return p || values.find((v) => v !== 'normal' && sec.classList.contains(pre + v)) || 'normal';
+      };
+      const label = side === 'top' ? 'Abstand oben' : 'Abstand unten';
+      const sr = handleHost(sec, `position:absolute;left:${side === 'top' ? 116 : 28}px;${side}:-12px;width:72px;height:24px;z-index:30`,
+        `<button type="button" class="h h--y" role="slider" aria-orientation="vertical"><span class="g" aria-hidden="true">${ICON_Y}</span><span class="t"></span></button>`);
+      const h = sr.querySelector('.h'), tip = sr.querySelector('.t');
+      const show = (v) => {
+        tip.textContent = `${label}: ${SPACE[v]} · ↕ ziehen`;
+        h.setAttribute('aria-label', `${label} ziehen – jetzt ${SPACE[v]}. Pfeiltasten: kleiner/größer.`);
+        h.setAttribute('aria-valuenow', String(values.indexOf(v)));
+        h.setAttribute('aria-valuemin', '0');
+        h.setAttribute('aria-valuemax', '3');
+        h.setAttribute('aria-valuetext', SPACE[v]);
+      };
+      const preview = (v) => { values.forEach((x) => sec.classList.remove(pre + x)); if (v !== 'normal') sec.classList.add(pre + v); show(v); };
+      const commit = (v) => { patchBlock(sec, key, v); say(`${label}: ${SPACE[v]} – noch nicht gespeichert.`); };
+      show(cur());
+      let drag = null;
+      h.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        h.setPointerCapture(e.pointerId); h.classList.add('is-drag');
+        drag = { y: e.clientY, i0: values.indexOf(cur()), i: values.indexOf(cur()) };
+      });
+      h.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const i = Math.max(0, Math.min(3, drag.i0 + Math.round((e.clientY - drag.y) / 56)));
+        if (i !== drag.i) { drag.i = i; preview(values[i]); }
+      });
+      const end = (e) => {
+        if (!drag) return;
+        const { i, i0 } = drag; drag = null; h.classList.remove('is-drag');
+        if (h.hasPointerCapture?.(e.pointerId)) h.releasePointerCapture(e.pointerId);
+        if (i !== i0) commit(values[i]);
+      };
+      h.addEventListener('pointerup', end);
+      h.addEventListener('pointercancel', end);
+      h.addEventListener('click', (e) => e.stopPropagation());
+      h.addEventListener('keydown', (e) => {
+        const step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
+        if (!step) return;
+        e.preventDefault(); e.stopPropagation();
+        const i = Math.max(0, Math.min(3, values.indexOf(cur()) + step));
+        if (values[i] === cur()) return;
+        preview(values[i]); commit(values[i]);
+      });
+    }
+  }
+
+  function colHandles(sec) {
+    const grid = sec.querySelector('.lay-grid[data-lay-w]');
+    if (!grid) return;
+    const cols = [...grid.children].filter((c) => c.matches('[data-lay-col]'));
+    let units = grid.dataset.layW.split(',').map(Number);
+    const pw = dirty.get(sec.dataset.block)?.widths;
+    if (pw) units = pw.split(',').map(Number);
+    if (cols.length < 2 || units.length !== cols.length) return;
+    if (cols[1].getBoundingClientRect().top > cols[0].getBoundingClientRect().top + 8) return;   // untereinander (schmal)
+    const U = 12, MIN = 2;
+    const frac = (n) => ({ 2: '⅙', 3: '¼', 4: '⅓', 6: '½', 8: '⅔', 9: '¾', 10: '⅚' })[n] || n + '/12';
+    const label = (w) => w.map(frac).join(' · ');
+    const apply = (w) => cols.forEach((c, i) => c.style.setProperty('--lay-w', w[i]));
+    const base = grid.dataset.layPreset || grid.dataset.layW;   // Breiten des Rasters (Doppelklick/Entf)
+    const commit = (w) => {
+      units = w ? [...w] : base.split(',').map(Number);
+      apply(units);
+      patchBlock(sec, 'widths', w ? w.join(',') : '');
+      say(w ? `Spaltenbreiten: ${label(w)} – noch nicht gespeichert.` : 'Spaltenbreiten zurück zum Raster – noch nicht gespeichert.');
+      cols.forEach((c) => c.querySelector(':scope > .fluid-handle')?.remove());
+      requestAnimationFrame(() => colHandles(sec));
+    };
+    if (pw) apply(units);
+    const gap = parseFloat(getComputedStyle(grid).columnGap) || 0;
+    for (let i = 0; i < cols.length - 1; i++) {
+      const col = cols[i];
+      if (getComputedStyle(col).position === 'static') col.style.position = 'relative';
+      const sr = handleHost(col, `position:absolute;top:0;bottom:0;right:${-(gap / 2) - 11}px;width:22px;z-index:30`,
+        `<button type="button" class="h h--x h--cols" role="separator" aria-orientation="vertical"><span class="g" aria-hidden="true">${ICON_X}</span><span class="t"></span></button>`);
+      const h = sr.querySelector('.h'), tip = sr.querySelector('.t');
+      const aria = (w) => {
+        tip.textContent = `Spalten: ${label(w)} · ↔ ziehen`;
+        h.setAttribute('aria-label', `Breite von Spalte ${i + 1} und ${i + 2} ziehen – jetzt ${label(w)}. Pfeiltasten: schmaler/breiter, Entf: zurück zum Raster.`);
+        h.setAttribute('aria-valuenow', String(w[i]));
+        h.setAttribute('aria-valuemin', String(MIN));
+        h.setAttribute('aria-valuemax', String(w[i] + w[i + 1] - MIN));
+      };
+      aria(units);
+      h.title = 'Ziehen: Spaltenbreite ändern · Doppelklick: zurück zum Raster';
+      let drag = null;
+      h.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        h.setPointerCapture(e.pointerId); h.classList.add('is-drag');
+        const total = grid.getBoundingClientRect().width - gap * (cols.length - 1);
+        drag = { w: [...units], left: col.getBoundingClientRect().left, unit: total / U, pair: units[i] + units[i + 1] };
+      });
+      h.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const n = Math.max(MIN, Math.min(drag.pair - MIN, Math.round((e.clientX - drag.left) / drag.unit)));
+        if (n === drag.w[i]) return;
+        drag.w[i] = n; drag.w[i + 1] = drag.pair - n;
+        apply(drag.w); aria(drag.w);
+      });
+      const end = (e) => {
+        if (!drag) return;
+        const w = drag.w; drag = null; h.classList.remove('is-drag');
+        if (h.hasPointerCapture?.(e.pointerId)) h.releasePointerCapture(e.pointerId);
+        if (w.join() !== units.join()) commit(w);
+      };
+      h.addEventListener('pointerup', end);
+      h.addEventListener('pointercancel', end);
+      h.addEventListener('dblclick', (e) => { e.stopPropagation(); commit(null); });
+      h.addEventListener('click', (e) => e.stopPropagation());
+      h.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+        if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); commit(null); return; }
+        const step = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+        if (!step) return;
+        e.preventDefault();
+        const w = [...units], pair = w[i] + w[i + 1], n = Math.max(MIN, Math.min(pair - MIN, w[i] + step));
+        if (n === w[i]) return;
+        w[i] = n; w[i + 1] = pair - n;
+        commit(w);
+      });
+    }
+  }
+  let handleTimer = 0;
+  addEventListener('resize', () => { clearTimeout(handleTimer); handleTimer = setTimeout(() => initHandles(main), 200); }, { passive: true });
+
   // ------------------------------------------------------------------ Start
 
   initEditables(main);
   initColumns(main);
+  initHandles(main);
   emptyHint();
   render();
 })();
