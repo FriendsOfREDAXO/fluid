@@ -170,5 +170,37 @@ return [
                 ],
             ],
         ],
+
+        // ------------------------------------------------------------------ Bausteine (Blöcke des Kits im Einsatz)
+        [
+            'slug' => 'bausteine', 'title' => 'Bausteine', 'menu' => true,
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Kit fluid',
+                    'title' => 'Bausteine für jede Seite', 'text' => 'Jeder Abschnitt ist ein Block mit Feldschema – und ein echter REDAXO-Slice.']],
+                ['type' => 'logos', 'data' => ['variant' => 'marquee', 'eyebrow' => '', 'title' => 'Gebaut auf bewährten Bausteinen', 'items' => [
+                    ['name' => 'REDAXO', 'link' => '', 'image' => null], ['name' => 'PHP 8.5', 'link' => '', 'image' => null],
+                    ['name' => 'Composer', 'link' => '', 'image' => null], ['name' => 'Symfony', 'link' => '', 'image' => null],
+                    ['name' => 'Intervention Image', 'link' => '', 'image' => null], ['name' => 'Friends Of REDAXO', 'link' => '', 'image' => null],
+                ]]],
+                ['type' => 'bento', 'data' => ['eyebrow' => 'Auf einen Blick', 'title' => 'Was fluid mitbringt', 'intro' => '', 'items' => [
+                    ['size' => 'big', 'tone' => 'dark', 'icon' => 'sparkle', 'image' => null, 'eyebrow' => 'Bearbeiten im Kontext', 'title' => 'Texte, Bilder und Design direkt auf der Seite ändern.', 'text' => 'Mit Live-Vorschau, Arbeitsversion und Veröffentlichen.', 'link' => '/bearbeiten'],
+                    ['size' => 's', 'tone' => 'highlight', 'icon' => '', 'image' => null, 'eyebrow' => '18', 'title' => 'Design-Vorlagen', 'text' => 'Von der Kanzlei bis zum Startup.', 'link' => ''],
+                    ['size' => 's', 'tone' => 'card', 'icon' => 'squares-four', 'image' => null, 'eyebrow' => '', 'title' => 'Layout mit Spalten', 'text' => 'Spalten-Blöcke sind echte Slices.', 'link' => ''],
+                    ['size' => 'wide', 'tone' => 'accent', 'icon' => 'palette', 'image' => null, 'eyebrow' => '', 'title' => 'Style-Editor live auf der Seite', 'text' => 'Farben, Schriften, Formen – mit Kontrastprüfung.', 'link' => ''],
+                    ['size' => 's', 'tone' => 'tint', 'icon' => 'pencil-simple', 'image' => null, 'eyebrow' => '', 'title' => 'Bilder bearbeiten', 'text' => 'Zuschneiden, Drehen, Entzerren – das Original bleibt.', 'link' => ''],
+                    ['size' => 's', 'tone' => 'card', 'icon' => 'package', 'image' => null, 'eyebrow' => '', 'title' => 'Composer-Pakete', 'text' => 'fluid und image_editor als AddOns.', 'link' => ''],
+                ]]],
+                ['type' => 'tabs', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'top', 'eyebrow' => 'Für wen', 'title' => 'Ein System, drei Blickwinkel', 'intro' => '', 'items' => [
+                    ['label' => 'Redaktion', 'text' => '<p>Sehen, was man ändert: Text direkt auf der Seite, alle Felder in der Seitenleiste, Bilder aus dem Medienpool, Links über die Linkmap. Änderungen landen im Entwurf – erst „Veröffentlichen“ bringt sie live.</p>', 'image' => null],
+                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in value1/value2 – keine eigenen Tabellen.</p>', 'image' => null],
+                    ['label' => 'Agentur', 'text' => '<p>Kits mit Design-System und Vorlagen: ein Projekt schnell auf das Erscheinungsbild der Kundschaft bringen – und die Redaktion pflegt danach selbst.</p>', 'image' => null],
+                ]]],
+                ['type' => 'pricing', 'data' => ['variant' => 'cards', 'eyebrow' => 'Mitmachen', 'title' => 'Drei Wege zu fluid', 'intro' => 'Open Source unter MIT-Lizenz – Beispielwege, keine Preisliste.', 'items' => [
+                    ['name' => 'Ausprobieren', 'badge' => '', 'price' => '0 €', 'period' => 'MIT-Lizenz', 'text' => 'Lokal mit REDAXO 6 installieren und die Demo durchklicken.', 'features' => "REDAXO 6 (Branch 6.x)\nfluid:demo legt alles an\nKeine Anmeldung nötig", 'highlight' => false, 'button_label' => 'Technik', 'button_link' => '/technik'],
+                    ['name' => 'Mitmachen', 'badge' => 'Empfohlen', 'price' => '0 €', 'period' => 'Friends Of REDAXO', 'text' => 'Ideen, Fehlerberichte und Blöcke beisteuern.', 'features' => "Issues und Pull Requests\nEigene Kits und Blöcke\nÜbersetzungen", 'highlight' => true, 'button_label' => 'Was sich ändert', 'button_link' => '/was-sich-aendert'],
+                    ['name' => 'Einsetzen', 'badge' => '', 'price' => '0 €', 'period' => 'sobald stabil', 'text' => 'In Projekten nutzen, wenn REDAXO 6 erscheint.', 'features' => "Composer-Paket\nArbeitsversion und Historie\nRechte wie gewohnt", 'highlight' => false, 'button_label' => 'Bearbeiten', 'button_link' => '/bearbeiten'],
+                ], 'rows' => [], 'note' => '']],
+            ],
+        ],
     ],
 ];

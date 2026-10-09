@@ -60,6 +60,7 @@ return [
         'css/b-scrolly.css' => ['scrolly'],
         'css/b-contact.css' => ['contact', 'map'],
         'css/b-video.css' => ['video'],
+        'js/embed.js' => ['video'],
         'css/b-downloads.css' => ['downloads'],
         'css/dataform.css' => ['contact'],
         'js/tabs.js' => ['tabs'],
@@ -269,6 +270,126 @@ return [
                 ['name' => 'text', 'label' => 'Text (optional)', 'type' => 'textarea', 'rows' => 2, 'max' => 300],
                 ...$buttons,
                 ['name' => 'image', 'label' => 'Bild (bei „Mit Bild“)', 'type' => 'media'],
+            ],
+        ],
+        'logos' => [
+            'nestable' => ['grid'],   // Block „Layout“: in einer Spalte erlaubt
+            'label' => 'Logos (Partner, Kunden)', 'icon' => 'handshake', 'group' => 'Medien',
+            'help' => 'Als ruhiges Raster oder Laufband (ohne JavaScript; steht bei „Bewegung reduzieren“ still und hält bei Maus/Fokus an). Ohne Bild erscheint der Name als Schriftzug. Nur Logos mit Freigabe verwenden.',
+            'variants' => ['grid' => 'Raster', 'marquee' => 'Laufband'],
+            'fields' => [
+                ...$head(false, false),
+                ['name' => 'items', 'label' => 'Logos', 'type' => 'repeater', 'item_label' => 'Logo', 'title_field' => 'name', 'max_items' => 16, 'fields' => [
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true, 'width' => 'half'],
+                    ['name' => 'link', 'label' => 'Link (optional)', 'type' => 'link', 'width' => 'half'],
+                    ['name' => 'image', 'label' => 'Logo (SVG oder PNG, transparent)', 'type' => 'media'],
+                ]],
+            ],
+        ],
+        'bento' => [
+            'nestable' => false,   // Block „Layout“: in einer Spalte erlaubt
+            'label' => 'Bento-Raster', 'icon' => 'squares-four', 'group' => 'Inhalt',
+            'help' => 'Kacheln unterschiedlicher Größe in einem dichten Raster – für Leistungen, Zahlen und Bilder. Kacheln rücken bei wenig Platz automatisch untereinander.',
+            'fields' => [
+                ...$head(),
+                ['name' => 'items', 'label' => 'Kacheln', 'type' => 'repeater', 'item_label' => 'Kachel', 'title_field' => 'title', 'max_items' => 10, 'fields' => [
+                    ['name' => 'size', 'label' => 'Größe', 'type' => 'select', 'required' => true, 'default' => 's', 'width' => 'half',
+                        'options' => ['s' => 'Normal', 'wide' => 'Breit', 'tall' => 'Hoch', 'big' => 'Groß (breit + hoch)']],
+                    ['name' => 'tone', 'label' => 'Fläche', 'type' => 'select', 'required' => true, 'default' => 'card', 'width' => 'half',
+                        'options' => ['card' => 'Karte', 'tint' => 'Akzent hell', 'highlight' => 'Zweitfarbe', 'accent' => 'Akzentfarbe', 'dark' => 'Dunkel', 'image' => 'Bild mit Text darauf']],
+                    ['name' => 'icon', 'label' => 'Symbol (optional)', 'type' => 'icon', 'width' => 'half'],
+                    ['name' => 'image', 'label' => 'Bild (optional)', 'type' => 'media', 'width' => 'half'],
+                    ['name' => 'eyebrow', 'label' => 'Dachzeile oder große Zahl (optional)', 'type' => 'text', 'max' => 30, 'width' => 'half'],
+                    ['name' => 'title', 'label' => 'Titel', 'type' => 'text', 'required' => true, 'max' => 80, 'width' => 'half'],
+                    ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 2, 'max' => 240],
+                    ['name' => 'link', 'label' => 'Link (ganze Kachel, optional)', 'type' => 'link'],
+                ]],
+            ],
+        ],
+        'pricing' => [
+            'label' => 'Pakete / Vergleich', 'icon' => 'currency-eur', 'group' => 'Inhalt',
+            'help' => 'Pakete als Karten oder als Vergleichstabelle. Ein Paket lässt sich hervorheben. Nur verbindliche, aktuelle Preise angeben.',
+            'variants' => ['cards' => 'Karten', 'table' => 'Vergleichstabelle'],
+            'fields' => [
+                ...$head(),
+                ['name' => 'items', 'label' => 'Pakete', 'type' => 'repeater', 'item_label' => 'Paket', 'title_field' => 'name', 'max_items' => 4, 'fields' => [
+                    ['name' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true, 'max' => 40, 'width' => 'half'],
+                    ['name' => 'badge', 'label' => 'Etikett (optional)', 'type' => 'text', 'max' => 24, 'width' => 'half', 'placeholder' => 'z. B. Empfohlen'],
+                    ['name' => 'price', 'label' => 'Preis', 'type' => 'text', 'max' => 24, 'width' => 'half', 'placeholder' => 'z. B. ab 490 €'],
+                    ['name' => 'period', 'label' => 'Zeitraum / Zusatz', 'type' => 'text', 'max' => 32, 'width' => 'half', 'placeholder' => 'z. B. pro Monat'],
+                    ['name' => 'text', 'label' => 'Kurzbeschreibung', 'type' => 'textarea', 'rows' => 2, 'max' => 220],
+                    ['name' => 'features', 'label' => 'Leistungen (eine pro Zeile, bei „Karten“)', 'type' => 'textarea', 'rows' => 4],
+                    ['name' => 'highlight', 'label' => 'Hervorheben', 'type' => 'bool', 'default' => false],
+                    ['name' => 'button_label', 'label' => 'Button – Beschriftung', 'type' => 'text', 'max' => 32, 'width' => 'half'],
+                    ['name' => 'button_link', 'label' => 'Button – Link', 'type' => 'link', 'width' => 'half'],
+                ]],
+                ['name' => 'rows', 'label' => 'Vergleichszeilen (bei „Vergleichstabelle“)', 'type' => 'repeater', 'item_label' => 'Zeile', 'title_field' => 'label', 'max_items' => 20, 'fields' => [
+                    ['name' => 'label', 'label' => 'Merkmal', 'type' => 'text', 'required' => true, 'max' => 80],
+                    ['name' => 'values', 'label' => 'Werte je Paket (eine Zeile pro Paket, in Reihenfolge)', 'type' => 'textarea', 'rows' => 3,
+                        'help' => '„ja“ oder „✓“ = enthalten, „nein“ oder „–“ = nicht enthalten, sonst freier Text (z. B. „3 Termine“).'],
+                ]],
+                ['name' => 'note', 'label' => 'Hinweis unter den Paketen (optional)', 'type' => 'text', 'max' => 200, 'placeholder' => 'z. B. Alle Preise inkl. MwSt.'],
+            ],
+        ],
+        'tabs' => [
+            'label' => 'Reiter (Tabs)', 'icon' => 'list-bullets', 'group' => 'Inhalt',
+            'help' => 'Mehrere Inhalte auf engem Raum, umschaltbar über Reiter. „Reiter links“ stellt sich bei wenig Platz automatisch oben an. Ohne JavaScript stehen alle Inhalte untereinander.',
+            'variants' => ['top' => 'Reiter oben', 'side' => 'Reiter links'],
+            'fields' => [
+                ...$head(),
+                ['name' => 'items', 'label' => 'Reiter', 'type' => 'repeater', 'item_label' => 'Reiter', 'title_field' => 'label', 'max_items' => 8, 'fields' => [
+                    ['name' => 'label', 'label' => 'Beschriftung des Reiters', 'type' => 'text', 'required' => true, 'max' => 40],
+                    ['name' => 'text', 'label' => 'Inhalt', 'type' => 'richtext'],
+                    ['name' => 'image', 'label' => 'Bild (optional, 4:3)', 'type' => 'media'],
+                ]],
+            ],
+        ],
+        'scrolly' => [
+            'label' => 'Scrollytelling', 'icon' => 'article', 'group' => 'Inhalt',
+            'help' => 'Ein Bild bleibt stehen, während die Texte daneben vorbeiziehen; das Bild wechselt passend zum Abschnitt. Bei wenig Platz stehen Bild und Text jeweils untereinander.',
+            'variants' => ['left' => 'Bild links', 'right' => 'Bild rechts'],
+            'fields' => [
+                ...$head(),
+                ['name' => 'ratio', 'label' => 'Bildformat', 'type' => 'select', 'required' => true, 'default' => '4:5', 'width' => 'half', 'options' => $ratios],
+                ['name' => 'items', 'label' => 'Abschnitte', 'type' => 'repeater', 'item_label' => 'Abschnitt', 'title_field' => 'title', 'max_items' => 8, 'fields' => [
+                    ['name' => 'eyebrow', 'label' => 'Dachzeile (optional)', 'type' => 'text', 'max' => 40, 'width' => 'half'],
+                    ['name' => 'title', 'label' => 'Titel', 'type' => 'text', 'required' => true, 'max' => 90, 'width' => 'half'],
+                    ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 4, 'max' => 600],
+                    ['name' => 'image', 'label' => 'Bild', 'type' => 'media'],
+                ]],
+            ],
+        ],
+        'video' => [
+            'nestable' => ['wide'],   // Block „Layout“: in einer Spalte erlaubt
+            'label' => 'Video', 'icon' => 'play-circle', 'group' => 'Medien',
+            'help' => 'YouTube/Vimeo mit Zwei-Klick-Lösung (lädt erst nach Klick, ohne Cookies bis dahin) oder eigene MP4-Datei aus dem Medienpool.',
+            'variants' => ['wide' => 'Breit', 'text' => 'Mit Text daneben', 'cinema' => 'Kino (randlos, dunkel)'],
+            'fields' => [
+                ...$head(false),
+                ['name' => 'video_url', 'label' => 'YouTube- oder Vimeo-Link', 'type' => 'url', 'width' => 'half'],
+                ['name' => 'video_file', 'label' => 'oder eigene MP4-Datei', 'type' => 'file', 'width' => 'half',
+                    'help' => 'Datei aus dem Medienpool (MP4, stumm oder mit Ton).'],
+                ['name' => 'poster', 'label' => 'Eigenes Vorschaubild (optional)', 'type' => 'media', 'width' => 'half'],
+                ['name' => 'ratio', 'label' => 'Format', 'type' => 'select', 'required' => true, 'default' => '16-9', 'width' => 'half', 'options' => ['16-9' => '16:9', '4-3' => '4:3', '21-9' => '21:9']],
+                ['name' => 'caption', 'label' => 'Bildunterschrift (optional)', 'type' => 'text', 'max' => 200],
+                ['name' => 'text', 'label' => 'Text daneben (bei „Mit Text daneben“)', 'type' => 'richtext'],
+            ],
+        ],
+        'downloads' => [
+            'nestable' => true,   // Block „Layout“: in einer Spalte erlaubt
+            'label' => 'Downloads', 'icon' => 'download-simple', 'group' => 'Medien',
+            'help' => 'Dateien aus dem Medienpool zum Herunterladen; PDFs auf Wunsch auch zum Ansehen. Größe und Typ erscheinen automatisch.',
+            'fields' => [
+                ...$head(),
+                ['name' => 'source', 'label' => 'Quelle', 'type' => 'select', 'required' => true, 'default' => 'manual', 'width' => 'half',
+                    'options' => ['manual' => 'Einzelne Dateien auswählen', 'collection' => 'Alle Dateien einer Medienkategorie']],
+                ['name' => 'collection', 'label' => 'Medienkategorie', 'type' => 'mediacategory', 'width' => 'half'],
+                ['name' => 'files', 'label' => 'Dateien (bei „Einzelne Dateien“)', 'type' => 'repeater', 'item_label' => 'Datei', 'title_field' => 'label', 'fields' => [
+                    ['name' => 'label', 'label' => 'Bezeichnung', 'type' => 'text', 'width' => 'half', 'help' => 'Leer = Titel der Datei'],
+                    ['name' => 'file', 'label' => 'Datei', 'type' => 'file', 'width' => 'half'],
+                    ['name' => 'note', 'label' => 'Hinweis (optional)', 'type' => 'text'],
+                ]],
+                ['name' => 'show_viewer', 'label' => 'PDFs zusätzlich „Ansehen“ anbieten (öffnet im Browser)', 'type' => 'bool', 'default' => true],
             ],
         ],
     ],

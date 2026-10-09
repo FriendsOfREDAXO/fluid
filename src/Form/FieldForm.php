@@ -103,6 +103,9 @@ final class FieldForm
             'number' => '<input class="form-control" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
             // Medienpool und Linkmap (REDAXO-Popups); ID aus dem Feldnamen, damit neue Einträge von Wiederholgruppen eindeutig bleiben
             'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend),
+            // Medienkategorie des Medienpools (z. B. Downloads „alle Dateien einer Kategorie“)
+            'mediacategory' => self::select($name, self::mediaCategories(), (string) $value, ['id' => $id], true),
+            'url' => '<input class="form-control" type="url" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $ph . ' placeholder="https://…">',
             'link' => Picker::link(self::nameId($name), $name, (string) $value, $backend),
             'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
             default => '<input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
@@ -177,6 +180,21 @@ final class FieldForm
         }
 
         return $h . '</select>';
+    }
+
+    /** @return array<int, string> Medienkategorien als Baum (eingerückt) */
+    private static function mediaCategories(): array
+    {
+        $out = [];
+        $walk = static function (array $cats, int $depth) use (&$walk, &$out): void {
+            foreach ($cats as $c) {
+                $out[$c->id] = str_repeat('– ', $depth) . $c->name;
+                $walk($c->getChildren(), $depth + 1);
+            }
+        };
+        $walk(\Redaxo\Core\MediaPool\MediaCategory::getRootCategories(), 0);
+
+        return $out;
     }
 
     /** Element-ID aus dem Feldnamen (`f[1][items][__i__][image]` → `blocks_f_1_items___i___image`) */

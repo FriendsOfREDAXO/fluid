@@ -300,3 +300,69 @@ function fluid_compare(array $d, string $sizes, string $ratio, string $class): s
 {
     return '';
 }
+
+/** Text ohne *Betonung*-Sternchen (Attribute, Screenreader) */
+function strip_emphasis(string $text): string
+{
+    return (string) preg_replace('~\*([^*]+)\*~u', '$1', $text);
+}
+
+/** Datenschutzerklärung: Artikel „Datenschutz“ der Struktur, sonst leer */
+function privacy_url(): string
+{
+    static $url = null;
+    if (null === $url) {
+        $url = '';
+        foreach (\Redaxo\Core\Content\Article::getRootArticles(true) as $a) {
+            if (preg_match('~^datenschutz~i', $a->name)) {
+                $url = $a->getUrl();
+                break;
+            }
+        }
+    }
+
+    return $url;
+}
+
+/**
+ * Video einbetten (aus KLXM Studio, Kern-Fragment video-embed – vereinfacht): YouTube/Vimeo mit Zwei-Klick-Lösung
+ * (Player lädt erst nach Klick, js/embed.js; „künftig direkt laden“ im Browser), MP4 aus dem Medienpool als <video>.
+ * Markup und Klassen (.vembed …) wie in Studio, damit css/b-video.css greift.
+ */
+function fluid_video_embed(string $url, string $file, string $poster, string $ratio, string $label): string
+{
+    $ratio = in_array($ratio, ['16-9', '4-3', '21-9'], true) ? $ratio : '16-9';
+    $mp4 = '' !== $file ? Media::get($file) : null;
+    if ($mp4 && str_starts_with((string) $mp4->type, 'video/')) {
+        $p = '' !== $poster ? Media::get($poster) : null;
+
+        return '<div class="vembed r-' . e($ratio) . '"><video controls preload="none" playsinline' . ($p ? ' poster="' . e($p->getUrl()) . '"' : '') . '>'
+            . '<source src="' . e($mp4->getUrl()) . '" type="' . e((string) $mp4->type) . '"></video></div>';
+    }
+    $u = trim($url);
+    $v = null;
+    if (preg_match('~(?:youtu\.be/|youtube(?:-nocookie)?\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/))([\w-]{11})~', $u, $m)) {
+        $v = ['provider' => 'youtube', 'label' => 'YouTube', 'company' => 'Google Ireland Ltd.',
+            'src' => 'https://www.youtube-nocookie.com/embed/' . $m[1] . '?autoplay=1&rel=0', 'watch' => 'https://www.youtube.com/watch?v=' . $m[1]];
+    } elseif (preg_match('~vimeo\.com/(?:video/)?(\d+)~', $u, $m)) {
+        $v = ['provider' => 'vimeo', 'label' => 'Vimeo', 'company' => 'Vimeo.com Inc.',
+            'src' => 'https://player.vimeo.com/video/' . $m[1] . '?autoplay=1&dnt=1', 'watch' => 'https://vimeo.com/' . $m[1]];
+    }
+    if (!$v) {
+        return is_editing() ? '<div class="vembed vembed--empty r-' . e($ratio) . '"><p>YouTube-/Vimeo-Link oder MP4-Datei in der Seitenleiste eintragen.</p></div>' : '';
+    }
+    $title = '' !== $label ? $label : lt('Video');
+    $privacy = privacy_url();
+    $text = e(lt('Beim Abspielen lädt {provider} ({company}) das Video. Dabei werden Daten wie Ihre IP-Adresse an {provider} übertragen.', ['provider' => $v['label'], 'company' => $v['company']]))
+        . ('' !== $privacy ? ' <a href="' . e($privacy) . '">' . e(lt('Datenschutz')) . '</a>' : '');
+    $posterImg = '' !== $poster ? img($poster, '(min-width: 1080px) 1200px, 100vw', ['alt' => '', 'class' => 'vembed__poster']) : '';
+
+    return '<div class="vembed r-' . e($ratio) . '" data-embed="' . e($v['provider']) . '" data-label="' . e($v['label']) . '" data-src="' . e($v['src']) . '" data-title="' . e($title) . '"'
+        . ' data-t-revoke="' . e(lt('Freigabe widerrufen')) . '" data-t-direct="' . e(lt('{provider}-Videos werden auf dieser Website direkt geladen.', ['provider' => $v['label']])) . '">'
+        . $posterImg
+        . '<div class="vembed__gate"><div class="vembed__info"><p class="vembed__text">' . $text . '</p>'
+        . '<p class="vembed__row"><label class="vembed__remember"><input type="checkbox" data-embed-remember> ' . e(lt('{provider}-Videos künftig direkt laden', ['provider' => $v['label']])) . '</label>'
+        . '<a class="vembed__ext" href="' . e($v['watch']) . '" target="_blank" rel="noopener">' . e(lt('Auf {provider} ansehen', ['provider' => $v['label']])) . '<span class="sr-only"> ' . e(lt('(öffnet in neuem Tab)')) . '</span></a></p></div>'
+        . '<button type="button" class="vembed__play" data-embed-play><span class="vembed__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>'
+        . '<span>' . e(lt('{provider}-Video laden', ['provider' => $v['label']])) . '<span class="sr-only">: ' . e($title) . '</span></span></button></div></div>';
+}
