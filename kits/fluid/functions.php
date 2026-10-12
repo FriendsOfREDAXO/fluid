@@ -22,9 +22,22 @@ if (!function_exists('e')) {
     }
 }
 
-/** Sichtbare Texte des Kits (Übersetzung folgt über I18n) */
+/**
+ * Feste Texte der Website in der Sprache der aufgerufenen Seite (Quelle Deutsch, wie lt() in KLXM Studio):
+ * lang/site/{code}.php des Kits; Projekte ergänzen/ändern per Extension Point FLUID_SITE_TRANSLATIONS (Subject: Array, Param code).
+ */
 function lt(string $text, array $vars = []): string
 {
+    static $tables = [];
+    $code = \Redaxo\Core\Language\Language::getCurrent()?->code ?? 'de';
+    if ('de' !== $code) {
+        if (!isset($tables[$code])) {
+            $file = __DIR__ . '/lang/site/' . basename($code) . '.php';
+            $tables[$code] = (array) \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint(
+                'FLUID_SITE_TRANSLATIONS', is_file($file) ? (array) require $file : [], ['code' => $code]));
+        }
+        $text = $tables[$code][$text] ?? $text;
+    }
     foreach ($vars as $k => $v) {
         $text = str_replace('{' . $k . '}', (string) $v, $text);
     }

@@ -14,8 +14,9 @@ Status: Prototyp für REDAXO 6 (Branch `6.x`) – Ziel Friends Of REDAXO.
 - Blöcke einfügen, verschieben (ziehen oder ↑ ↓), verdoppeln, kopieren und auf anderen Seiten einfügen, online/offline
 - Layout mit Spalten; Spaltenbreiten, Abstände, Textbreite und Aufteilung Bild/Text mit Greifern ziehen
 - Arbeitsversion: erst speichern, dann „Veröffentlichen“; Versionen wiederherstellen, Entwürfe-Übersicht, Aktivität
-- Seiten: Baum mit Ziehen, neue Seiten (leer, Kopie, Vorlage), Seiteneinstellungen mit Adresse und SEO-Angaben
-- Website: Name, Logo, Kontakt, Öffnungszeiten, Social Media, Hinweisleiste, Rechtliches, Domains, Weiterleitungen
+- Seiten: Baum mit Ziehen oder ↑ ↓ ← → (auch am Handy), neue Seiten (leer, Kopie, Vorlage), Seiteneinstellungen mit Adresse und SEO-Angaben
+- Website: Name, Logo, Kontakt, Öffnungszeiten, Social Media, Hinweisleiste, Rechtliches, Sprachen, Domains, Weiterleitungen
+- Mehrsprachig: Sprache in der Leiste wechseln (DE | EN), leere Seite mit „Inhalt aus … übernehmen“ füllen und übersetzen
 - Design-Editor (Admins), Bildbearbeitung (AddOn image_editor), Formulare und Datenlisten (YForm), Anfragen-Postfach
 - Redaktionskommentare `[# … #]` – nur im Bearbeiten-Modus sichtbar
 
@@ -131,6 +132,7 @@ final class Teaser extends FluidBlock
 | `FLUID_SEARCH_DOCUMENT` | Dokument (array) oder null | `article` | Suchindex ergänzen, Seiten ausschließen |
 | `FLUID_STRUCTURED_DATA` | JSON-LD (`@graph`) | `article` | schema.org ergänzen |
 | `FLUID_ROBOTS` | Text der robots.txt | – | Regeln ergänzen |
+| `FLUID_SITE_TRANSLATIONS` | Übersetzungen (array) | `code` | feste Texte des Kits für eine Sprache ergänzen/ändern |
 | `FLUID_EDITOR_CONFIG` | Einstellungen des Editors | `article`, `user` | Blöcke/Menüpunkte für Rollen ausblenden |
 
 Dazu nutzt fluid die Extension Points des Cores, z. B. `URL_REWRITE` für die Adressen.
@@ -163,7 +165,20 @@ Vorlagen: `examples/yform/` (`TerminTable`, `AnfrageTable`, `AnfrageForm`) – n
   (eigene Domain für eine Seite, optional mit Unterseiten, Canonical „eigene Domain“ oder „Spiegel“).
 - `sitemap.xml` und `robots.txt` je Domain, Canonical, hreflang, schema.org-@graph (Organisation, WebSite, WebPage,
   Brotkrumen, Blöcke).
-- Weitere Sprachen bekommen ein Präfix (`/en/…`).
+- Weitere Sprachen bekommen ein Präfix (`/en/…`); Sprachwahl im Kopf und im mobilen Menü zeigt nur Sprachen, in denen
+  die Seite online ist (`Router::alternates($article)`).
+
+### Sprachen
+
+Sprachen sind die des Cores (`LanguageHandler`) – angelegt unter Website → Sprachen oder im Backend. Feste Texte des Kits
+(„Menü“, „Öffnungszeiten“ …) schreibt das Kit mit `lt('Text')`; Übersetzungen liegen in `kits/fluid/lang/site/{code}.php`
+(`['Menü' => 'Menu', …]`). Eigene Sprachen oder Änderungen ohne das Kit anzufassen:
+
+```php
+Extension::register('FLUID_SITE_TRANSLATIONS', static function (ExtensionPoint $ep) {
+    return 'fr' === $ep->getParam('code') ? $ep->subject + ['Menü' => 'Menu', 'Suche' => 'Recherche'] : $ep->subject;
+});
+```
 
 ### Karten
 

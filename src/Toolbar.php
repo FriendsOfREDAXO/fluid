@@ -68,6 +68,11 @@ final class Toolbar
             'design' => $user->admin ? self::designSchema($article) : null,
             // Website-Einstellungen (Seitenleiste „Website“): nur Admins
             'site' => $user->admin ? ['tabs' => SiteAdmin::tabs()] : null,
+            // Sprachwahl (ab zwei Sprachen): Seite in anderer Sprache im selben Modus öffnen; „leer“ = noch keine Blöcke
+            'languages' => \count(\Redaxo\Core\Language\Language::getAll()) > 1 ? array_map(static fn (array $l) => $l + [
+                'href' => Url::article($article->id, $l['id'], $editing ? [Editing::PARAM => 1] : []),
+                'empty' => !\Redaxo\Core\Database\Sql::factory()->getArray('SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? LIMIT 1', [$article->id, $l['id']]),
+            ], Routing\Router::alternates($article, true)) : null,
             // Anfragen-Postfach: nur, wenn es Formulare mit YForm-Tabellen gibt
             'inbox' => [] !== Data\Inbox::tables($user) ? ['new' => Data\Inbox::countNew($user)] : null,
             // Addon image_editor (optional): Bilder auf der Website bearbeiten

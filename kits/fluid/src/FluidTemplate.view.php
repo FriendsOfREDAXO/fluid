@@ -21,6 +21,8 @@ return static function (ArticleContent $content): void {
     $home = $landing ? (Article::get((int) $landing->articleId)?->getUrl() ?? '/') : (Article::getSiteStartArticle()?->getUrl() ?? '/');
     $isHome = $landing ? $article->id === $landing->articleId : $isHome;
     $menu = FluidTemplate::menu();
+    // Sprachwahl: Sprachen, in denen diese Seite online ist
+    $langs = \FriendsOfRedaxo\Fluid\Routing\Router::alternates($article);
     $title = PageSettings::title($article, $name);
     $design = $kit->design();
     $css = [$kit->assetUrl('css/site.css'), ...$kit->designCss(), ...$kit->blockCss(Editing::active())];
@@ -124,6 +126,9 @@ return static function (ArticleContent $content): void {
     <div class="hdr__nav"><nav class="hnav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="hnav__list" role="list"><?= implode('', array_map($navItem, $menu)) ?></ul></nav></div>
     <?php endif; ?>
     <div class="hdr__tools">
+      <?php if (\count($langs) > 1): ?>
+      <ul class="langswitch" role="list" aria-label="<?= e(lt('Sprache')) ?>"><?php foreach ($langs as $l): ?><li><a href="<?= e($l['url']) ?>" hreflang="<?= e($l['code']) ?>" lang="<?= e($l['code']) ?>" title="<?= e($l['name']) ?>"<?= $l['current'] ? ' aria-current="true"' : '' ?>><?= e(strtoupper($l['code'])) ?></a></li><?php endforeach; ?></ul>
+      <?php endif; ?>
       <?php if ('' !== ($searchPage = trim((string) setting('search_page', '')))): ?><a class="hdr__search" href="<?= e(link_href($searchPage)) ?>" title="<?= e(lt('Suche')) ?>"><?= icon('magnifying-glass') ?><span class="sr-only"><?= e(lt('Suche')) ?></span></a><?php endif; ?>
       <?php if ($cta): ?><a class="btn btn--primary hdr__cta" <?= fluid_link_attrs($cta['link']) ?>><?= e($cta['label']) ?></a><?php endif; ?>
       <?php if ($menu): ?>
@@ -199,6 +204,7 @@ return static function (ArticleContent $content): void {
   <nav class="mnav__nav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="mnav__list mnav__list--1" role="list">
     <?php foreach ($menu as $m): ?><li><a class="mnav__link" href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?>
   </ul></nav>
+  <?php if (\count($langs) > 1): ?><ul class="langswitch langswitch--mnav" role="list" aria-label="<?= e(lt('Sprache')) ?>"><?php foreach ($langs as $l): ?><li><a href="<?= e($l['url']) ?>" hreflang="<?= e($l['code']) ?>" lang="<?= e($l['code']) ?>"<?= $l['current'] ? ' aria-current="true"' : '' ?>><?= e($l['name']) ?></a></li><?php endforeach; ?></ul><?php endif; ?>
 </div>
 <?php endif; ?>
 <link rel="stylesheet" href="<?= e($kit->assetUrl('css/overlay.css')) ?>">

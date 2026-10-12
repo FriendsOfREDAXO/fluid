@@ -12,6 +12,8 @@ use FriendsOfRedaxo\Fluid\Routing\Routes;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\Http\Request;
+use Redaxo\Core\Language\Language;
+use Redaxo\Core\Language\LanguageHandler;
 use Redaxo\Core\Security\User;
 
 use function Redaxo\Core\View\escape;
@@ -31,7 +33,7 @@ final class SiteAdmin
             $tabs[$k] = $g['label'];
         }
 
-        return $tabs + ['domains' => 'Domains', 'redirects' => 'Weiterleitungen'];
+        return $tabs + ['languages' => 'Sprachen', 'domains' => 'Domains', 'redirects' => 'Weiterleitungen'];
     }
 
     public static function handle(string $action, User $user): array
@@ -65,23 +67,80 @@ final class SiteAdmin
                 $msg = 'Weiterleitung gelöscht.';
                 $tab = 'redirects';
                 break;
+            case 'language_save':
+                $msg = self::languageSave();
+                $tab = 'languages';
+                break;
             case 'geocode':
                 return ['results' => Maps::geocode(Request::post('q', 'string', ''))];
         }
 
-        return ['html' => self::render($tab), 'tab' => $tab, 'tabs' => self::tabs(), 'message' => $msg, 'reload' => 'site_save' === $action];
+        return ['html' => self::render($tab), 'tab' => $tab, 'tabs' => self::tabs(), 'message' => $msg, 'reload' => \in_array($action, ['site_save', 'language_save'], true)];
     }
 
     public static function render(string $tab): string
     {
         return match ($tab) {
             'domains' => self::domains(),
+            'languages' => self::languages(),
             'redirects' => self::redirects(),
             default => isset(Settings::schema()[$tab])
                 ? '<form data-site-form="site_save" data-tab="' . escape($tab) . '">' . FieldForm::standalone(Settings::schema()[$tab]['fields'], Settings::all(), 'site')
                     . '<div class="site-actions"><button type="submit" class="btn btn--primary">Speichern</button></div></form>'
                 : '',
         };
+    }
+
+    // ------------------------------------------------------------------ Sprachen (LanguageHandler des Cores)
+
+    private static function languages(): string
+    {
+        $row = static function (?Language $l): string {
+            $id = $l?->id ?? 0;
+
+            return '<form class="site-card" data-site-form="language_save" data-tab="languages"><input type="hidden" name="id" value="' . $id . '">'
+                . '<div class="blocks-form__grid">'
+                . '<div class="blocks-form__field is-half"><label class="control-label">Kürzel</label><input class="form-control" name="code" value="' . escape($l?->code ?? '') . '" placeholder="fr" required maxlength="10" pattern="[a-z]{2}(-[A-Za-z]{2})?"></div>'
+                . '<div class="blocks-form__field is-half"><label class="control-label">Name</label><input class="form-control" name="name" value="' . escape($l?->name ?? '') . '" placeholder="Français" required maxlength="100"></div>'
+                . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="online" value="1"' . ($l?->isOnline() ? ' checked' : '') . '> Online – für Besucher sichtbar</label></div>'
+                . '</div><div class="site-actions"><button type="submit" class="btn btn--primary">' . ($id ? 'Speichern' : 'Sprache hinzufügen') . '</button></div></form>';
+        };
+        $h = '<p class="site-intro">Jede Seite gibt es in jeder Sprache. Eine neue Sprache übernimmt Seitennamen und Struktur; die Inhalte übertragen Sie Seite für Seite '
+            . '(Sprache in der Leiste wählen → „Inhalt übernehmen“). Weitere Sprachen haben ein Präfix in der Adresse, z. B. <code>/en/…</code>. '
+            . 'Neue Sprachen sind zunächst offline. Löschen nur im Backend (System → Sprachen).</p>';
+        foreach (Language::getAll() as $l) {
+            $h .= $row($l);
+        }
+
+        return $h . '<h3 class="site-h">Neue Sprache</h3>' . $row(null);
+    }
+
+    private static function languageSave(): string
+    {
+        $id = Request::post('id', 'int', 0);
+        $code = strtolower(trim(Request::post('code', 'string', '')));
+        $name = trim(Request::post('name', 'string', ''));
+        if (!preg_match('~^[a-z]{2}(-[a-z]{2})?$~', $code) || '' === $name) {
+            throw new ApiError('Bitte ein Kürzel wie „en“ und einen Namen angeben.');
+        }
+        foreach (Language::getAll() as $l) {
+            if ($l->code === $code && $l->id !== $id) {
+                throw new ApiError('Die Sprache „' . $code . '“ gibt es schon.');
+            }
+        }
+        $online = Request::post('online', 'bool', false);
+        if ($id) {
+            $l = Language::get($id) ?? throw new ApiError('Sprache nicht gefunden.');
+            if (!$online && $id === Language::getStartId()) {
+                throw new ApiError('Die Startsprache bleibt online.');
+            }
+            LanguageHandler::edit($id, $code, $name, $l->priority, $online);
+        } else {
+            LanguageHandler::add($code, $name, \count(Language::getAll()) + 1, $online);
+        }
+        Routing\Routes::rebuild();
+
+        return $id ? 'Sprache gespeichert.' : 'Sprache „' . $name . '“ angelegt – Seitennamen sind übernommen, Seiten zunächst offline.';
     }
 
     // ------------------------------------------------------------------ Domains

@@ -54,6 +54,10 @@ final class Router
                 return $ep->subject;
             });
         }
+        // Sprachen angelegt, geändert, gelöscht → Adressen neu
+        foreach ([\Redaxo\Core\Language\ExtensionPoint\LanguageAdded::class, \Redaxo\Core\Language\ExtensionPoint\LanguageUpdated::class, \Redaxo\Core\Language\ExtensionPoint\LanguageDeleted::class] as $ep) {
+            Extension::register($ep, static fn () => Routes::rebuild());
+        }
         if (Core::isFrontend() && Core::hasRequest()) {
             // Asset-, Medien- und Controller-Adressen ab dem Basis-Pfad (sonst brechen sie auf /seite/unterseite)
             \Redaxo\Core\Filesystem\Url::init(new RootPathProvider(Core::getProject(), Core::getRequest()->getBasePath()));
@@ -112,9 +116,16 @@ final class Router
         if (Language::count() > 1) {
             $first = explode('/', $rest, 2)[0];
             foreach (Language::getAll() as $l) {
-                if ($l->id !== Language::getStartId() && $l->code === $first) {
+                if ($l->id !== Language::getStartId() && $l->code === strtolower($first)) {
                     $lang = $l->id;
                     $rest = (string) substr($rest, strlen($first) + 1);
+                    // eine Adresse je Sprache: „/EN/…“ und „/en“ → „/en/…“ bzw. „/en/“
+                    if (($l->code !== $first || ('' === $rest && !str_ends_with($raw, '/')))) {
+                        $id = '' === $rest ? Article::getSiteStartArticleId() : Routes::find($rest, $lang);
+                        if (null !== $id) {
+                            self::redirect(self::absolute(self::url($id, $lang, $query)), 301);
+                        }
+                    }
                     break;
                 }
             }
@@ -227,6 +238,27 @@ final class Router
     }
 
     /** Kanonische, absolute Adresse einer Seite (Landing „own“ → Landing-Domain, sonst Hauptadresse) */
+    /**
+     * Sprachfassungen einer Seite: alle Sprachen, die online sind und in denen die Seite online ist (für die Sprachwahl).
+     * Mit $all auch offline (für die Redaktion).
+     *
+     * @return list<array{id: int, code: string, name: string, url: string, current: bool, online: bool}>
+     */
+    public static function alternates(Article $article, bool $all = false): array
+    {
+        $out = [];
+        foreach (Language::getAll() as $l) {
+            $a = Article::get($article->id, $l->id);
+            $online = $l->isOnline() && $a && $a->isOnline();
+            if (!$a || (!$all && !$online)) {
+                continue;
+            }
+            $out[] = ['id' => $l->id, 'code' => $l->code, 'name' => $l->name, 'url' => self::url($article->id, $l->id), 'current' => $l->id === $article->languageId, 'online' => $online];
+        }
+
+        return $out;
+    }
+
     public static function canonical(int $id, int $languageId): string
     {
         $path = Routes::path($id, $languageId);

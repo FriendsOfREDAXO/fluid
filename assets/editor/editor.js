@@ -63,6 +63,10 @@
         <a href="${esc(unamp(cfg.viewUrl))}" data-mode="view"${cfg.editing ? '' : ' aria-current="page"'}>Ansehen</a>
         <a href="${esc(unamp(cfg.editUrl))}" data-mode="edit"${cfg.editing ? ' aria-current="page"' : ''}>Bearbeiten</a>
       </nav>
+      ${cfg.languages ? `
+      <nav class="modes modes--lang" aria-label="Sprache">
+        ${cfg.languages.map((l) => `<a href="${esc(unamp(l.href))}" hreflang="${esc(l.code)}"${l.current ? ' aria-current="page"' : ''} title="${esc(l.name)}${l.online ? '' : ' (offline)'}${l.empty ? ' – noch ohne Inhalt' : ''}" class="${l.online ? '' : 'is-off'}${l.empty ? ' is-empty' : ''}">${esc(l.code.toUpperCase())}</a>`).join('')}
+      </nav>` : ''}
       ${!cfg.editing && cfg.state.workVersion ? `
       <nav class="modes modes--version" aria-label="Fassung ansehen">
         <a href="${esc(unamp(cfg.viewUrl))}"${cfg.viewingDraft ? '' : ' aria-current="page"'} title="Was Besucher sehen">Live</a>
@@ -156,7 +160,7 @@
   const tpanel = h(`
     <aside class="panel tpanel" hidden aria-labelledby="fluid-tree-title">
       <header class="panel__head"><h2 id="fluid-tree-title">Seiten</h2><button type="button" class="btn btn--icon" data-tree-close aria-label="Schließen">✕</button></header>
-      <div class="panel__body"><p class="tree__intro">Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen). <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
+      <div class="panel__body"><p class="tree__intro">Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
       <footer class="panel__foot"><button type="button" class="btn" data-tree-new="0">+ Neue Seite (oberste Ebene)</button></footer>
     </aside>`);
   const tdlg = h(`
@@ -583,7 +587,9 @@
       }
       return null;
     };
-    const row = (n, depth) => `
+    // nächste Menüseite oberhalb in derselben Ebene (Ziel für →)
+    const menuBefore = (all, i) => all.slice(0, i).findLast((x) => x.menu) || null;
+    const row = (n, depth, prev = null) => `
       <li role="treeitem" aria-expanded="${n.children?.length ? 'true' : 'false'}" data-id="${n.id}" data-menu="${n.menu ? 1 : 0}" class="tree__item${n.online ? '' : ' is-offline'}${n.id === cfg.article.id ? ' is-current' : ''}">
         <div class="tree__row" style="--d:${depth}">
           <span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>
@@ -592,15 +598,17 @@
           <span class="tree__tools">
             <button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
             <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>
+            ${depth ? `<button type="button" class="tree__btn" data-tree-act="out" title="Eine Ebene höher" aria-label="${esc(n.name)} eine Ebene höher">←</button>` : ''}
+            ${prev?.menu && !n.home ? `<button type="button" class="tree__btn" data-tree-act="in" title="Unter „${esc(prev.name)}“ einordnen" aria-label="${esc(n.name)} unter ${esc(prev.name)} einordnen">→</button>` : ''}
             <button type="button" class="tree__btn" data-tree-act="tree_status" title="${n.online ? 'Offline schalten' : 'Online schalten'}" aria-label="${esc(n.name)}: ${n.online ? 'offline schalten' : 'online schalten'}">${n.online ? '●' : '○'}</button>
             ${n.home ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_menu" title="${n.menu ? 'Aus dem Menü nehmen' : 'Ins Menü aufnehmen'}" aria-label="${esc(n.name)}: ${n.menu ? 'aus dem Menü nehmen' : 'ins Menü aufnehmen'}">☰</button>`}
             ${n.menu ? `<button type="button" class="tree__btn" data-tree-new="${n.id}" title="Unterseite anlegen" aria-label="Unterseite von ${esc(n.name)} anlegen">+</button>` : ''}
             ${n.home ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
           </span>
         </div>
-        ${n.children?.length ? `<ul role="group">${n.children.map((c) => row(c, depth + 1)).join('')}</ul>` : ''}
+        ${n.children?.length ? `<ul role="group">${n.children.map((c, i, all) => row(c, depth + 1, menuBefore(all, i))).join('')}</ul>` : ''}
       </li>`;
-    const draw = () => { list.innerHTML = tree.map((n) => row(n, 0)).join(''); };
+    const draw = () => { list.innerHTML = tree.map((n, i, all) => row(n, 0, menuBefore(all, i))).join(''); };
     const run = async (action, data) => {
       try {
         const res = await api(action, data);
@@ -645,6 +653,19 @@
       const loc = find(tree, id);
       if (!loc) return;
       const act = b.dataset.treeAct;
+      // ← eine Ebene höher: direkt hinter die Elternseite; → unter die Menüseite darüber (ans Ende) – geht auch ohne Ziehen (Handy)
+      if (act === 'out' && loc.parent) {
+        const up = find(tree, loc.parent.id);
+        const after = up.siblings.slice(up.siblings.indexOf(up.node) + 1).find((x) => x.menu === loc.node.menu);
+        await run('tree_move', { id, parent: up.parent?.id || 0, index: indexIn(up.siblings, loc.node, after ? after.id : null) });
+        return;
+      }
+      if (act === 'in') {
+        const prev = menuBefore(loc.siblings, loc.siblings.indexOf(loc.node));
+        if (!prev?.menu) return;
+        await run('tree_move', { id, parent: prev.id, index: indexIn(prev.children || [], loc.node, null) });
+        return;
+      }
       if (act === 'up' || act === 'down') {
         const group = loc.siblings.filter((x) => x.menu === loc.node.menu);
         const i = group.indexOf(loc.node) + (act === 'up' ? -1 : 1);
@@ -1252,8 +1273,19 @@
     if (!hint) {
       hint = document.createElement('div');
       hint.dataset.blocksEmpty = '';
-      hint.innerHTML = '<p>Diese Seite hat noch keine Blöcke.</p><button type="button">+ Ersten Block einfügen</button>';
-      hint.querySelector('button').addEventListener('click', () => openPicker(null));
+      // in einer weiteren Sprache: Inhalt einer gefüllten Sprache übernehmen und dann übersetzen
+      const sources = (cfg.languages || []).filter((l) => !l.current && !l.empty);
+      hint.innerHTML = '<p>Diese Seite hat noch keine Blöcke.</p><button type="button" data-first>+ Ersten Block einfügen</button>'
+        + sources.map((l) => `<button type="button" data-lang-copy="${l.id}">Inhalt aus ${esc(l.name)} übernehmen</button>`).join('');
+      hint.querySelector('[data-first]').addEventListener('click', () => openPicker(null));
+      hint.querySelectorAll('[data-lang-copy]').forEach((b) => b.addEventListener('click', async () => {
+        b.disabled = true;
+        try {
+          const res = await api('lang_copy', { from: b.dataset.langCopy });
+          say(res.message);
+          location.reload();
+        } catch (err) { b.disabled = false; say(err.message, true); }
+      }));
       main.prepend(hint);
     }
   }

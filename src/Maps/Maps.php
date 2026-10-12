@@ -29,6 +29,12 @@ final class Maps
 
     private static bool $assets = false;
 
+    /** Text in der Sprache der Seite (lt() des Kits, sonst Deutsch) */
+    private static function t(string $text, array $vars = []): string
+    {
+        return \function_exists('lt') ? lt($text, $vars) : strtr($text, array_combine(array_map(static fn ($k) => '{' . $k . '}', array_keys($vars)), array_values($vars)) ?: []);
+    }
+
     public static function registerProxy(): void
     {
         Proxy::register('ofm', [
@@ -182,18 +188,18 @@ final class Maps
                 'CooperativeGesturesHandler.MobileHelpText' => 'Mit zwei Fingern verschieben', 'Map.Title' => 'Karte', 'Marker.Title' => 'Standort'],
             'view3d' => false,
         ];
-        $sr = '<span class="sr-only"> (öffnet in neuem Tab)</span>';
+        $sr = '<span class="sr-only"> ' . escape(self::t('(öffnet in neuem Tab)')) . '</span>';
         $h = '<figure class="cms-map cms-map--' . $height . ($click ? ' cms-map--click' : '') . (!empty($o['class']) ? ' ' . escape($o['class']) : '') . '" data-cms-map="'
             . escape(json_encode($cfg, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . '"' . ($click ? ' data-click' : '') . '>'
             . '<div class="cms-map__canvas" role="region" aria-label="' . escape('Karte: ' . ($label ?: self::format($p))) . '"><span class="cms-map__pin" aria-hidden="true"></span>'
-            . ($click ? '<div class="cms-map__consent"><p class="cms-map__note">Die Karte lädt erst nach Klick. Die Kartendaten (OpenStreetMap) holt unser Server – Ihr Browser verbindet sich dabei nicht mit Dritten.</p>'
-                . '<button type="button" class="cms-map__load" data-cms-map-load>Karte anzeigen</button></div></div>'
-                : '<button type="button" class="cms-map__load" data-cms-map-load hidden>Karte anzeigen</button></div>')
+            . ($click ? '<div class="cms-map__consent"><p class="cms-map__note">' . escape(self::t('Die Karte lädt erst nach Klick. Die Kartendaten (OpenStreetMap) holt unser Server – Ihr Browser verbindet sich dabei nicht mit Dritten.')) . '</p>'
+                . '<button type="button" class="cms-map__load" data-cms-map-load>' . escape(self::t('Karte anzeigen')) . '</button></div></div>'
+                : '<button type="button" class="cms-map__load" data-cms-map-load hidden>' . escape(self::t('Karte anzeigen')) . '</button></div>')
             . '<figcaption class="cms-map__cap"><span>' . ('' !== $label ? '<strong>' . escape($label) . '</strong>' : '') . ('' !== $address ? ('' !== $label ? ' · ' : '') . escape($address) : '') . '</span>';
         if (!empty($o['route'] ?? true)) {
-            $h .= '<span class="cms-map__routes"><a class="cms-map__route" href="' . escape($routes['google']) . '" target="_blank" rel="noopener" data-route data-apple="' . escape($routes['apple']) . '">Route planen'
-                . ' <span class="cms-map__via" data-route-via data-apple-name="Apple Karten">mit Google Maps</span>' . $sr . '</a>'
-                . '<details class="cms-map__apps"><summary>Andere Karten-App</summary><ul>'
+            $h .= '<span class="cms-map__routes"><a class="cms-map__route" href="' . escape($routes['google']) . '" target="_blank" rel="noopener" data-route data-apple="' . escape($routes['apple']) . '">' . escape(self::t('Route planen'))
+                . ' <span class="cms-map__via" data-route-via data-apple-name="Apple Karten">' . escape(self::t('mit {name}', ['name' => 'Google Maps'])) . '</span>' . $sr . '</a>'
+                . '<details class="cms-map__apps"><summary>' . escape(self::t('Andere Karten-App')) . '</summary><ul>'
                 . '<li><a href="' . escape($routes['apple']) . '" target="_blank" rel="noopener">Apple Karten' . $sr . '</a></li>'
                 . '<li><a href="' . escape($routes['google']) . '" target="_blank" rel="noopener">Google Maps' . $sr . '</a></li>'
                 . '<li><a href="' . escape($routes['osm']) . '" target="_blank" rel="noopener">OpenStreetMap' . $sr . '</a></li></ul></details></span>';

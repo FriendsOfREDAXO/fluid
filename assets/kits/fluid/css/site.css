@@ -4,3 +4,12 @@
 .hdr__search{display:inline-grid;place-items:center;width:2.75rem;height:2.75rem;border-radius:var(--f-btn-r);color:inherit}
 .hdr__search svg{width:1.3rem;height:1.3rem}
 .hdr__search:hover{background:color-mix(in srgb,currentColor 8%,transparent)}
+
+/* Sprachwahl (Kopf und mobiles Menü) */
+.langswitch { display: flex; gap: 2px; margin: 0; padding: 0; list-style: none; font-size: .8125rem; font-weight: 600; letter-spacing: .04em; }
+.langswitch a { display: block; padding: .35em .5em; border-radius: var(--radius-s, 6px); color: var(--c-muted, currentColor); text-decoration: none; }
+.langswitch a:hover { color: var(--c-ink, currentColor); background: color-mix(in oklab, currentColor 8%, transparent); }
+.langswitch a[aria-current] { color: var(--c-ink, currentColor); text-decoration: underline; text-underline-offset: 4px; }
+.hdr__tools > .langswitch { margin-right: .25rem; }
+.langswitch--mnav { gap: .5rem; padding: 1rem var(--gutter, 1rem); font-size: 1rem; letter-spacing: 0; }
+@media (max-width: 760px) { .hdr__tools > .langswitch { display: none; } }

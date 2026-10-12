@@ -45,7 +45,8 @@ final class Versions
             $ins = Sql::factory()->setTable($table);
             if (isset($row['__empty'])) {
                 // leere Seite: Markierungszeile, damit der Stand sichtbar und wiederherstellbar ist
-                $ins->setValues(['article_id' => $articleId, 'language_id' => $languageId, 'revision' => $revision, 'slice_id' => 0, 'module' => '', 'ctype_id' => 1, 'priority' => 0, 'status' => 0]);
+                $ins->setValues(array_intersect_key(['article_id' => $articleId, 'language_id' => $languageId, 'revision' => $revision, 'slice_id' => 0, 'module' => '', 'ctype_id' => 1, 'priority' => 0, 'status' => 0,
+                    'createdate' => $date, 'updatedate' => $date, 'createuser' => $user, 'updateuser' => $user], array_flip($cols)));
             } else {
                 foreach ($row as $k => $v) {
                     if ('id' === $k) {

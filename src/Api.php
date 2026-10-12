@@ -73,7 +73,7 @@ final class Api
                 'delete' => self::delete($article),
                 'publish' => self::publish($article),
                 'discard' => self::discard($article),
-                'site', 'site_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
+                'site', 'site_save', 'language_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
                 'tree', 'tree_move', 'tree_status', 'tree_menu', 'tree_delete' => Structure::handle(Request::get(self::PARAM, 'string'), $user, $article->languageId),
                 'versions' => ['versions' => Versions::list($article->id, $article->languageId), 'work' => Versions::isWorkVersion()],
                 'version_restore' => (static function () use ($article) {
@@ -95,6 +95,21 @@ final class Api
                     return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user), 'message' => 'Anfrage gelöscht.'];
                 })(),
                 'activity' => ['activity' => Activity::recent(150)],
+                // Inhalt einer Seite aus einer anderen Sprache übernehmen (in den Entwurf bzw. live ohne Arbeitsversion)
+                'lang_copy' => (static function () use ($article) {
+                    $from = Request::post('from', 'int', \Redaxo\Core\Language\Language::getStartId());
+                    if ($from === $article->languageId || !\Redaxo\Core\Language\Language::exists($from)) {
+                        self::fail('Bitte eine andere Sprache wählen.');
+                    }
+                    ContentHandler::copyContent($article->id, $article->id, $from, $article->languageId, FluidAddon::revision(), true);
+                    if (ArticleRevision::LIVE !== FluidAddon::revision() && !Sql::factory()->getArray('SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = 0 LIMIT 1', [$article->id, $article->languageId])) {
+                        // noch nie veröffentlicht: nur Entwurf – live bleibt leer bis „Veröffentlichen“
+                    }
+                    ArticleCache::delete($article->id, $article->languageId);
+                    Activity::log('save', $article->id, 'Inhalt aus ' . (\Redaxo\Core\Language\Language::get($from)?->name ?? $from) . ' übernommen');
+
+                    return ['reload' => true, 'message' => 'Inhalt übernommen – jetzt übersetzen und veröffentlichen.'];
+                })(),
                 'page' => self::page($article),
                 'page_save' => self::pageSave($article),
                 'page_add' => self::pageAdd($article, $user),

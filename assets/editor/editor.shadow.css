@@ -232,6 +232,9 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Umschalter Live/Entwurf in der Ansicht */
 .modes--version a[aria-current] { color: var(--accent); }
+.modes--lang a { font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.modes--lang a.is-off { opacity: .55; }
+.modes--lang a.is-empty { text-decoration: underline dotted; text-underline-offset: 3px; }
 
 /* Seiteneinstellungen, neue Seite */
 .ppanel .count { display: block; margin-top: .25rem; font-size: .75rem; color: var(--muted, #667085); text-align: right; }
