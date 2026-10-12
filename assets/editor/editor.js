@@ -71,11 +71,12 @@
       <div class="actions">
         ${cfg.editing ? `
         <button type="button" class="btn" data-save aria-disabled="true">Speichern</button>
-        <button type="button" class="btn btn--primary" data-publish>Veröffentlichen</button>` : ''}
+        <button type="button" class="btn btn--primary" data-publish><span class="lg">Veröffentlichen</span><span class="sm" aria-hidden="true">Live ↑</span></button>` : ''}
         ${cfg.design ? '<button type="button" class="btn" data-design-open aria-expanded="false">Design</button>' : ''}
         <div class="more">
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
+            ${cfg.design ? '<button type="button" role="menuitem" class="menu-sm" data-design-menu>Design …</button>' : ''}
             <button type="button" role="menuitem" data-tree-open>Seiten …</button>
             ${cfg.inbox ? `<button type="button" role="menuitem" data-inbox-open>Anfragen …${cfg.inbox.new ? ` <span class="badge">${cfg.inbox.new}</span>` : ''}</button>` : ''}
             <button type="button" role="menuitem" data-history-open>Verlauf & Entwürfe …</button>
@@ -289,7 +290,8 @@
       : 'Die Arbeitsversion ist aus – gespeicherte Änderungen sind sofort live.');
   });
 
-  // Menü ⋯
+  // Menü ⋯ – auf schmalen Bildschirmen steckt „Design“ im Menü
+  $('[data-design-menu]')?.addEventListener('click', () => { $('.menu').hidden = true; $('[data-design-open]')?.click(); });
   const moreBtn = $('[data-more]');
   const menu = $('.menu');
   moreBtn.addEventListener('click', () => {
