@@ -18,6 +18,8 @@ Status: Prototyp für REDAXO 6 (Branch `6.x`) – Ziel Friends Of REDAXO.
 - Website: Name, Logo, Kontakt, Öffnungszeiten, Social Media, Hinweisleiste, Rechtliches, Sprachen, Domains, Weiterleitungen
 - Mehrsprachig: Sprache in der Leiste wechseln (DE | EN), leere Seite mit „Inhalt aus … übernehmen“ füllen und übersetzen
 - Design-Editor (Admins), Bildbearbeitung (AddOn image_editor), Formulare und Datenlisten (YForm), Anfragen-Postfach
+- Videos: eigene Datei mit automatischem Vorschaubild, Untertiteln (.vtt/.srt aus dem Medienpool) und Transkript;
+  YouTube/Vimeo mit Zwei-Klick-Lösung
 - Redaktionskommentare `[# … #]` – nur im Bearbeiten-Modus sichtbar
 
 **Für Besucher:** schöne Adressen, Multidomain, Sitemap, strukturierte Daten, Suche mit Tippfehler-Toleranz, Karten
@@ -116,7 +118,7 @@ final class Teaser extends FluidBlock
 **Feldtypen:** `text`, `textarea`, `richtext`, `select` (`options`), `bool`, `number`, `url`, `time`, `media`, `file`,
 `link` (Linkmap), `mediacategory`, `repeater` (`fields`, `item_label`, `title_field`), `geo` (Koordinaten mit Adresssuche),
 `yform_form`, `yform_table`, `yform_field`. Optionen je Feld: `label`, `help`, `required`, `default`, `max`, `rows`,
-`placeholder`, `width` (`half`), `variants` (nur bei bestimmten Darstellungen).
+`placeholder`, `width` (`half`), `variants` (nur bei bestimmten Darstellungen), `types` (bei `file`: erlaubte Endungen, z. B. `['vtt', 'srt']`).
 
 **Block-Optionen:** `variants` (Darstellungen), `background`, `nestable`, `requires` (`'yform'`), `jsonld`
 (strukturierte Daten, z. B. `['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']`),
@@ -179,6 +181,18 @@ Extension::register('FLUID_SITE_TRANSLATIONS', static function (ExtensionPoint $
     return 'fr' === $ep->getParam('code') ? $ep->subject + ['Menü' => 'Menu', 'Suche' => 'Recherche'] : $ep->subject;
 });
 ```
+
+### Videos
+
+- **Vorschaubild:** Media-Manager-Typ `fluid_poster` – bei einem Video ein typisches Standbild per ffmpeg (bei ~10 % der
+  Laufzeit), bei einem Bild nur verkleinert; Ausgabe AVIF/WebP, gespeichert im Cache des Media Managers. Ohne ffmpeg
+  gibt es nur gewählte Vorschaubilder. Pfad bei Bedarf über `FFMPEG_BIN` / `FFPROBE_BIN` in `.env`.
+  `MediaManager::getUrl('fluid_poster', 'film.mp4')` funktioniert auch in eigenen Templates.
+- **Untertitel und Kapitel:** `.vtt` oder `.srt` im Medienpool, im Block je Spur Sprache und Art. fluid liefert sie geprüft
+  als WebVTT unter `/fluid-track/{datei}` aus (SRT umgewandelt; nur erlaubte WebVTT-Tags). Option „gleich einschalten“
+  wählt die Spur in der Sprache der Seite; „Transkript“ zeigt den Text darunter (`<details>`).
+- Eigene Ausgabe: `fluid_video_embed($url, $datei, $poster, $format, $titel, $spuren, $einschalten, $transkript)`
+  bzw. `FriendsOfRedaxo\Fluid\Media\Tracks` (`parse()`, `toVtt()`, `transcript()`).
 
 ### Karten
 

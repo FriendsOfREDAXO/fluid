@@ -22,9 +22,11 @@ final class Picker
 {
     public const array IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'];
 
-    public static function media(string $id, string $name, string $value, bool $images, bool $backend): string
+    /** @param list<string>|null $types erlaubte Endungen (Feldoption `types`, z. B. ['vtt', 'srt']) */
+    public static function media(string $id, string $name, string $value, bool $images, bool $backend, ?array $types = null): string
     {
-        $url = Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_pick'] + ($images ? ['types' => implode(',', self::IMAGE_TYPES)] : []));
+        $types ??= $images ? self::IMAGE_TYPES : null;
+        $url = Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_pick'] + ($types ? ['types' => implode(',', $types)] : []));
         $preview = MediaManager::getUrl('rex_media_small', '__FILE__');
         $media = '' !== $value ? Media::get($value) : null;
         $thumb = $media && in_array(strtolower($media->getExtension()), self::IMAGE_TYPES, true) ? '<img src="' . escape(self::thumb($media->fileName)) . '" alt="">' : '';

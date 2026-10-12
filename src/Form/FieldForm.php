@@ -116,7 +116,7 @@ final class FieldForm
             'bool' => '<input type="hidden" name="' . $n . '" value="0"><label class="blocks-form__check"><input type="checkbox" id="' . $id . '" name="' . $n . '" value="1"' . ($value ? ' checked' : '') . '> ' . escape($label) . '</label>',
             'number' => '<input class="form-control" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
             // Medienpool und Linkmap (REDAXO-Popups); ID aus dem Feldnamen, damit neue Einträge von Wiederholgruppen eindeutig bleiben
-            'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend),
+            'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend, isset($f['types']) ? (array) $f['types'] : null),
             // Medienkategorie des Medienpools (z. B. Downloads „alle Dateien einer Kategorie“)
             'mediacategory' => self::select($name, self::mediaCategories(), (string) $value, ['id' => $id], true),
             // Tabelle aus YForm (Table Manager) – Formular-Block, Datenliste

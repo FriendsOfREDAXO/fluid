@@ -88,6 +88,10 @@ final class Router
         if (preg_match('~^/proxy/([a-z][a-z0-9_-]{1,30})(/.*)?$~', $path, $m)) {
             \FriendsOfRedaxo\Fluid\Maps\Proxy::handle($m[1], (string) ($m[2] ?? ''));
         }
+        // Untertitel aus dem Medienpool, geprüft als WebVTT
+        if (str_starts_with($path, \FriendsOfRedaxo\Fluid\Media\Tracks::ROUTE)) {
+            \FriendsOfRedaxo\Fluid\Media\Tracks::handle(substr($path, \strlen(\FriendsOfRedaxo\Fluid\Media\Tracks::ROUTE)));
+        }
         if ('/sitemap.xml' === $path) {
             self::send(Seo::sitemap(self::$landing), 'application/xml; charset=utf-8');
         }

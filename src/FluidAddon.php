@@ -125,6 +125,13 @@ final class FluidAddon extends Addon
         }
 
         // Schöne Adressen (URL_REWRITE, Strukturänderungen; im Frontend: Adresse → Seite)
+        // Untertitel: PHP erkennt .srt als application/x-subrip, die Liste des Cores erwartet nur text/plain
+        $mime = &\Redaxo\Core\MediaPool\MediaPool::$allowedMimeTypes;
+        if ($mime) {
+            $mime['srt'] = array_values(array_unique([...($mime['srt'] ?? []), 'text/plain', 'application/x-subrip', 'application/x-srt']));
+            $mime['vtt'] = array_values(array_unique([...($mime['vtt'] ?? []), 'text/vtt', 'text/plain']));
+        }
+        unset($mime);
         Routing\Router::boot();
 
         // Layout gelöscht (Backend oder Website): seine Spalten-Blöcke werden wieder normale Abschnitte

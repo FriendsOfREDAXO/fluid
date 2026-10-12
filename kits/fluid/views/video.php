@@ -5,7 +5,8 @@
  * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = in_array($b->variant(), ['wide', 'text', 'cinema'], true) ? $b->variant() : 'wide';
-$embed = fluid_video_embed((string) $d['video_url'], (string) $d['video_file'], (string) $d['poster'], (string) ($d['ratio'] ?: '16-9'), strip_emphasis(trim((string) $d['title'])));
+$embed = fluid_video_embed((string) $d['video_url'], (string) $d['video_file'], (string) $d['poster'], (string) ($d['ratio'] ?: '16-9'), strip_emphasis(trim((string) $d['title'])),
+    (array) ($d['tracks'] ?? []), !empty($d['cc_on']), !empty($d['transcript']));
 $fig = '<figure class="video">' . $embed
     . ((trim((string) $d['caption']) !== '' || is_editing()) ? '<figcaption class="video__cap"' . $b->edit('caption') . '>' . fluid_title((string) $d['caption']) . '</figcaption>' : '')
     . '</figure>';

@@ -181,6 +181,7 @@ return array (
   'KI-Antwort aus den Inhalten dieser Website – bitte wichtige Angaben auf der verlinkten Seite prüfen.' => 'AI answer based on this website’s content – please check important details on the linked page.',
   'Kalender abonnieren' => 'Subscribe to calendar',
   'Kapitel' => 'Chapters',
+  'Text zum Video' => 'Video transcript',
   'Karte' => 'Map',
   'Karte anzeigen' => 'Show map',
   'Karte: {label}' => 'Map: {label}',

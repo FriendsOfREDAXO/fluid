@@ -514,15 +514,16 @@ function privacy_url(): string
  * (Player lädt erst nach Klick, js/embed.js; „künftig direkt laden“ im Browser), MP4 aus dem Medienpool als <video>.
  * Markup und Klassen (.vembed …) wie in Studio, damit css/b-video.css greift.
  */
-function fluid_video_embed(string $url, string $file, string $poster, string $ratio, string $label): string
+/**
+ * Video: eigene Datei (mit Vorschaubild, Untertiteln, Transkript) oder YouTube/Vimeo mit Zwei-Klick-Lösung.
+ * $tracks: [['file' => 'film.de.vtt', 'lang' => 'de', 'kind' => 'subtitles', 'label' => ''], …]
+ */
+function fluid_video_embed(string $url, string $file, string $poster, string $ratio, string $label, array $tracks = [], bool $ccOn = false, bool $transcript = false): string
 {
     $ratio = in_array($ratio, ['16-9', '4-3', '21-9'], true) ? $ratio : '16-9';
     $mp4 = '' !== $file ? Media::get($file) : null;
     if ($mp4 && str_starts_with((string) $mp4->type, 'video/')) {
-        $p = '' !== $poster ? Media::get($poster) : null;
-
-        return '<div class="vembed r-' . e($ratio) . '"><video controls preload="none" playsinline' . ($p ? ' poster="' . e($p->getUrl()) . '"' : '') . '>'
-            . '<source src="' . e($mp4->getUrl()) . '" type="' . e((string) $mp4->type) . '"></video></div>';
+        return fluid_video_file($mp4, $poster, $ratio, $label, $tracks, $ccOn, $transcript);
     }
     $u = trim($url);
     $v = null;
@@ -550,4 +551,44 @@ function fluid_video_embed(string $url, string $file, string $poster, string $ra
         . '<a class="vembed__ext" href="' . e($v['watch']) . '" target="_blank" rel="noopener">' . e(lt('Auf {provider} ansehen', ['provider' => $v['label']])) . '<span class="sr-only"> ' . e(lt('(öffnet in neuem Tab)')) . '</span></a></p></div>'
         . '<button type="button" class="vembed__play" data-embed-play><span class="vembed__icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M8 5.5v13l11-6.5z" fill="currentColor"/></svg></span>'
         . '<span>' . e(lt('{provider}-Video laden', ['provider' => $v['label']])) . '<span class="sr-only">: ' . e($title) . '</span></span></button></div></div>';
+}
+
+/** Eigene Videodatei: Vorschaubild (gewählt oder Standbild per ffmpeg), Untertitel-Spuren, Transkript */
+function fluid_video_file(Media $video, string $poster, string $ratio, string $label, array $tracks, bool $ccOn, bool $transcript): string
+{
+    $mm = \Redaxo\Core\MediaManager\MediaManager::class;
+    $p = '' !== $poster ? Media::get($poster) : null;
+    $posterUrl = $p ? $mm::getUrl('fluid_poster', $p) : (\FriendsOfRedaxo\Fluid\Media\Ffmpeg::available() ? $mm::getUrl('fluid_poster', $video) : '');
+    $lang = \Redaxo\Core\Language\Language::getCurrent()?->code ?? 'de';
+    $out = '';
+    $first = null;
+    $on = false;
+    foreach ($tracks as $t) {
+        $f = trim((string) ($t['file'] ?? ''));
+        $code = strtolower(trim((string) ($t['lang'] ?? '')));
+        $kind = in_array($t['kind'] ?? '', ['subtitles', 'captions', 'chapters'], true) ? $t['kind'] : 'subtitles';
+        if ('' === $f || !preg_match('~^[a-z]{2,3}(-[a-z0-9]{2,8})?$~', $code) || !Media::get($f)) {
+            continue;
+        }
+        $default = $ccOn && !$on && 'chapters' !== $kind && $code === $lang;
+        $on = $on || $default;
+        if ('chapters' !== $kind && (null === $first || $code === $lang && $first['lang'] !== $lang)) {
+            $first = ['file' => $f, 'lang' => $code];
+        }
+        $out .= '<track kind="' . e($kind) . '" src="' . e(\FriendsOfRedaxo\Fluid\Media\Tracks::url($f)) . '" srclang="' . e($code) . '" label="'
+            . e(\FriendsOfRedaxo\Fluid\Media\Tracks::label($kind, $code, (string) ($t['label'] ?? ''))) . '"' . ($default ? ' default' : '') . '>';
+    }
+    // Untertitel von derselben Adresse (crossorigin nötig, sobald Medien von einer anderen Domain kommen)
+    $h = '<div class="vembed r-' . e($ratio) . '"><video controls preload="none" playsinline' . ('' !== $posterUrl ? ' poster="' . e($posterUrl) . '"' : '')
+        . ('' !== $label ? ' aria-label="' . e($label) . '"' : '') . '>'
+        . '<source src="' . e($video->getUrl()) . '" type="' . e((string) $video->type) . '">' . $out . '</video></div>';
+    if ($transcript && $first) {
+        $paras = \FriendsOfRedaxo\Fluid\Media\Tracks::transcript(\FriendsOfRedaxo\Fluid\Media\Tracks::cuesOf($first['file']));
+        if ($paras) {
+            $h .= '<details class="vtranscript"><summary>' . e(lt('Text zum Video')) . '</summary><div class="vtranscript__body" lang="' . e($first['lang']) . '">'
+                . implode('', array_map(static fn ($t) => '<p>' . e($t) . '</p>', $paras)) . '</div></details>';
+        }
+    }
+
+    return $h;
 }
