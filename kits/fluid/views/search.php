@@ -12,7 +12,7 @@ $res = '' !== $q ? Search::search($q, Language::getCurrentId(), (int) ($d['limit
 $id = $b->domId() . '-q';
 ?>
 <div class="wrap fsearch">
-  <?= fluid_head($b) ?>
+  <?= fluid_head($b, '', null === $b->prev ? 'h1' : 'h2') /* erster Block der Seite: Hauptüberschrift */ ?>
   <form class="fsearch__form" role="search" method="get" action="#<?= e($b->domId()) ?>">
     <label class="sr-only" for="<?= e($id) ?>"><?= e(lt('Suchbegriff')) ?></label>
     <input class="fsearch__input" id="<?= e($id) ?>" type="search" name="q" value="<?= e($q) ?>" placeholder="<?= e(trim((string) ($d['placeholder'] ?? '')) ?: lt('Wonach suchen Sie?')) ?>" maxlength="100" autocomplete="off" enterkeyhint="search"<?= '' === $q && !is_editing() ? ' autofocus' : '' ?>>
