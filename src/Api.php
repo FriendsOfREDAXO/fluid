@@ -83,6 +83,17 @@ final class Api
                     return ['reload' => true, 'message' => 'Stand in den Entwurf geholt – prüfen und veröffentlichen.'];
                 })(),
                 'drafts' => ['drafts' => Drafts::all($article->languageId)],
+                'inbox' => ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)],
+                'inbox_state' => (static function () use ($user) {
+                    Data\Inbox::setState($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0), Request::post('state', 'string', 'done'));
+
+                    return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)];
+                })(),
+                'inbox_delete' => (static function () use ($user) {
+                    Data\Inbox::delete($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0));
+
+                    return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user), 'message' => 'Anfrage gelöscht.'];
+                })(),
                 'activity' => ['activity' => Activity::recent(150)],
                 'page' => self::page($article),
                 'page_save' => self::pageSave($article),

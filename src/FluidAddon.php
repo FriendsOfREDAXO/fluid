@@ -89,6 +89,14 @@ final class FluidAddon extends Addon
             ->ensureColumn(new Column('article_id', 'int(10) unsigned', true))
             ->ensureColumn(new Column('detail', 'varchar(191)', true))
             ->ensure();
+        Table::get(Data\Inbox::TABLE)
+            ->ensureColumn(new Column('table_name', 'varchar(191)'))
+            ->ensureColumn(new Column('dataset_id', 'int(10) unsigned'))
+            ->ensureColumn(new Column('state', 'varchar(10)', false, 'new'))
+            ->ensureColumn(new Column('updated', 'datetime', true))
+            ->ensureColumn(new Column('user', 'varchar(191)', true))
+            ->setPrimaryKey(['table_name', 'dataset_id'])
+            ->ensure();
         \Redaxo\Core\Content\ArticleSliceHistory::checkTables();
         Routing\Routes::rebuild();
     }

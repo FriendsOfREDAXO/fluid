@@ -68,6 +68,8 @@ final class Toolbar
             'design' => $user->admin ? self::designSchema($article) : null,
             // Website-Einstellungen (Seitenleiste „Website“): nur Admins
             'site' => $user->admin ? ['tabs' => SiteAdmin::tabs()] : null,
+            // Anfragen-Postfach: nur, wenn es Formulare mit YForm-Tabellen gibt
+            'inbox' => [] !== Data\Inbox::tables($user) ? ['new' => Data\Inbox::countNew($user)] : null,
             // Addon image_editor (optional): Bilder auf der Website bearbeiten
             'imageEditor' => class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null,
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),

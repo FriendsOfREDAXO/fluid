@@ -77,6 +77,7 @@
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
             <button type="button" role="menuitem" data-tree-open>Seiten …</button>
+            ${cfg.inbox ? `<button type="button" role="menuitem" data-inbox-open>Anfragen …${cfg.inbox.new ? ` <span class="badge">${cfg.inbox.new}</span>` : ''}</button>` : ''}
             <button type="button" role="menuitem" data-history-open>Verlauf & Entwürfe …</button>
             <button type="button" role="menuitem" data-compact>Kompaktansicht</button>
             <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
@@ -176,6 +177,16 @@
       </nav>
       <div class="panel__body" data-history-body></div>
     </aside>`);
+  const ipanel = h(`
+    <aside class="panel ipanel" hidden aria-labelledby="fluid-inbox-title">
+      <header class="panel__head"><h2 id="fluid-inbox-title">Anfragen</h2><button type="button" class="btn btn--icon" data-inbox-close aria-label="Schließen">✕</button></header>
+      <nav class="spanel__tabs" role="tablist" aria-label="Filter">
+        <button type="button" role="tab" data-inbox-filter="new" aria-selected="true">Neu</button>
+        <button type="button" role="tab" data-inbox-filter="done" aria-selected="false">Erledigt</button>
+        <button type="button" role="tab" data-inbox-filter="all" aria-selected="false">Alle</button>
+      </nav>
+      <div class="panel__body" data-inbox-body></div>
+    </aside>`);
   const newdlg = h(`
     <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-new-t">
       <form class="dlg__box newpage" data-new-form novalidate>
@@ -196,7 +207,7 @@
     </div>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, hpanel, picker, dialog, newdlg, tdlg, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, hpanel, ipanel, picker, dialog, newdlg, tdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -311,6 +322,7 @@
   initPage();
   initTree();
   initHistory();
+  if (cfg.inbox) initInbox();
   if (cfg.site) initSite();
   if (!cfg.editing) return;
 
@@ -739,6 +751,75 @@
         location.reload();
       } catch (err) { say(err.message, true); }
     });
+  }
+
+
+  // ------------------------------------------------------------------ Anfragen-Postfach (YForm-Formulare der Website)
+
+  function initInbox() {
+    const body = $('[data-inbox-body]');
+    let filter = 'new';
+    let items = [];
+    const when = (d) => { const t = new Date(String(d).replace(' ', 'T')); return d && !isNaN(t) ? t.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''; };
+    const badge = (n) => {
+      const b = $('[data-inbox-open]');
+      b.querySelector('.badge')?.remove();
+      if (n) b.insertAdjacentHTML('beforeend', ` <span class="badge">${n}</span>`);
+      $('[data-more]').classList.toggle('has-badge', n > 0);
+    };
+    const draw = () => {
+      body.innerHTML = items.length ? '<ul class="site-list" role="list">' + items.map((it, i) => `
+        <li class="inbox__item${it.state === 'new' ? ' is-new' : ''}">
+          <details>
+            <summary><span class="site-list__main"><b>${esc(it.title)}</b><small>${esc(it.tableLabel)}${it.when ? ' · ' + esc(when(it.when)) : ''}${it.state === 'new' ? ' · neu' : ''}</small></span></summary>
+            <dl class="inbox__dl">${it.values.map((v) => `<div><dt>${esc(v.label)}</dt><dd>${esc(v.value).replace(/\n/g, '<br>')}</dd></div>`).join('')}</dl>
+            <div class="site-actions">
+              ${it.email ? `<a class="btn" href="mailto:${esc(it.email)}">Antworten</a>` : ''}
+              ${it.edit ? `<a class="btn" href="${esc(unamp(it.edit))}" target="_blank" rel="noopener">In YForm öffnen</a>` : ''}
+              ${it.canDelete ? `<button type="button" class="btn" data-inbox-delete="${i}">Löschen</button>` : ''}
+              <button type="button" class="btn btn--primary" data-inbox-state="${i}">${it.state === 'new' ? 'Erledigt' : 'Wieder neu'}</button>
+            </div>
+          </details>
+        </li>`).join('') + '</ul>'
+        : `<p class="site-intro">${filter === 'new' ? 'Keine neuen Anfragen.' : 'Keine Anfragen.'}</p>`;
+    };
+    const load = async (action = 'inbox', data = {}) => {
+      try {
+        const res = await api(action, { filter, ...data });
+        items = res.items || [];
+        badge(res.new || 0);
+        draw();
+        if (res.message) say(res.message);
+      } catch (err) { say(err.message, true); }
+    };
+    $('[data-inbox-open]').addEventListener('click', () => {
+      menu.hidden = true;
+      if ([panel, dpanel, ppanel, spanel, tpanel, hpanel].some((x) => !x.hidden)) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
+      ipanel.hidden = false;
+      document.documentElement.classList.add('blocks-panel-open');
+      load();
+    });
+    $('[data-inbox-close]').addEventListener('click', () => { ipanel.hidden = true; document.documentElement.classList.remove('blocks-panel-open'); });
+    ipanel.addEventListener('click', async (e) => {
+      const f = e.target.closest('[data-inbox-filter]');
+      if (f) {
+        filter = f.dataset.inboxFilter;
+        ipanel.querySelectorAll('[data-inbox-filter]').forEach((b) => b.setAttribute('aria-selected', String(b === f)));
+        return load();
+      }
+      const st = e.target.closest('[data-inbox-state]');
+      if (st) {
+        const it = items[+st.dataset.inboxState];
+        return load('inbox_state', { table: it.table, id: it.id, state: it.state === 'new' ? 'done' : 'new' });
+      }
+      const del = e.target.closest('[data-inbox-delete]');
+      if (del) {
+        const it = items[+del.dataset.inboxDelete];
+        if (!(await ask({ title: 'Anfrage löschen?', body: `„${it.title}“ wird endgültig aus „${it.tableLabel}“ gelöscht.`, ok: 'Löschen', danger: true }))) return;
+        return load('inbox_delete', { table: it.table, id: it.id });
+      }
+    });
+    if (cfg.inbox.new) $('[data-more]').classList.add('has-badge');
   }
 
   // ------------------------------------------------------------------ Website-Einstellungen (Admins)
