@@ -296,8 +296,11 @@ textarea[data-blocks-rte] { display: none !important; }
 .tree__btn:focus-visible { outline: 2px solid var(--accent, #4f46e5); }
 .tree__btn--danger:hover { background: #fee2e2; color: #b42318; }
 .is-dragging > .tree__row { opacity: .4; }
-.tree__row[data-drop="before"] { box-shadow: inset 0 2px 0 var(--accent, #4f46e5); }
-.tree__row[data-drop="after"] { box-shadow: inset 0 -2px 0 var(--accent, #4f46e5); }
+/* Einfügelinie ab der Zieltiefe (--dl) */
+.tree__row[data-drop="before"], .tree__row[data-drop="after"] {
+  background: linear-gradient(var(--accent, #4f46e5), var(--accent, #4f46e5)) no-repeat calc(6px + var(--dl, 0) * 18px) 0 / calc(100% - 6px - var(--dl, 0) * 18px) 2px;
+}
+.tree__row[data-drop="after"] { background-position-y: 100%; }
 .tree__row[data-drop="inside"] { background: color-mix(in srgb, var(--accent, #4f46e5) 12%, transparent); border-color: var(--accent, #4f46e5); }
 
 /* Blockleiste: Menü ⋯ */

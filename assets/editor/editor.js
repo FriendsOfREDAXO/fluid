@@ -160,7 +160,7 @@
   const tpanel = h(`
     <aside class="panel tpanel" hidden aria-labelledby="fluid-tree-title">
       <header class="panel__head"><h2 id="fluid-tree-title">Seiten</h2><button type="button" class="btn btn--icon" data-tree-close aria-label="Schließen">✕</button></header>
-      <div class="panel__body"><p class="tree__intro">Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
+      <div class="panel__body"><p class="tree__intro">Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen, nach links ziehen = eine Ebene höher), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
       <footer class="panel__foot"><button type="button" class="btn" data-tree-new="0">+ Neue Seite (oberste Ebene)</button></footer>
     </aside>`);
   const tdlg = h(`
@@ -594,10 +594,10 @@
         <div class="tree__row" style="--d:${depth}">
           <span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>
           <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a>
-          <span class="tree__badge">${n.menu ? 'Menü' : 'Seite'}${n.online ? '' : ' · offline'}</span>
+          <span class="tree__badge">${n.home ? 'Startseite' : n.menu ? 'Menü' : 'Seite'}${n.online ? '' : ' · offline'}</span>
           <span class="tree__tools">
-            <button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
-            <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>
+            ${n.home ? '' : `<button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
+            <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>`}
             ${depth ? `<button type="button" class="tree__btn" data-tree-act="out" title="Eine Ebene höher" aria-label="${esc(n.name)} eine Ebene höher">←</button>` : ''}
             ${prev?.menu && !n.home ? `<button type="button" class="tree__btn" data-tree-act="in" title="Unter „${esc(prev.name)}“ einordnen" aria-label="${esc(n.name)} unter ${esc(prev.name)} einordnen">→</button>` : ''}
             <button type="button" class="tree__btn" data-tree-act="tree_status" title="${n.online ? 'Offline schalten' : 'Online schalten'}" aria-label="${esc(n.name)}: ${n.online ? 'offline schalten' : 'online schalten'}">${n.online ? '●' : '○'}</button>
@@ -608,7 +608,11 @@
         </div>
         ${n.children?.length ? `<ul role="group">${n.children.map((c, i, all) => row(c, depth + 1, menuBefore(all, i))).join('')}</ul>` : ''}
       </li>`;
-    const draw = () => { list.innerHTML = tree.map((n, i, all) => row(n, 0, menuBefore(all, i))).join(''); };
+    // Startseite immer oben (REDAXO sortiert je Ebene erst Menüpunkte, dann Seiten – die Startseite gehört davor)
+    const draw = () => {
+      const top = [...tree.filter((n) => n.home), ...tree.filter((n) => !n.home)];
+      list.innerHTML = top.map((n, i, all) => row(n, 0, n.home ? null : menuBefore(all, i))).join('');
+    };
     const run = async (action, data) => {
       try {
         const res = await api(action, data);
@@ -669,6 +673,12 @@
       if (act === 'up' || act === 'down') {
         const group = loc.siblings.filter((x) => x.menu === loc.node.menu);
         const i = group.indexOf(loc.node) + (act === 'up' ? -1 : 1);
+        // erste Unterseite ↑ → eine Ebene höher, vor die Elternseite
+        if (i < 0 && loc.parent && loc.node.menu) {
+          const up = find(tree, loc.parent.id);
+          await run('tree_move', { id, parent: up.parent?.id || 0, index: indexIn(up.siblings, loc.node, up.node.id) });
+          return;
+        }
         if (i < 0 || i >= group.length) return;
         await run('tree_move', { id, parent: loc.parent?.id || 0, index: i });
         list.querySelector(`[data-id="${id}"] [data-tree-act="${act}"]`)?.focus();
@@ -687,40 +697,58 @@
       e.dataTransfer.setData('text/plain', String(dragId));
       it.classList.add('is-dragging');
     });
-    list.addEventListener('dragend', () => { dragId = 0; list.querySelectorAll('.is-dragging, [data-drop]').forEach((x) => { x.classList.remove('is-dragging'); x.removeAttribute('data-drop'); }); });
+    list.addEventListener('dragend', () => { dragId = 0; list.querySelectorAll('.is-dragging').forEach((x) => x.classList.remove('is-dragging')); clearMarks(); });
     const zone = (e, rowEl, target) => {
       const r = rowEl.getBoundingClientRect();
       const y = (e.clientY - r.top) / r.height;
       return y < 0.3 ? 'before' : y > 0.7 ? 'after' : (target.menu ? 'inside' : (y < 0.5 ? 'before' : 'after'));
     };
+    // Ziel des Ziehens: hinein, davor, dahinter – unter der letzten Unterseite (oder auf der eigenen Zeile) bestimmt die
+    // Mausposition nach links die Ebene (nach links ziehen = eine Ebene höher)
+    const plan = (e, rowEl) => {
+      const target = find(tree, +rowEl.closest('[data-id]').dataset.id);
+      const moving = find(tree, dragId);
+      if (!target || !moving || target.node.home) return null;
+      const depth = +rowEl.style.getPropertyValue('--d') || 0;
+      const own = target.node.id === dragId;
+      let z = own ? 'after' : zone(e, rowEl, target.node);
+      if (z === 'inside') {
+        if (contains(moving.node, target.node.id)) return null;
+        return { mark: 'inside', level: depth, parent: target.node.id, index: indexIn(target.node.children || [], moving.node, null) };
+      }
+      let anchor = target;
+      let level = depth;
+      const last = target.siblings[target.siblings.length - 1] === target.node && !(target.node.children || []).length;
+      if (z === 'after' && (last || own) && depth > 0) {
+        const x = e.clientX - list.getBoundingClientRect().left - 6;
+        level = Math.max(0, Math.min(depth, Math.round(x / 18) - 1));
+        for (let d = depth; d > level; d--) anchor = find(tree, anchor.parent.id);
+      }
+      if (own && anchor === target) return null;
+      if (anchor.node.id !== dragId && contains(moving.node, anchor.node.id)) return null;
+      const sib = anchor.siblings;
+      const next = sib.slice(sib.indexOf(anchor.node) + (z === 'after' ? 1 : 0)).find((x) => x.menu === moving.node.menu && x.id !== dragId);
+      return { mark: z, level, parent: anchor.parent?.id || 0, index: indexIn(sib, moving.node, next ? next.id : null) };
+    };
+    const contains = (node, id) => (node.children || []).some((c) => c.id === id || contains(c, id));
+    const clearMarks = () => list.querySelectorAll('[data-drop]').forEach((x) => { x.removeAttribute('data-drop'); x.style.removeProperty('--dl'); });
     list.addEventListener('dragover', (e) => {
       const rowEl = e.target.closest('.tree__row');
       if (!dragId || !rowEl) return;
-      const id = +rowEl.closest('[data-id]').dataset.id;
-      if (id === dragId) return;
+      const p = plan(e, rowEl);
+      clearMarks();
+      if (!p) return;
       e.preventDefault();
-      list.querySelectorAll('[data-drop]').forEach((x) => x.removeAttribute('data-drop'));
-      rowEl.setAttribute('data-drop', zone(e, rowEl, find(tree, id).node));
+      rowEl.setAttribute('data-drop', p.mark);
+      rowEl.style.setProperty('--dl', p.level);
     });
     list.addEventListener('drop', async (e) => {
       const rowEl = e.target.closest('.tree__row');
       if (!dragId || !rowEl) return;
       e.preventDefault();
-      const target = find(tree, +rowEl.closest('[data-id]').dataset.id);
-      const moving = find(tree, dragId);
-      if (!target || !moving || target.node.id === dragId) return;
-      const z = zone(e, rowEl, target.node);
-      let parent, index;
-      if (z === 'inside') {
-        parent = target.node.id;
-        index = indexIn(target.node.children || [], moving.node, null);
-      } else {
-        parent = target.parent?.id || 0;
-        const sib = target.siblings;
-        const after = sib.slice(sib.indexOf(target.node) + (z === 'after' ? 1 : 0)).find((x) => x.menu === moving.node.menu && x.id !== dragId);
-        index = indexIn(sib, moving.node, after ? after.id : null);
-      }
-      await run('tree_move', { id: dragId, parent, index });
+      const p = plan(e, rowEl);
+      clearMarks();
+      if (p) await run('tree_move', { id: dragId, parent: p.parent, index: p.index });
     });
   }
 
