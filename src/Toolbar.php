@@ -46,6 +46,7 @@ final class Toolbar
                 'group' => (string) ($def['group'] ?? 'Inhalt'),
                 'help' => (string) ($def['help'] ?? ''),
                 'nestable' => $module->nestable(),
+                'drags' => self::drags($module, $def),
             ];
         }
 
@@ -101,5 +102,35 @@ final class Toolbar
         $path = FluidAddon::instance()->getPath('assets/' . $file);
 
         return is_file($path) ? substr(md5((string) filemtime($path)), 0, 8) : '0';
+    }
+
+    /**
+     * Greifer auf der Seite (Kit-Angabe 'drags', wie in KLXM Studio): Feld, Ziel-Element, Klasse je Wert, Optionen/Standard
+     * aus dem Feldschema – z. B. Textbreite (Fließtext) oder Aufteilung Bild/Text.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function drags(BlockModule $module, array $def): array
+    {
+        $out = [];
+        foreach ((array) ($def['drags'] ?? []) as $g) {
+            $field = null;
+            foreach ($module->fields() as $f) {
+                if (($f['name'] ?? '') === ($g['field'] ?? null)) {
+                    $field = $f;
+                }
+            }
+            if (!$field || !is_array($field['options'] ?? null)) {
+                continue;
+            }
+            $out[] = [
+                'field' => (string) $g['field'], 'target' => (string) $g['target'], 'class' => (string) $g['class'],
+                'apply' => (string) ($g['apply'] ?? ''), 'kind' => isset($g['apply']) ? 'split' : 'width',
+                'label' => (string) ($g['label'] ?? $field['label'] ?? $g['field']),
+                'options' => $field['options'], 'default' => (string) ($field['default'] ?? array_key_first($field['options'])),
+            ];
+        }
+
+        return $out;
     }
 }

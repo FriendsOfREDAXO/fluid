@@ -985,7 +985,7 @@
   const HANDLE_CSS = `
     :host{all:initial}
     .h{--k:#7C3AED;all:unset;box-sizing:border-box;position:absolute;inset:0;display:grid;place-items:center;touch-action:none}
-    .h--y{cursor:row-resize}.h--x{cursor:col-resize}.h--cols{--k:#0F9F74}
+    .h--y{cursor:row-resize}.h--x{cursor:col-resize}.h--cols{--k:#0F9F74}.h--width{--k:#D97706}.h--split{--k:#DB2777}
     .g{display:grid;place-items:center;border-radius:999px;background:var(--k);color:#fff;box-shadow:0 0 0 2px #fff,0 4px 12px rgb(0 0 0/.25);opacity:.7;transition:opacity .15s,scale .15s}
     .g svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
     .h--y .g{width:44px;height:18px}.h--x .g{width:18px;height:44px}
@@ -1025,7 +1025,7 @@
     const secs = scope.matches?.('section[data-block]') ? [scope] : [...scope.querySelectorAll('section[data-block]')];
     secs.forEach((sec) => {
       sec.querySelectorAll(':scope > .fluid-handle, [data-lay-col] > .fluid-handle').forEach((x) => x.remove());
-      requestAnimationFrame(() => { spaceHandles(sec); colHandles(sec); });
+      requestAnimationFrame(() => { spaceHandles(sec); colHandles(sec); fieldHandles(sec); });
     });
   }
 
@@ -1079,6 +1079,7 @@
       };
       h.addEventListener('pointerup', end);
       h.addEventListener('pointercancel', end);
+      h.addEventListener('lostpointercapture', end);   // Erfassung verloren (Tab-Wechsel, Systemgeste): Zug trotzdem abschließen
       h.addEventListener('click', (e) => e.stopPropagation());
       h.addEventListener('keydown', (e) => {
         const step = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0;
@@ -1152,6 +1153,7 @@
       };
       h.addEventListener('pointerup', end);
       h.addEventListener('pointercancel', end);
+      h.addEventListener('lostpointercapture', end);   // Erfassung verloren (Tab-Wechsel, Systemgeste): Zug trotzdem abschließen
       h.addEventListener('dblclick', (e) => { e.stopPropagation(); commit(null); });
       h.addEventListener('click', (e) => e.stopPropagation());
       h.addEventListener('keydown', (e) => {
@@ -1167,8 +1169,88 @@
       });
     }
   }
+
+  /*
+   * Felder, die der Block als Griff anbietet (Kit 'drags'): Textbreite (bernstein), Aufteilung Bild/Text (pink).
+   * Griff an der Kante des Zielelements; weg vom Element ziehen = größer, je ~56 px ein Wert, Vorschau über die Klasse.
+   */
+  function fieldHandles(sec) {
+    if (!sec.isConnected) return;
+    const type = sec.dataset.type || '';
+    const mod = (cfg.modules || []).find((m) => m.key === type || m.key.endsWith('.' + type));
+    for (const g of mod?.drags || []) {
+      const target = sec.querySelector(g.target);
+      const values = Object.keys(g.options || {});
+      if (!target || values.length < 2) continue;
+      const apply = g.apply ? target.closest(g.apply) || target : target;
+      const cls = (v) => g.class.replace('{v}', v);
+      const cur = () => dirty.get(sec.dataset.block)?.[g.field] || values.find((v) => apply.classList.contains(cls(v))) || g.default;
+      if (getComputedStyle(sec).position === 'static') sec.style.position = 'relative';
+      const sr = handleHost(sec, 'position:absolute;width:24px;z-index:30',
+        `<button type="button" class="h h--x h--${g.kind}" role="slider" aria-orientation="horizontal"><span class="g" aria-hidden="true">${ICON_X}</span><span class="t"></span></button>`);
+      const host = sr.host, h = sr.querySelector('.h'), tip = sr.querySelector('.t');
+      let dir = 1, drag = null;
+      // Griff sitzt an der Kante des Ziels (nie im bearbeitbaren Text): Element rechts → Griff links, nach links ziehen = größer
+      const place = () => {
+        const t = target.getBoundingClientRect(), hr = sec.getBoundingClientRect(), pr = (target.parentElement || target).getBoundingClientRect();
+        if (!t.width) return;
+        const leftEdge = (t.left + t.right) / 2 > (pr.left + pr.right) / 2 + 12;
+        if (!drag) dir = leftEdge ? -1 : 1;
+        host.style.top = `${t.top - hr.top}px`;
+        host.style.height = `${Math.max(48, t.height)}px`;
+        host.style.left = `${(leftEdge ? t.left : t.right) - hr.left - 12}px`;
+      };
+      const show = (v) => {
+        tip.textContent = `${g.label}: ${g.options[v]} · ↔ ziehen`;
+        h.setAttribute('aria-label', `${g.label} ziehen – jetzt ${g.options[v]}. Pfeiltasten: kleiner/größer.`);
+        h.setAttribute('aria-valuenow', String(values.indexOf(v)));
+        h.setAttribute('aria-valuemin', '0');
+        h.setAttribute('aria-valuemax', String(values.length - 1));
+        h.setAttribute('aria-valuetext', g.options[v]);
+      };
+      const preview = (v) => { values.forEach((x) => apply.classList.remove(cls(x))); apply.classList.add(cls(v)); show(v); place(); };
+      const commit = (v) => { patchBlock(sec, g.field, v); say(`${g.label}: ${g.options[v]} – noch nicht gespeichert.`); };
+      show(cur());
+      requestAnimationFrame(place);
+      sec.addEventListener('pointerenter', () => { if (!drag) place(); });
+      h.addEventListener('pointerdown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        h.setPointerCapture(e.pointerId); h.classList.add('is-drag');
+        const i = Math.max(0, values.indexOf(cur()));
+        drag = { x: e.clientX, i0: i, i };
+      });
+      h.addEventListener('pointermove', (e) => {
+        if (!drag) return;
+        const i = Math.max(0, Math.min(values.length - 1, drag.i0 + Math.round(((e.clientX - drag.x) * dir) / 56)));
+        if (i !== drag.i) { drag.i = i; preview(values[i]); }
+      });
+      const end = (e) => {
+        if (!drag) return;
+        const { i, i0 } = drag; drag = null; h.classList.remove('is-drag');
+        if (h.hasPointerCapture?.(e.pointerId)) h.releasePointerCapture(e.pointerId);
+        if (i !== i0) commit(values[i]);
+        place();
+      };
+      h.addEventListener('pointerup', end);
+      h.addEventListener('pointercancel', end);
+      h.addEventListener('lostpointercapture', end);   // Erfassung verloren (Tab-Wechsel, Systemgeste): Zug trotzdem abschließen
+      h.addEventListener('click', (e) => e.stopPropagation());
+      h.addEventListener('keydown', (e) => {
+        const step = e.key === (dir > 0 ? 'ArrowRight' : 'ArrowLeft') ? 1 : e.key === (dir > 0 ? 'ArrowLeft' : 'ArrowRight') ? -1 : 0;
+        if (!step) return;
+        e.preventDefault(); e.stopPropagation();
+        const i = Math.max(0, Math.min(values.length - 1, values.indexOf(cur()) + step));
+        if (values[i] === cur()) return;
+        preview(values[i]); commit(values[i]);
+      });
+    }
+  }
   let handleTimer = 0;
-  addEventListener('resize', () => { clearTimeout(handleTimer); handleTimer = setTimeout(() => initHandles(main), 200); }, { passive: true });
+  // Neu aufbauen bei geänderter Fenstergröße – nie während gezogen wird (sonst geht das Loslassen verloren; auf dem Handy
+  // feuert resize schon beim Ein-/Ausblenden der Adressleiste)
+  const dragging = () => [...main.querySelectorAll('.fluid-handle')].some((x) => x.shadowRoot?.querySelector('.is-drag'));
+  const rebuild = () => { clearTimeout(handleTimer); handleTimer = setTimeout(() => (dragging() ? rebuild() : initHandles(main)), 200); };
+  addEventListener('resize', rebuild, { passive: true });
 
   // ------------------------------------------------------------------ Start
 
