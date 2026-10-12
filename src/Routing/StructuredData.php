@@ -100,6 +100,7 @@ final class StructuredData
             $graph[] = $n;
         }
 
-        return ['@context' => 'https://schema.org', '@graph' => $graph];
+        return (array) \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_STRUCTURED_DATA',
+            ['@context' => 'https://schema.org', '@graph' => $graph], ['article' => $article]));
     }
 }

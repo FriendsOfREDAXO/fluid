@@ -99,8 +99,13 @@ final class Search
                 }
             }
             $s = PageSettings::get($id, $languageId);
-            $docs[] = ['id' => $id, 'title' => $s['title'] ?: $a->name, 'headings' => implode(' · ', array_unique($headings)),
-                'text' => trim($s['description'] . ' ' . implode(' ', $text))];
+            // FLUID_SEARCH_DOCUMENT: Dokument ergänzen (z. B. Texte eigener Daten) oder mit null überspringen
+            $doc = \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_SEARCH_DOCUMENT',
+                ['id' => $id, 'title' => $s['title'] ?: $a->name, 'headings' => implode(' · ', array_unique($headings)), 'text' => trim($s['description'] . ' ' . implode(' ', $text))],
+                ['article' => $a]));
+            if (\is_array($doc)) {
+                $docs[] = $doc;
+            }
         }
 
         return $docs;

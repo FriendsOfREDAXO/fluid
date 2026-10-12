@@ -82,7 +82,7 @@ final class Api
 
                     return ['reload' => true, 'message' => 'Stand in den Entwurf geholt – prüfen und veröffentlichen.'];
                 })(),
-                'drafts' => ['drafts' => Drafts::all($article->languageId)],
+                'drafts' => ['drafts' => Drafts::all($article->languageId, $user)],
                 'inbox' => ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)],
                 'inbox_state' => (static function () use ($user) {
                     Data\Inbox::setState($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0), Request::post('state', 'string', 'done'));
@@ -98,7 +98,15 @@ final class Api
                 'page' => self::page($article),
                 'page_save' => self::pageSave($article),
                 'page_add' => self::pageAdd($article, $user),
-                'template_save' => self::templateSave($article),
+                'template_save' => (static function () use ($article, $user) {
+                    $perm = $user->getComplexPerm('structure');
+                    $cat = PageTemplates::categoryId();
+                    if (!$user->admin && !($perm instanceof StructurePermission && $perm->hasCategoryPerm($cat))) {
+                        self::fail('Vorlagen dürfen nur Admins bzw. Benutzer mit Recht auf „Seitenvorlagen“ speichern.', 403);
+                    }
+
+                    return self::templateSave($article);
+                })(),
                 'templates' => ['templates' => PageTemplates::all($article->languageId)],
                 'design' => self::design($article, $user, false),
                 'design_save' => self::design($article, $user, true),

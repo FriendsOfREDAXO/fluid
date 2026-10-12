@@ -24,6 +24,15 @@ final class Settings
     /** @return array<string, array{label: string, fields: list<array<string, mixed>>}> */
     public static function schema(): array
     {
+        return self::$schema ??= (array) \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_SETTINGS_SCHEMA', self::baseSchema()));
+    }
+
+    /** @var array<string, array{label: string, fields: list<array<string, mixed>>}>|null */
+    private static ?array $schema = null;
+
+    /** @return array<string, array{label: string, fields: list<array<string, mixed>>}> */
+    private static function baseSchema(): array
+    {
         $days = ['1' => 'Montag', '2' => 'Dienstag', '3' => 'Mittwoch', '4' => 'Donnerstag', '5' => 'Freitag', '6' => 'Samstag', '0' => 'Sonntag'];
 
         return [

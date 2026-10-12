@@ -2,6 +2,8 @@
 
 namespace FriendsOfRedaxo\Fluid;
 
+use Redaxo\Core\ExtensionPoint\Extension;
+use Redaxo\Core\ExtensionPoint\ExtensionPoint;
 use FriendsOfRedaxo\Fluid\Form\FieldForm;
 use Override;
 use Redaxo\Core\Content\ArticleSlice;
@@ -43,7 +45,33 @@ abstract class BlockModule extends Module
     /** @return array<string, mixed> */
     public function definition(): array
     {
-        return $this->kit()->block($this->type());
+        // Eigener Block im Projekt: define() liefert die Definition; sonst die des Kits. Projekte passen sie über
+        // den Extension Point FLUID_BLOCK_DEFINITION an (Felder ergänzen, Beschriftungen ändern …).
+        return $this->definitionCache ??= (array) Extension::dispatch(new ExtensionPoint('FLUID_BLOCK_DEFINITION',
+            $this->define() ?? $this->kit()->block($this->type()), ['type' => $this->type(), 'module' => $this, 'kit' => $this->kit()]));
+    }
+
+    /** @var array<string, mixed>|null */
+    private ?array $definitionCache = null;
+
+    /**
+     * Definition eines eigenen Blocks (Format wie in kit.php: label, icon, group, help, variants, fields …).
+     * null = Block des Kits. Beispiel siehe README („Eigener Block“).
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function define(): ?array
+    {
+        return null;
+    }
+
+    /** View-Datei: {Klasse}.view.php neben der Klasse, sonst views/{typ}.php des Kits; überschreibbar per FLUID_BLOCK_VIEW */
+    public function viewFile(Block $b): string
+    {
+        $own = substr((string) new \ReflectionClass($this)->getFileName(), 0, -4) . '.view.php';
+        $file = is_file($own) ? $own : $this->kit()->view($b->type);
+
+        return (string) Extension::dispatch(new ExtensionPoint('FLUID_BLOCK_VIEW', $file, ['type' => $b->type, 'variant' => $b->variant(), 'block' => $b]));
     }
 
     /** Benötigte AddOns vorhanden? (Kit-Angabe „requires“, z. B. 'yform') – sonst fehlt der Block in der Auswahl */
@@ -128,6 +156,7 @@ abstract class BlockModule extends Module
     protected function renderInner(Block $b): string
     {
         Routing\StructuredData::collect($b);   // schema.org der Blöcke (FAQ …) für den Seitenkopf
+        $this->kit()->definition();   // lädt auch die Hilfsfunktionen des Kits (functions.php) – auch für eigene Blöcke
         return (static function (string $__file, Block $b, array $d): string {
             ob_start();
             try {
@@ -137,7 +166,7 @@ abstract class BlockModule extends Module
             }
 
             return $html;
-        })($this->kit()->view($b->type), $b, $b->data);
+        })($this->viewFile($b), $b, $b->data);
     }
 
     /** Attribute für den Editor (nur im Bearbeiten-Modus) */

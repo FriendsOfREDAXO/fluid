@@ -13,7 +13,7 @@ use Redaxo\Core\Database\Sql;
 final class Drafts
 {
     /** @return list<array{id: int, name: string, url: string, changed: string, user: string}> */
-    public static function all(int $languageId): array
+    public static function all(int $languageId, ?\Redaxo\Core\Security\User $user = null): array
     {
         if (ArticleRevision::LIVE === FluidAddon::revision()) {
             return [];
@@ -38,6 +38,11 @@ final class Drafts
                 continue;
             }
             $a = Article::get($id, $languageId);
+            // nur Seiten, auf die der Benutzer Strukturrechte hat
+            $perm = $user?->getComplexPerm('structure');
+            if ($a && $user && !$user->admin && !($perm instanceof \Redaxo\Core\Content\StructurePermission && $perm->hasCategoryPerm($a->categoryId))) {
+                continue;
+            }
             if ($a) {
                 $out[] = ['id' => $id, 'name' => $a->name, 'url' => $a->getUrl(), 'changed' => (string) $work['changed'], 'user' => (string) $work['user']];
             }

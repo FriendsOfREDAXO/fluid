@@ -78,7 +78,8 @@ final class Seo
         $txt = '' !== $own ? $own : "User-agent: *\nDisallow: /redaxo/\nDisallow: /*?fluid_edit=\nDisallow: /*?rex_version=";
         $r = Core::getRequest();
 
-        return $txt . "\n\nSitemap: " . $r->getSchemeAndHttpHost() . Router::base() . "/sitemap.xml\n";
+        return (string) \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_ROBOTS',
+            $txt . "\n\nSitemap: " . $r->getSchemeAndHttpHost() . Router::base() . "/sitemap.xml\n"));
     }
 
     /** Canonical und hreflang für den Seitenkopf */
