@@ -59,6 +59,13 @@ final class FluidTemplate extends Template
             return $out;
         };
 
+        // Landing-Domain: Menü auf die Landingpage begrenzt (Unterseiten der Einstiegsseite, sonst keins)
+        if ($landing = \FriendsOfRedaxo\Fluid\Routing\Router::landing()) {
+            $cat = $landing->subtree ? Category::get((int) $landing->articleId) : null;
+
+            return $cat ? $build($cat->getChildren(true), 1) : [];
+        }
+
         return $build(Category::getRootCategories(true), 1);
     }
 }

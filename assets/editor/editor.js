@@ -409,7 +409,14 @@
       o.textContent = `${n} / ${max} Zeichen`;
       o.classList.toggle('is-over', n > max);
     });
-    pform.addEventListener('input', count);
+    pform.addEventListener('input', (e) => {
+      count();
+      const sl = e.target.closest?.('[data-slug]');
+      if (sl) {
+        const v = sl.value.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9-]+/g, '-').replace(/-{2,}/g, '-');
+        if (v !== sl.value) sl.value = v;
+      }
+    });
     $('[data-page-settings]').addEventListener('click', async () => {
       menu.hidden = true;
       if (!panel.hidden || !dpanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
@@ -439,7 +446,9 @@
         say(res.message);
         pageSaved = snap();
         if (dirty?.size) { close(); $('.name').textContent = pform.name.value; return; }
-        location.reload();
+        const next = res.url ? unamp(res.url) + (cfg.editing ? (res.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : '') : '';
+        if (next && next !== location.pathname + location.search) location.href = next;
+        else location.reload();
       } catch (err) { say(err.message, true); } finally { saveBtn.disabled = false; }
     });
 

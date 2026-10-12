@@ -15,6 +15,7 @@ use Redaxo\Core\Content\ExtensionPoint\ArticleContentUpdated;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Content\ModulePermission;
 use Redaxo\Core\Content\Template;
+use Redaxo\Core\Core;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\Http\Request;
@@ -299,6 +300,13 @@ final class Api
         $html = '<div class="blocks-form" data-blocks-form><div class="blocks-form__grid">'
             . $f('Titel der Seite', '<input class="form-control" type="text" name="name" value="' . escape($article->name) . '" required maxlength="191">', $article->isStartArticle() && $article->categoryId ? 'Erscheint auch im Menü.' : '')
             . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="online" value="1"' . ($article->isOnline() ? ' checked' : '') . '> Online – für Besucher sichtbar</label></div>'
+            . (Article::getSiteStartArticleId() === $article->id
+                ? $f('Adresse', '<p class="blocks-form__static"><code>/</code> – Startseite</p>')
+                : $f('Adresse', '<div class="blocks-slug"><span class="blocks-slug__base">' . escape(self::parentPath($article)) . '</span><input class="form-control" type="text" name="slug" value="'
+                    . escape((string) Routing\Routes::slug($article->id, $article->languageId)) . '" maxlength="120" pattern="[a-z0-9\-]*" spellcheck="false" data-slug></div>',
+                    'Nur Kleinbuchstaben, Ziffern und Bindestriche. Ändern Sie die Adresse, leitet die alte automatisch hierher weiter.'))
+            . $f('Titel für Suchmaschinen (optional)', '<input class="form-control" type="text" name="seo_title" value="' . escape($s['title']) . '" maxlength="191" data-count="60" placeholder="' . escape(PageSettings::title($article, Core::getProject()->instanceName)) . '">',
+                'Erscheint im Browser-Tab und in Suchergebnissen – etwa 50–60 Zeichen. Leer = Seitentitel und Name der Website.')
             . $f('Beschreibung für Suchmaschinen', '<textarea class="form-control" name="description" rows="3" maxlength="300" data-count="160">' . escape($s['description']) . '</textarea>', 'Etwa 120–160 Zeichen: worum geht es auf dieser Seite?')
             . $f('Bild für soziale Netzwerke', Form\Picker::media('page_image', 'image', $s['image'], true, false), 'Erscheint, wenn die Seite geteilt wird (z. B. 1200 × 630 px).')
             . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="noindex" value="1"' . ($s['noindex'] ? ' checked' : '') . '> Nicht in Suchmaschinen aufnehmen</label></div>'
@@ -310,9 +318,21 @@ final class Api
     private static function pageSave(Article $article): array
     {
         PageSettings::save($article, Request::post('name', 'string', ''), Request::post('online', 'bool', false),
-            Request::post('description', 'string', ''), Request::post('image', 'string', ''), Request::post('noindex', 'bool', false));
+            Request::post('description', 'string', ''), Request::post('image', 'string', ''), Request::post('noindex', 'bool', false),
+            Request::post('seo_title', 'string', ''), Request::post('slug', 'string', null));
+        Routing\Routes::rebuild();
 
-        return ['message' => 'Seiteneinstellungen gespeichert.', 'reload' => true];
+        // Neue Adresse: dorthin wechseln (offline gibt es für die alte keine Weiterleitung)
+        return ['message' => 'Seiteneinstellungen gespeichert.', 'reload' => true, 'url' => Url::article($article->id, $article->languageId)];
+    }
+
+    /** Adresse der Elternseiten (für die Anzeige vor dem Slug), z. B. „/leistungen/“ */
+    private static function parentPath(Article $article): string
+    {
+        $path = (string) Routing\Routes::path($article->id, $article->languageId);
+        $pos = strrpos($path, '/');
+
+        return Routing\Routes::prefix($article->languageId) . '/' . (false === $pos ? '' : substr($path, 0, $pos + 1));
     }
 
     /** Neue Seite: Menüpunkt (Kategorie) oder Seite ohne Menü (Artikel) – hier oder auf oberster Ebene, zunächst offline */

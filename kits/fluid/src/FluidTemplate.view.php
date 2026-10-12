@@ -16,9 +16,12 @@ return static function (ArticleContent $content): void {
     $article = $content->article;
     $name = Core::getProject()->instanceName;
     $isHome = $article->id === Article::getSiteStartArticleId();
-    $home = Article::getSiteStartArticle()?->getUrl() ?? '/';
+    // Landing-Domain: Einstiegsseite der Landingpage statt Startseite der Website
+    $landing = \FriendsOfRedaxo\Fluid\Routing\Router::landing();
+    $home = $landing ? (Article::get((int) $landing->articleId)?->getUrl() ?? '/') : (Article::getSiteStartArticle()?->getUrl() ?? '/');
+    $isHome = $landing ? $article->id === $landing->articleId : $isHome;
     $menu = FluidTemplate::menu();
-    $title = $isHome ? $name : $article->name . ' – ' . $name;
+    $title = PageSettings::title($article, $name);
     $design = $kit->design();
     $css = [$kit->assetUrl('css/site.css'), ...$kit->designCss(), ...$kit->blockCss(Editing::active())];
     $designClasses = $design->classes();
