@@ -98,20 +98,20 @@ final class Seo
             }
         }
 
-        if ($article->id === Article::getSiteStartArticleId()) {
-            $h .= self::organization();
+        if (!\FriendsOfRedaxo\Fluid\Editing::active()) {
+            $h .= '<script type="application/ld+json">' . json_encode(StructuredData::graph($article), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>' . "\n";
         }
 
         return $h;
     }
 
-    /** schema.org der Organisation (Startseite): Name, Logo, Adresse, Telefon, E-Mail, Öffnungszeiten, Social Media */
-    public static function organization(): string
+    /** schema.org-Knoten der Organisation: Name, Logo, Adresse, Telefon, E-Mail, Geo, Öffnungszeiten, Social Media */
+    public static function organizationNode(): array
     {
         $s = static fn (string $k) => trim((string) \FriendsOfRedaxo\Fluid\Settings::get($k, ''));
         $type = $s('schema_type') ?: 'Organization';
         $origin = Router::canonical(Article::getSiteStartArticleId(), Language::getCurrentId());
-        $data = ['@context' => 'https://schema.org', '@type' => $type, 'name' => \FriendsOfRedaxo\Fluid\Settings::name(), 'url' => $origin];
+        $data = ['@type' => $type, '@id' => $origin . '#org', 'name' => \FriendsOfRedaxo\Fluid\Settings::name(), 'url' => $origin];
         if ('' !== $s('logo') && ($m = \Redaxo\Core\MediaPool\Media::get($s('logo')))) {
             $data['logo'] = Router::absolute($m->getUrl());
         }
@@ -145,6 +145,6 @@ final class Seo
             $data['sameAs'] = $same;
         }
 
-        return '<script type="application/ld+json">' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>' . "\n";
+        return $data;
     }
 }
