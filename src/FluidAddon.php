@@ -81,6 +81,15 @@ final class FluidAddon extends Addon
             ->ensureColumn(new Column('last_seen', 'datetime', true))
             ->ensureIndex(new \Redaxo\Core\Database\Index('path_hash', ['path_hash']))
             ->ensure();
+        Table::get(Activity::TABLE)
+            ->ensurePrimaryIdColumn()
+            ->ensureColumn(new Column('created', 'datetime', true))
+            ->ensureColumn(new Column('user', 'varchar(191)', true))
+            ->ensureColumn(new Column('action', 'varchar(40)'))
+            ->ensureColumn(new Column('article_id', 'int(10) unsigned', true))
+            ->ensureColumn(new Column('detail', 'varchar(191)', true))
+            ->ensure();
+        \Redaxo\Core\Content\ArticleSliceHistory::checkTables();
         Routing\Routes::rebuild();
     }
 
@@ -156,6 +165,10 @@ final class FluidAddon extends Addon
         // Leiste und Editor nur für angemeldete Redaktion – Besucher bekommen kein zusätzliches Markup
         Extension::register('OUTPUT_FILTER', static function (ExtensionPoint $ep): string {
             $html = (string) $ep->subject;
+            // Redaktionskommentare [# … #] (wie KLXM Studio): für Besucher und in der Ansicht unsichtbar, im Bearbeiten-Modus markiert (editor.js)
+            if (!Editing::active() && str_contains($html, '[#')) {
+                $html = (string) preg_replace_callback('~<main\b.*?</main>~s', static fn (array $m) => (string) preg_replace('~\s?\[#.*?#\]~s', '', $m[0]), $html);
+            }
             if (null === Editing::user()) {
                 return $html;
             }

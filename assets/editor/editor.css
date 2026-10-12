@@ -72,3 +72,6 @@ html.blocks-editing section[data-block].fluid-collapsed::after { content: "▸ "
 html.blocks-editing section[data-block].fluid-collapsed .fluid-handle { display: none; }
 html.blocks-editing section[data-block].fluid-dragging { opacity: .45; }
 .fluid-dropline { position: fixed; left: 0; right: 0; height: 4px; background: #4f46e5; box-shadow: 0 0 0 2px #fff; z-index: 2147482900; pointer-events: none; }
+
+/* Redaktionskommentare [# … #] – nur im Bearbeiten-Modus sichtbar */
+::highlight(fluid-note) { background-color: #fef3c7; color: #92400e; text-decoration: underline dotted #d97706; }

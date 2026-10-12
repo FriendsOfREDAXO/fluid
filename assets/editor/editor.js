@@ -77,6 +77,7 @@
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
             <button type="button" role="menuitem" data-tree-open>Seiten …</button>
+            <button type="button" role="menuitem" data-history-open>Verlauf & Entwürfe …</button>
             <button type="button" role="menuitem" data-compact>Kompaktansicht</button>
             <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
@@ -165,6 +166,16 @@
         <div class="dlg__actions"><button type="button" class="btn" data-tpl-cancel>Abbrechen</button><button type="submit" class="btn btn--primary">Speichern</button></div>
       </form>
     </div>`);
+  const hpanel = h(`
+    <aside class="panel hpanel" hidden aria-labelledby="fluid-hist-title">
+      <header class="panel__head"><h2 id="fluid-hist-title">Verlauf</h2><button type="button" class="btn btn--icon" data-history-close aria-label="Schließen">✕</button></header>
+      <nav class="spanel__tabs" role="tablist" aria-label="Bereiche">
+        <button type="button" role="tab" data-history-tab="versions" aria-selected="true">Versionen dieser Seite</button>
+        <button type="button" role="tab" data-history-tab="drafts" aria-selected="false">Entwürfe</button>
+        <button type="button" role="tab" data-history-tab="activity" aria-selected="false">Aktivität</button>
+      </nav>
+      <div class="panel__body" data-history-body></div>
+    </aside>`);
   const newdlg = h(`
     <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-new-t">
       <form class="dlg__box newpage" data-new-form novalidate>
@@ -185,7 +196,7 @@
     </div>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, picker, dialog, newdlg, tdlg, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, hpanel, picker, dialog, newdlg, tdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -299,6 +310,7 @@
   if (cfg.design) initDesign();
   initPage();
   initTree();
+  initHistory();
   if (cfg.site) initSite();
   if (!cfg.editing) return;
 
@@ -677,6 +689,58 @@
     });
   }
 
+
+  // ------------------------------------------------------------------ Verlauf: Versionen, Entwürfe, Aktivität
+
+  function initHistory() {
+    const body = $('[data-history-body]');
+    let tab = 'versions';
+    const when = (d) => { const t = new Date(String(d).replace(' ', 'T')); return isNaN(t) ? d : t.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
+    const editHref = (u) => unamp(u) + (u.includes('?') ? '&' : '?') + 'fluid_edit=1';
+    const draw = {
+      versions: (res) => (res.versions?.length
+        ? `<p class="site-intro">Stände beim Speichern und vor dem Veröffentlichen. „Wiederherstellen“ holt einen Stand in den <b>Entwurf</b> – live geht er erst mit „Veröffentlichen“. Der aktuelle Entwurf wird vorher gesichert.</p><ul class="site-list" role="list">`
+          + res.versions.map((v) => `<li class="site-list__item"><span class="site-list__main"><b>${esc(when(v.date))}</b><small>${esc(v.label)} · ${v.revision ? 'Entwurf' : 'Live'} · ${v.blocks} Blöcke${v.user ? ' · ' + esc(v.user) : ''}</small></span>
+              <button type="button" class="btn" data-restore="${esc(v.date)}" data-rev="${v.revision}">Wiederherstellen</button></li>`).join('') + '</ul>'
+        : '<p class="site-intro">Noch keine gespeicherten Stände. Sie entstehen beim Speichern und Veröffentlichen.</p>'),
+      drafts: (res) => (res.drafts?.length
+        ? '<p class="site-intro">Seiten mit Änderungen, die noch nicht veröffentlicht sind.</p><ul class="site-list" role="list">'
+          + res.drafts.map((d) => `<li class="site-list__item"><span class="site-list__main"><a href="${esc(editHref(d.url))}"><b>${esc(d.name)}</b></a><small>zuletzt ${esc(when(d.changed))}${d.user ? ' · ' + esc(d.user) : ''}</small></span><a class="btn" href="${esc(editHref(d.url))}">Öffnen</a></li>`).join('') + '</ul>'
+        : '<p class="site-intro">Keine offenen Entwürfe – alles ist veröffentlicht.</p>'),
+      activity: (res) => (res.activity?.length
+        ? '<ul class="site-list" role="list">' + res.activity.map((a) => `<li class="site-list__item"><span class="site-list__main"><span><b>${esc(a.user || 'Jemand')}</b> hat ${a.page ? `<a href="${esc(editHref(a.url))}">${esc(a.page)}</a> ` : ''}${esc(a.action)}</span><small>${esc(when(a.when))}${a.detail ? ' · ' + esc(a.detail) : ''}</small></span></li>`).join('') + '</ul>'
+        : '<p class="site-intro">Noch keine Aktivität.</p>'),
+    };
+    const load = async (t) => {
+      tab = t;
+      hpanel.querySelectorAll('[data-history-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.historyTab === t)));
+      body.innerHTML = '<p class="site-intro">Lädt …</p>';
+      try { body.innerHTML = draw[t](await api(t, {})); } catch (err) { body.innerHTML = ''; say(err.message, true); }
+    };
+    $('[data-history-open]').addEventListener('click', () => {
+      menu.hidden = true;
+      if (!panel.hidden || !dpanel.hidden || !ppanel.hidden || !spanel.hidden || !tpanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
+      hpanel.hidden = false;
+      document.documentElement.classList.add('blocks-panel-open');
+      load(tab);
+    });
+    $('[data-history-close]').addEventListener('click', () => { hpanel.hidden = true; document.documentElement.classList.remove('blocks-panel-open'); });
+    hpanel.addEventListener('click', async (e) => {
+      const t = e.target.closest('[data-history-tab]');
+      if (t) return load(t.dataset.historyTab);
+      const r = e.target.closest('[data-restore]');
+      if (!r) return;
+      if (dirty.size && !(await ask({ title: 'Ungespeicherte Änderungen', body: 'Sie gehen beim Wiederherstellen verloren. Fortfahren?', ok: 'Fortfahren', danger: true }))) return;
+      if (!(await ask({ title: 'Diesen Stand wiederherstellen?', body: 'Er ersetzt den aktuellen Entwurf (der vorher gesichert wird). Live ändert sich erst mit „Veröffentlichen“.', ok: 'Wiederherstellen' }))) return;
+      try {
+        const res = await api('version_restore', { date: r.dataset.restore, revision: r.dataset.rev });
+        dirty.clear();
+        say(res.message);
+        location.reload();
+      } catch (err) { say(err.message, true); }
+    });
+  }
+
   // ------------------------------------------------------------------ Website-Einstellungen (Admins)
 
   function initSite() {
@@ -809,6 +873,17 @@
   main.addEventListener('keydown', (e) => {
     const el = e.target.closest?.('[data-edit]');
     if (el && e.key === 'Enter' && !el.dataset.editMode) e.preventDefault();
+    // Einzeilige Felder: Ende/Pos1 an Ende/Anfang des ganzen Feldes – nicht der sichtbaren Zeile (große Überschriften
+    // brechen um, mit Silbentrennung sogar mitten im Wort); mit Umschalt wird markiert
+    if (el && !el.dataset.editMode && (e.key === 'End' || e.key === 'Home') && !e.altKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      const sel = getSelection();
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      r.collapse(e.key === 'Home');
+      if (e.shiftKey && sel.rangeCount) sel.extend(r.startContainer, r.startOffset);
+      else { sel.removeAllRanges(); sel.addRange(r); }
+    }
   });
 
   main.addEventListener('paste', (e) => {
@@ -1691,6 +1766,28 @@
   addEventListener('resize', rebuild, { passive: true });
 
   // ------------------------------------------------------------------ Start
+
+  // Redaktionskommentare [# … #] markieren – CSS Custom Highlight API, ohne das DOM zu ändern (nichts landet im Text)
+  function highlightNotes() {
+    if (!window.CSS?.highlights || typeof Highlight === 'undefined') return;
+    const ranges = [];
+    const walker = document.createTreeWalker(main, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const t = n.nodeValue;
+      if (!t.includes('[#')) continue;
+      for (const m of t.matchAll(/\[#[\s\S]*?#\]/g)) {
+        const r = new Range();
+        r.setStart(n, m.index);
+        r.setEnd(n, m.index + m[0].length);
+        ranges.push(r);
+      }
+    }
+    CSS.highlights.set('fluid-note', new Highlight(...ranges));
+  }
+  let noteTimer = 0;
+  main.addEventListener('input', () => { clearTimeout(noteTimer); noteTimer = setTimeout(highlightNotes, 300); });
+  document.addEventListener('fluid:rendered', () => setTimeout(highlightNotes, 50));
+  highlightNotes();
 
   initEditables(main);
   initColumns(main);

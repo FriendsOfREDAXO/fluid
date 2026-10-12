@@ -75,6 +75,15 @@ final class Api
                 'discard' => self::discard($article),
                 'site', 'site_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
                 'tree', 'tree_move', 'tree_status', 'tree_menu', 'tree_delete' => Structure::handle(Request::get(self::PARAM, 'string'), $user, $article->languageId),
+                'versions' => ['versions' => Versions::list($article->id, $article->languageId), 'work' => Versions::isWorkVersion()],
+                'version_restore' => (static function () use ($article) {
+                    Versions::restore($article->id, $article->languageId, Request::post('date', 'string', ''), Request::post('revision', 'int', 0));
+                    Activity::log('restore', $article->id, Request::post('date', 'string', ''));
+
+                    return ['reload' => true, 'message' => 'Stand in den Entwurf geholt – prüfen und veröffentlichen.'];
+                })(),
+                'drafts' => ['drafts' => Drafts::all($article->languageId)],
+                'activity' => ['activity' => Activity::recent(150)],
                 'page' => self::page($article),
                 'page_save' => self::pageSave($article),
                 'page_add' => self::pageAdd($article, $user),
@@ -84,6 +93,13 @@ final class Api
                 'design_save' => self::design($article, $user, true),
                 default => self::fail('Unbekannte Aktion.', 400),
             });
+            // Aktivitätsprotokoll (Speichern, Veröffentlichen, Verwerfen und Wiederherstellen protokollieren die Aktionen selbst)
+            $log = ['add' => 'block_add', 'delete' => 'block_delete', 'paste' => 'block_add', 'duplicate' => 'block_add', 'page_add' => 'page_add', 'page_save' => 'page_settings',
+                'design_save' => 'design', 'site_save' => 'site', 'domain_save' => 'site', 'redirect_save' => 'site', 'tree_move' => 'tree', 'tree_status' => 'tree',
+                'tree_menu' => 'tree', 'tree_delete' => 'tree', 'template_save' => 'page_add'][Request::get(self::PARAM, 'string')] ?? null;
+            if ($log) {
+                Activity::log($log, $article->id, (string) ($result['message'] ?? ''));
+            }
             self::send(['ok' => true, 'state' => self::state($article)] + $result);
         } catch (ApiError $e) {
             self::send(['ok' => false, 'error' => $e->getMessage()], $e->getCode() ?: 400);
@@ -152,6 +168,8 @@ final class Api
         $sql->addGlobalUpdateFields($user->login);
         $sql->update();
         self::changed($article, $slice->id, 'slice_updated');
+        Versions::snapshot($article->id, $article->languageId, FluidAddon::revision(), 'fluid_save');
+        Activity::log('save', $article->id, $module->name);
 
         return self::render($article, $slice->id, true);
     }
@@ -290,8 +308,10 @@ final class Api
         if (ArticleRevision::LIVE === FluidAddon::revision()) {
             return [];
         }
+        Versions::snapshot($article->id, $article->languageId, ArticleRevision::LIVE, 'fluid_publish');
         ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::WORK, ArticleRevision::LIVE);
         ArticleCache::delete($article->id, $article->languageId);
+        Activity::log('publish', $article->id);
 
         return ['message' => 'Veröffentlicht.'];
     }
@@ -301,7 +321,9 @@ final class Api
         if (ArticleRevision::LIVE === FluidAddon::revision()) {
             return [];
         }
+        Versions::snapshot($article->id, $article->languageId, ArticleRevision::WORK, 'fluid_discard');
         ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::LIVE, ArticleRevision::WORK);
+        Activity::log('discard', $article->id);
 
         return ['reload' => true];
     }
