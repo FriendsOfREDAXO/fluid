@@ -63,9 +63,12 @@ final class Api
                 'publish' => self::publish($article),
                 'discard' => self::discard($article),
                 'site', 'site_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
+                'tree', 'tree_move', 'tree_status', 'tree_menu', 'tree_delete' => Structure::handle(Request::get(self::PARAM, 'string'), $user, $article->languageId),
                 'page' => self::page($article),
                 'page_save' => self::pageSave($article),
                 'page_add' => self::pageAdd($article, $user),
+                'template_save' => self::templateSave($article),
+                'templates' => ['templates' => PageTemplates::all($article->languageId)],
                 'design' => self::design($article, $user, false),
                 'design_save' => self::design($article, $user, true),
                 default => self::fail('Unbekannte Aktion.', 400),
@@ -343,7 +346,10 @@ final class Api
         if ('' === $name) {
             self::fail('Bitte einen Titel angeben.');
         }
-        $parent = 'root' === Request::post('where', 'string', 'here') ? null : $article->categoryId;
+        // Stelle: aus dem Seitenbaum (parent = ID eines Menüpunkts, 0 = oberste Ebene) oder „hier“ / „oberste Ebene“
+        $parent = '' !== Request::post('parent', 'string', '')
+            ? (Request::post('parent', 'int', 0) ?: null)
+            : ('root' === Request::post('where', 'string', 'here') ? null : $article->categoryId);
         $perm = $user->getComplexPerm('structure');
         if (!$perm instanceof StructurePermission || !$perm->hasCategoryPerm($parent)) {
             self::fail('Keine Berechtigung, hier eine Seite anzulegen.', 403);
@@ -357,8 +363,22 @@ final class Api
         $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
         // Template des Kits übernehmen (neue Kategorien auf oberster Ebene erben keines)
         ArticleHandler::editArticle($id, $article->languageId, ['name' => $name, 'template' => $template]);
+        // Inhalt: Vorlage (ID), Kopie dieser Seite („copy“) oder leer
+        $from = Request::post('from', 'string', '');
+        $source = 'copy' === $from ? $article->id : (int) $from;
+        if ($source > 0 && ('copy' === $from || PageTemplates::isTemplate($source))) {
+            PageTemplates::copy($source, $id, $article->languageId);
+        }
 
         return ['url' => Url::article($id, $article->languageId, [Editing::PARAM => 1]), 'message' => 'Seite angelegt (offline).'];
+    }
+
+    /** Aktuelle Seite als Vorlage speichern (Seitenvorlagen) */
+    private static function templateSave(Article $article): array
+    {
+        $id = PageTemplates::saveFrom($article, Request::post('name', 'string', ''));
+
+        return ['message' => 'Als Vorlage gespeichert. Sie erscheint beim Anlegen neuer Seiten.', 'templates' => PageTemplates::all($article->languageId), 'id' => $id];
     }
 
     /**

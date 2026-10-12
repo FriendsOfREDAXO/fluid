@@ -55,6 +55,8 @@ final class Router
             });
         }
         if (Core::isFrontend() && Core::hasRequest()) {
+            // Asset-, Medien- und Controller-Adressen ab dem Basis-Pfad (sonst brechen sie auf /seite/unterseite)
+            \Redaxo\Core\Filesystem\Url::init(new RootPathProvider(Core::getProject(), Core::getRequest()->getBasePath()));
             self::resolve();
         }
     }

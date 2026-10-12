@@ -260,3 +260,25 @@ textarea[data-blocks-rte] { display: none !important; }
 .site-list__main small { color: var(--muted); }
 .blocks-geo { display: flex; flex-wrap: wrap; gap: 6px; }
 .blocks-geo .form-control { flex: 1 1 160px; min-width: 0; }
+
+/* Seitenbaum */
+.tree__intro { margin: 0 0 10px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree__row { display: flex; align-items: center; gap: 6px; padding: 5px 6px 5px calc(6px + var(--d, 0) * 18px); border-radius: 8px; border: 1px solid transparent; }
+.tree__row:hover { background: var(--surface); }
+.is-current > .tree__row { border-color: var(--accent, #4f46e5); }
+.tree__grip { cursor: grab; color: var(--muted); padding: 0 2px; user-select: none; }
+.tree__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: inherit; text-decoration: none; font-weight: 600; font-size: 14px; }
+.tree__name:hover { text-decoration: underline; }
+.is-offline > .tree__row .tree__name { color: var(--muted); font-weight: 500; }
+.tree__badge { flex: none; font-size: 11px; color: var(--muted); }
+.tree__tools { flex: none; display: flex; gap: 2px; opacity: .55; }
+.tree__row:hover .tree__tools, .tree__row:focus-within .tree__tools { opacity: 1; }
+.tree__btn { all: unset; cursor: pointer; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; font-size: 13px; }
+.tree__btn:hover { background: var(--line); }
+.tree__btn:focus-visible { outline: 2px solid var(--accent, #4f46e5); }
+.tree__btn--danger:hover { background: #fee2e2; color: #b42318; }
+.is-dragging > .tree__row { opacity: .4; }
+.tree__row[data-drop="before"] { box-shadow: inset 0 2px 0 var(--accent, #4f46e5); }
+.tree__row[data-drop="after"] { box-shadow: inset 0 -2px 0 var(--accent, #4f46e5); }
+.tree__row[data-drop="inside"] { background: color-mix(in srgb, var(--accent, #4f46e5) 12%, transparent); border-color: var(--accent, #4f46e5); }

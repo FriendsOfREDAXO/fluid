@@ -76,9 +76,11 @@
         <div class="more">
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
+            <button type="button" role="menuitem" data-tree-open>Seiten …</button>
             <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
             <button type="button" role="menuitem" data-page-add>Neue Seite …</button>
+            <button type="button" role="menuitem" data-template-save>Als Vorlage speichern …</button>
             ${cfg.editing && cfg.state.workVersion ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
             <a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
@@ -138,6 +140,21 @@
       <nav class="spanel__tabs" role="tablist" aria-label="Bereiche" data-site-tabs></nav>
       <div class="panel__body" data-site-body></div>
     </aside>`);
+  const tpanel = h(`
+    <aside class="panel tpanel" hidden aria-labelledby="fluid-tree-title">
+      <header class="panel__head"><h2 id="fluid-tree-title">Seiten</h2><button type="button" class="btn btn--icon" data-tree-close aria-label="Schließen">✕</button></header>
+      <div class="panel__body"><p class="tree__intro">Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen). <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
+      <footer class="panel__foot"><button type="button" class="btn" data-tree-new="0">+ Neue Seite (oberste Ebene)</button></footer>
+    </aside>`);
+  const tdlg = h(`
+    <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-tpl-t">
+      <form class="dlg__box newpage" data-tpl-form novalidate>
+        <h2 id="fluid-tpl-t">Als Vorlage speichern</h2>
+        <p class="newpage__hint">Die Blöcke dieser Seite werden zur Vorlage. Neue Seiten können sie als Ausgangspunkt nutzen. Vorlagen bearbeiten Sie wie normale Seiten (Seiten → „Seitenvorlagen“ ist für Besucher unsichtbar).</p>
+        <label class="newpage__field"><span>Name der Vorlage</span><input type="text" name="name" required maxlength="191" autocomplete="off"></label>
+        <div class="dlg__actions"><button type="button" class="btn" data-tpl-cancel>Abbrechen</button><button type="submit" class="btn btn--primary">Speichern</button></div>
+      </form>
+    </div>`);
   const newdlg = h(`
     <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-new-t">
       <form class="dlg__box newpage" data-new-form novalidate>
@@ -147,7 +164,8 @@
           <label><input type="radio" name="kind" value="menu" checked> Menüpunkt <small>erscheint in der Navigation</small></label>
           <label><input type="radio" name="kind" value="page"> Seite ohne Menüeintrag <small>z. B. Impressum, Aktion – nur per Link erreichbar</small></label>
         </fieldset>
-        <fieldset class="newpage__field"><legend>Ort</legend>
+        <label class="newpage__field"><span>Inhalt</span><select name="from" data-new-from><option value="">Leere Seite</option><option value="copy">Kopie dieser Seite</option></select></label>
+        <fieldset class="newpage__field" data-new-where><legend>Ort</legend>
           <label><input type="radio" name="where" value="here" checked> ${cfg.article.category ? `Unter „${esc(cfg.article.category)}“` : 'Hier'}</label>
           <label><input type="radio" name="where" value="root"> Oberste Ebene</label>
         </fieldset>
@@ -157,7 +175,7 @@
     </div>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, picker, dialog, newdlg, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, picker, dialog, newdlg, tdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -270,6 +288,7 @@
   render();
   if (cfg.design) initDesign();
   initPage();
+  initTree();
   if (cfg.site) initSite();
   if (!cfg.editing) return;
 
@@ -461,10 +480,38 @@
     });
 
     const nform = $('[data-new-form]');
+    // Vorlagen in die Auswahl „Inhalt“ laden (bei jedem Öffnen aktuell)
+    newdlg.addEventListener('fluid:open', async () => {
+      const sel = nform.querySelector('[data-new-from]');
+      sel.querySelectorAll('[data-tpl]').forEach((o) => o.remove());
+      try {
+        const res = await api('templates', {});
+        for (const t of res.templates || []) sel.insertAdjacentHTML('beforeend', `<option value="${t.id}" data-tpl>Vorlage: ${esc(t.name)}</option>`);
+      } catch { /* ohne Vorlagen */ }
+    });
+    $('[data-template-save]').addEventListener('click', () => {
+      menu.hidden = true;
+      const f = $('[data-tpl-form]');
+      f.reset();
+      f.name.value = cfg.article.name;
+      tdlg.hidden = false;
+      f.name.select();
+    });
+    $('[data-tpl-cancel]').addEventListener('click', () => { tdlg.hidden = true; });
+    $('[data-tpl-form]').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = e.currentTarget;
+      if (!f.reportValidity()) return;
+      if (dirty.size && !(await ask({ title: 'Erst speichern?', body: 'Ungespeicherte Änderungen kommen nicht in die Vorlage. Trotzdem fortfahren?', ok: 'Fortfahren' }))) return;
+      try { const res = await api('template_save', new FormData(f)); tdlg.hidden = true; say(res.message); } catch (err) { say(err.message, true); }
+    });
     $('[data-page-add]').addEventListener('click', () => {
       menu.hidden = true;
       nform.reset();
+      delete nform.dataset.parent;
+      newdlg.querySelector('[data-new-where]')?.removeAttribute('hidden');
       newdlg.hidden = false;
+      newdlg.dispatchEvent(new Event('fluid:open'));
       nform.name.focus();
     });
     $('[data-new-cancel]').addEventListener('click', () => { newdlg.hidden = true; });
@@ -474,13 +521,151 @@
       if (!nform.reportValidity()) return;
       if (dirty?.size && !(await ask({ title: 'Ungespeicherte Änderungen', body: 'Die Änderungen auf dieser Seite gehen verloren. Trotzdem fortfahren?', ok: 'Fortfahren', danger: true }))) return;
       try {
-        const res = await api('page_add', new FormData(nform));
+        const fd = new FormData(nform);
+        if (nform.dataset.parent !== undefined && nform.dataset.parent !== '') fd.append('parent', nform.dataset.parent);
+        const res = await api('page_add', fd);
         dirty?.clear();
         location.href = unamp(res.url);
       } catch (err) { say(err.message, true); }
     });
   }
 
+
+
+  // ------------------------------------------------------------------ Seitenbaum (sortieren, verschieben, Menü, Status)
+
+  function initTree() {
+    const list = $('[data-tree]');
+    const nform = $('[data-new-form]');
+    let tree = [];
+    let dragId = 0;
+    const find = (nodes, id, parent = null) => {
+      for (const n of nodes) {
+        if (n.id === id) return { node: n, parent, siblings: nodes };
+        const r = find(n.children || [], id, n);
+        if (r) return r;
+      }
+      return null;
+    };
+    const row = (n, depth) => `
+      <li role="treeitem" aria-expanded="${n.children?.length ? 'true' : 'false'}" data-id="${n.id}" data-menu="${n.menu ? 1 : 0}" class="tree__item${n.online ? '' : ' is-offline'}${n.id === cfg.article.id ? ' is-current' : ''}">
+        <div class="tree__row" style="--d:${depth}">
+          <span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>
+          <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a>
+          <span class="tree__badge">${n.menu ? 'Menü' : 'Seite'}${n.online ? '' : ' · offline'}</span>
+          <span class="tree__tools">
+            <button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
+            <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>
+            <button type="button" class="tree__btn" data-tree-act="tree_status" title="${n.online ? 'Offline schalten' : 'Online schalten'}" aria-label="${esc(n.name)}: ${n.online ? 'offline schalten' : 'online schalten'}">${n.online ? '●' : '○'}</button>
+            ${n.home ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_menu" title="${n.menu ? 'Aus dem Menü nehmen' : 'Ins Menü aufnehmen'}" aria-label="${esc(n.name)}: ${n.menu ? 'aus dem Menü nehmen' : 'ins Menü aufnehmen'}">☰</button>`}
+            ${n.menu ? `<button type="button" class="tree__btn" data-tree-new="${n.id}" title="Unterseite anlegen" aria-label="Unterseite von ${esc(n.name)} anlegen">+</button>` : ''}
+            ${n.home ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
+          </span>
+        </div>
+        ${n.children?.length ? `<ul role="group">${n.children.map((c) => row(c, depth + 1)).join('')}</ul>` : ''}
+      </li>`;
+    const draw = () => { list.innerHTML = tree.map((n) => row(n, 0)).join(''); };
+    const run = async (action, data) => {
+      try {
+        const res = await api(action, data);
+        tree = res.tree;
+        draw();
+        if (res.message) say(res.message);
+        return true;
+      } catch (err) { say(err.message, true); return false; }
+    };
+    const close = () => { tpanel.hidden = true; document.documentElement.classList.remove('blocks-panel-open'); };
+    // Position innerhalb der eigenen Gruppe (Menüpunkte bzw. Seiten) ermitteln
+    const indexIn = (siblings, moving, beforeId) => {
+      const group = siblings.filter((x) => x.menu === moving.menu && x.id !== moving.id);
+      if (beforeId === null) return group.length;
+      const i = group.findIndex((x) => x.id === beforeId);
+      return i < 0 ? group.length : i;
+    };
+    $('[data-tree-open]').addEventListener('click', async () => {
+      menu.hidden = true;
+      if (!panel.hidden || !dpanel.hidden || !ppanel.hidden || !spanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
+      tpanel.hidden = false;
+      document.documentElement.classList.add('blocks-panel-open');
+      await run('tree', {});
+    });
+    $('[data-tree-close]').addEventListener('click', close);
+    tpanel.addEventListener('click', async (e) => {
+      const nb = e.target.closest('[data-tree-new]');
+      if (nb) {
+        // Dialog „Neue Seite“ mit vorgegebener Stelle
+        close();
+        nform.reset();
+        nform.dataset.parent = nb.dataset.treeNew;
+        newdlg.querySelector('[data-new-where]')?.setAttribute('hidden', '');
+        newdlg.hidden = false;
+        newdlg.dispatchEvent(new Event('fluid:open'));
+        nform.name.focus();
+        return;
+      }
+      const b = e.target.closest('[data-tree-act]');
+      if (!b) return;
+      const id = +b.closest('[data-id]').dataset.id;
+      const loc = find(tree, id);
+      if (!loc) return;
+      const act = b.dataset.treeAct;
+      if (act === 'up' || act === 'down') {
+        const group = loc.siblings.filter((x) => x.menu === loc.node.menu);
+        const i = group.indexOf(loc.node) + (act === 'up' ? -1 : 1);
+        if (i < 0 || i >= group.length) return;
+        await run('tree_move', { id, parent: loc.parent?.id || 0, index: i });
+        list.querySelector(`[data-id="${id}"] [data-tree-act="${act}"]`)?.focus();
+        return;
+      }
+      if (act === 'tree_delete' && !(await ask({ title: `„${loc.node.name}“ löschen?`, body: 'Die Seite und ihre Inhalte werden gelöscht. Seiten mit Unterseiten lassen sich erst löschen, wenn diese verschoben oder gelöscht sind.', ok: 'Löschen', danger: true }))) return;
+      await run(act, { id });
+      if (act === 'tree_delete' && id === cfg.article.id) location.href = '/';
+    });
+    // Ziehen
+    list.addEventListener('dragstart', (e) => {
+      const it = e.target.closest('[data-id]');
+      if (!it) return;
+      dragId = +it.dataset.id;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(dragId));
+      it.classList.add('is-dragging');
+    });
+    list.addEventListener('dragend', () => { dragId = 0; list.querySelectorAll('.is-dragging, [data-drop]').forEach((x) => { x.classList.remove('is-dragging'); x.removeAttribute('data-drop'); }); });
+    const zone = (e, rowEl, target) => {
+      const r = rowEl.getBoundingClientRect();
+      const y = (e.clientY - r.top) / r.height;
+      return y < 0.3 ? 'before' : y > 0.7 ? 'after' : (target.menu ? 'inside' : (y < 0.5 ? 'before' : 'after'));
+    };
+    list.addEventListener('dragover', (e) => {
+      const rowEl = e.target.closest('.tree__row');
+      if (!dragId || !rowEl) return;
+      const id = +rowEl.closest('[data-id]').dataset.id;
+      if (id === dragId) return;
+      e.preventDefault();
+      list.querySelectorAll('[data-drop]').forEach((x) => x.removeAttribute('data-drop'));
+      rowEl.setAttribute('data-drop', zone(e, rowEl, find(tree, id).node));
+    });
+    list.addEventListener('drop', async (e) => {
+      const rowEl = e.target.closest('.tree__row');
+      if (!dragId || !rowEl) return;
+      e.preventDefault();
+      const target = find(tree, +rowEl.closest('[data-id]').dataset.id);
+      const moving = find(tree, dragId);
+      if (!target || !moving || target.node.id === dragId) return;
+      const z = zone(e, rowEl, target.node);
+      let parent, index;
+      if (z === 'inside') {
+        parent = target.node.id;
+        index = indexIn(target.node.children || [], moving.node, null);
+      } else {
+        parent = target.parent?.id || 0;
+        const sib = target.siblings;
+        const after = sib.slice(sib.indexOf(target.node) + (z === 'after' ? 1 : 0)).find((x) => x.menu === moving.node.menu && x.id !== dragId);
+        index = indexIn(sib, moving.node, after ? after.id : null);
+      }
+      await run('tree_move', { id: dragId, parent, index });
+    });
+  }
 
   // ------------------------------------------------------------------ Website-Einstellungen (Admins)
 
