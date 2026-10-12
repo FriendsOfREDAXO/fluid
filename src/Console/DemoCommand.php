@@ -62,9 +62,12 @@ final class DemoCommand extends AbstractCommand
             $replace = false;
         }
         if ($replace) {
+            // Struktur hat Fremdschlüssel (article ↔ category): zum Leeren der Testinstallation kurz aussetzen
+            $sql->setQuery('SET FOREIGN_KEY_CHECKS = 0');
             foreach (['rex_article_slice_history', 'rex_article_slice', 'rex_article_translation', 'rex_category_translation', 'rex_article', 'rex_category'] as $table) {
                 $sql->setQuery('DELETE FROM ' . $table);
             }
+            $sql->setQuery('SET FOREIGN_KEY_CHECKS = 1');
             Cache::delete();
             $io->note('Alle Inhalte gelöscht.');
         } elseif (!$force && $sql->getArray('SELECT id FROM rex_article LIMIT 1')) {
@@ -155,6 +158,17 @@ final class DemoCommand extends AbstractCommand
                 }
             }
             ArticleCache::delete($articleId);
+        }
+
+        // Website-Einstellungen der Demo (nur leere Felder) – Links auf Demo-Seiten werden zu redaxo://ID
+        if (isset($demo['settings']) && '' === $page) {
+            $site = \FriendsOfRedaxo\Fluid\Settings::all();
+            foreach ((array) $mapLinks($demo['settings']) as $k => $v) {
+                if (!isset($site[$k]) || '' === $site[$k] || [] === $site[$k]) {
+                    $site[$k] = $v;
+                }
+            }
+            FluidAddon::instance()->setConfig(\FriendsOfRedaxo\Fluid\Settings::CONFIG, $site);
         }
 
         $io->success(sprintf('%d Seiten mit %d Blöcken angelegt.%s', count($ids), $count, $skipped ? ' Übersprungen (noch nicht portiert): ' . implode(', ', array_keys($skipped)) : ''));

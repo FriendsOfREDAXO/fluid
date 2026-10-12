@@ -30,6 +30,8 @@ $yform = [
 
 return [
     'yform' => $yform,
+    // Website-Einstellungen (nur, wo noch nichts eingetragen ist)
+    'settings' => ['org_name' => 'REDAXO 6 Demo', 'tagline' => 'Inhalte pflegen, wo sie wirken.', 'search_page' => '/suche'],
     'pages' => [
         // ------------------------------------------------------------------ Startseite
         [
