@@ -4,12 +4,19 @@
     "type": "redaxo-addon",
     "license": "MIT",
     "authors": [
-        {"name": "Thomas Skerbis", "homepage": "https://klxm.de"},
-        {"name": "Friends Of REDAXO", "homepage": "https://friendsofredaxo.github.io"}
+        {
+            "name": "Thomas Skerbis",
+            "homepage": "https://klxm.de"
+        },
+        {
+            "name": "Friends Of REDAXO",
+            "homepage": "https://friendsofredaxo.github.io"
+        }
     ],
     "require": {
         "php": "^8.5",
-        "redaxo/core": "^6.0@dev"
+        "redaxo/core": "^6.0@dev",
+        "loupe/loupe": "^1.1"
     },
     "autoload": {
         "psr-4": {

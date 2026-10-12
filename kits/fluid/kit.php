@@ -60,6 +60,7 @@ return [
         'css/b-scrolly.css' => ['scrolly'],
         'css/b-contact.css' => ['contact', 'map'],
         'css/pages.css' => ['contact'],
+        'css/b-search.css' => ['search'],
         'css/b-video.css' => ['video'],
         'js/embed.js' => ['video'],
         'css/b-downloads.css' => ['downloads'],
@@ -417,6 +418,16 @@ return [
             'label' => 'Karte', 'icon' => 'map-trifold', 'group' => 'Website',
             'help' => 'Interaktive Karte (OpenStreetMap-Daten über den eigenen Server – ohne Einwilligung, ohne Cookies).',
             'fields' => [...$head(false, false), ...\FriendsOfRedaxo\Fluid\Maps\Maps::blockFields()],
+        ],
+        'search' => [
+            'label' => 'Suche', 'icon' => 'magnifying-glass', 'group' => 'Website',
+            'help' => 'Suchfeld mit Treffern der ganzen Website (Tippfehler-tolerant, ohne Cookies). Die Seite mit diesem Block unter „Website“ → Kopf eintragen – dann erscheint im Kopf eine Lupe.',
+            'fields' => [
+                ...$head(false),
+                ['name' => 'placeholder', 'label' => 'Platzhalter im Suchfeld', 'type' => 'text', 'max' => 60, 'width' => 'half', 'placeholder' => 'Wonach suchen Sie?'],
+                ['name' => 'limit', 'label' => 'Höchstens Treffer', 'type' => 'number', 'default' => 20, 'width' => 'half'],
+                ['name' => 'empty_text', 'label' => 'Hinweis ohne Treffer (optional)', 'type' => 'text', 'max' => 200, 'placeholder' => 'z. B. Rufen Sie uns gern an.'],
+            ],
         ],
         // YForm (optional): Formular und Datenliste aus den Tabellen des Table Managers
         'form' => [

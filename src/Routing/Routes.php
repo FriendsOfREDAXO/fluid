@@ -153,6 +153,7 @@ final class Routes
         }
         self::$cache = null;
         Redirects::pathsChanged($changes);
+        \FriendsOfRedaxo\Fluid\Search\Search::markDirty();
     }
 
     /** Sprachpräfix ('' für die Startsprache, sonst '/en') */

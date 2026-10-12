@@ -202,6 +202,13 @@ return [
             ],
         ],
 
+        // ------------------------------------------------------------------ Suche (nicht im Menü – Lupe im Kopf)
+        [
+            'slug' => 'suche', 'title' => 'Suche', 'menu' => false,
+            'blocks' => [
+                ['type' => 'search', 'data' => ['eyebrow' => '', 'title' => 'Suche', 'intro' => 'Durchsucht alle veröffentlichten Seiten – auch mit Tippfehlern.', 'placeholder' => '', 'limit' => 20, 'empty_text' => '']],
+            ],
+        ],
         // ------------------------------------------------------------------ Daten (YForm)
         [
             'slug' => 'daten', 'title' => 'Daten', 'menu' => true, 'requires' => 'yform',

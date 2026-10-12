@@ -68,6 +68,8 @@ final class Settings
             'layout' => ['label' => 'Kopf, Fuß & Hinweis', 'fields' => [
                 ['name' => 'header_cta_label', 'label' => 'Button im Kopf – Beschriftung (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half', 'placeholder' => 'z. B. Termin vereinbaren'],
                 ['name' => 'header_cta_link', 'label' => 'Button im Kopf – Ziel', 'type' => 'link', 'width' => 'half', 'help' => 'Seite, #anker, https://… – Sonderwerte „phone“ und „email“.'],
+                ['name' => 'search_page', 'label' => 'Seite mit der Suche (optional)', 'type' => 'link', 'width' => 'half',
+                    'help' => 'Seite mit dem Block „Suche“ – dann erscheint im Kopf eine Lupe.'],
                 ['name' => 'topbar_text', 'label' => 'Infoleiste über dem Kopf (optional)', 'type' => 'text', 'max' => 120, 'help' => 'Kurzer Text neben Telefon und E-Mail – erscheint, wenn im Design eine Infoleiste gewählt ist.'],
                 ['name' => 'footer_text', 'label' => 'Text im Fuß (optional)', 'type' => 'textarea', 'rows' => 2, 'max' => 300],
                 ['name' => 'footer_statement', 'label' => 'Großer Satz im Fuß (Design „Statement“)', 'type' => 'text', 'max' => 120, 'help' => '*Wort* hebt hervor.'],

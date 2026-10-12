@@ -323,6 +323,7 @@ final class Api
         ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::WORK, ArticleRevision::LIVE);
         ArticleCache::delete($article->id, $article->languageId);
         Activity::log('publish', $article->id);
+        Search\Search::markDirty();
 
         return ['message' => 'Veröffentlicht.'];
     }

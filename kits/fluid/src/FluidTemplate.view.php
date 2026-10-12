@@ -124,6 +124,7 @@ return static function (ArticleContent $content): void {
     <div class="hdr__nav"><nav class="hnav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="hnav__list" role="list"><?= implode('', array_map($navItem, $menu)) ?></ul></nav></div>
     <?php endif; ?>
     <div class="hdr__tools">
+      <?php if ('' !== ($searchPage = trim((string) setting('search_page', '')))): ?><a class="hdr__search" href="<?= e(link_href($searchPage)) ?>" title="<?= e(lt('Suche')) ?>"><?= icon('magnifying-glass') ?><span class="sr-only"><?= e(lt('Suche')) ?></span></a><?php endif; ?>
       <?php if ($cta): ?><a class="btn btn--primary hdr__cta" <?= fluid_link_attrs($cta['link']) ?>><?= e($cta['label']) ?></a><?php endif; ?>
       <?php if ($menu): ?>
       <button type="button" class="menu-btn" popovertarget="mnav" aria-controls="mnav" aria-haspopup="dialog">

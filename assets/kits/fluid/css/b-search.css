@@ -1,0 +1,12 @@
+/* Block „Suche“ (fluid): Suchfeld, Trefferliste mit Ausschnitt und Markierung */
+.fsearch__form{display:flex;flex-wrap:wrap;gap:var(--f-s-s);max-width:46rem}
+.fsearch__input{flex:1 1 16rem;min-width:0;min-height:3rem;padding:.65rem 1rem;border:1.5px solid var(--f-muted);border-radius:var(--f-radius);background:var(--f-bg);color:var(--f-ink);font:inherit}
+.fsearch__input:focus{border-color:var(--f-a);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--f-a) 28%,transparent)}
+.fsearch__form .btn{min-height:3rem}
+.fsearch__count{margin:var(--f-s-m) 0 0;color:var(--f-muted)}
+.fsearch__list{display:grid;gap:var(--f-s-m);margin:var(--f-s-m) 0 0;padding:0;list-style:none;max-width:46rem}
+.fsearch__hit{padding-bottom:var(--f-s-m);border-bottom:1px solid var(--f-line)}
+.fsearch__title{font-size:var(--f-t1);font-weight:650;color:var(--f-link);text-decoration:none}
+.fsearch__title:hover{text-decoration:underline}
+.fsearch__excerpt{margin:.35rem 0 0;color:var(--f-muted)}
+.fsearch mark{background:color-mix(in srgb,var(--f-a) 22%,transparent);color:inherit;border-radius:2px;padding:0 .1em}
