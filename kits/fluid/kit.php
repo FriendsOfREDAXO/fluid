@@ -59,11 +59,12 @@ return [
         'css/b-tabs.css' => ['tabs'],
         'css/b-scrolly.css' => ['scrolly'],
         'css/b-contact.css' => ['contact', 'map'],
+        'css/pages.css' => ['contact'],
         'css/b-video.css' => ['video'],
         'js/embed.js' => ['video'],
         'css/b-downloads.css' => ['downloads'],
         'css/dataform.css' => ['contact', 'form'],
-        'css/b-form.css' => ['form'],
+        'css/b-form.css' => ['form', 'contact'],
         'css/data.css' => ['datalist'],
         'js/tabs.js' => ['tabs'],
         'js/reel.js' => ['quote', 'cards'],
@@ -393,6 +394,29 @@ return [
                 ]],
                 ['name' => 'show_viewer', 'label' => 'PDFs zusätzlich „Ansehen“ anbieten (öffnet im Browser)', 'type' => 'bool', 'default' => true],
             ],
+        ],
+        // Website: Kontakt und Karte – Angaben aus „Website“ (FriendsOfRedaxo\Fluid\Settings, Maps)
+        'contact' => [
+            'label' => 'Kontakt (Karte, Formular, Zeiten)', 'icon' => 'address-book', 'group' => 'Website',
+            'help' => 'Adresse, Telefon, E-Mail, Öffnungszeiten und Karte kommen aus „Website“ (Menü ⋯). Optional ein Formular aus YForm.',
+            'fields' => [
+                ...$head(),
+                ['name' => 'show_hours', 'label' => 'Öffnungszeiten anzeigen (falls eingetragen)', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+                ['name' => 'show_map', 'label' => 'Karte anzeigen (falls Standort eingetragen)', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+                ['name' => 'form_table', 'label' => 'Formular (optional, YForm-Tabelle)', 'type' => 'yform_table',
+                    'help' => 'Felder und Prüfungen aus YForm › Table Manager – z. B. Rückrufwunsch oder Anfrage.'],
+                ['name' => 'form_title', 'label' => 'Überschrift über dem Formular', 'type' => 'text', 'max' => 80, 'width' => 'half', 'placeholder' => 'z. B. Schreiben Sie uns'],
+                ['name' => 'submit_label', 'label' => 'Beschriftung des Buttons (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half'],
+                ['name' => 'notify', 'label' => 'Benachrichtigung an (E-Mail, optional)', 'type' => 'text', 'max' => 200, 'width' => 'half', 'placeholder' => 'leer = E-Mail aus „Website“'],
+                ['name' => 'success', 'label' => 'Bestätigung nach dem Absenden', 'type' => 'text', 'max' => 200, 'width' => 'half'],
+                ['name' => 'note', 'label' => 'Hinweis unten (optional)', 'type' => 'text'],
+            ],
+        ],
+        'map' => [
+            'nestable' => true,
+            'label' => 'Karte', 'icon' => 'map-trifold', 'group' => 'Website',
+            'help' => 'Interaktive Karte (OpenStreetMap-Daten über den eigenen Server – ohne Einwilligung, ohne Cookies).',
+            'fields' => [...$head(false, false), ...\FriendsOfRedaxo\Fluid\Maps\Maps::blockFields()],
         ],
         // YForm (optional): Formular und Datenliste aus den Tabellen des Table Managers
         'form' => [

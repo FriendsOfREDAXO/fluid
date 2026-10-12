@@ -42,9 +42,168 @@ function is_editing(): bool
     return Editing::active();
 }
 
+/** Website-Einstellungen (FriendsOfRedaxo\Fluid\Settings) – wie setting() in KLXM Studio */
 function setting(string $key, mixed $default = null): mixed
 {
-    return $default;
+    return \FriendsOfRedaxo\Fluid\Settings::get($key, $default);
+}
+
+function filled(mixed $v): bool
+{
+    return null !== $v && '' !== trim((string) (is_array($v) ? implode('', $v) : $v)) && !str_starts_with(trim((string) (is_array($v) ? '' : $v)), '[');
+}
+
+// ------------------------------------------------------------ Website: Name, Kontakt, Zeiten, Social (aus kits/fluid/functions.php)
+
+function fluid_name(bool $short = false): string
+{
+    return \FriendsOfRedaxo\Fluid\Settings::name($short);
+}
+
+function fluid_phone(): string
+{
+    return trim((string) setting('phone', ''));
+}
+
+/** tel:-Adresse aus einer Telefonnummer (+49 statt 0) oder null */
+function fluid_phone_href(): ?string
+{
+    $p = preg_replace('~[^\d+]~', '', fluid_phone());
+    if ('' === $p || strlen($p) < 4) {
+        return null;
+    }
+    if (str_starts_with($p, '00')) {
+        $p = '+' . substr($p, 2);
+    } elseif (str_starts_with($p, '0')) {
+        $p = '+49' . substr($p, 1);
+    }
+
+    return 'tel:' . $p;
+}
+
+function fluid_email(): string
+{
+    $m = trim((string) setting('email', ''));
+
+    return filter_var($m, FILTER_VALIDATE_EMAIL) ? $m : '';
+}
+
+/** Adresse als Zeilen: [Straße, PLZ Ort, Land] – nur befüllte Teile */
+function fluid_address_lines(): array
+{
+    $city = trim(trim((string) setting('zip', '')) . ' ' . trim((string) setting('city', '')));
+
+    return array_values(array_filter([trim((string) setting('street', '')), $city, trim((string) setting('country', ''))], 'filled'));
+}
+
+function fluid_clock(string $t): string
+{
+    return preg_match('~^(\d{1,2}):(\d{2})~', $t, $m) ? ((int) $m[1]) . ('00' === $m[2] ? '' : ':' . $m[2]) : $t;
+}
+
+function fluid_time_range(array $r): string
+{
+    $seg = [];
+    if (!empty($r['von']) && !empty($r['bis'])) {
+        if (!empty($r['pause_von']) && !empty($r['pause_bis'])) {
+            $seg[] = fluid_clock($r['von']) . '–' . fluid_clock($r['pause_von']);
+            $seg[] = fluid_clock($r['pause_bis']) . '–' . fluid_clock($r['bis']);
+        } else {
+            $seg[] = fluid_clock($r['von']) . '–' . fluid_clock($r['bis']);
+        }
+    }
+    $time = $seg ? implode(', ', $seg) . ' Uhr' : '';
+
+    return implode(' · ', array_filter([$time, trim((string) ($r['notiz'] ?? ''))]));
+}
+
+function fluid_weekday(int $dow, bool $short = false): string
+{
+    $l = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'][$dow] ?? '';
+
+    return $short ? mb_substr($l, 0, 2) : $l;
+}
+
+/** Öffnungszeiten Mo–So, aufeinanderfolgende Tage mit gleichen Zeiten zusammengefasst @return list<array{days: string, time: string}> */
+function fluid_hours(): array
+{
+    $byDay = [];
+    foreach ((array) setting('hours', []) as $r) {
+        $dow = (int) ($r['tag'] ?? -1);
+        if ($dow < 0 || $dow > 6) {
+            continue;
+        }
+        $t = fluid_time_range($r);
+        if ('' !== $t) {
+            $byDay[$dow][] = $t;
+        }
+    }
+    $groups = [];
+    foreach ([1, 2, 3, 4, 5, 6, 0] as $dow) {
+        if (!isset($byDay[$dow])) {
+            $groups[] = null;
+            continue;
+        }
+        $time = implode(' · ', $byDay[$dow]);
+        $last = $groups ? $groups[array_key_last($groups)] : null;
+        if ($last && $last['time'] === $time) {
+            $groups[array_key_last($groups)]['to'] = $dow;
+        } else {
+            $groups[] = ['from' => $dow, 'to' => $dow, 'time' => $time];
+        }
+    }
+    $out = [];
+    foreach (array_filter($groups) as $g) {
+        $out[] = ['days' => fluid_weekday($g['from'], $g['to'] !== $g['from']) . ($g['to'] !== $g['from'] ? '–' . fluid_weekday($g['to'], true) : ''), 'time' => $g['time']];
+    }
+
+    return $out;
+}
+
+function fluid_social(): array
+{
+    return array_values(array_filter((array) setting('social', []), static fn ($s) => '' !== trim((string) ($s['label'] ?? '')) && preg_match('~^https?://~i', (string) ($s['url'] ?? ''))));
+}
+
+function fluid_quick_contact(string $class = 'quick'): string
+{
+    $phone = fluid_phone();
+    $tel = fluid_phone_href();
+    $email = fluid_email();
+    if (!($tel && filled($phone)) && '' === $email) {
+        return '';
+    }
+    $h = '<ul class="' . e($class) . '" role="list">';
+    if ($tel && filled($phone)) {
+        $h .= '<li><a href="' . e($tel) . '">' . icon('phone') . '<span>' . e($phone) . '</span></a></li>';
+    }
+    if ('' !== $email) {
+        $h .= '<li><a href="mailto:' . e($email) . '">' . icon('envelope-simple') . '<span>' . e($email) . '</span></a></li>';
+    }
+
+    return $h . '</ul>';
+}
+
+/** Impressum, Datenschutz, Barrierefreiheit (Website → Recht) @return list<array{label: string, href: string}> */
+function fluid_legal_links(): array
+{
+    $out = [];
+    foreach (['imprint_page' => 'Impressum', 'privacy_page' => 'Datenschutz', 'accessibility_page' => 'Barrierefreiheit'] as $k => $label) {
+        $l = trim((string) setting($k, ''));
+        if ('' !== $l) {
+            $out[] = ['label' => lt($label), 'href' => link_href($l)];
+        }
+    }
+
+    return $out;
+}
+
+function fluid_header_cta(): ?array
+{
+    $label = trim((string) setting('header_cta_label', ''));
+    $link = trim((string) setting('header_cta_link', ''));
+
+    return '' !== $label && '' !== $link ? ['label' => $label, 'link' => $link] : null;
 }
 
 /** Symbol aus den Phosphor-Sprites (MIT) des Kits */
@@ -126,6 +285,13 @@ function link_href(?string $link): string
     $l = trim((string) $link);
     if ('' === $l) {
         return '#';
+    }
+    // Sonderwerte aus „Website“: phone, email
+    if ('phone' === $l) {
+        return fluid_phone_href() ?? '#';
+    }
+    if ('email' === $l) {
+        return '' !== fluid_email() ? 'mailto:' . fluid_email() : '#';
     }
     if (preg_match('~^(?:redaxo://|page:)?(\d+)(#[\w-]+)?$~', $l, $m)) {
         $art = Article::get((int) $m[1]);
@@ -318,8 +484,8 @@ function privacy_url(): string
 {
     static $url = null;
     if (null === $url) {
-        $url = '';
-        foreach (\Redaxo\Core\Content\Article::getRootArticles(true) as $a) {
+        $url = '' !== trim((string) setting('privacy_page', '')) ? link_href((string) setting('privacy_page')) : '';
+        foreach ('' !== $url ? [] : \Redaxo\Core\Content\Article::getRootArticles(true) as $a) {
             if (preg_match('~^datenschutz~i', $a->name)) {
                 $url = $a->getUrl();
                 break;

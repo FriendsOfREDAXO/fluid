@@ -62,6 +62,7 @@ final class Api
                 'delete' => self::delete($article),
                 'publish' => self::publish($article),
                 'discard' => self::discard($article),
+                'site', 'site_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
                 'page' => self::page($article),
                 'page_save' => self::pageSave($article),
                 'page_add' => self::pageAdd($article, $user),

@@ -1,7 +1,7 @@
 <?php
 /*
  * Design-Tokens des Kits „fluid“ für den Style-Editor (aus KLXM Studio, MIT) – siehe FriendsOfRedaxo\Fluid\Design.
- * Im REDAXO-Kit noch nicht umgesetzt (ausgeblendet, Ende der Datei): Kopf „Seitenleiste“, Infoleiste, Fuß „Statement“.
+ * Im REDAXO-Kit noch nicht umgesetzt (ausgeblendet, Ende der Datei): Kopf „Seitenleiste“.
  *
  * Jeder Token wird eine CSS-Variable (--f-…) oder eine Klasse am <html> (hdr-inline, btn-pill, cards-glass, has-dark …).
  * Typografie und Abstände sind fließend: Schriftgrößen entstehen aus Grundgröße (min/max), Verhältnis der Stufen und
@@ -378,9 +378,9 @@ $design = [
     'sample' => 'showcase',
 ];
 
-// REDAXO-Kit: Einstellungen ohne passendes Markup ausblenden (Seitenleiste, Infoleiste, Fuß „Statement“)
-$drop = ['side_width', 'side_banner', 'side_banner_height', 'side_banner_overlay', 'side_tree', 'topbar'];
-$limit = ['header' => ['inline', 'centered', 'split', 'floating', 'rail', 'minimal'], 'footer' => ['columns', 'simple']];
+// REDAXO-Kit: Einstellungen ohne passendes Markup ausblenden (Kopf „Seitenleiste“)
+$drop = ['side_width', 'side_banner', 'side_banner_height', 'side_banner_overlay', 'side_tree'];
+$limit = ['header' => ['inline', 'centered', 'split', 'floating', 'rail', 'minimal'], 'footer' => ['columns', 'simple', 'centered', 'statement']];
 foreach ($design['groups'] as &$g) {
     $g['tokens'] = array_values(array_filter($g['tokens'] ?? [], static fn (array $t) => !in_array($t['name'] ?? '', $drop, true)));
     foreach ($g['tokens'] as &$t) {

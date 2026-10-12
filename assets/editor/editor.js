@@ -77,6 +77,7 @@
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
             <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
+            ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
             <button type="button" role="menuitem" data-page-add>Neue Seite …</button>
             ${cfg.editing && cfg.state.workVersion ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
             <a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>
@@ -131,6 +132,12 @@
       <form class="panel__body" data-page-form novalidate></form>
       <footer class="panel__foot"><span class="dpanel__space"></span><button type="button" class="btn" data-page-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-page-save>Speichern</button></footer>
     </aside>`);
+  const spanel = h(`
+    <aside class="panel spanel" hidden aria-labelledby="fluid-site-title">
+      <header class="panel__head"><h2 id="fluid-site-title">Website</h2><button type="button" class="btn btn--icon" data-site-close aria-label="Schließen">✕</button></header>
+      <nav class="spanel__tabs" role="tablist" aria-label="Bereiche" data-site-tabs></nav>
+      <div class="panel__body" data-site-body></div>
+    </aside>`);
   const newdlg = h(`
     <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-new-t">
       <form class="dlg__box newpage" data-new-form novalidate>
@@ -150,7 +157,7 @@
     </div>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, picker, dialog, newdlg, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, picker, dialog, newdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
@@ -263,6 +270,7 @@
   render();
   if (cfg.design) initDesign();
   initPage();
+  if (cfg.site) initSite();
   if (!cfg.editing) return;
 
 
@@ -473,6 +481,100 @@
     });
   }
 
+
+  // ------------------------------------------------------------------ Website-Einstellungen (Admins)
+
+  function initSite() {
+    const body = $('[data-site-body]');
+    const tabsEl = $('[data-site-tabs]');
+    let tab = 'base';
+    let reload = false;
+    const drawTabs = (tabs) => {
+      tabsEl.innerHTML = Object.entries(tabs).map(([k, l]) => `<button type="button" role="tab" data-site-tab="${esc(k)}" aria-selected="${k === tab}">${esc(l)}</button>`).join('');
+    };
+    const show = (res) => {
+      tab = res.tab || tab;
+      if (res.tabs) drawTabs(res.tabs);
+      body.innerHTML = res.html;
+      window.BlocksForm?.init(body, () => {});
+      landingOnly();
+      body.scrollTop = 0;
+    };
+    const load = async (t) => {
+      tab = t;
+      try { show(await api('site', { tab: t })); } catch (err) { say(err.message, true); }
+    };
+    // Domains: Felder der Landing-Domain nur bei dieser Rolle
+    const landingOnly = () => body.querySelectorAll('form').forEach((f) => {
+      const role = f.querySelector('[data-domain-role]')?.value;
+      f.querySelectorAll('[data-landing-only]').forEach((x) => { x.hidden = role !== 'landing'; });
+    });
+    const close = () => {
+      spanel.hidden = true;
+      document.documentElement.classList.remove('blocks-panel-open');
+      if (reload) location.reload();
+    };
+    $('[data-site-open]').addEventListener('click', () => {
+      menu.hidden = true;
+      if (!panel.hidden || !dpanel.hidden || !ppanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
+      spanel.hidden = false;
+      document.documentElement.classList.add('blocks-panel-open');
+      drawTabs(cfg.site.tabs);
+      load(tab);
+    });
+    $('[data-site-close]').addEventListener('click', close);
+    tabsEl.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-site-tab]');
+      if (b) { tabsEl.querySelectorAll('[data-site-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === b))); load(b.dataset.siteTab); }
+    });
+    body.addEventListener('change', (e) => { if (e.target.matches('[data-domain-role]')) landingOnly(); });
+    body.addEventListener('submit', async (e) => {
+      const f = e.target.closest('[data-site-form]');
+      if (!f) return;
+      e.preventDefault();
+      if (!f.reportValidity()) return;
+      const fd = new FormData(f);
+      fd.append('tab', f.dataset.tab || tab);
+      const btn = f.querySelector('[type=submit]');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await api(f.dataset.siteForm, fd);
+        if (res.reload) reload = true;
+        show(res);
+        say(res.message || 'Gespeichert.');
+      } catch (err) { say(err.message, true); } finally { if (btn) btn.disabled = false; }
+    });
+    body.addEventListener('click', async (e) => {
+      const act = e.target.closest('[data-site-act]');
+      if (act) {
+        if (act.dataset.confirm && !(await ask({ title: act.dataset.confirm, ok: 'Ja', danger: true }))) return;
+        try { const res = await api(act.dataset.siteAct, { id: act.dataset.id, tab }); show(res); say(res.message); } catch (err) { say(err.message, true); }
+        return;
+      }
+      const pre = e.target.closest('[data-prefill-source]');
+      if (pre) {
+        const src = body.querySelector('[data-redirect-source]');
+        if (src) { src.value = pre.dataset.prefillSource; src.focus(); src.scrollIntoView({ block: 'center' }); }
+        return;
+      }
+      const geo = e.target.closest('[data-geocode]');
+      if (geo) {
+        const f = geo.closest('form');
+        const val = (n) => f.querySelector(`[name$="[${n}]"]`)?.value?.trim() || '';
+        const q = [val('street'), [val('zip'), val('city')].filter(Boolean).join(' '), val('country')].filter(Boolean).join(', ') || val('address');
+        if (!q) return say('Bitte zuerst die Adresse eintragen.', true);
+        geo.disabled = true;
+        try {
+          const res = await api('geocode', { q });
+          const hit = res.results?.[0];
+          if (!hit) return say('Keinen Ort zu dieser Adresse gefunden.', true);
+          geo.closest('.blocks-geo').querySelector('[data-geo]').value = `${hit.lat}, ${hit.lng}`;
+          say(`Gefunden: ${hit.label}`);
+        } catch (err) { say(err.message, true); } finally { geo.disabled = false; }
+      }
+    });
+  }
+
   // ================================================================== Bearbeiten-Modus
 
   const blocks = () => [...main.querySelectorAll('[data-block]')];
@@ -597,6 +699,14 @@
     const el = h(html);
     const ids = [sec, ...sec.querySelectorAll('[data-block]')].map((x) => x.dataset.block);
     sec.replaceWith(el);
+    // Skripte des neu ausgegebenen Blocks ausführen (innerHTML führt sie nicht aus) und Kit-Skripte benachrichtigen
+    el.querySelectorAll('script').forEach((old) => {
+      const n = document.createElement('script');
+      for (const a of old.attributes) n.setAttribute(a.name, a.value);
+      n.textContent = old.textContent;
+      old.replaceWith(n);
+    });
+    document.dispatchEvent(new CustomEvent('fluid:rendered', { detail: { block: el } }));
     initEditables(el);
     initColumns(el);
     initHandles(el.closest('section[data-block]') || el);

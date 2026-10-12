@@ -74,7 +74,7 @@ final class Seo
     /** robots.txt: eigener Text (Website-Einstellungen) oder Standard; Sitemap-Zeile immer */
     public static function robots(): string
     {
-        $own = trim((string) FluidAddon::instance()->getConfig('robots', ''));
+        $own = trim((string) \FriendsOfRedaxo\Fluid\Settings::get('robots', ''));
         $txt = '' !== $own ? $own : "User-agent: *\nDisallow: /redaxo/\nDisallow: /*?fluid_edit=\nDisallow: /*?rex_version=";
         $r = Core::getRequest();
 
@@ -98,6 +98,53 @@ final class Seo
             }
         }
 
+        if ($article->id === Article::getSiteStartArticleId()) {
+            $h .= self::organization();
+        }
+
         return $h;
+    }
+
+    /** schema.org der Organisation (Startseite): Name, Logo, Adresse, Telefon, E-Mail, Öffnungszeiten, Social Media */
+    public static function organization(): string
+    {
+        $s = static fn (string $k) => trim((string) \FriendsOfRedaxo\Fluid\Settings::get($k, ''));
+        $type = $s('schema_type') ?: 'Organization';
+        $origin = Router::canonical(Article::getSiteStartArticleId(), Language::getCurrentId());
+        $data = ['@context' => 'https://schema.org', '@type' => $type, 'name' => \FriendsOfRedaxo\Fluid\Settings::name(), 'url' => $origin];
+        if ('' !== $s('logo') && ($m = \Redaxo\Core\MediaPool\Media::get($s('logo')))) {
+            $data['logo'] = Router::absolute($m->getUrl());
+        }
+        if ('' !== $s('street') || '' !== $s('city')) {
+            $data['address'] = array_filter(['@type' => 'PostalAddress', 'streetAddress' => $s('street'), 'postalCode' => $s('zip'), 'addressLocality' => $s('city'), 'addressCountry' => $s('country')]);
+        }
+        if ('' !== $s('phone')) {
+            $data['telephone'] = $s('phone');
+        }
+        if (filter_var($s('email'), FILTER_VALIDATE_EMAIL)) {
+            $data['email'] = $s('email');
+        }
+        if ($geo = \FriendsOfRedaxo\Fluid\Maps\Maps::siteLocation()) {
+            $data['geo'] = ['@type' => 'GeoCoordinates', 'latitude' => $geo[0], 'longitude' => $geo[1]];
+        }
+        $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $spec = [];
+        foreach ((array) \FriendsOfRedaxo\Fluid\Settings::get('hours', []) as $r) {
+            if (isset($days[(int) ($r['tag'] ?? -1)]) && !empty($r['von']) && !empty($r['bis'])) {
+                $slots = !empty($r['pause_von']) && !empty($r['pause_bis']) ? [[$r['von'], $r['pause_von']], [$r['pause_bis'], $r['bis']]] : [[$r['von'], $r['bis']]];
+                foreach ($slots as [$o, $c]) {
+                    $spec[] = ['@type' => 'OpeningHoursSpecification', 'dayOfWeek' => $days[(int) $r['tag']], 'opens' => $o, 'closes' => $c];
+                }
+            }
+        }
+        if ($spec && 'Organization' !== $type && 'Person' !== $type) {
+            $data['openingHoursSpecification'] = $spec;
+        }
+        $same = array_values(array_filter(array_map(static fn ($x) => (string) ($x['url'] ?? ''), (array) \FriendsOfRedaxo\Fluid\Settings::get('social', [])), static fn ($u) => (bool) preg_match('~^https?://~', $u)));
+        if ($same) {
+            $data['sameAs'] = $same;
+        }
+
+        return '<script type="application/ld+json">' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>' . "\n";
     }
 }

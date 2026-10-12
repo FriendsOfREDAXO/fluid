@@ -76,6 +76,12 @@ final class FieldForm
      * @param list<array<string, mixed>> $fields
      * @param array<string, mixed> $data
      */
+    /** Beliebige Felder (z. B. Website-Einstellungen) als Formular auf der Website */
+    public static function standalone(array $fields, array $data, string $base): string
+    {
+        return '<div class="blocks-form" data-blocks-form>' . self::fields($fields, self::withDefaults($fields, $data), $base, false) . '</div>';
+    }
+
     private static function fields(array $fields, array $data, string $base, bool $backend): string
     {
         $h = '<div class="blocks-form__grid">';
@@ -118,6 +124,10 @@ final class FieldForm
                 ? self::select($name, $t, (string) $value, ['id' => $id, 'data-yform-table' => ''], !$req)
                 : '<p class="help-block">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Backend unter YForm › Table Manager anlegen.' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
             'yform_field' => self::yformField($name, (string) $value, $id),
+            'time' => '<input class="form-control" type="time" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
+            // Standort „Breite, Länge“ mit Geokodierung aus den Adressfeldern (Website-Einstellungen)
+            'geo' => '<div class="blocks-geo"><input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="51.4512, 6.6263" pattern="^-?\\d{1,2}(\\.\\d+)?,\\s*-?\\d{1,3}(\\.\\d+)?$" data-geo>'
+                . '<button type="button" class="blocks-btn" data-geocode>Aus Adresse ermitteln</button></div>',
             'url' => '<input class="form-control" type="url" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $ph . ' placeholder="https://…">',
             'link' => Picker::link(self::nameId($name), $name, (string) $value, $backend),
             'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
@@ -150,6 +160,12 @@ final class FieldForm
 
         $row = static function (array $item, string $key) use ($sub, $name, $itemLabel, $titleField, $backend): string {
             $title = trim((string) ($item[$titleField] ?? ''));
+            // Auswahlfeld als Titel: Beschriftung der Option (z. B. „Montag“ statt „1“)
+            foreach ($sub as $sf) {
+                if (($sf['name'] ?? '') === $titleField && 'select' === ($sf['type'] ?? '') && isset($sf['options'][$title])) {
+                    $title = (string) $sf['options'][$title];
+                }
+            }
 
             return '<details class="blocks-rep__item" data-blocks-item' . ('' === $title ? ' open' : '') . '>'
                 . '<summary><span class="blocks-rep__title" data-blocks-item-title data-field="' . escape($titleField) . '">' . escape('' !== $title ? $title : $itemLabel) . '</span>'

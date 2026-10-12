@@ -77,6 +77,10 @@ final class PageSettings
     public static function head(Article $article, string $siteName): string
     {
         $s = self::get($article->id, $article->languageId);
+        // Ohne eigene Beschreibung: Standard aus „Website“
+        if ('' === $s['description']) {
+            $s['description'] = trim((string) Settings::get('default_meta_description', ''));
+        }
         $h = '';
         if ('' !== $s['description']) {
             $h .= '<meta name="description" content="' . escape($s['description']) . '">' . "\n"

@@ -53,10 +53,12 @@
       sync();
       changed();
     });
+    list.addEventListener('change', (e) => { if (e.target.matches('select')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
     list.addEventListener('input', (e) => {
       const item = e.target.closest('[data-blocks-item]');
       const title = item?.querySelector(':scope > summary [data-blocks-item-title]');
-      if (title && e.target.name?.endsWith(`[${title.dataset.field}]`) && e.target.value) title.textContent = e.target.value;
+      // Auswahlfeld als Titel: Text der Option („Montag“ statt „1“)
+      if (title && e.target.name?.endsWith(`[${title.dataset.field}]`) && e.target.value) title.textContent = e.target.selectedOptions?.[0]?.text || e.target.value;
     });
     sync();
   }

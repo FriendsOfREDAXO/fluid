@@ -14,7 +14,7 @@ return static function (ArticleContent $content): void {
     // Inhalt zuerst: so ist bekannt, welche Blöcke (und damit welches CSS) die Seite braucht
     $main = $content->renderContent();
     $article = $content->article;
-    $name = Core::getProject()->instanceName;
+    $name = \FriendsOfRedaxo\Fluid\Settings::name();
     $isHome = $article->id === Article::getSiteStartArticleId();
     // Landing-Domain: Einstiegsseite der Landingpage statt Startseite der Website
     $landing = \FriendsOfRedaxo\Fluid\Routing\Router::landing();
@@ -46,9 +46,47 @@ return static function (ArticleContent $content): void {
 
         return $h . '</ul></details></li>';
     };
-    $brand = static fn (string $class = '') => '<a class="brand' . ('' !== $class ? ' ' . $class : '') . '" href="' . e($isHome ? '#main' : $home) . '">'
-        . '<span class="brand__mark" aria-hidden="true">' . e(mb_strtoupper(mb_substr($name, 0, 1))) . '</span>'
-        . '<span class="brand__name">' . e($name) . '</span><span class="sr-only"> – ' . e(lt('Startseite')) . '</span></a>';
+    // Logo (hell/dunkel) oder Wortmarke – Website-Einstellungen (wie Kern-Fragment „brand“ in KLXM Studio)
+    $logo = (string) setting('logo', '');
+    $logoDark = (string) setting('logo_dark', '');
+    $brand = static function (string $class = '') use ($isHome, $home, $name, $logo, $logoDark): string {
+        $light = '' !== $logo ? img($logo, '240px', ['eager' => true, 'alt' => '', 'class' => 'brand__img']) : '';
+        $dark = '' !== $light && '' !== $logoDark ? img($logoDark, '240px', ['eager' => true, 'alt' => '', 'class' => 'brand__img']) : '';
+        $h = '<a class="brand' . ('' !== $class ? ' ' . $class : '') . '" href="' . e($isHome ? '#main' : $home) . '">';
+        if ('' !== $light) {
+            $h .= '<span class="brand__logo' . ('' !== $dark ? ' brand__logo--light' : '') . '">' . $light . '</span>'
+                . ('' !== $dark ? '<span class="brand__logo brand__logo--dark">' . $dark . '</span>' : '') . '<span class="sr-only">' . e($name) . '</span>';
+        } else {
+            $h .= '<span class="brand__mark" aria-hidden="true">' . e(mb_strtoupper(mb_substr(fluid_name(true), 0, 1))) . '</span><span class="brand__name">' . e(fluid_name(true)) . '</span>';
+        }
+
+        return $h . '<span class="sr-only"> – ' . e(lt('Startseite')) . '</span></a>';
+    };
+    $cta = fluid_header_cta();
+    $notice = !empty(setting('notice_active')) && '' !== trim((string) setting('notice_text', '')) ? trim((string) setting('notice_text')) : '';
+    $topbar = (string) $design->get('topbar');
+    $address = fluid_address_lines();
+    $social = fluid_social();
+    $legal = fluid_legal_links();
+    $tagline = trim((string) setting('tagline', ''));
+    $ftrText = trim((string) setting('footer_text', ''));
+    $statement = trim((string) setting('footer_statement', '')) ?: fluid_name(true);
+    $socialList = static function () use ($social): string {
+        $h = '';
+        foreach ($social as $so) {
+            $h .= '<li><a href="' . e($so['url']) . '" target="_blank" rel="noopener me">' . e($so['label']) . '<span class="sr-only"> ' . e(lt('(öffnet in neuem Tab)')) . '</span></a></li>';
+        }
+
+        return $h;
+    };
+    $pageList = static function () use ($menu): string {
+        $h = '';
+        foreach ($menu as $m) {
+            $h .= '<li><a href="' . e($m['href']) . '"' . ($m['current'] ? ' aria-current="page"' : '') . '>' . e($m['label']) . '</a></li>';
+        }
+
+        return $h;
+    };
 ?><!doctype html>
 <html lang="<?= e(Language::getCurrent()?->code ?? 'de') ?>" class="no-js <?= e($designClasses . $extra) ?>" data-fluid-classes="<?= e($designClasses) ?>">
 <head>
@@ -68,13 +106,25 @@ return static function (ArticleContent $content): void {
 <body class="<?= $isHome ? 'is-home' : 'is-sub' ?>">
 <a class="skip" id="top" href="#main"><?= e(lt('Zum Inhalt springen')) ?></a>
 <div class="page">
+<?php if ('' !== $notice): ?><div class="topnote" role="note"><div class="wrap"><?= fluid_title($notice) ?></div></div><?php endif; ?>
 <header class="hdr hdr--<?= e($header) ?> fit-60" data-header>
+  <?php if ('' !== $topbar && 'off' !== $topbar): $mText = trim((string) setting('topbar_text', '')); $mTel = fluid_phone_href(); ?>
+  <div class="hdr__meta"><div class="hdr__meta-in">
+    <?php if ('' !== $mText): ?><p class="hdr__meta-text"><?= fluid_title($mText) ?></p><?php endif; ?>
+    <ul class="hdr__meta-list" role="list">
+      <?php if ($mTel && '' !== fluid_phone()): ?><li><a href="<?= e($mTel) ?>"><?= icon('phone') ?><span><?= e(fluid_phone()) ?></span></a></li><?php endif; ?>
+      <?php if ('' !== fluid_email()): ?><li class="hdr__meta-mail"><a href="mailto:<?= e(fluid_email()) ?>"><?= icon('envelope-simple') ?><span><?= e(fluid_email()) ?></span></a></li><?php endif; ?>
+      <?php foreach ($social as $so): ?><li class="hdr__meta-social"><a href="<?= e($so['url']) ?>" target="_blank" rel="noopener me"><?= e($so['label']) ?></a></li><?php endforeach; ?>
+    </ul>
+  </div></div>
+  <?php endif; ?>
   <div class="hdr__bar">
     <?= $brand('hdr__brand') ?>
     <?php if ($menu): ?>
     <div class="hdr__nav"><nav class="hnav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="hnav__list" role="list"><?= implode('', array_map($navItem, $menu)) ?></ul></nav></div>
     <?php endif; ?>
     <div class="hdr__tools">
+      <?php if ($cta): ?><a class="btn btn--primary hdr__cta" <?= fluid_link_attrs($cta['link']) ?>><?= e($cta['label']) ?></a><?php endif; ?>
       <?php if ($menu): ?>
       <button type="button" class="menu-btn" popovertarget="mnav" aria-controls="mnav" aria-haspopup="dialog">
         <span class="menu-btn__bars" aria-hidden="true"></span><span class="menu-btn__label"><?= e(lt('Menü')) ?></span>
@@ -89,23 +139,52 @@ return static function (ArticleContent $content): void {
 </main>
 <footer class="ftr ftr--<?= e($footer) ?>">
   <div class="wrap">
-  <?php if ('simple' === $footer): ?>
+  <?php if ('statement' === $footer): ?>
+    <div class="ftr__statement">
+      <p class="ftr__big"><?= fluid_title($statement) ?></p>
+      <?php if ($cta): ?><a class="btn btn--primary ftr__cta" <?= fluid_link_attrs($cta['link']) ?>><?= e($cta['label']) ?><?= icon('arrow-right') ?></a><?php endif; ?>
+    </div>
+  <?php endif; ?>
+  <?php if ('simple' === $footer || 'centered' === $footer): ?>
     <div class="ftr__row">
       <?= $brand('brand--footer') ?>
-      <?php if ($menu): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?php foreach ($menu as $m): ?><li><a href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?></ul></nav><?php endif; ?>
+      <?php if ('' !== $tagline): ?><p class="ftr__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>
+      <?php if ($menu): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?= $pageList() ?></ul></nav><?php endif; ?>
     </div>
+    <?php if ('' !== $ftrText): ?><p class="ftr__text"><?= nl2br(fluid_title($ftrText), false) ?></p><?php endif; ?>
   <?php else: ?>
     <div class="ftr__grid">
-      <div class="ftr__about"><?= $brand('brand--footer') ?></div>
+      <div class="ftr__about">
+        <?= $brand('brand--footer') ?>
+        <?php if ('' !== $tagline): ?><p class="ftr__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>
+        <?php if ('' !== $ftrText): ?><p class="ftr__text"><?= nl2br(fluid_title($ftrText), false) ?></p><?php endif; ?>
+      </div>
+      <?php if ($address || '' !== fluid_phone() || '' !== fluid_email()): ?>
+      <div class="ftr__col">
+        <h2 class="ftr__h"><?= e(lt('Kontakt')) ?></h2>
+        <?php if ($address): ?><address class="ftr__address"><?= implode('<br>', array_map('e', $address)) ?></address><?php endif; ?>
+        <?= fluid_quick_contact('ftr__list') ?>
+      </div>
+      <?php endif; ?>
       <?php if ($menu): ?>
       <nav class="ftr__col" aria-labelledby="ftr-pages">
         <h2 class="ftr__h" id="ftr-pages"><?= e(lt('Seiten')) ?></h2>
-        <ul class="ftr__list" role="list"><?php foreach ($menu as $m): ?><li><a href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?></ul>
+        <ul class="ftr__list" role="list"><?= $pageList() ?></ul>
       </nav>
+      <?php endif; ?>
+      <?php if ($social): ?>
+      <div class="ftr__col">
+        <h2 class="ftr__h"><?= e(lt('Folgen Sie uns')) ?></h2>
+        <ul class="ftr__list" role="list"><?= $socialList() ?></ul>
+      </div>
       <?php endif; ?>
     </div>
   <?php endif; ?>
-    <div class="ftr__bottom"><p class="ftr__copy">© <?= e(date('Y')) ?> <?= e($name) ?></p></div>
+    <div class="ftr__bottom">
+      <p class="ftr__copy">© <?= e(date('Y')) ?> <?= e($name) ?></p>
+      <?php if ($legal): ?><nav aria-label="<?= e(lt('Rechtliches')) ?>"><ul class="cluster ftr__legal" role="list"><?php foreach ($legal as $l): ?><li><a href="<?= e($l['href']) ?>"><?= e($l['label']) ?></a></li><?php endforeach; ?></ul></nav><?php endif; ?>
+      <?php if (('simple' === $footer || 'centered' === $footer) && $social): ?><ul class="cluster ftr__legal" role="list" aria-label="<?= e(lt('Social Media')) ?>"><?= $socialList() ?></ul><?php endif; ?>
+    </div>
   </div>
 </footer>
 </div>

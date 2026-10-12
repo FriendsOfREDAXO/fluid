@@ -78,6 +78,10 @@ final class Router
         }
         self::$landing = DomainRole::Landing === $domain?->role ? $domain : null;
 
+        // Eigener Proxy für Karten (Kacheln, Stile, Schriften) – Besucher verbinden sich nie mit Dritten
+        if (preg_match('~^/proxy/([a-z][a-z0-9_-]{1,30})(/.*)?$~', $path, $m)) {
+            \FriendsOfRedaxo\Fluid\Maps\Proxy::handle($m[1], (string) ($m[2] ?? ''));
+        }
         if ('/sitemap.xml' === $path) {
             self::send(Seo::sitemap(self::$landing), 'application/xml; charset=utf-8');
         }
