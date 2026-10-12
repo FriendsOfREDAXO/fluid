@@ -4,67 +4,116 @@ namespace FriendsOfRedaxo\Fluid\Data;
 
 use FriendsOfRedaxo\Fluid\Editing;
 use Redaxo\Core\Addon\Addon;
-use Redaxo\Core\Core;
 use Redaxo\Core\Filesystem\Url;
-use Redaxo\Core\Http\Request;
-use Symfony\Component\Mime\Address;
-use Symfony\Component\Mime\Email;
-use Throwable;
-use Yakamara\YForm\FieldRegistry;
-use Yakamara\YForm\Manager\Dataset;
-use Yakamara\YForm\Manager\Field;
-use Yakamara\YForm\Manager\Table\Table;
-use Yakamara\YForm\YForm;
+use Yakamara\YForm\Data\Record;
+use Yakamara\YForm\Field\Checkbox;
+use Yakamara\YForm\Field\CreatedAt;
+use Yakamara\YForm\Field\CreatedBy;
+use Yakamara\YForm\Field\Email;
+use Yakamara\YForm\Field\Field;
+use Yakamara\YForm\Field\Hidden;
+use Yakamara\YForm\Field\Markup;
+use Yakamara\YForm\Field\Media;
+use Yakamara\YForm\Field\Password;
+use Yakamara\YForm\Field\Text;
+use Yakamara\YForm\Field\Textarea;
+use Yakamara\YForm\Field\UpdatedAt;
+use Yakamara\YForm\Field\UpdatedBy;
+use Yakamara\YForm\Field\Url as UrlField;
+use Yakamara\YForm\Field\Uuid;
+use Yakamara\YForm\Form\Definition\FormDefinition;
+use Yakamara\YForm\Form\Definition\Forms;
+use Yakamara\YForm\Form\Theme\Theme;
+use Yakamara\YForm\Permission\Access;
+use Yakamara\YForm\Table\Table;
+use Yakamara\YForm\Table\Tables;
 
 use function in_array;
-use function strlen;
 use function Redaxo\Core\View\escape;
 
 /**
- * Anbindung an YForm (yakamara/yform, optional): Formular-Block und Datenliste nutzen die Tabellen des Table Managers.
- *
- * Felder, Pflichtangaben, Prüfungen und CSRF-Schutz kommen von YForm (Tabelle im Table Manager); der Block legt nur
- * Beschriftung, Bestätigung und Benachrichtigung fest. Zusätzlich gegen Bots: Honigtopf-Feld und Mindestzeit zwischen
- * Anzeige und Absenden. Benachrichtigung über den Core-Mailer, solange die YForm-Aktionen email/tpl2email in 6.x noch die
- * alte PHPMailer-API nutzen – danach auf tpl2email (E-Mail-Templates von YForm) umstellen.
+ * Anbindung an YForm für REDAXO 6 (yakamara/yform, Neubau: Tabellen und Formulare sind Klassen im Projekt).
+ * Ausschließlich mit den Mitteln von YForm:
+ *  - Formulare: #[AsForm]-Klassen; ausgeführt mit FormDefinition::run() – Prüfung, CSRF, Honigtopf und Aktionen
+ *    (SaveRecord, SendMail, ShowMessage …) kommen aus der Formular-Klasse. fluid liefert nur ein Theme im Stil des Kits.
+ *  - Datenliste: #[AsTable]-Klassen; Abfragen über Table::query(), Werte über Field::textValue() der Feldklassen.
+ *  - Rechte: Permission\Access (Tabellen ansehen/bearbeiten), Bearbeiten in der Datenseite von YForm.
  */
 final class YFormBridge
 {
-    /** Mindestzeit in Sekunden zwischen Anzeige und Absenden (schnellere Sendungen sind Bots) */
-    private const int MIN_SECONDS = 3;
-
     public static function available(): bool
     {
-        return class_exists(YForm::class) && Addon::exists('yform');   // REDAXO 6: installiert = aktiv
+        return class_exists(Tables::class) && Addon::exists('yform');   // REDAXO 6: installiert = aktiv
     }
 
-    /** @return array<string, string> Tabellen für die Auswahl im Block (Tabellenname => Name) */
-    public static function tables(): array
+    // ------------------------------------------------------------------ Formulare
+
+    /** @return array<string, string> Formulare für die Auswahl im Block (Name => Beschriftung) */
+    public static function forms(): array
     {
         if (!self::available()) {
             return [];
         }
         $out = [];
-        foreach (Table::getAll() as $t) {
-            if ($t->isActive()) {
-                $out[$t->getTableName()] = $t->getNameLocalized() . ' (' . $t->getTableName() . ')';
+        foreach (Forms::all() as $name => $form) {
+            $out[$name] = $form->label() . ($form->definition->module ? '' : ' (' . $name . ')');
+        }
+
+        return $out;
+    }
+
+    public static function formDefinition(string $name): ?FormDefinition
+    {
+        return self::available() && '' !== $name ? Forms::find($name) : null;
+    }
+
+    /** Formular ausführen (YForm verarbeitet Absenden, Prüfung und Aktionen) – im Theme des Kits, sofern das Projekt keins setzt */
+    public static function runForm(FormDefinition $form): string
+    {
+        $before = Forms::$defaultTheme;
+        Forms::$defaultTheme ??= self::theme();
+        try {
+            return '<div class="fyf-wrap">' . $form->run() . '</div>';
+        } finally {
+            Forms::$defaultTheme = $before;
+        }
+    }
+
+    /** Theme mit den Klassen der öffentlichen Formulare des Kits (css/dataform.css, .dff) */
+    public static function theme(): Theme
+    {
+        return new Theme(
+            form: 'dff fyf', group: 'dff-f', groupInvalid: 'is-invalid', label: '', control: '', staticControl: '', controlInvalid: '',
+            select: '', checkWrapper: 'dff-check', checkInput: '', checkLabel: '', radioWrapper: 'dff-check', help: 'dff-help',
+            error: 'dff-err', row: 'dff-grid', column: '', buttons: 'dff-actions', submit: 'btn btn--primary', secondary: 'btn btn--ghost',
+            alertError: 'dff-summary', alertSuccess: 'dff-done',
+        );
+    }
+
+    /** Tabellen, in die ein Formular speichert (Aktion SaveRecord) @return list<string> */
+    public static function formTables(FormDefinition $form): array
+    {
+        $out = [];
+        foreach ($form->actions() as $action) {
+            if ($action instanceof \Yakamara\YForm\Form\Action\SaveRecord && ($t = Tables::find($action->table))) {
+                $out[] = $t->definition->name;
             }
         }
 
         return $out;
     }
 
-    /** @return array<string, array<string, string>> Felder je Tabelle (Tabellenname => [Feldname => Beschriftung]) */
-    public static function fieldOptions(): array
+    // ------------------------------------------------------------------ Tabellen
+
+    /** @return array<string, string> Tabellen für die Auswahl im Block (Tabellenname => Beschriftung) */
+    public static function tables(): array
     {
+        if (!self::available()) {
+            return [];
+        }
         $out = [];
-        foreach (array_keys(self::tables()) as $name) {
-            foreach (Table::get($name)?->getValueFields() ?? [] as $f) {
-                if (in_array($f->getTypeName(), ['submit', 'html', 'php', 'fieldset', 'csrf', 'validate'], true)) {
-                    continue;
-                }
-                $out[$name][$f->getName()] = ('' !== (string) $f->getLabel() ? $f->getLabel() : $f->getName()) . ' (' . $f->getName() . ')';
-            }
+        foreach (Tables::all() as $name => $t) {
+            $out[$name] = $t->label() . ' (' . $name . ')';
         }
 
         return $out;
@@ -72,136 +121,64 @@ final class YFormBridge
 
     public static function table(string $name): ?Table
     {
-        if (!self::available() || '' === $name) {
-            return null;
-        }
-        $t = Table::get($name);
-
-        return $t && $t->isActive() ? $t : null;
+        return self::available() && '' !== $name ? Tables::find($name) : null;
     }
 
-    /**
-     * Formular einer Tabelle ausgeben und verarbeiten (Eintrag speichern, optional E-Mail an die Redaktion).
-     *
-     * @param array{id: string, action: string, submit?: string, success?: string, notify?: string, subject?: string} $o
-     */
-    public static function form(Table $table, array $o): string
+    /** @return array<string, array<string, string>> Felder je Tabelle (Tabellenname => [Feldname => Beschriftung]) */
+    public static function fieldOptions(): array
     {
-        $name = 'fluid_' . preg_replace('/\W/', '', $o['id']);
-        $sent = 'post' === Request::requestMethod() && null !== Request::post('fluid_form', 'string', null) && $name === Request::post('fluid_form', 'string');
-        // Spamschutz: Honigtopf gefüllt oder zu schnell → wie Erfolg antworten, aber nichts speichern
-        if ($sent && ('' !== Request::post('fluid_hp', 'string', '') || time() - Request::post('fluid_t', 'int', 0) < self::MIN_SECONDS)) {
-            return self::done($o['success'] ?? '');
-        }
-
-        $dataset = Dataset::create($table->getTableName());
-        $yform = $dataset->getForm();
-        $yform->setObjectparams('form_name', $name);
-        $yform->setObjectparams('form_wrap_id', $name . '-wrap');
-        $yform->setObjectparams('form_class', 'dff fyf');
-        $yform->setObjectparams('form_wrap_class', 'fyf-wrap');
-        $yform->setObjectparams('form_action', $o['action']);
-        $yform->setObjectparams('form_anchor', $o['id']);
-        $yform->setObjectparams('submit_btn_label', '' !== trim($o['submit'] ?? '') ? $o['submit'] : 'Absenden');
-        // CSRF-Schutz von YForm (Standard, startet für Besucher eine Session); Meldung statt Sprog-Platzhalter {{ csrf.error }}
-        $yform->setObjectparams('csrf_protection_error_message', 'Die Sitzung ist abgelaufen – bitte das Formular noch einmal absenden.');
-        $yform->setObjectparams('hide_field_warning_messages', false);
-        $yform->setObjectparams('form_hiddenfields', ['fluid_form' => $name, 'fluid_t' => (string) time()]);
-        $yform->setValueField('html', ['fluid_hp', '', '<div class="dff-hp" aria-hidden="true"><label>Bitte leer lassen <input type="text" name="fluid_hp" tabindex="-1" autocomplete="off"></label></div>']);
-
-        $html = $dataset->executeForm($yform);
-        if (!$yform->objparams['actions_executed']) {
-            return $html;
-        }
-        if ('' !== trim($o['notify'] ?? '')) {
-            self::notify($table, $dataset, trim($o['notify']), trim($o['subject'] ?? ''));
-        }
-
-        return self::done($o['success'] ?? '');
-    }
-
-    private static function done(string $text): string
-    {
-        $text = '' !== trim($text) ? $text : 'Vielen Dank! Ihre Nachricht ist angekommen.';
-
-        return '<div class="dff-done" role="status" tabindex="-1"><p>' . nl2br(escape($text), false) . '</p></div>';
-    }
-
-    /** Benachrichtigung: alle Felder als Text (Core-Mailer, MAILER_DSN); Fehler beim Versand blockieren die Antwort nicht */
-    private static function notify(Table $table, Dataset $dataset, string $to, string $subject): void
-    {
-        $lines = [];
-        $reply = null;
-        foreach ($table->getValueFields() as $field) {
-            $key = $field->getName();
-            if (!$dataset->hasValue($key)) {
-                continue;
-            }
-            $value = trim((string) $dataset->getValue($key));
-            $lines[] = $field->getLabel() . ': ' . ('' !== $value ? $value : '–');
-            if ('email' === $field->getTypeName() && filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                $reply = $value;
+        $out = [];
+        foreach (array_keys(self::tables()) as $name) {
+            foreach (self::detailFields(Tables::get($name), true) as $f) {
+                $out[$name][$f->name] = $f->translatedLabel() . ' (' . $f->name . ')';
             }
         }
-        try {
-            $mail = new Email()
-                ->to(...array_map(static fn (string $a) => new Address(trim($a)), explode(',', $to)))
-                ->subject('' !== $subject ? $subject : 'Neue Anfrage: ' . $table->getNameLocalized())
-                ->text(implode("\n", $lines) . "\n\n— " . Core::getProject()->instanceName);
-            if ($reply) {
-                $mail->replyTo($reply);
-            }
-            Core::getMailer()->send($mail);
-        } catch (Throwable) {
-            // Eintrag ist gespeichert; Versandfehler stehen im Mail-Log des Cores
-        }
+
+        return $out;
     }
 
-    // ------------------------------------------------------------------ Datenliste
-
-    /** Feld einer Tabelle aus „tabelle.feld“ (Auswahl im Block) – oder das erste passende Feld */
+    /** Feld aus „tabelle.feld“ (Auswahl im Block) – oder das erste Feld einer der Klassen @param list<class-string<Field>> $types */
     public static function field(Table $table, string $choice, array $types = []): ?Field
     {
-        $prefix = $table->getTableName() . '.';
-        $fields = array_values(array_filter($table->getValueFields(), static fn (Field $f) => !in_array($f->getTypeName(), ['submit', 'html', 'php', 'fieldset', 'csrf'], true)));
-        if (str_starts_with($choice, $prefix)) {
-            foreach ($fields as $f) {
-                if ($f->getName() === substr($choice, strlen($prefix))) {
+        $prefix = $table->definition->name . '.';
+        if (str_starts_with($choice, $prefix) && $table->hasField(substr($choice, \strlen($prefix)))) {
+            return $table->getField(substr($choice, \strlen($prefix)));
+        }
+        foreach ($types as $type) {
+            foreach ($table->getFields() as $f) {
+                if ($f::class === $type) {
                     return $f;
                 }
-            }
-        }
-        if ([] === $types) {
-            return null;
-        }
-        foreach ($fields as $f) {
-            if (in_array($f->getTypeName(), $types, true)) {
-                return $f;
             }
         }
 
         return null;
     }
 
-    /** @return list<Field> Felder für die Detailansicht (ohne technische) */
-    public static function detailFields(Table $table): array
+    /** @return list<Field> Felder mit Inhalt für Besucher (ohne Technik-Felder) */
+    public static function detailFields(Table $table, bool $withMeta = false): array
     {
-        return array_values(array_filter($table->getValueFields(), static fn (Field $f) => !in_array($f->getTypeName(), ['submit', 'html', 'php', 'fieldset', 'csrf', 'hidden', 'datestamp', 'ip', 'uuid', 'generate_key', 'hashvalue', 'password', 'prio', 'index', 'signature', 'objparams'], true)));
+        $skip = [Markup::class, Hidden::class, Password::class, Uuid::class, CreatedBy::class, UpdatedBy::class, UpdatedAt::class];
+        if (!$withMeta) {
+            $skip[] = CreatedAt::class;
+        }
+
+        return array_values(array_filter($table->getFields(), static fn (Field $f) => $f->storesValue() && !in_array($f::class, $skip, true)));
     }
 
     /**
      * @param array{filter?: ?Field, value?: string, sort?: ?Field, dir?: string, limit?: int} $o
      *
-     * @return list<Dataset>
+     * @return list<Record>
      */
     public static function rows(Table $table, array $o): array
     {
-        $q = Dataset::query($table->getTableName());
+        $q = $table::query();
         if (($f = $o['filter'] ?? null) && '' !== ($o['value'] ?? '')) {
-            $q->where($f->getName(), $o['value']);
+            $q->where($f->name, $f instanceof Checkbox ? (bool) $o['value'] : $o['value']);
         }
         if ($f = $o['sort'] ?? null) {
-            $q->resetOrderBy()->orderBy($f->getName(), 'desc' === ($o['dir'] ?? '') ? 'DESC' : 'ASC');
+            $q->orderBy($f->name, 'desc' === ($o['dir'] ?? '') ? 'DESC' : 'ASC');
         }
         if (($o['limit'] ?? 0) > 0) {
             $q->limit((int) $o['limit']);
@@ -211,61 +188,60 @@ final class YFormBridge
     }
 
     /** Eintrag für die Detailansicht – nur, wenn er die Bedingung der Liste erfüllt */
-    public static function row(Table $table, int $id, ?Field $filter, string $value): ?Dataset
+    public static function row(Table $table, int $id, ?Field $filter, string $value): ?Record
     {
-        $q = Dataset::query($table->getTableName())->where('id', $id);
+        $q = $table::query()->where('id', $id);
         if ($filter && '' !== $value) {
-            $q->where($filter->getName(), $value);
+            $q->where($filter->name, $filter instanceof Checkbox ? (bool) $value : $value);
         }
 
-        return $q->findOne();
+        return $q->first();
     }
 
-    /**
-     * Wert als Text – formatiert wie in der YForm-Datenliste (getListValue der Feldklasse: Auswahl-Beschriftung,
-     * Datumsformat und Ausgabewerte aus der Feld-Konfiguration).
-     */
-    public static function text(Dataset $ds, Field $f): string
+    /** Wert als Text – Ausgabe der Feldklasse (Auswahl-Beschriftung, Datumsformat, Ja/Nein …) */
+    public static function text(Record $record, Field $f): string
     {
-        $raw = $ds->hasValue($f->getName()) ? $ds->getValue($f->getName()) : null;
-        if (null === $raw || '' === trim((string) $raw)) {
-            return '';
-        }
-        if (!in_array($f->getTypeName(), ['choice', 'date', 'datetime', 'datestamp', 'time', 'checkbox', 'integer', 'number'], true)) {
-            return trim((string) $raw);
-        }
-        /** @var class-string $class */
-        $class = FieldRegistry::getClass('value', $f->getTypeName());
-        $out = $class::getListValue(['value' => $raw, 'subject' => $raw, 'field' => $f->getName(), 'params' => ['field' => $f->toArray(), 'fields' => []]]);
-
-        return trim(html_entity_decode(strip_tags(str_replace('<br />', ', ', (string) $out)), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        return trim($f->textValue($record->get($f->name)));
     }
 
-    /** Wert als HTML (Text mit Zeilenumbrüchen, E-Mail und Links anklickbar; Medien über $image) */
-    public static function html(Dataset $ds, Field $f): string
+    /** Wert als HTML (Zeilenumbrüche, E-Mail und Links anklickbar) */
+    public static function html(Record $record, Field $f): string
     {
-        $v = self::text($ds, $f);
+        $v = self::text($record, $f);
         if ('' === $v) {
             return '';
         }
 
         return match (true) {
-            'email' === $f->getTypeName() => '<a href="mailto:' . escape($v) . '">' . escape($v) . '</a>',
-            (bool) preg_match('~^https?://\S+$~', $v) => '<a href="' . escape($v) . '" rel="noopener">' . escape(preg_replace('~^https?://(www\.)?~', '', $v)) . '</a>',
-            'textarea' === $f->getTypeName() && $v !== strip_tags($v) => $v,   // HTML aus einem Editor-Feld (vom Backend gepflegt)
+            $f instanceof Email => '<a href="mailto:' . escape($v) . '">' . escape($v) . '</a>',
+            $f instanceof UrlField, (bool) preg_match('~^https?://\S+$~', $v) => '<a href="' . escape($v) . '" rel="noopener">' . escape((string) preg_replace('~^https?://(www\.)?~', '', $v)) . '</a>',
             default => nl2br(escape($v), false),
         };
     }
 
-    /** Bearbeiten im Backend (YForm › Daten) – für angemeldete Benutzer mit Recht auf die Tabelle */
+    /** Erste Datei eines Medienfelds (oder '') */
+    public static function file(Record $record, ?Field $f): string
+    {
+        if (!$f instanceof Media) {
+            return '';
+        }
+
+        return trim(explode(',', $f->textValue($record->get($f->name)))[0]);
+    }
+
+    public static function isText(?Field $f): bool
+    {
+        return $f instanceof Text || $f instanceof Textarea;
+    }
+
+    /** Bearbeiten in der Datenseite von YForm (nur mit Bearbeitungsrecht); ohne ID: neuer Eintrag */
     public static function editUrl(Table $table, ?int $id = null): ?string
     {
         $user = Editing::user();
-        if (!$user || !$table->isGranted('EDIT', $user)) {
+        if (!$user || !Access::canEdit($table, $user)) {
             return null;
         }
 
-        // über YFormEditApi: Token für func=edit/add gilt nur, wenn es im Backend erzeugt wird
-        return Url::backendPage('yform/manager/data_edit', ['table_name' => $table->getTableName(), 'rex-api-call' => 'fluid_yform_edit'] + ($id ? ['data_id' => $id] : []));
+        return Url::backendPage('yform/data', ['table' => $table->definition->name] + ($id ? ['func' => 'edit', 'id' => $id] : ['func' => 'add']));
     }
 }

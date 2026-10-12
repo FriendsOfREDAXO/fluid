@@ -20,3 +20,11 @@
 .fyf button[type=submit]:hover{background:var(--f-btn-hover,var(--f-btn-bg))}
 .dff-done:focus{outline:none}
 section:has(>.fform),section:has(>.dl),section:has(>.fdl-detail){scroll-margin-top:5.5rem}
+
+/* YForm 6 (Theme aus YFormBridge::theme): Checkbox mit Meldung darunter, Pflicht-Markierung, leere Klassen */
+.fyf .dff-check{flex-wrap:wrap}
+.fyf .dff-check>.dff-err,.fyf .dff-check>.dff-help{flex-basis:100%}
+.fyf .dff-check label{display:flex;align-items:flex-start;gap:.6rem;font-weight:400;cursor:pointer}
+.fyf .yform-required-mark{color:var(--f-danger,#b42318)}
+.fyf .dff-grid{grid-template-columns:1fr}
+.fyf .dff-actions{margin-top:var(--f-s-s)}

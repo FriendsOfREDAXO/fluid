@@ -39,7 +39,7 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Inhalte: fluid (Beispiel-Agentur) oder redaxo6 (Seite über REDAXO 6)')] string $set = 'fluid',
         #[Option(description: 'Design des Kits auf den Standard zurücksetzen')] bool $resetDesign = false,
         #[Option(description: 'Nur diese Demo-Seite (Slug) anhängen, z. B. daten – vorhandene Inhalte bleiben')] string $page = '',
-        #[Option(description: 'Nur die YForm-Tabellen der Demo anlegen bzw. abgleichen (Felder über die YForm-API)')] bool $yform = false,
+        #[Option(description: 'Nur Beispielzeilen in die YForm-Tabellen der Demo schreiben (Tabellen sind Klassen im Projekt)')] bool $yform = false,
     ): int {
         if ($yform) {
             $demo = require FluidKit::instance()->path('redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php');
@@ -163,34 +163,34 @@ final class DemoCommand extends AbstractCommand
     }
 
     /**
-     * YForm-Tabellen der Demo anlegen (falls noch nicht da) und mit Beispielzeilen füllen (nur leere Tabellen).
+     * Beispielzeilen in die YForm-Tabellen der Demo (nur leere Tabellen). Die Tabellen selbst sind Klassen im Projekt
+     * (#[AsTable], Vorlage: vendor/friendsofredaxo/fluid/examples/yform) – YForm legt sie bei `console migrate` an.
      *
-     * @param array<string, array{name: string, fields: list<array<string, mixed>>, rows: list<array<string, mixed>>}> $tables
+     * @param array<string, array{rows: list<array<string, mixed>>}> $tables
      */
     private static function yform(array $tables): string
     {
         $out = [];
         foreach ($tables as $name => $t) {
-            // Anlegen bzw. abgleichen über die YForm-API (setTableField ergänzt fehlende Feld-Spalten wie output_values)
-            $isNew = !\Yakamara\YForm\Manager\Table\Table::get($name);
-            $prio = 0;
-            \Yakamara\YForm\Manager\Table\Api::setTable(['table_name' => $name, 'name' => $t['name'], 'status' => 1],
-                array_map(static function (array $f) use (&$prio) { return $f + ['prio' => ++$prio]; }, $t['fields']));
-            \Yakamara\YForm\Manager\Table\Table::deleteCache();
-            $out[] = 'Tabelle ' . $name . ($isNew ? ' angelegt' : ' abgeglichen');
-            // Spalten zu den Feldern anlegen (setTable legt nur die Tabelle an)
-            \Yakamara\YForm\Manager\Table\Api::generateTableAndFields(\Yakamara\YForm\Manager\Table\Table::require($name));
-            \Yakamara\YForm\Manager\Table\Table::deleteCache();
-            $sql = Sql::factory();
-            if ($t['rows'] && !$sql->getArray('SELECT id FROM ' . $sql->escapeIdentifier($name) . ' LIMIT 1')) {
-                foreach ($t['rows'] as $row) {
-                    $sql->setTable($name)->setValues($row)->insert();
-                }
-                $out[] = count($t['rows']) . ' Beispielzeilen in ' . $name;
+            $table = \Yakamara\YForm\Table\Tables::find($name);
+            if (!$table) {
+                $out[] = $name . ' fehlt – Klasse aus examples/yform ins Projekt kopieren und `console migrate` ausführen';
+                continue;
             }
+            if ([] === ($t['rows'] ?? []) || $table::query()->exists()) {
+                continue;
+            }
+            foreach ($t['rows'] as $row) {
+                $rec = $table->newRecord();
+                foreach ($row as $k => $v) {
+                    $rec->set($k, $table->getField($k) instanceof \Yakamara\YForm\Field\Date && \is_string($v) ? new \DateTimeImmutable($v) : $v);
+                }
+                $rec->save();
+            }
+            $out[] = \count($t['rows']) . ' Beispielzeilen in ' . $name;
         }
 
-        return $out ? 'YForm: ' . implode(', ', $out) : 'YForm: Tabellen schon vorhanden.';
+        return $out ? 'YForm: ' . implode(', ', $out) : 'YForm: Beispieldaten schon vorhanden.';
     }
 }
 

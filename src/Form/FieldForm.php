@@ -122,8 +122,12 @@ final class FieldForm
             // Tabelle aus YForm (Table Manager) – Formular-Block, Datenliste
             'yform_table' => [] !== ($t = YFormBridge::tables())
                 ? self::select($name, $t, (string) $value, ['id' => $id, 'data-yform-table' => ''], !$req)
-                : '<p class="help-block">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Backend unter YForm › Table Manager anlegen.' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
+                : '<p class="help-block">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Projekt eine Klasse mit #[AsTable] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
             'yform_field' => self::yformField($name, (string) $value, $id),
+            // Formular aus YForm (#[AsForm]-Klasse im Projekt)
+            'yform_form' => [] !== ($fo = YFormBridge::forms())
+                ? self::select($name, $fo, (string) $value, ['id' => $id], !$req)
+                : '<p class="help-block">' . (YFormBridge::available() ? 'Noch kein Formular – im Projekt eine Klasse mit #[AsForm] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
             'time' => '<input class="form-control" type="time" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
             // Standort „Breite, Länge“ mit Geokodierung aus den Adressfeldern (Website-Einstellungen)
             'geo' => '<div class="blocks-geo"><input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="51.4512, 6.6263" pattern="^-?\\d{1,2}(\\.\\d+)?,\\s*-?\\d{1,3}(\\.\\d+)?$" data-geo>'

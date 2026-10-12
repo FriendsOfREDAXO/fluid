@@ -16,34 +16,16 @@ $cta = [
     ],
 ];
 
-// YForm (nur wenn installiert): Tabellen für die Seite „Daten“ – Beispieldaten, als solche gekennzeichnet
+// YForm (nur wenn installiert): Beispielzeilen für die Seite „Daten“. Die Tabellen und das Formular sind Klassen im
+// Projekt (#[AsTable]/#[AsForm], Vorlagen in examples/yform) – YForm legt die Tabellen bei `console migrate` an.
 $yform = [
-    'rex_yf_termin' => ['name' => 'Termine (Beispiel)', 'fields' => [
-        ['type_id' => 'value', 'type_name' => 'text', 'name' => 'title', 'label' => 'Titel'],
-        ['type_id' => 'value', 'type_name' => 'date', 'name' => 'date', 'label' => 'Datum', 'format' => 'd.m.Y'],
-        ['type_id' => 'value', 'type_name' => 'text', 'name' => 'place', 'label' => 'Ort'],
-        ['type_id' => 'value', 'type_name' => 'be_media', 'name' => 'image', 'label' => 'Bild', 'types' => 'jpg,jpeg,png,webp,avif'],
-        ['type_id' => 'value', 'type_name' => 'textarea', 'name' => 'text', 'label' => 'Beschreibung'],
-        ['type_id' => 'value', 'type_name' => 'checkbox', 'name' => 'online', 'label' => 'Online', 'default' => 1, 'output_values' => 'Nein,Ja'],
-        ['type_id' => 'validate', 'type_name' => 'empty', 'name' => 'title', 'message' => 'Bitte einen Titel angeben.'],
-    ], 'rows' => [
-        ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'testbild-verlauf.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => 1],
-        ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => '', 'text' => 'Ein Block ist eine Modulklasse, ein Feldschema und eine View. Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => 1],
-        ['title' => 'Sprechstunde: Von REDAXO 5 nach 6', 'date' => '2026-12-03', 'place' => 'Online', 'image' => '', 'text' => 'Fragen zu Composer, Modulen als Klassen und console migrate – mitbringen, was im eigenen Projekt ansteht.', 'online' => 1],
-        ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => '', 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => 0],
+    'rex_yf_termin' => ['rows' => [
+        ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'testbild-verlauf.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => true],
+        ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => null, 'text' => 'Ein Block ist eine Modulklasse, ein Feldschema und eine View. Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => true],
+        ['title' => 'Sprechstunde: Von REDAXO 5 nach 6', 'date' => '2026-12-03', 'place' => 'Online', 'image' => null, 'text' => 'Fragen zu Composer, Modulen als Klassen und console migrate – mitbringen, was im eigenen Projekt ansteht.', 'online' => true],
+        ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => null, 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => false],
     ]],
-    'rex_yf_anfrage' => ['name' => 'Anfragen (Beispiel)', 'fields' => [
-        ['type_id' => 'value', 'type_name' => 'text', 'name' => 'name', 'label' => 'Name', 'attributes' => '{"autocomplete":"name"}'],
-        ['type_id' => 'value', 'type_name' => 'email', 'name' => 'email', 'label' => 'E-Mail', 'attributes' => '{"autocomplete":"email"}'],
-        ['type_id' => 'value', 'type_name' => 'choice', 'name' => 'topic', 'label' => 'Worum geht es?', 'choices' => '{"Frage zu fluid":"frage","Feedback":"feedback","Mitmachen":"mitmachen"}'],
-        ['type_id' => 'value', 'type_name' => 'textarea', 'name' => 'message', 'label' => 'Nachricht'],
-        ['type_id' => 'value', 'type_name' => 'checkbox', 'name' => 'privacy', 'label' => 'Ich bin einverstanden, dass meine Angaben zur Beantwortung gespeichert werden.', 'output_values' => 'Nein,Ja'],
-        ['type_id' => 'value', 'type_name' => 'datestamp', 'name' => 'created', 'label' => 'Eingegangen', 'format' => 'Y-m-d H:i:s', 'only_empty' => 1],
-        ['type_id' => 'validate', 'type_name' => 'empty', 'name' => 'name', 'message' => 'Bitte Ihren Namen angeben.'],
-        ['type_id' => 'validate', 'type_name' => 'type', 'name' => 'email', 'type' => 'email', 'message' => 'Bitte eine gültige E-Mail-Adresse angeben.'],
-        ['type_id' => 'validate', 'type_name' => 'empty', 'name' => 'message', 'message' => 'Bitte eine Nachricht schreiben.'],
-        ['type_id' => 'validate', 'type_name' => 'compare_value', 'name' => 'privacy', 'compare_value' => '1', 'compare_type' => '!=', 'message' => 'Bitte der Speicherung zustimmen.'],
-    ], 'rows' => []],
+    'rex_yf_anfrage' => ['rows' => []],
 ];
 
 return [
@@ -219,8 +201,8 @@ return [
                     'table' => 'rex_yf_termin', 'title_field' => 'rex_yf_termin.title', 'image_field' => 'rex_yf_termin.image', 'text_field' => 'rex_yf_termin.text', 'meta_field' => 'rex_yf_termin.date',
                     'filter_field' => 'rex_yf_termin.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_termin.date', 'sort_dir' => 'asc', 'limit' => 0, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
                 ['type' => 'form', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'split', 'eyebrow' => 'Formular', 'title' => 'Schreiben Sie uns',
-                    'intro' => 'Das Formular kommt aus der YForm-Tabelle rex_yf_anfrage: Pflichtfelder, E-Mail-Prüfung und Einwilligung sind dort festgelegt. Einträge landen im Backend unter YForm.',
-                    'table' => 'rex_yf_anfrage', 'submit_label' => 'Nachricht senden', 'notify' => '', 'success' => 'Vielen Dank! Ihre Nachricht ist angekommen – in dieser Demo landet sie nur in der YForm-Tabelle.',
+                    'intro' => 'Das Formular ist eine Klasse im Projekt (#[AsForm]): Felder, Prüfungen und Aktionen – speichern, Mail, Bestätigung – legt YForm fest. Einträge landen in „Anfragen“.',
+                    'form' => 'anfrage',
                     'note' => 'Ihre Angaben verwenden wir nur zur Beantwortung.']],
             ],
         ],

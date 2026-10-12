@@ -2,13 +2,11 @@
 /**
  * Kontakt: Angaben (Adresse, Telefon/E-Mail, Öffnungszeiten) als Karten-Raster, daneben Karte und/oder Formular (aus KLXM
  * Studio). Sidebar-Muster: Formular/Karte nehmen den großen Teil ein und rutschen bei wenig Platz unter die Angaben.
- * Alles aus „Website“; Formular = YForm-Tabelle (FriendsOfRedaxo\Fluid\Data\YFormBridge).
+ * Alles aus „Website“; Formular = #[AsForm]-Klasse aus YForm (FriendsOfRedaxo\Fluid\Data\YFormBridge).
  * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use FriendsOfRedaxo\Fluid\Maps\Maps;
-use Redaxo\Core\Filesystem\Url;
-use Redaxo\Core\Language\Language;
 
 $address = fluid_address_lines();
 $phone = fluid_phone();
@@ -17,15 +15,8 @@ $email = fluid_email();
 $hours = !empty($d['show_hours']) ? fluid_hours() : [];
 $hoursNote = trim((string) setting('hours_note', ''));
 $map = !empty($d['show_map']) && Maps::siteLocation() ? Maps::renderBlock(['location' => 'site', 'zoom' => 15, 'height' => 'm', 'route' => true]) : '';
-$table = YFormBridge::table((string) ($d['form_table'] ?? ''));
-$form = $table ? YFormBridge::form($table, [
-    'id' => $b->domId() . '-f',
-    'action' => Url::article($b->slice->articleId, Language::getCurrentId()),
-    'submit' => (string) ($d['submit_label'] ?? ''),
-    'success' => (string) ($d['success'] ?? ''),
-    'notify' => trim((string) ($d['notify'] ?? '')) ?: $email,
-    'subject' => 'Anfrage über die Website',
-]) : '';
+$def = YFormBridge::formDefinition((string) ($d['form'] ?? ''));
+$form = $def ? YFormBridge::runForm($def) : '';
 $c = $b->central('Adresse, Telefon, E-Mail und Zeiten unter „Website“ (Menü ⋯) ändern');
 ?>
 <div class="wrap">
