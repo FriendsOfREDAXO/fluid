@@ -77,6 +77,7 @@
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
             <button type="button" role="menuitem" data-tree-open>Seiten …</button>
+            <button type="button" role="menuitem" data-compact>Kompaktansicht</button>
             <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
             <button type="button" role="menuitem" data-page-add>Neue Seite …</button>
@@ -90,12 +91,21 @@
     </header>`);
   const blockbar = h(`
     <div class="bb" hidden>
-      <span class="bb__label" data-bb-label></span>
+      <span class="bb__label" data-bb-label draggable="true" title="Ziehen zum Verschieben"></span>
       <button type="button" data-bb-edit class="bb__main">Bearbeiten</button>
       <button type="button" data-bb-up title="Nach oben" aria-label="Nach oben">↑</button>
       <button type="button" data-bb-down title="Nach unten" aria-label="Nach unten">↓</button>
       <button type="button" data-bb-status title="Online/Offline"></button>
+      <button type="button" data-bb-more title="Weitere Aktionen" aria-label="Weitere Aktionen" aria-haspopup="menu" aria-expanded="false">⋯</button>
       <button type="button" data-bb-delete title="Löschen" aria-label="Löschen" class="bb__danger">✕</button>
+      <div class="bb__menu" role="menu" hidden>
+        <button type="button" role="menuitem" data-bb-op="duplicate">Verdoppeln</button>
+        <button type="button" role="menuitem" data-bb-op="copy">Kopieren</button>
+        <button type="button" role="menuitem" data-bb-op="paste">Einfügen darunter</button>
+        <button type="button" role="menuitem" data-bb-op="left" data-col-only>← In die linke Spalte</button>
+        <button type="button" role="menuitem" data-bb-op="right" data-col-only>→ In die rechte Spalte</button>
+        <button type="button" role="menuitem" data-bb-op="collapse">Einklappen</button>
+      </div>
     </div>`);
   const addbtn = h('<button type="button" class="addbtn" hidden title="Block einfügen" aria-label="Block einfügen">+</button>');
   const panel = h(`
@@ -1255,6 +1265,130 @@
     if (e.target.closest?.('[data-edit][data-edit-mode="rich"]')) inline?.hideSoon();
   });
   ['keyup', 'mouseup'].forEach((ev) => main.addEventListener(ev, () => inline?.update()));
+
+
+  // ------------------------------------------------------------------ Blöcke: Menü ⋯, Ziehen, Zwischenablage, Einklappen
+
+  const CLIP = 'fluid-clipboard';
+  const bbMenu = $('.bb__menu');
+  const bbMore = $('[data-bb-more]');
+  const clip = () => { try { return JSON.parse(localStorage.getItem(CLIP) || 'null'); } catch { return null; } };
+  bbMore.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const sec = target();
+    bbMenu.hidden = !bbMenu.hidden;
+    bbMore.setAttribute('aria-expanded', String(!bbMenu.hidden));
+    const inCol = !!sec?.closest('[data-lay-col]');
+    bbMenu.querySelectorAll('[data-col-only]').forEach((b) => { b.hidden = !inCol; });
+    const c = clip();
+    const paste = bbMenu.querySelector('[data-bb-op="paste"]');
+    paste.disabled = !c || inCol;
+    paste.textContent = c ? `Einfügen darunter: „${c.label}“` : 'Einfügen darunter';
+    bbMenu.querySelector('[data-bb-op="duplicate"]').disabled = inCol;
+    bbMenu.querySelector('[data-bb-op="collapse"]').textContent = sec?.classList.contains('fluid-collapsed') ? 'Aufklappen' : 'Einklappen';
+  });
+  document.addEventListener('click', () => { bbMenu.hidden = true; bbMore.setAttribute('aria-expanded', 'false'); });
+  // Eingeklappte Blöcke je Seite merken (nur in diesem Browser)
+  const FOLD = 'fluid-folded-' + cfg.article.id;
+  const folded = () => { try { return new Set(JSON.parse(localStorage.getItem(FOLD) || '[]')); } catch { return new Set(); } };
+  const setFold = (sec, on) => {
+    sec.classList.toggle('fluid-collapsed', on);
+    const f = folded();
+    on ? f.add(sec.dataset.block) : f.delete(sec.dataset.block);
+    try { localStorage.setItem(FOLD, JSON.stringify([...f])); } catch { /* privat */ }
+  };
+  const applyFolds = () => { const f = folded(); main.querySelectorAll('section[data-block]').forEach((s) => s.classList.toggle('fluid-collapsed', f.has(s.dataset.block))); };
+  applyFolds();
+  main.addEventListener('click', (e) => {
+    const sec = e.target.closest?.('section.fluid-collapsed');
+    if (sec && !e.target.closest('.fluid-handle')) { e.preventDefault(); setFold(sec, false); place(); }
+  });
+  $('[data-compact]').addEventListener('click', () => {
+    menu.hidden = true;
+    const secs = [...main.querySelectorAll(':scope section[data-block]')].filter((s) => !s.parentElement.closest('section[data-block]'));
+    const on = secs.some((s) => !s.classList.contains('fluid-collapsed'));
+    secs.forEach((s) => setFold(s, on));
+    say(on ? 'Kompaktansicht: Blöcke zugeklappt – Klick auf einen Block klappt ihn auf.' : 'Alle Blöcke aufgeklappt.');
+    place();
+  });
+  bbMenu.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-bb-op]');
+    const sec = target();
+    if (!b || !sec) return;
+    const op = b.dataset.bbOp;
+    const top = sec.closest('section[data-block]:not([data-lay-col] *)') || sec;
+    try {
+      if (op === 'collapse') { setFold(top, !top.classList.contains('fluid-collapsed')); place(); return; }
+      await saveAll();
+      if (op === 'copy') {
+        const res = await api('copy', { slice: sec.dataset.block });
+        localStorage.setItem(CLIP, JSON.stringify({ clip: res.clip, label: res.label }));
+        say(`„${res.label}“ kopiert – auf dieser oder einer anderen Seite über ⋯ → Einfügen.`);
+        return;
+      }
+      if (op === 'left' || op === 'right') {
+        const res = await api('col_move', { slice: sec.dataset.block, dir: op });
+        const lay = sec.closest('section[data-block]');
+        apply(await api('render', { slice: lay.dataset.block }), lay);
+        return;
+      }
+      const res = op === 'duplicate'
+        ? await api('duplicate', { slice: top.dataset.block, after: top.dataset.block })
+        : await api('paste', { after: top.dataset.block, clip: JSON.stringify(clip()?.clip || null) });
+      const el = h(res.html);
+      top.after(el);
+      initEditables(el);
+      initColumns(el);
+      initHandles(el);
+      document.dispatchEvent(new CustomEvent('fluid:rendered', { detail: { block: el } }));
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      select(el);
+      say(op === 'duplicate' ? 'Block verdoppelt.' : 'Block eingefügt.');
+    } catch (err) { say(err.message, true); }
+  });
+
+  // Ziehen am Namen in der Blockleiste: Abschnitte umsortieren (Layout samt Spalten)
+  const dropLine = document.createElement('div');
+  dropLine.className = 'fluid-dropline';
+  dropLine.hidden = true;
+  document.body.append(dropLine);
+  let dragSec = null;
+  let dropBefore = null;
+  const label = $('[data-bb-label]');
+  label.addEventListener('dragstart', (e) => {
+    const sec = target();
+    if (!sec || sec.closest('[data-lay-col]')) { e.preventDefault(); say('Blöcke in Spalten verschieben Sie mit ↑ ↓ bzw. ⋯ → linke/rechte Spalte.', true); return; }
+    dragSec = sec;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', sec.dataset.block);
+    sec.classList.add('fluid-dragging');
+  });
+  label.addEventListener('dragend', () => { dragSec?.classList.remove('fluid-dragging'); dragSec = null; dropLine.hidden = true; });
+  document.addEventListener('dragover', (e) => {
+    if (!dragSec) return;
+    e.preventDefault();
+    const secs = [...main.querySelectorAll('section[data-block]')].filter((s) => !s.closest('[data-lay-col]'));
+    dropBefore = secs.find((s) => { const r = s.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; }) || null;
+    const ref = dropBefore || secs[secs.length - 1];
+    const r = ref.getBoundingClientRect();
+    dropLine.hidden = false;
+    dropLine.style.top = `${(dropBefore ? r.top : r.bottom) - 2}px`;
+  });
+  document.addEventListener('drop', async (e) => {
+    if (!dragSec) return;
+    e.preventDefault();
+    const sec = dragSec;
+    dropLine.hidden = true;
+    if (dropBefore === sec || dropBefore === sec.nextElementSibling) return;
+    try {
+      await saveAll();
+      await api('reorder', { slice: sec.dataset.block, before: dropBefore?.dataset.block || 0 });
+      dropBefore ? dropBefore.before(sec) : main.querySelector('section[data-block]:last-of-type')?.after(sec);
+      sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      say('Block verschoben.');
+      place();
+    } catch (err) { say(err.message, true); }
+  });
 
   // ------------------------------------------------------------------ YForm-Einträge (Datenliste)
 

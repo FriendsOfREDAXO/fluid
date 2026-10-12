@@ -64,3 +64,11 @@ html.blocks-editing .lay-item[data-offline] { opacity: .45; }
 
 /* Hervorhebung *Wort* in Überschriften: Sternchen beim Bearbeiten nur angedeutet */
 html.blocks-editing .hl-mark { font-size: .35em; vertical-align: super; opacity: .35; }
+
+/* Blöcke: eingeklappt (Kompaktansicht), Ziehen */
+html.blocks-editing section[data-block].fluid-collapsed { position: relative; min-height: 0 !important; height: 52px !important; padding: 0 !important; overflow: hidden !important; cursor: pointer; }
+html.blocks-editing section[data-block].fluid-collapsed > :not(.fluid-handle) { visibility: hidden; }
+html.blocks-editing section[data-block].fluid-collapsed::after { content: "▸ " attr(data-label); position: absolute; inset: 0; display: flex; align-items: center; padding: 0 20px; font: 600 14px/1.2 system-ui, sans-serif; color: #344054; background: repeating-linear-gradient(-45deg, #f8f9fb 0 10px, #f2f4f7 10px 20px); border-bottom: 1px solid #e4e7ec; }
+html.blocks-editing section[data-block].fluid-collapsed .fluid-handle { display: none; }
+html.blocks-editing section[data-block].fluid-dragging { opacity: .45; }
+.fluid-dropline { position: fixed; left: 0; right: 0; height: 4px; background: #4f46e5; box-shadow: 0 0 0 2px #fff; z-index: 2147482900; pointer-events: none; }

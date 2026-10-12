@@ -57,6 +57,17 @@ final class Api
                 'save' => self::save($article, $user),
                 'add' => self::add($article, $user),
                 'move' => self::move($article),
+                'reorder' => (static function () use ($article) { BlockOps::reorder($article, Request::post('slice', 'int', 0), Request::post('before', 'int', 0)); return []; })(),
+                'col_move' => (static function () use ($article) { BlockOps::column($article, Request::post('slice', 'int', 0), 'left' === Request::post('dir', 'string') ? -1 : 1); return []; })(),
+                'copy' => BlockOps::payload($article, Request::post('slice', 'int', 0)),
+                'paste', 'duplicate' => (static function () use ($article, $user) {
+                    $clip = 'duplicate' === Request::get(self::PARAM, 'string')
+                        ? BlockOps::payload($article, Request::post('slice', 'int', 0))['clip']
+                        : (json_decode(Request::post('clip', 'string', ''), true) ?: self::fail('Die Zwischenablage ist leer.'));
+                    $id = BlockOps::insert($article, $user, Request::post('after', 'int', 0), $clip);
+
+                    return ['slice' => $id] + self::render($article, $id, false);
+                })(),
                 'render' => self::render($article, Request::post('slice', 'int', 0), false),
                 'status' => self::status($article),
                 'delete' => self::delete($article),
