@@ -102,7 +102,7 @@ final class StructuredData
                 'datePublished' => $p->date->format('Y-m-d'), 'dateModified' => $article->updateDate ? date('c', $article->updateDate) : null,
                 'author' => '' !== $p->author ? ['@type' => 'Person', 'name' => $p->author] : ['@id' => $org['@id']],
                 'publisher' => ['@id' => $org['@id']], 'description' => '' !== $p->excerpt ? $p->excerpt : null,
-                'image' => '' !== $p->image ? \Redaxo\Core\MediaManager\MediaManager::getUrl('rex_media_large', $p->image) : null,
+                'image' => '' !== $p->image ? Router::absolute(\Redaxo\Core\MediaManager\MediaManager::getUrl('rex_media_large', $p->image)) : null,
                 'keywords' => $p->tags ? implode(', ', $p->tags) : null, 'inLanguage' => $lang,
                 'mainEntityOfPage' => ['@id' => $url . '#webpage'], 'isPartOf' => ['@id' => Router::canonical($blog, $article->languageId) . '#blog'],
             ]);

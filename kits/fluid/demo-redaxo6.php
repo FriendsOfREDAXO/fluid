@@ -208,6 +208,37 @@ return [
                     'note' => 'Ihre Angaben verwenden wir nur zur Beantwortung.']],
             ],
         ],
+        // ------------------------------------------------------------------ Blog: Menüseite mit „Blog / News“, Beiträge = Seiten darin
+        [
+            'slug' => 'neuigkeiten', 'title' => 'Neuigkeiten', 'menu' => true, 'blog' => true,
+            'blocks' => [
+                ['type' => 'posts', 'data' => ['variant' => 'featured', 'eyebrow' => '', 'title' => '', 'intro' => '', 'blog' => '', 'limit' => 6, 'pager' => true, 'tags' => true, 'size' => 'm', 'more' => '', 'empty_text' => '']],
+            ],
+        ],
+        [
+            'slug' => 'fluid-ist-da', 'title' => 'fluid für REDAXO 6', 'parent' => 'neuigkeiten',
+            'post' => ['date' => '2026-10-12', 'author' => 'Friends Of REDAXO', 'tags' => 'REDAXO 6, Release', 'excerpt' => 'Bearbeiten direkt auf der Website – mit Blöcken als echten Slices, Arbeitsversion und Rechten wie im Backend.'],
+            'blocks' => [
+                ['type' => 'richtext', 'data' => ['variant' => 'article', 'eyebrow' => '', 'title' => '', 'intro' => '', 'measure' => 'normal',
+                    'text' => '<p>fluid bringt das Bearbeiten auf der Website nach REDAXO 6. Jeder Abschnitt ist ein Block mit Feldschema – und ein echter Slice.</p><h2>Was neu ist</h2><ul><li>Texte direkt auf der Seite ändern</li><li>Entwurf speichern, dann veröffentlichen</li><li>Seiten, Sprachen und Domains im Seitenbaum und unter „Website“</li></ul><p>Dieser Beitrag ist selbst ein Beispiel: eine normale Seite im Blog „Neuigkeiten“.</p>']],
+            ],
+        ],
+        [
+            'slug' => 'blog-mit-fluid', 'title' => 'So funktioniert der Blog', 'parent' => 'neuigkeiten',
+            'post' => ['date' => '2026-10-05', 'author' => 'Redaktion', 'tags' => 'Anleitung', 'excerpt' => 'Eine Menüseite wird zum Blog, ihre Seiten zu Beiträgen – mit Datum, Autor und Schlagworten.'],
+            'blocks' => [
+                ['type' => 'richtext', 'data' => ['variant' => 'article', 'eyebrow' => '', 'title' => '', 'intro' => '', 'measure' => 'normal',
+                    'text' => '<h2>In drei Schritten</h2><ol><li>Bei einer Menüseite in den Seiteneinstellungen „Blog / News“ anhaken.</li><li>Dort den Block „Beiträge“ einfügen.</li><li>„+ Neuer Beitrag“ – Titel eingeben, schreiben, veröffentlichen.</li></ol><p>Datum, Autor und Schlagworte stehen in den Seiteneinstellungen des Beitrags. Teaserbild und Kurztext sind das Bild für soziale Netzwerke und die Beschreibung für Suchmaschinen.</p>']],
+            ],
+        ],
+        [
+            'slug' => 'sommerfest', 'title' => 'Rückblick: Sommerfest', 'parent' => 'neuigkeiten',
+            'post' => ['date' => '2026-07-04', 'author' => 'Redaktion', 'tags' => 'Veranstaltung', 'excerpt' => 'Grill, Musik und viele Gäste – ein Beispielbeitrag mit Schlagwort „Veranstaltung“.'],
+            'blocks' => [
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'measure' => 'normal',
+                    'text' => '<p>Ein Beispielbeitrag, damit Übersicht, Schlagworte und „Älterer/Neuerer Beitrag“ etwas zu zeigen haben.</p>']],
+            ],
+        ],
         // ------------------------------------------------------------------ Bausteine (Blöcke des Kits im Einsatz)
         [
             'slug' => 'bausteine', 'title' => 'Bausteine', 'menu' => true,

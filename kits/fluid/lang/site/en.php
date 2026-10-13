@@ -415,4 +415,5 @@ return array (
   'Noch keine Beiträge.' => 'No posts yet.',
   'Seite {n} von {total}' => 'Page {n} of {total}',
   'Alle Beiträge' => 'All posts',
+  'Blättern' => 'Pagination',
 );

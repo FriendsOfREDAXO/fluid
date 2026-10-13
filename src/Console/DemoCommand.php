@@ -103,11 +103,18 @@ final class DemoCommand extends AbstractCommand
         $prio = 1 + (int) ($sql->getArray('SELECT MAX(priority) AS p FROM rex_category')[0]['p'] ?? 0);
         foreach ($demo['pages'] as $page) {
             $slug = (string) $page['slug'];
-            // Startseite und Seiten außerhalb des Menüs (Impressum, Datenschutz): Artikel auf oberster Ebene
+            // Startseite und Seiten außerhalb des Menüs (Impressum, Datenschutz): Artikel auf oberster Ebene;
+            // 'parent' => 'slug': Seite in einer Menüseite (z. B. Beiträge eines Blogs, Angaben unter 'post')
             if (!empty($page['is_home']) || empty($page['menu'])) {
-                ArticleHandler::addArticle(['category_id' => null, 'priority' => !empty($page['is_home']) ? 1 : 99, 'name' => (string) $page['title'], 'template' => $kit->key()]);
+                $parent = isset($page['parent']) ? ($ids[(string) $page['parent']] ?? null) : null;
+                ArticleHandler::addArticle(['category_id' => $parent, 'priority' => !empty($page['is_home']) ? 1 : 99, 'name' => (string) $page['title'], 'template' => $kit->key()]);
                 $ids[$slug] = (int) $sql->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
                 ArticleHandler::articleStatus($ids[$slug], $lang, 1);
+                if (isset($page['post']) && ($art = \Redaxo\Core\Content\Article::get($ids[$slug], $lang))) {
+                    $post = (array) $page['post'];
+                    \FriendsOfRedaxo\Fluid\PageSettings::save($art, $art->name, true, (string) ($post['excerpt'] ?? ''), (string) ($post['image'] ?? ''), false);
+                    \FriendsOfRedaxo\Fluid\Blog\Blog::saveMeta($art, (string) ($post['date'] ?? date('Y-m-d')), (string) ($post['author'] ?? ''), (string) ($post['tags'] ?? ''));
+                }
                 if (!empty($page['is_home'])) {
                     Core::setConfig('start_article_id', $ids[$slug]);
                     Core::setConfig('notfound_article_id', $ids[$slug]);
@@ -118,6 +125,9 @@ final class DemoCommand extends AbstractCommand
             $id = (int) $sql->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
             $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', [$kit->key(), $id]);
             $ids[$slug] = $id;
+            if (!empty($page['blog'])) {
+                \FriendsOfRedaxo\Fluid\Blog\Blog::setBlog($id, true);
+            }
         }
 
         // 2. Blöcke – Links auf Demo-Seiten (/kontakt) werden zu redaxo://ID

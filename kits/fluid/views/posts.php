@@ -27,7 +27,10 @@ $res = Blog::posts($blog, ['limit' => $limit, 'offset' => ($page - 1) * $limit, 
 $here = Url::article($b->slice->articleId, Language::getCurrentId());
 $q = static fn (array $p) => $here . ([] !== ($p = array_filter($p)) ? '?' . http_build_query($p) : '') . '#' . $b->domId();
 $cols = ['s' => 4, 'm' => 3, 'l' => 2][$d['size'] ?? 'm'] ?? 3;
-$hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
+// erster Block der Seite: Hauptüberschrift (ohne eigene Überschrift = Seitenname)
+$top = null === $b->prev;
+$pageH1 = $top && trim((string) ($d['title'] ?? '')) === '' ? '<h1 class="h1 dl-head">' . e(\Redaxo\Core\Content\Article::getCurrent()?->name ?? '') . '</h1>' : '';
+$hTag = !$top && trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
 $posts = $res['posts'];
 $first = 'featured' === $layout && 1 === $page && $posts ? array_shift($posts) : null;
 $card = static function ($p, string $sizes) use ($hTag, $layout) {
@@ -43,7 +46,7 @@ $card = static function ($p, string $sizes) use ($hTag, $layout) {
 };
 ?>
 <div class="wrap dl dl--<?= e('list' === $layout ? 'list' : 'cards') ?> posts posts--<?= e($layout) ?>">
-  <?= fluid_head($b, 'dl-head') ?>
+  <?= '' !== $pageH1 ? $pageH1 : fluid_head($b, 'dl-head', $top ? 'h1' : 'h2') ?>
   <?php if (!empty($d['tags']) && ($all = Blog::tags($blog))): ?>
   <ul class="post-tags post-tags--filter" role="list" aria-label="<?= e(lt('Nach Schlagwort filtern')) ?>">
     <li><a href="<?= e($q([])) ?>"<?= '' === $tag ? ' aria-current="true"' : '' ?>><?= e(lt('Alle')) ?></a></li>
@@ -73,7 +76,7 @@ $card = static function ($p, string $sizes) use ($hTag, $layout) {
   <?php endif; ?>
   <?php endif; ?>
   <?php $pages = (int) ceil($res['total'] / $limit); if ($pager && $pages > 1): ?>
-  <nav class="posts-pager" aria-label="<?= e(lt('Seiten')) ?>">
+  <nav class="posts-pager" aria-label="<?= e(lt('Blättern')) ?>">
     <?php if ($page > 1): ?><a href="<?= e($q(['tag' => $tag, 'seite' => $page > 2 ? $page - 1 : null])) ?>" rel="prev">← <?= e(lt('Neuere')) ?></a><?php else: ?><span></span><?php endif; ?>
     <span class="posts-pager__n"><?= e(lt('Seite {n} von {total}', ['n' => $page, 'total' => $pages])) ?></span>
     <?php if ($page < $pages): ?><a href="<?= e($q(['tag' => $tag, 'seite' => $page + 1])) ?>" rel="next"><?= e(lt('Ältere')) ?> →</a><?php else: ?><span></span><?php endif; ?>

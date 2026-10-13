@@ -18,6 +18,8 @@ Status: Prototyp für REDAXO 6 (Branch `6.x`) – Ziel Friends Of REDAXO.
 - Website: Name, Logo, Kontakt, Öffnungszeiten, Social Media, Hinweisleiste, Rechtliches, Sprachen, Domains, Weiterleitungen
 - Mehrsprachig: Sprache in der Leiste wechseln (DE | EN), leere Seite mit „Inhalt aus … übernehmen“ füllen und übersetzen
 - Design-Editor (Admins), Bildbearbeitung (AddOn image_editor), Formulare und Datenlisten (YForm), Anfragen-Postfach
+- Blog / News: eine Menüseite wird zum Blog, ihre Seiten sind Beiträge (Datum, Autor, Schlagworte); Block „Beiträge“ mit
+  Aufmacher, Karten oder Liste, Blättern und Schlagwort-Filter; „+ Neuer Beitrag“ direkt in der Übersicht; RSS-Feed
 - Videos: eigene Datei mit automatischem Vorschaubild, Untertiteln (.vtt/.srt aus dem Medienpool) und Transkript;
   YouTube/Vimeo mit Zwei-Klick-Lösung
 - Redaktionskommentare `[# … #]` – nur im Bearbeiten-Modus sichtbar
@@ -203,6 +205,19 @@ Extension::register('FLUID_SITE_TRANSLATIONS', static function (ExtensionPoint $
   wählt die Spur in der Sprache der Seite; „Transkript“ zeigt den Text darunter (`<details>`).
 - Eigene Ausgabe: `fluid_video_embed($url, $datei, $poster, $format, $titel, $spuren, $einschalten, $transkript)`
   bzw. `FriendsOfRedaxo\Fluid\Media\Tracks` (`parse()`, `toVtt()`, `transcript()`).
+
+### Blog
+
+Beiträge sind normale Artikel in einer Kategorie mit „Blog / News“ (Seiteneinstellungen der Menüseite) – Editor, Entwurf,
+Versionen, Rechte, Adressen, Sprachen und Suche gelten wie überall. Dazu Datum, Autor, Schlagworte (`rex_fluid_page`);
+Teaserbild = Bild für soziale Netzwerke, Kurztext = Beschreibung. Sortierung nach Datum, neueste zuerst.
+
+- Beitragsseiten bekommen im Template Kopf (Titel, Datum, Autor, Schlagworte, Bild) und „Älterer/Neuerer Beitrag“
+  (`fluid_post_header()`, `fluid_post_footer()` im Kit), schema.org `BlogPosting`, die Übersicht `Blog`.
+- RSS 2.0 unter `/{blog}/feed.xml` (EP `FLUID_BLOG_FEED`), `<link rel="alternate">` im Kopf.
+- Eigene Ausgaben: `Blog::posts($blogId, ['limit' => 3, 'tag' => 'team'])` liefert `Post`-Objekte
+  (`article`, `date`, `author`, `tags`, `image`, `excerpt`, `url`); `Blog::blogOf($article)`, `Blog::tags($blogId)`.
+- Feldtyp `blog` (Auswahl der Blogs) für eigene Blöcke.
 
 ### Karten
 
