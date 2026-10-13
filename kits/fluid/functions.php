@@ -256,7 +256,8 @@ function media_url(array|string|null $m, ?int $width = null): string
 
 /**
  * Bild aus dem Medienpool. Mit dem Addon image_editor: bearbeitete Fassung, responsiv (srcset, AVIF/WebP über den Media Manager)
- * und im Bearbeiten-Modus der Knopf „Bild bearbeiten“ (data-ie-file). Alt-Text = Titel im Medienpool.
+ * und im Bearbeiten-Modus der Knopf „Bild bearbeiten“ (data-ie-file). Alt-Text: Feld „Alternativtext“ des Medienpools
+ * (meta_alt, je Sprache), sonst Titel.
  */
 function img(?string $name, string $sizes = '100vw', array $opt = []): string
 {
@@ -264,7 +265,7 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
     if (!$m) {
         return '';
     }
-    $alt = $opt['alt'] ?? $m->title;
+    $alt = $opt['alt'] ?? (trim((string) $m->getValue('meta_alt')) ?: $m->title);
     $eager = !empty($opt['eager']);
     $editor = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::class : null;
     $editable = $editor && null === $editor::editable($m);
