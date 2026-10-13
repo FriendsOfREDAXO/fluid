@@ -396,13 +396,39 @@ final class Api
             . $f('Beschreibung für Suchmaschinen', '<textarea class="form-control" name="description" rows="3" maxlength="300" data-count="160">' . escape($s['description']) . '</textarea>', 'Etwa 120–160 Zeichen: worum geht es auf dieser Seite?')
             . $f('Bild für soziale Netzwerke', Form\Picker::media('page_image', 'image', $s['image'], true, false), 'Erscheint, wenn die Seite geteilt wird (z. B. 1200 × 630 px).')
             . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="noindex" value="1"' . ($s['noindex'] ? ' checked' : '') . '> Nicht in Suchmaschinen aufnehmen</label></div>'
+            . self::blogFields($article, $f)
             . '</div></div>';
 
         return ['html' => $html, 'label' => 'Seiteneinstellungen'];
     }
 
+    /** Seiteneinstellungen: Menüseite → „Blog / News“, Beitrag → Datum, Autor, Schlagworte */
+    private static function blogFields(Article $article, callable $f): string
+    {
+        $isCat = $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id);
+        if ($isCat) {
+            return '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="blog" value="1"' . (Blog\Blog::isBlog($article->id) ? ' checked' : '') . '> Blog / News – Unterseiten sind Beiträge</label>'
+                . '<p class="help-block">Beiträge erscheinen nach Datum sortiert (neueste zuerst), mit Kopf (Datum, Autor, Bild) und „Vorheriger/Nächster Beitrag“; RSS-Feed unter …/feed.xml. Übersicht mit dem Block „Beiträge“.</p></div>';
+        }
+        if (!Blog\Blog::blogOf($article)) {
+            return '';
+        }
+        $p = Blog\Post::get($article->id, $article->languageId);
+
+        return '<h3 class="blocks-form__h">Beitrag</h3>'
+            . $f('Datum', '<input class="form-control" type="date" name="post_date" value="' . escape($p ? $p->date->format('Y-m-d') : date('Y-m-d')) . '">', 'Bestimmt die Reihenfolge – neueste zuerst. Ein Datum in der Zukunft geht trotzdem live, wenn die Seite online ist.')
+            . $f('Autor (optional)', '<input class="form-control" type="text" name="post_author" value="' . escape($p->author ?? '') . '" maxlength="120">')
+            . $f('Schlagworte (optional)', '<input class="form-control" type="text" name="post_tags" value="' . escape(implode(', ', $p->tags ?? [])) . '" maxlength="255" placeholder="z. B. Veranstaltung, Team">', 'Mit Komma getrennt. Besucher können in der Übersicht danach filtern.')
+            . '<p class="help-block">Teaserbild = „Bild für soziale Netzwerke“, Kurztext = „Beschreibung für Suchmaschinen“.</p>';
+    }
+
     private static function pageSave(Article $article): array
     {
+        if ($article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id)) {
+            Blog\Blog::setBlog($article->id, Request::post('blog', 'bool', false));
+        } elseif (Blog\Blog::blogOf($article)) {
+            Blog\Blog::saveMeta($article, Request::post('post_date', 'string', ''), Request::post('post_author', 'string', ''), Request::post('post_tags', 'string', ''));
+        }
         PageSettings::save($article, Request::post('name', 'string', ''), Request::post('online', 'bool', false),
             Request::post('description', 'string', ''), Request::post('image', 'string', ''), Request::post('noindex', 'bool', false),
             Request::post('seo_title', 'string', ''), Request::post('slug', 'string', null));
@@ -445,6 +471,10 @@ final class Api
         $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
         // Template des Kits übernehmen (neue Kategorien auf oberster Ebene erben keines)
         ArticleHandler::editArticle($id, $article->languageId, ['name' => $name, 'template' => $template]);
+        // Beitrag in einem Blog: Datum heute, Autor = Name der Redakteurin
+        if (null !== $parent && 'menu' !== Request::post('kind', 'string', 'menu') && Blog\Blog::isBlog($parent) && ($new = Article::get($id, $article->languageId))) {
+            Blog\Blog::saveMeta($new, date('Y-m-d'), $user->name ?: $user->login, '');
+        }
         // Inhalt: Vorlage (ID), Kopie dieser Seite („copy“) oder leer
         $from = Request::post('from', 'string', '');
         $source = 'copy' === $from ? $article->id : (int) $from;

@@ -66,7 +66,8 @@ return [
         'css/b-downloads.css' => ['downloads'],
         'css/dataform.css' => ['contact', 'form'],
         'css/b-form.css' => ['form', 'contact'],
-        'css/data.css' => ['datalist'],
+        'css/data.css' => ['datalist', 'posts'],
+        'css/b-posts.css' => ['posts', '@post'],
         'js/tabs.js' => ['tabs'],
         'js/reel.js' => ['quote', 'cards'],
         'js/scrolly.js' => ['scrolly'],
@@ -427,6 +428,22 @@ return [
             'label' => 'Karte', 'icon' => 'map-trifold', 'group' => 'Website',
             'help' => 'Interaktive Karte (OpenStreetMap-Daten über den eigenen Server – ohne Einwilligung, ohne Cookies).',
             'fields' => [...$head(false, false), ...\FriendsOfRedaxo\Fluid\Maps\Maps::blockFields()],
+        ],
+        'posts' => [
+            'nestable' => ['list'],   // Block „Layout“: Liste in einer Spalte
+            'label' => 'Beiträge', 'icon' => 'newspaper', 'group' => 'Website',
+            'help' => 'Beiträge eines Blogs (Menüseite mit „Blog / News“ in den Seiteneinstellungen): Übersicht mit Blättern und Schlagworten oder die neuesten Beiträge, z. B. auf der Startseite.',
+            'variants' => ['cards' => 'Karten', 'list' => 'Liste', 'featured' => 'Aufmacher + Karten'],
+            'fields' => [
+                ...$head(false),
+                ['name' => 'blog', 'label' => 'Blog', 'type' => 'blog', 'width' => 'half'],
+                ['name' => 'limit', 'label' => 'Beiträge je Seite', 'type' => 'number', 'default' => 9, 'width' => 'half'],
+                ['name' => 'pager', 'label' => 'Blättern (Seite 2, 3 …)', 'type' => 'bool', 'default' => true, 'width' => 'half'],
+                ['name' => 'tags', 'label' => 'Schlagworte zum Filtern zeigen', 'type' => 'bool', 'width' => 'half'],
+                $size,
+                ['name' => 'more', 'label' => 'Link „Alle Beiträge“ (optional)', 'type' => 'link', 'width' => 'half', 'help' => 'Für „Neueste Beiträge“ auf anderen Seiten, z. B. zur Blog-Übersicht.'],
+                ['name' => 'empty_text', 'label' => 'Hinweis ohne Beiträge (optional)', 'type' => 'text', 'max' => 200],
+            ],
         ],
         'search' => [
             'label' => 'Suche', 'icon' => 'magnifying-glass', 'group' => 'Website',

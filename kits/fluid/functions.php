@@ -593,3 +593,67 @@ function fluid_video_file(Media $video, string $poster, string $ratio, string $l
 
     return $h;
 }
+
+/** Datum in der Sprache der Seite, z. B. „13. Oktober 2026“ / „October 13, 2026“ */
+function fluid_date(\DateTimeInterface $d): string
+{
+    $code = \Redaxo\Core\Language\Language::getCurrent()->code;
+    if (class_exists(\IntlDateFormatter::class)) {
+        $f = new \IntlDateFormatter($code, \IntlDateFormatter::LONG, \IntlDateFormatter::NONE);
+        $s = $f->format($d);
+        if (is_string($s)) {
+            return $s;
+        }
+    }
+
+    return $d->format('de' === substr($code, 0, 2) ? 'd.m.Y' : 'Y-m-d');
+}
+
+/** Zeile „Datum · Autor“ eines Beitrags */
+function fluid_post_meta(\FriendsOfRedaxo\Fluid\Blog\Post $p, bool $author = true): string
+{
+    $h = '<time datetime="' . e($p->date->format('Y-m-d')) . '">' . e(fluid_date($p->date)) . '</time>';
+    if ($author && '' !== $p->author) {
+        $h .= ' · <span class="post-author">' . e($p->author) . '</span>';
+    }
+
+    return $h;
+}
+
+/** Kopf einer Beitragsseite (Template): Zurück zur Übersicht, Titel, Datum, Autor, Schlagworte, Bild */
+function fluid_post_header(Article $a): string
+{
+    $blog = \FriendsOfRedaxo\Fluid\Blog\Blog::blogOf($a);
+    $p = $blog ? \FriendsOfRedaxo\Fluid\Blog\Post::get($a->id, $a->languageId) : null;
+    if (!$p) {
+        return '';
+    }
+    $over = Article::get($blog, $a->languageId);
+    $tags = '';
+    foreach ($p->tags as $t) {
+        $tags .= '<li><a href="' . e(($over?->getUrl() ?? '') . '?tag=' . rawurlencode(\FriendsOfRedaxo\Fluid\Blog\Blog::tagSlug($t))) . '">' . e($t) . '</a></li>';
+    }
+    $img = '' !== $p->image ? '<div class="post-head__img ratio-16-9">' . img($p->image, '(min-width: 1280px) 1200px, 100vw', ['eager' => true]) . '</div>' : '';
+
+    return '<header class="sec post-head"><div class="wrap">'
+        . ($over ? '<p class="post-head__back"><a href="' . e($over->getUrl()) . '">← ' . e($over->name) . '</a></p>' : '')
+        . '<h1 class="h1 post-head__title">' . e($a->name) . '</h1>'
+        . '<p class="post-head__meta">' . fluid_post_meta($p) . '</p>'
+        . ('' !== $tags ? '<ul class="post-tags" role="list">' . $tags . '</ul>' : '')
+        . $img . '</div></header>';
+}
+
+/** Fuß einer Beitragsseite (Template): älterer / neuerer Beitrag */
+function fluid_post_footer(Article $a): string
+{
+    [$older, $newer] = \FriendsOfRedaxo\Fluid\Blog\Blog::neighbors($a);
+    if (!$older && !$newer) {
+        return '';
+    }
+    $l = static fn (?\FriendsOfRedaxo\Fluid\Blog\Post $p, string $label, string $cls) => $p
+        ? '<a class="post-nav__link ' . $cls . '" href="' . e($p->url) . '"><span class="post-nav__label">' . e(lt($label)) . '</span><span class="post-nav__title">' . e($p->article->name) . '</span></a>'
+        : '<span></span>';
+
+    return '<nav class="sec post-nav" aria-label="' . e(lt('Weitere Beiträge')) . '"><div class="wrap post-nav__grid">'
+        . $l($older, 'Älterer Beitrag', 'post-nav__link--prev') . $l($newer, 'Neuerer Beitrag', 'post-nav__link--next') . '</div></nav>';
+}

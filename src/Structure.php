@@ -31,7 +31,7 @@ final class Structure
         $home = Article::getSiteStartArticleId();
         $node = static function (Article $a, bool $menu, array $children = []) use ($home): array {
             return ['id' => $a->id, 'name' => $a->name, 'url' => $a->getUrl(), 'online' => $a->isOnline(), 'menu' => $menu,
-                'home' => $a->id === $home, 'parent' => $a->categoryId && !$menu ? $a->categoryId : ($menu ? (Category::get($a->id)->parentId ?? 0) : 0),
+                'home' => $a->id === $home, 'blog' => $menu && Blog\Blog::isBlog($a->id), 'parent' => $a->categoryId && !$menu ? $a->categoryId : ($menu ? (Category::get($a->id)->parentId ?? 0) : 0),
                 'children' => $children];
         };
         $walk = static function (?Category $cat) use (&$walk, $node, $languageId): array {

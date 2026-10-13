@@ -25,6 +25,11 @@ return static function (ArticleContent $content): void {
     $langs = \FriendsOfRedaxo\Fluid\Routing\Router::alternates($article);
     $title = PageSettings::title($article, $name);
     $design = $kit->design();
+    // Blog-Beitrag: Kopf (Titel, Datum, Bild) und „Älterer/Neuerer Beitrag“ aus dem Template
+    $isPost = null !== \FriendsOfRedaxo\Fluid\Blog\Blog::blogOf($article);
+    if ($isPost) {
+        $kit->markUsed('@post');
+    }
     $css = [$kit->assetUrl('css/site.css'), ...$kit->designCss(), ...$kit->blockCss(Editing::active())];
     $designClasses = $design->classes();
     // dunkler Grundton bzw. Serifen-Überschriften (wie fluid_html_class in Studio)
@@ -141,7 +146,9 @@ return static function (ArticleContent $content): void {
 </header>
 <div class="page__main">
 <main id="main" tabindex="-1">
+<?= $isPost ? fluid_post_header($article) : '' ?>
 <?= $main ?>
+<?= $isPost ? fluid_post_footer($article) : '' ?>
 </main>
 <footer class="ftr ftr--<?= e($footer) ?>">
   <div class="wrap">

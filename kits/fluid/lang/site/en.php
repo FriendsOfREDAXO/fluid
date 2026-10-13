@@ -407,4 +407,12 @@ return array (
   '„{label}“: ungültiges Datum.' => '“{label}”: invalid date.',
   '…' => '…',
   '⌘ + Mausrad zum Zoomen' => 'Use ⌘ + scroll to zoom',
+  'Weitere Beiträge' => 'More posts',
+  'Älterer Beitrag' => 'Older post',
+  'Neuerer Beitrag' => 'Newer post',
+  'Nach Schlagwort filtern' => 'Filter by tag',
+  'offline' => 'offline',
+  'Noch keine Beiträge.' => 'No posts yet.',
+  'Seite {n} von {total}' => 'Page {n} of {total}',
+  'Alle Beiträge' => 'All posts',
 );

@@ -35,6 +35,11 @@ final class FluidAddon extends Addon
             ->ensureColumn(new Column('image', 'varchar(255)', true))
             ->ensureColumn(new Column('noindex', 'tinyint(1)', false, '0'))
             ->ensureColumn(new Column('title', 'varchar(191)', true))
+            // Blog: Kategorie ist ein Blog (blog) bzw. Angaben eines Beitrags
+            ->ensureColumn(new Column('blog', 'tinyint(1)', false, '0'))
+            ->ensureColumn(new Column('post_date', 'date', true))
+            ->ensureColumn(new Column('author', 'varchar(120)', true))
+            ->ensureColumn(new Column('tags', 'varchar(255)', true))
             ->setPrimaryKey(['article_id', 'language_id'])
             ->ensure();
 

@@ -151,6 +151,12 @@ final class Router
             $full = self::$landing->subtree ? ltrim($base . '/' . $rest, '/') : $rest;
         }
 
+        // RSS eines Blogs: /{blog}/feed.xml
+        if (preg_match('~^(.+)/feed\.xml$~', $full, $fm) && null !== ($bid = Routes::find($fm[1], $lang)) && \FriendsOfRedaxo\Fluid\Blog\Blog::isBlog($bid)) {
+            Language::setCurrentId($lang);
+            self::send(\FriendsOfRedaxo\Fluid\Blog\Blog::feed($bid), 'application/rss+xml; charset=utf-8');
+        }
+
         $id = Routes::find($full, $lang);
         if (null !== $id && (!self::$landing || self::inLanding($id))) {
             // Schrägstrich am Ende → ohne

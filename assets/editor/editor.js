@@ -580,9 +580,28 @@
       if (dirty.size && !(await ask({ title: 'Erst speichern?', body: 'Ungespeicherte Änderungen kommen nicht in die Vorlage. Trotzdem fortfahren?', ok: 'Fortfahren' }))) return;
       try { const res = await api('template_save', new FormData(f)); tdlg.hidden = true; say(res.message); } catch (err) { say(err.message, true); }
     });
+    // Block „Beiträge“: „+ Neuer Beitrag“ – Seite ohne Menüeintrag im Blog
+    main.addEventListener('click', (e) => {
+      const nb = e.target.closest('[data-fluid-new-post]');
+      if (!nb) return;
+      e.preventDefault();
+      if (!may('addArticle')) return say('Dafür fehlt Ihnen das Recht „Artikel anlegen“.', true);
+      nform.reset();
+      nform.dataset.parent = nb.dataset.fluidNewPost;
+      const page = nform.querySelector('input[name=kind][value=page]');
+      if (page) page.checked = true;
+      newdlg.querySelector('#fluid-new-t').textContent = 'Neuer Beitrag';
+      newdlg.querySelector('[data-new-where]')?.setAttribute('hidden', '');
+      newdlg.querySelector('input[name=kind]')?.closest('fieldset')?.setAttribute('hidden', '');
+      newdlg.hidden = false;
+      newdlg.dispatchEvent(new Event('fluid:open'));
+      nform.name.focus();
+    });
     $('[data-page-add]')?.addEventListener('click', () => {
       menu.hidden = true;
       nform.reset();
+      newdlg.querySelector('#fluid-new-t').textContent = 'Neue Seite';
+      newdlg.querySelector('input[name=kind]')?.closest('fieldset')?.removeAttribute('hidden');
       delete nform.dataset.parent;
       newdlg.querySelector('[data-new-where]')?.removeAttribute('hidden');
       newdlg.hidden = false;
@@ -624,6 +643,12 @@
     };
     // nächste Menüseite oberhalb in derselben Ebene (Ziel für →)
     const mv = (n) => may(n.menu ? 'moveCategory' : 'moveArticle');
+    // Blogs: Beiträge eingeklappt (aufgeklappt, wenn die aktuelle Seite ein Beitrag ist)
+    const open = new Set();
+    const openCurrent = (nodes) => nodes.forEach((n) => {
+      if (n.blog && (n.children || []).some((c) => c.id === cfg.article.id)) open.add(n.id);
+      openCurrent(n.children || []);
+    });
     const menuBefore = (all, i) => all.slice(0, i).findLast((x) => x.menu) || null;
     const row = (n, depth, prev = null) => `
       <li role="treeitem" aria-expanded="${n.children?.length ? 'true' : 'false'}" data-id="${n.id}" data-menu="${n.menu ? 1 : 0}" class="tree__item${n.online ? '' : ' is-offline'}${n.id === cfg.article.id ? ' is-current' : ''}">
@@ -642,7 +667,8 @@
             ${n.home || !may(n.menu ? 'deleteCategory' : 'deleteArticle') ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
           </span>
         </div>
-        ${n.children?.length ? `<ul role="group">${n.children.map((c, i, all) => row(c, depth + 1, menuBefore(all, i))).join('')}</ul>` : ''}
+        ${n.children?.length && n.blog ? `<button type="button" class="tree__more" data-tree-toggle style="--d:${depth + 1}" aria-expanded="${open.has(n.id)}">${n.children.length} ${n.children.length === 1 ? 'Beitrag' : 'Beiträge'} ${open.has(n.id) ? '▾' : '▸'}</button>` : ''}
+        ${n.children?.length ? `<ul role="group"${n.blog && !open.has(n.id) ? ' hidden' : ''}>${n.children.map((c, i, all) => row(c, depth + 1, menuBefore(all, i))).join('')}</ul>` : ''}
       </li>`;
     // Startseite immer oben (REDAXO sortiert je Ebene erst Menüpunkte, dann Seiten – die Startseite gehört davor)
     const draw = () => {
@@ -653,6 +679,7 @@
       try {
         const res = await api(action, data);
         tree = res.tree;
+        openCurrent(tree);
         draw();
         if (res.message) say(res.message);
         return true;
@@ -675,12 +702,24 @@
     });
     $('[data-tree-close]').addEventListener('click', close);
     tpanel.addEventListener('click', async (e) => {
+      const tg = e.target.closest('[data-tree-toggle]');
+      if (tg) {
+        const id = +tg.closest('[data-id]').dataset.id;
+        open.has(id) ? open.delete(id) : open.add(id);
+        draw();
+        return;
+      }
       const nb = e.target.closest('[data-tree-new]');
       if (nb) {
         // Dialog „Neue Seite“ mit vorgegebener Stelle
         close();
         nform.reset();
         nform.dataset.parent = nb.dataset.treeNew;
+        // im Blog: neuer Beitrag (Seite ohne Menüeintrag)
+        const isBlog = find(tree, +nb.dataset.treeNew)?.node.blog;
+        newdlg.querySelector('#fluid-new-t').textContent = isBlog ? 'Neuer Beitrag' : 'Neue Seite';
+        const kindSet = newdlg.querySelector('input[name=kind]')?.closest('fieldset');
+        if (isBlog) { nform.querySelector('input[name=kind][value=page]').checked = true; kindSet?.setAttribute('hidden', ''); } else kindSet?.removeAttribute('hidden');
         newdlg.querySelector('[data-new-where]')?.setAttribute('hidden', '');
         newdlg.hidden = false;
         newdlg.dispatchEvent(new Event('fluid:open'));
@@ -1357,7 +1396,9 @@
           location.reload();
         } catch (err) { b.disabled = false; say(err.message, true); }
       }));
-      main.prepend(hint);
+      // Beitragsseite: unter den Beitragskopf
+      const ph = main.querySelector(':scope > .post-head');
+      if (ph) ph.after(hint); else main.prepend(hint);
     }
   }
 

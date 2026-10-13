@@ -124,6 +124,10 @@ final class FieldForm
                 ? self::select($name, $t, (string) $value, ['id' => $id, 'data-yform-table' => ''], !$req)
                 : '<p class="help-block">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Projekt eine Klasse mit #[AsTable] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
             'yform_field' => self::yformField($name, (string) $value, $id),
+            // Blog (Kategorie mit „Blog / News“ in den Seiteneinstellungen); leer = alle Blogs
+            'blog' => [] !== ($bl = \FriendsOfRedaxo\Fluid\Blog\Blog::all())
+                ? self::select($name, ['' => 'Alle Blogs'] + $bl, (string) $value, ['id' => $id], false)
+                : '<p class="help-block">Noch kein Blog – bei einer Menüseite in den Seiteneinstellungen „Blog / News“ anhaken.</p>',
             // Formular aus YForm (#[AsForm]-Klasse im Projekt)
             'yform_form' => [] !== ($fo = YFormBridge::forms())
                 ? self::select($name, $fo, (string) $value, ['id' => $id], !$req)

@@ -99,6 +99,12 @@ final class Seo
             }
         }
 
+        // Blog: RSS-Feed für Feedreader
+        $blog = \FriendsOfRedaxo\Fluid\Blog\Blog::isBlog($article->id) && $article->isStartArticle() ? $article->id : \FriendsOfRedaxo\Fluid\Blog\Blog::blogOf($article);
+        if ($blog && ($b = Article::get($blog, $article->languageId))) {
+            $h .= '<link rel="alternate" type="application/rss+xml" title="' . escape($b->name) . '" href="' . escape(rtrim(Router::canonical($blog, $article->languageId), '/') . '/feed.xml') . '">' . "\n";
+        }
+
         if (!\FriendsOfRedaxo\Fluid\Editing::active()) {
             $h .= '<script type="application/ld+json">' . json_encode(StructuredData::graph($article), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>' . "\n";
         }
