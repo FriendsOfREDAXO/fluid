@@ -251,16 +251,16 @@ $design = [
             ['#4338CA', '#3730A3', '#FFFFFF', '#FDE68A', '#0B0D17', '#2B2F3A', '#565C6B', '#FFFFFF', '#F4F5F8', '#E2E4EB', '#0E1022'],
             ['#A5B4FC', '#C7D2FE', '#14123A', '#3A3470', '#F3F4F8', '#D2D5DE', '#9EA3B2', '#0B0C14', '#141621', '#272B3A', '#1A1D33'],
             $base),
-        // REDAXO-Farben aus dem Backend des Cores (assets/scss/_variables.scss): Blau #4b9ad9, Dunkelblau #324050/#283542,
-        // Grund #f3f6fb, Linien #dfe3e9, Hellblau #dbedf7, Grün #5bb585. Für Text und Buttons dunklere Stufen (WCAG AA:
-        // #4b9ad9 hätte auf Weiß nur 3:1) – Kopf und Fuß dunkel wie die Navigation im Backend, eckig wie das Backend.
-        'redaxo' => $preset('REDAXO · Blau & Dunkelblau', 'In den Farben von REDAXO: Blau und Dunkelblau aus dem Backend, Grün als zweite Farbe, eckige Formen, dunkler Kopf.',
-            ['#256AA6', '#1D5A8F', '#FFFFFF', '#DBEDF7', '#283542', '#324050', '#596676', '#FFFFFF', '#F3F6FB', '#DFE3E9', '#324050'],
-            ['#7CB9EA', '#A3CFF2', '#0B1A2B', '#1F3A52', '#F1F4F8', '#D3DAE3', '#9AA6B4', '#10161D', '#18202A', '#2A3542', '#1D2835'],
-            ['secondary' => '#2C855A', 'on_secondary' => '#FFFFFF', 'secondary@dark' => '#7FD3A8', 'on_secondary@dark' => '#06231A',
-             'font_body' => 'inter', 'font_head' => 'inter', 'ratio' => 1.25, 'heading_weight' => 700, 'heading_tracking' => -2,
-             'radius' => 4, 'buttons' => 'solid', 'cards' => 'outlined', 'shadow' => 'none', 'eyebrow' => 'line',
-             'header' => 'inline', 'header_bg' => 'dark', 'nav_style' => 'underline', 'footer' => 'columns', 'footer_bg' => 'dark', 'pagebg' => 'plain'] + $base),
+        // Angelehnt an redaxo.org und das Backend des Cores (assets/scss/_variables.scss): blauer Kopf, blaue Überschriften,
+        // Dunkelblau #343f50 für Text und Fuß, Grund #f3f6fb, Linien #dfe3e9, Source Sans. Die Blautöne sind dunklere Stufen
+        // des REDAXO-Blaus #5b98d7/#4b9ad9 (dort Weiß darauf nur 3:1) – so erfüllen Kopf, Links und Buttons WCAG AA.
+        'redaxo' => $preset('REDAXO · Blau', 'Im Stil von redaxo.org: blauer Kopf, blaue Überschriften, Source Sans, dunkler Fuß, runde Buttons – Farben aus dem REDAXO-Backend.',
+            ['#2C6AA8', '#1F5A96', '#FFFFFF', '#DBEDF7', '#1D5288', '#343F50', '#596676', '#FFFFFF', '#F3F6FB', '#DFE3E9', '#343F50'],
+            ['#8CBDEE', '#B3D4F4', '#0B1A2B', '#1F3A52', '#B8D6F5', '#D3DAE3', '#9AA6B4', '#10161D', '#18202A', '#2A3542', '#1D2835'],
+            ['secondary' => '#2B8466', 'on_secondary' => '#FFFFFF', 'secondary@dark' => '#7FD3A8', 'on_secondary@dark' => '#06231A',
+             'font_body' => 'source-sans', 'font_head' => 'source-sans', 'fs_min' => 16.5, 'fs_max' => 19, 'ratio' => 1.25, 'heading_weight' => 600, 'heading_tracking' => 0,
+             'radius' => 3, 'buttons' => 'pill', 'cards' => 'outlined', 'shadow' => 'none', 'eyebrow' => 'plain', 'emphasis' => 'accent',
+             'header' => 'inline', 'header_bg' => 'accent', 'nav_style' => 'plain', 'footer' => 'columns', 'footer_bg' => 'dark', 'pagebg' => 'plain'] + $base),
         'kanzlei' => $preset('Kanzlei · Nachtblau & Serife', 'Seriös und ruhig: Newsreader-Überschriften, eckige Formen, zentrierter Kopf, flache Stufen.',
             ['#1D3A66', '#142B4D', '#FFFFFF', '#EDE3CC', '#0C1526', '#2A3242', '#565F70', '#FFFFFF', '#F5F4F0', '#E4E1D8', '#0F1F38'],
             ['#9BB8EA', '#BED0F2', '#0B1A33', '#3A3322', '#EEF2F8', '#CFD6E2', '#9AA4B5', '#0A0F18', '#121A27', '#253247', '#18263D'],

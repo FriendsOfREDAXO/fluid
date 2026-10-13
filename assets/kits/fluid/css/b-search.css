@@ -10,3 +10,5 @@
 .fsearch__title:hover{text-decoration:underline}
 .fsearch__excerpt{margin:.35rem 0 0;color:var(--f-muted)}
 .fsearch mark{background:color-mix(in srgb,var(--f-a) 22%,transparent);color:inherit;border-radius:2px;padding:0 .1em}
+/* Treffer hervorheben: Hervorhebungsfarbe mit Überschriftenfarbe – der Kontrast ist im Design-Editor geprüft (≥ 4,5:1) */
+.fsearch mark { background: var(--f-a2); color: var(--f-ink); }

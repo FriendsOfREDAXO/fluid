@@ -9,3 +9,18 @@
 .hdr__tools > .langswitch { margin-right: .25rem; }
 .mnav .langswitch { margin: 1rem var(--gutter, 1rem); width: fit-content; }
 @media (max-width: 760px) { .hdr__tools > .langswitch { display: none; } }
+/* Sprachwahl in farbigen Köpfen (Akzent, zweite Markenfarbe, dunkel): ohne aufgehellte Fläche – Kontrast WCAG AA */
+:is(.hbg-accent, .hbg-secondary, .hbg-dark) .hdr .langswitch { background: transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 45%, transparent); }
+.hbg-accent .hdr .langswitch a { color: var(--f-a-on); }
+.hbg-accent .hdr .langswitch a[aria-current] { background: var(--f-a-on); color: var(--f-a); box-shadow: none; }
+.hbg-secondary .hdr .langswitch a { color: var(--f-b-on); }
+.hbg-secondary .hdr .langswitch a[aria-current] { background: var(--f-b-on); color: var(--f-b); box-shadow: none; }
+.hbg-dark .hdr .langswitch a { color: #fff; }
+.hbg-dark .hdr .langswitch a[aria-current] { background: #fff; color: var(--f-dark); box-shadow: none; }
+/* Farbiger Kopf bzw. Fuß: „Logo auf dunklem Grund“ statt des normalen Logos */
+:is(.hbg-accent, .hbg-secondary, .hbg-dark) .hdr .brand__logo--light, :is(.fbg-accent, .fbg-secondary, .fbg-dark) .ftr .brand__logo--light { display: none; }
+:is(.hbg-accent, .hbg-secondary, .hbg-dark) .hdr .brand__logo--dark, :is(.fbg-accent, .fbg-secondary, .fbg-dark) .ftr .brand__logo--dark { display: block; }
+/* Lupe im farbigen Kopf: Schriftfarbe des Kopfs (sonst dunkel auf Blau) */
+.hbg-accent .hdr .hdr__search { color: var(--f-a-on); }
+.hbg-secondary .hdr .hdr__search { color: var(--f-b-on); }
+.hbg-dark .hdr .hdr__search { color: #fff; }
