@@ -40,7 +40,7 @@ final class Search
         if (!is_dir($dir)) {
             @mkdir($dir, 0775, true);
         }
-        $code = substr(Language::get($languageId)?->code ?? 'de', 0, 2);
+        $code = substr(Language::get($languageId)->code ?? 'de', 0, 2);
         $config = Configuration::create()
             ->withPrimaryKey('id')
             ->withSearchableAttributes(['title', 'headings', 'text'])

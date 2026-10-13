@@ -54,7 +54,7 @@ final class Seo
                 $xml .= '  <url><loc>' . escape($loc) . '</loc><lastmod>' . date('Y-m-d', $time ?: time()) . '</lastmod>';
                 if (count($alternates) > 1) {
                     foreach ($alternates as $l => [$href]) {
-                        $xml .= '<xhtml:link rel="alternate" hreflang="' . escape(Language::get($l)?->code ?? '') . '" href="' . escape($href) . '"/>';
+                        $xml .= '<xhtml:link rel="alternate" hreflang="' . escape(Language::get($l)->code ?? '') . '" href="' . escape($href) . '"/>';
                     }
                 }
                 $xml .= "</url>\n";
@@ -94,7 +94,7 @@ final class Seo
             foreach ($langs as $lang => $_) {
                 $a = Article::get($article->id, $lang);
                 if ($a && $a->isOnline()) {
-                    $h .= '<link rel="alternate" hreflang="' . escape(Language::get($lang)?->code ?? '') . '" href="' . escape(Router::canonical($article->id, $lang)) . '">' . "\n";
+                    $h .= '<link rel="alternate" hreflang="' . escape(Language::get($lang)->code ?? '') . '" href="' . escape(Router::canonical($article->id, $lang)) . '">' . "\n";
                 }
             }
         }

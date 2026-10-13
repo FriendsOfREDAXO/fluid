@@ -103,7 +103,7 @@ final class SiteAdmin
                 // nur übersetzbare Felder; Text der Startsprache als Platzhalter
                 $fields = array_map(static fn (array $f) => ['placeholder' => (string) ($values[$f['name']] ?? ''), 'help' => 'Leer = Text der Startsprache.'] + $f, $translatable);
                 $values = Settings::translations($lang);
-                $switch .= '<p class="site-intro">Texte für <b>' . escape(Language::get($lang)?->name ?? '') . '</b>. Übrige Angaben (Adresse, Logo, Links …) gelten für alle Sprachen.</p>';
+                $switch .= '<p class="site-intro">Texte für <b>' . escape(Language::get($lang)->name ?? '') . '</b>. Übrige Angaben (Adresse, Logo, Links …) gelten für alle Sprachen.</p>';
             }
         }
 
@@ -117,12 +117,12 @@ final class SiteAdmin
     private static function languages(): string
     {
         $row = static function (?Language $l): string {
-            $id = $l?->id ?? 0;
+            $id = $l->id ?? 0;
 
             return '<form class="site-card" data-site-form="language_save" data-tab="languages"><input type="hidden" name="id" value="' . $id . '">'
                 . '<div class="blocks-form__grid">'
-                . '<div class="blocks-form__field is-half"><label class="control-label">Kürzel</label><input class="form-control" name="code" value="' . escape($l?->code ?? '') . '" placeholder="fr" required maxlength="10" pattern="[a-z]{2}(-[A-Za-z]{2})?"></div>'
-                . '<div class="blocks-form__field is-half"><label class="control-label">Name</label><input class="form-control" name="name" value="' . escape($l?->name ?? '') . '" placeholder="Français" required maxlength="100"></div>'
+                . '<div class="blocks-form__field is-half"><label class="control-label">Kürzel</label><input class="form-control" name="code" value="' . escape($l->code ?? '') . '" placeholder="fr" required maxlength="10" pattern="[a-z]{2}(-[A-Za-z]{2})?"></div>'
+                . '<div class="blocks-form__field is-half"><label class="control-label">Name</label><input class="form-control" name="name" value="' . escape($l->name ?? '') . '" placeholder="Français" required maxlength="100"></div>'
                 . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="online" value="1"' . ($l?->isOnline() ? ' checked' : '') . '> Online – für Besucher sichtbar</label></div>'
                 . '</div><div class="site-actions"><button type="submit" class="btn btn--primary">' . ($id ? 'Speichern' : 'Sprache hinzufügen') . '</button></div></form>';
         };

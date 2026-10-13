@@ -30,7 +30,7 @@ final class Versions
         ArticleSliceHistory::checkTables();
         $sql = Sql::factory();
         $table = ArticleSliceHistory::getTable();
-        $user = \Redaxo\Core\Core::getUser()?->login ?? Editing::user()?->login ?? '';
+        $user = \Redaxo\Core\Core::getUser()->login ?? Editing::user()->login ?? '';
         // Speichern kurz hintereinander: letzten eigenen Stand ersetzen statt neuen anlegen
         if ('fluid_save' === $type) {
             $last = $sql->getArray('SELECT history_date, history_user, history_type FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY history_date DESC LIMIT 1', [$articleId, $languageId, $revision])[0] ?? null;

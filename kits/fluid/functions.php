@@ -29,7 +29,7 @@ if (!function_exists('e')) {
 function lt(string $text, array $vars = []): string
 {
     static $tables = [];
-    $code = \Redaxo\Core\Language\Language::getCurrent()?->code ?? 'de';
+    $code = \Redaxo\Core\Language\Language::getCurrent()->code;
     if ('de' !== $code) {
         if (!isset($tables[$code])) {
             $file = __DIR__ . '/lang/site/' . basename($code) . '.php';
@@ -559,7 +559,7 @@ function fluid_video_file(Media $video, string $poster, string $ratio, string $l
     $mm = \Redaxo\Core\MediaManager\MediaManager::class;
     $p = '' !== $poster ? Media::get($poster) : null;
     $posterUrl = $p ? $mm::getUrl('fluid_poster', $p) : (\FriendsOfRedaxo\Fluid\Media\Ffmpeg::available() ? $mm::getUrl('fluid_poster', $video) : '');
-    $lang = \Redaxo\Core\Language\Language::getCurrent()?->code ?? 'de';
+    $lang = \Redaxo\Core\Language\Language::getCurrent()->code;
     $out = '';
     $first = null;
     $on = false;

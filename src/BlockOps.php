@@ -123,7 +123,7 @@ final class BlockOps
         if (Layout::isLayout($slice)) {
             $out['children'] = array_map($item, Layout::children($slice));
         }
-        $label = Module::get($slice->moduleKey)?->name ?? $slice->moduleKey;
+        $label = Module::get($slice->moduleKey)->name ?? $slice->moduleKey;
 
         return ['clip' => $out, 'label' => $label];
     }

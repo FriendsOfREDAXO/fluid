@@ -46,7 +46,7 @@ final class Picker
         $art = preg_match('~^redaxo://(\d+)~', $value, $m) ? Article::get((int) $m[1]) : null;
         $url = Url::backendPage('linkmap', [
             'opener_input_field' => 'blocks_pick',
-            'category_id' => $art?->categoryId ?? Category::getCurrent()?->id ?? 0,
+            'category_id' => $art->categoryId ?? Category::getCurrent()->id ?? 0,
             'language' => Language::getCurrentId(),
         ]);
 

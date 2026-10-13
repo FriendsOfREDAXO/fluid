@@ -163,6 +163,6 @@ final class Routes
             return '';
         }
 
-        return '/' . (Language::get($languageId)?->code ?? (string) $languageId);
+        return '/' . (Language::get($languageId)->code ?? (string) $languageId);
     }
 }

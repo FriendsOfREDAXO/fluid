@@ -59,7 +59,7 @@ final class StructuredData
     {
         $url = Router::canonical($article->id, $article->languageId);
         $home = Router::canonical(Article::getSiteStartArticleId(), $article->languageId);
-        $lang = Language::get($article->languageId)?->code ?? 'de';
+        $lang = Language::get($article->languageId)->code ?? 'de';
         $org = Seo::organizationNode();
         $isHome = $article->id === Article::getSiteStartArticleId();
         $graph = [];
@@ -68,7 +68,7 @@ final class StructuredData
         // Brotkrumen: Startseite › Elternseiten › Seite
         $crumbs = [];
         if (!$isHome) {
-            $crumbs[] = [Article::getSiteStartArticle()?->name ?? 'Start', $home];
+            $crumbs[] = [Article::getSiteStartArticle()->name ?? 'Start', $home];
             foreach ($article->path as $cid) {
                 if (($c = Category::get($cid, $article->languageId)) && $c->isOnline()) {
                     $crumbs[] = [$c->name, Router::canonical($c->id, $article->languageId)];

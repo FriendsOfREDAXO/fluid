@@ -297,7 +297,7 @@ final class Router
             return true;
         }
 
-        return $l->subtree && in_array($l->articleId, Article::get($id)?->path ?? [], true);
+        return $l->subtree && in_array($l->articleId, Article::get($id)->path ?? [], true);
     }
 
     /** Aktuelle Landing-Domain (oder null) – z. B. für ein auf die Landingpage begrenztes Menü */

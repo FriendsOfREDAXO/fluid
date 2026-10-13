@@ -31,7 +31,7 @@ final class Structure
         $home = Article::getSiteStartArticleId();
         $node = static function (Article $a, bool $menu, array $children = []) use ($home): array {
             return ['id' => $a->id, 'name' => $a->name, 'url' => $a->getUrl(), 'online' => $a->isOnline(), 'menu' => $menu,
-                'home' => $a->id === $home, 'parent' => $a->categoryId && !$menu ? $a->categoryId : ($menu ? (Category::get($a->id)?->parentId ?? 0) : 0),
+                'home' => $a->id === $home, 'parent' => $a->categoryId && !$menu ? $a->categoryId : ($menu ? (Category::get($a->id)->parentId ?? 0) : 0),
                 'children' => $children];
         };
         $walk = static function (?Category $cat) use (&$walk, $node, $languageId): array {
@@ -84,7 +84,7 @@ final class Structure
                     break;
                 case 'tree_menu':
                     if ($isCat) {
-                        if (count(Category::get($a->id)?->getChildren() ?? []) || count(array_filter(Category::get($a->id)?->getArticles() ?? [], static fn (Article $x) => !$x->isStartArticle()))) {
+                        if (count(Category::get($a->id)->getChildren()) || count(array_filter(Category::get($a->id)->getArticles(), static fn (Article $x) => !$x->isStartArticle()))) {
                             throw new ApiError('„' . $a->name . '“ hat Unterseiten – erst diese verschieben, dann aus dem Menü nehmen.');
                         }
                         ArticleHandler::category2article($a->id) || throw new ApiError('Konnte nicht aus dem Menü genommen werden.');
@@ -117,7 +117,7 @@ final class Structure
         self::requirePerm($user, $parent);
         if ($isCat) {
             $cat = Category::get($a->id) ?? throw new ApiError('Seite nicht gefunden.');
-            if (null !== $parent && ($parent === $a->id || in_array($a->id, Category::get($parent)?->path ?? [], true))) {
+            if (null !== $parent && ($parent === $a->id || in_array($a->id, Category::get($parent)->path ?? [], true))) {
                 throw new ApiError('Eine Seite kann nicht unter sich selbst stehen.');
             }
             if ($parent !== $cat->parentId) {

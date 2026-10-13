@@ -49,7 +49,7 @@ final class Activity
             $a = $r['article_id'] ? Article::get((int) $r['article_id']) : null;
 
             return ['when' => (string) $r['created'], 'user' => (string) $r['user'], 'action' => self::LABELS[$r['action']] ?? (string) $r['action'],
-                'page' => $a?->name ?? '', 'url' => $a?->getUrl() ?? '', 'detail' => (string) $r['detail']];
+                'page' => $a->name ?? '', 'url' => $a?->getUrl() ?? '', 'detail' => (string) $r['detail']];
         }, $rows);
     }
 }

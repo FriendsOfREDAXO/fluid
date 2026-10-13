@@ -90,7 +90,7 @@ return static function (ArticleContent $content): void {
         return $h;
     };
 ?><!doctype html>
-<html lang="<?= e(Language::getCurrent()?->code ?? 'de') ?>" class="no-js <?= e($designClasses . $extra) ?>" data-fluid-classes="<?= e($designClasses) ?>">
+<html lang="<?= e(Language::getCurrent()->code) ?>" class="no-js <?= e($designClasses . $extra) ?>" data-fluid-classes="<?= e($designClasses) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

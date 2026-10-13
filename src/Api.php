@@ -120,7 +120,7 @@ final class Api
                     // in den Entwurf bzw. live ohne Arbeitsversion – live bleibt unverändert bis „Veröffentlichen“
                     ContentHandler::copyContent($article->id, $article->id, $from, $article->languageId, FluidAddon::revision(), true);
                     ArticleCache::delete($article->id, $article->languageId);
-                    Activity::log('save', $article->id, 'Inhalt aus ' . (\Redaxo\Core\Language\Language::get($from)?->name ?? $from) . ' übernommen');
+                    Activity::log('save', $article->id, 'Inhalt aus ' . (\Redaxo\Core\Language\Language::get($from)->name ?? $from) . ' übernommen');
 
                     return ['reload' => true, 'message' => 'Inhalt übernommen – jetzt übersetzen und veröffentlichen.'];
                 })(),
