@@ -79,6 +79,12 @@ final class YFormBridge
         }
     }
 
+    /** Feldtypen des eigenen Formulars (Block „Formular“) */
+    public static function builderTypes(): array
+    {
+        return class_exists(\Yakamara\YForm\Form\Definition\FormDefinition::class) ? BuiltForm::TYPES : ['text' => 'Textzeile'];
+    }
+
     /** Theme mit den Klassen der öffentlichen Formulare des Kits (css/dataform.css, .dff) */
     public static function theme(): Theme
     {
@@ -87,6 +93,9 @@ final class YFormBridge
             select: '', checkWrapper: 'dff-check', checkInput: '', checkLabel: '', radioWrapper: 'dff-check', help: 'dff-help',
             error: 'dff-err', row: 'dff-grid', column: '', buttons: 'dff-actions', submit: 'btn btn--primary', secondary: 'btn btn--ghost',
             alertError: 'dff-summary', alertSuccess: 'dff-done',
+            // Reiter = Schritte (js/formsteps.js): ohne JavaScript stehen alle Schritte untereinander
+            tabs: 'dff-steps', tabToggle: 'data-dff-step', tabItem: 'dff-steps__item', tabLink: 'dff-steps__link', tabActive: 'is-active', tabActiveOnItem: true,
+            tabPane: 'dff-pane', tabPaneActive: 'is-active', tabContent: 'dff-panes',
         );
     }
 

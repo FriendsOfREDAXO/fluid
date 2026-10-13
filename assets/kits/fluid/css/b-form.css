@@ -28,3 +28,16 @@ section:has(>.fform),section:has(>.dl),section:has(>.fdl-detail){scroll-margin-t
 .fyf .yform-required-mark{color:var(--f-danger,#b42318)}
 .fyf .dff-grid{grid-template-columns:1fr}
 .fyf .dff-actions{margin-top:var(--f-s-s)}
+/* Mehrstufige Formulare (js/formsteps.js) – ohne JavaScript alle Schritte untereinander */
+.dff-steps { display: none; }
+.dff-pane + .dff-pane { margin-top: 1.5rem; }
+.dff-progress { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: 0 0 1.5rem; padding: 0; list-style: none; font-size: .9rem; color: var(--f-muted); }
+.dff-progress li > * { display: inline-flex; align-items: center; gap: .5rem; padding: 0; border: 0; background: none; font: inherit; color: inherit; }
+.dff-progress button { cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.dff-progress__n { display: inline-grid; place-items: center; width: 1.75rem; height: 1.75rem; border-radius: 50%; border: 1.5px solid currentColor; font-weight: 600; font-size: .8rem; }
+.dff-progress [aria-current] { color: var(--f-ink); font-weight: 600; }
+.dff-progress [aria-current] .dff-progress__n { background: var(--f-a); border-color: var(--f-a); color: var(--f-a-on); }
+.dff-progress .is-done .dff-progress__n { background: var(--f-surface); }
+.dff-stepnav { display: flex; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; }
+.dff-stepnav [hidden] { display: none; }
+.dff-stepnav > :only-child, .dff-stepnav > [hidden] + :not([hidden]) { margin-left: auto; }

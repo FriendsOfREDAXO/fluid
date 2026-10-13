@@ -28,9 +28,14 @@ final class Inbox
         }
         $names = [];
         foreach (Sql::factory()->getArray('SELECT value1 FROM rex_article_slice WHERE module IN ("fluid.form", "fluid.contact")') as $r) {
-            $form = YFormBridge::formDefinition((string) (BlockModule::decode((string) $r['value1'])['form'] ?? ''));
+            $d = BlockModule::decode((string) $r['value1']);
+            $form = YFormBridge::formDefinition((string) ($d['form'] ?? ''));
             foreach ($form ? YFormBridge::formTables($form) : [] as $t) {
                 $names[$t] = true;
+            }
+            // eigenes Formular (BuiltForm): speichert in „Formular-Eingänge“ oder die gewählte Tabelle
+            if (!$form && [] !== (array) ($d['fields'] ?? []) && 'mail' !== ($d['mode'] ?? 'save_mail')) {
+                $names[trim((string) ($d['target'] ?? '')) ?: 'rex_fluid_form_entry'] = true;
             }
         }
         $out = [];
