@@ -210,6 +210,10 @@ abstract class BlockModule extends Module
             ? '<p class="blocks-invalid">„' . escape((string) ($this->definition()['label'] ?? $this->name)) . '“ in dieser Darstellung ist für Spalten nicht vorgesehen.</p>'
             : '';
 
+        if ('' === trim($inner) && !Editing::active()) {
+            return '';
+        }
+
         return '<div' . $anchor . ' class="' . escape(implode(' ', $cls)) . '"' . $this->editAttrs($slice, $b->type, Layout::col($slice)) . '>' . $invalid . $inner . "</div>\n";
     }
 
@@ -219,7 +223,12 @@ abstract class BlockModule extends Module
         $b = $this->block($slice, $data, $tunes, $depth);
         $this->kit()->markUsed($b->type, $b->variant());
         $inner = $this->renderInner($b);
-        $titled = '' !== trim((string) ($b->data['title'] ?? ''));
+        // Block ohne Ausgabe (z. B. Datenliste ohne Tabelle): für Besucher ganz weglassen
+        if ('' === trim($inner) && !Editing::active()) {
+            return '';
+        }
+        // aria-labelledby nur, wenn die Überschrift wirklich ausgegeben wird
+        $titled = str_contains($inner, 'id="' . $b->titleId() . '"');
 
         return '<section id="' . escape($b->domId()) . '" class="' . escape($b->sectionClass()) . '"'
             . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . $this->editAttrs($slice, $b->type) . '>'
