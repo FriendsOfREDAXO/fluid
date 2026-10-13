@@ -38,7 +38,7 @@ $card = static function ($p, string $sizes) use ($hTag, $layout) {
     $off = !$p->article->isOnline() ? ' <span class="post-badge">' . e(lt('offline')) . '</span>' : '';
 
     return '<li class="dl-item post-card">'
-        . ('list' !== $layout || '' !== $img ? '<div class="dl-img ratio-16-10">' . ('' !== $img ? $img : '<span class="dl-ph" aria-hidden="true"></span>') . '</div>' : '')
+        . ('' !== $img ? '<div class="dl-img ratio-16-10">' . $img . '</div>' : '')
         . '<div class="dl-body"><p class="dl-meta">' . fluid_post_meta($p, false) . $off . '</p>'
         . '<' . $hTag . ' class="dl-name"><a href="' . e($p->url) . '" class="dl-link">' . e($p->article->name) . '</a></' . $hTag . '>'
         . ('' !== $p->excerpt ? '<div class="dl-f dl-clamp dl-clamp-3"><p>' . e($p->excerpt) . '</p></div>' : '')
