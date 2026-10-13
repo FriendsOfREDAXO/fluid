@@ -166,8 +166,16 @@ fluid arbeitet mit den Mitteln von YForm 6 – Tabellen und Formulare sind Klass
 - **Block „Datenliste“**: eine Tabelle als Karten, Liste oder Tabelle mit Detailansicht (`?eintrag=ID`), Filter und
   Sortierung; „Bearbeiten“ öffnet die Maske von YForm.
 - **Postfach „Anfragen“**: Einträge der Tabellen, in die die Formulare der Website speichern; Status neu/erledigt.
+- **Kurzmeldungen, Presse, Termine**: Datenliste mit Sortierung (z. B. Datum absteigend), Blättern („Höchstens“ = je Seite,
+  über YForms `paginate()`) und Detailansicht mit eigener Adresse `/seite/titel-ID` – Titel, Beschreibung, Bild und
+  Canonical des Eintrags, Eintrag in der Sitemap, 301 von alten `?eintrag=`-Links, 404 für fehlende Einträge.
+  Wann Blog, wann Datenliste? Blog = Beiträge mit Blöcken, Entwurf und Versionen; Datenliste = gleichförmige Einträge
+  mit festen Feldern, gepflegt in der YForm-Maske.
 
-Vorlagen: `examples/yform/` (`TerminTable`, `AnfrageTable`, `AnfrageForm`) – nach `src/` kopieren, `console migrate`.
+Für eigene Ausgaben: `PageSettings::override(['title' => …, 'description' => …, 'image' => …, 'canonical' => …])`
+setzt den Seitenkopf aus einem Block heraus (z. B. eigene Detailansichten).
+
+Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `AnfrageTable`, `AnfrageForm`) – nach `src/` kopieren, `console migrate`.
 
 ### Adressen, Domains, SEO
 

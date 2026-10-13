@@ -26,6 +26,14 @@ $yform = [
         ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => null, 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => false],
     ]],
     'rex_yf_anfrage' => ['rows' => []],
+    // Kurzmeldungen (examples/yform/NewsTable) – Seite „Presse“
+    'rex_yf_news' => ['rows' => [
+        ['title' => 'REDAXO 6: Module und Templates als Klassen', 'date' => '2026-10-09', 'teaser' => 'Im Branch 6.x sind Module und Templates PHP-Klassen mit Attribut – auffindbar per ClassDiscovery.', 'image' => null, 'text' => "Beispielmeldung aus der YForm-Tabelle rex_yf_news.\n\nDie Datenliste zeigt sie nach Datum sortiert, mit eigener Adresse je Meldung.", 'link' => 'https://github.com/redaxo/core', 'online' => true],
+        ['title' => 'YForm 6: Tabellen und Formulare im Projekt', 'date' => '2026-10-02', 'teaser' => 'Tabellen und Formulare sind Klassen im Projekt (#[AsTable], #[AsForm]); console migrate legt die Tabellen an.', 'image' => null, 'text' => 'Beispielmeldung – Felder, Prüfungen und Aktionen legt die Klasse fest.', 'link' => 'https://github.com/yakamara/yform', 'online' => true],
+        ['title' => 'fluid: Bearbeiten auf der Website', 'date' => '2026-09-25', 'teaser' => 'Blöcke als echte Slices, Arbeitsversion, Rechte wie im Backend – direkt auf der Seite.', 'image' => 'testbild-verlauf.jpg', 'text' => 'Beispielmeldung mit Bild.', 'link' => '', 'online' => true],
+        ['title' => 'Medien: Video-Vorschaubilder und Untertitel', 'date' => '2026-09-18', 'teaser' => 'Standbild per ffmpeg über den Media Manager, Untertitel aus dem Medienpool.', 'image' => null, 'text' => 'Beispielmeldung.', 'link' => '', 'online' => true],
+        ['title' => 'Entwurf: noch nicht freigegeben', 'date' => '2026-10-12', 'teaser' => 'Offline – erscheint nicht.', 'image' => null, 'text' => '', 'link' => '', 'online' => false],
+    ]],
 ];
 
 return [
@@ -206,6 +214,15 @@ return [
                     'intro' => 'Das Formular ist eine Klasse im Projekt (#[AsForm]): Felder, Prüfungen und Aktionen – speichern, Mail, Bestätigung – legt YForm fest. Einträge landen in „Anfragen“.',
                     'form' => 'anfrage',
                     'note' => 'Ihre Angaben verwenden wir nur zur Beantwortung.']],
+            ],
+        ],
+        // ------------------------------------------------------------------ Presse: Kurzmeldungen aus YForm (Datenliste, Blättern, Detailseiten)
+        [
+            'slug' => 'presse', 'title' => 'Presse', 'menu' => true, 'requires' => 'yform',
+            'blocks' => [
+                ['type' => 'datalist', 'data' => ['variant' => 'list', 'eyebrow' => '', 'title' => '', 'intro' => '',
+                    'table' => 'rex_yf_news', 'title_field' => 'rex_yf_news.title', 'image_field' => 'rex_yf_news.image', 'text_field' => 'rex_yf_news.teaser', 'meta_field' => 'rex_yf_news.date',
+                    'filter_field' => 'rex_yf_news.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_news.date', 'sort_dir' => 'desc', 'limit' => 3, 'pager' => true, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
             ],
         ],
         // ------------------------------------------------------------------ Blog: Menüseite mit „Blog / News“, Beiträge = Seiten darin
