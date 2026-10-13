@@ -927,9 +927,10 @@
       landingOnly();
       body.scrollTop = 0;
     };
+    let lang = 0;   // Sprache der übersetzbaren Texte (0 = Startsprache)
     const load = async (t) => {
       tab = t;
-      try { show(await api('site', { tab: t })); } catch (err) { say(err.message, true); }
+      try { show(await api('site', { tab: t, lang })); } catch (err) { say(err.message, true); }
     };
     // Domains: Felder der Landing-Domain nur bei dieser Rolle
     const landingOnly = () => body.querySelectorAll('form').forEach((f) => {
@@ -972,6 +973,12 @@
       } catch (err) { say(err.message, true); } finally { if (btn) btn.disabled = false; }
     });
     body.addEventListener('click', async (e) => {
+      const lb = e.target.closest('[data-site-lang]');
+      if (lb) {
+        lang = +lb.dataset.siteLang;
+        load(tab);
+        return;
+      }
       const act = e.target.closest('[data-site-act]');
       if (act) {
         if (act.dataset.confirm && !(await ask({ title: act.dataset.confirm, ok: 'Ja', danger: true }))) return;

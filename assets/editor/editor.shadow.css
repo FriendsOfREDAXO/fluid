@@ -328,3 +328,8 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* fehlendes Recht (Rollen → Optionen) */
 [data-noperm] { display: none !important; }
+
+/* Website: Sprache der Texte */
+.site-lang { display: flex; flex-wrap: wrap; gap: 4px; padding: 3px; margin: 0 0 12px; background: var(--surface); border-radius: 9px; width: fit-content; }
+.site-lang button { border: 0; background: none; padding: 6px 12px; border-radius: 7px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.site-lang button[aria-current] { background: var(--bg); color: var(--ink); box-shadow: 0 1px 3px rgb(0 0 0 / .12); }

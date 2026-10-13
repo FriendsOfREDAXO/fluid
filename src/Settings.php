@@ -40,7 +40,7 @@ final class Settings
                 ['name' => 'org_name', 'label' => 'Name (Organisation, Firma, Praxis …)', 'type' => 'text', 'max' => 120, 'required' => true,
                     'help' => 'Erscheint im Kopf, im Fuß, im Browser-Tab und für Suchmaschinen.'],
                 ['name' => 'short_name', 'label' => 'Kurzname (optional)', 'type' => 'text', 'max' => 40, 'width' => 'half'],
-                ['name' => 'tagline', 'label' => 'Claim / Unterzeile (optional)', 'type' => 'text', 'max' => 120, 'width' => 'half'],
+                ['name' => 'tagline', 'translate' => true, 'label' => 'Claim / Unterzeile (optional)', 'type' => 'text', 'max' => 120, 'width' => 'half'],
                 ['name' => 'logo', 'label' => 'Logo (optional)', 'type' => 'media', 'width' => 'half', 'help' => 'SVG oder PNG mit transparentem Hintergrund. Ohne Logo erscheint der Name.'],
                 ['name' => 'logo_dark', 'label' => 'Logo auf dunklem Grund (optional)', 'type' => 'media', 'width' => 'half'],
                 ['name' => 'schema_type', 'label' => 'Art (für Suchmaschinen)', 'type' => 'select', 'default' => 'Organization', 'required' => true,
@@ -48,7 +48,7 @@ final class Settings
                         'MedicalBusiness' => 'Praxis / Gesundheit', 'Restaurant' => 'Gastronomie', 'Store' => 'Geschäft', 'EducationalOrganization' => 'Bildung',
                         'NGO' => 'Verein / gemeinnützig', 'GovernmentOrganization' => 'Behörde / Kommune', 'Person' => 'Person'],
                     'help' => 'Für strukturierte Daten (schema.org) – hilft Suchmaschinen, Name, Adresse und Zeiten richtig zuzuordnen.'],
-                ['name' => 'default_meta_description', 'label' => 'Beschreibung für Suchmaschinen (Standard)', 'type' => 'textarea', 'rows' => 2, 'max' => 300,
+                ['name' => 'default_meta_description', 'translate' => true, 'label' => 'Beschreibung für Suchmaschinen (Standard)', 'type' => 'textarea', 'rows' => 2, 'max' => 300,
                     'help' => 'Für Seiten ohne eigene Beschreibung (Seiteneinstellungen).'],
             ]],
             'contact' => ['label' => 'Kontakt & Zeiten', 'fields' => [
@@ -68,22 +68,22 @@ final class Settings
                     ['name' => 'pause_von', 'label' => 'Pause von (optional)', 'type' => 'time', 'width' => 'half'],
                     ['name' => 'pause_bis', 'label' => 'Pause bis', 'type' => 'time', 'width' => 'half'],
                 ]],
-                ['name' => 'hours_note', 'label' => 'Hinweis zu den Zeiten (optional)', 'type' => 'text', 'max' => 160, 'placeholder' => 'z. B. Termine nach Vereinbarung'],
+                ['name' => 'hours_note', 'translate' => true, 'label' => 'Hinweis zu den Zeiten (optional)', 'type' => 'text', 'max' => 160, 'placeholder' => 'z. B. Termine nach Vereinbarung'],
                 ['name' => 'social', 'label' => 'Social Media', 'type' => 'repeater', 'item_label' => 'Profil', 'title_field' => 'label', 'fields' => [
                     ['name' => 'label', 'label' => 'Name', 'type' => 'text', 'max' => 40, 'width' => 'half', 'placeholder' => 'z. B. Instagram'],
                     ['name' => 'url', 'label' => 'Adresse', 'type' => 'url', 'width' => 'half'],
                 ]],
             ]],
             'layout' => ['label' => 'Kopf, Fuß & Hinweis', 'fields' => [
-                ['name' => 'header_cta_label', 'label' => 'Button im Kopf – Beschriftung (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half', 'placeholder' => 'z. B. Termin vereinbaren'],
+                ['name' => 'header_cta_label', 'translate' => true, 'label' => 'Button im Kopf – Beschriftung (optional)', 'type' => 'text', 'max' => 32, 'width' => 'half', 'placeholder' => 'z. B. Termin vereinbaren'],
                 ['name' => 'header_cta_link', 'label' => 'Button im Kopf – Ziel', 'type' => 'link', 'width' => 'half', 'help' => 'Seite, #anker, https://… – Sonderwerte „phone“ und „email“.'],
                 ['name' => 'search_page', 'label' => 'Seite mit der Suche (optional)', 'type' => 'link', 'width' => 'half',
                     'help' => 'Seite mit dem Block „Suche“ – dann erscheint im Kopf eine Lupe.'],
-                ['name' => 'topbar_text', 'label' => 'Infoleiste über dem Kopf (optional)', 'type' => 'text', 'max' => 120, 'help' => 'Kurzer Text neben Telefon und E-Mail – erscheint, wenn im Design eine Infoleiste gewählt ist.'],
-                ['name' => 'footer_text', 'label' => 'Text im Fuß (optional)', 'type' => 'textarea', 'rows' => 2, 'max' => 300],
-                ['name' => 'footer_statement', 'label' => 'Großer Satz im Fuß (Design „Statement“)', 'type' => 'text', 'max' => 120, 'help' => '*Wort* hebt hervor.'],
+                ['name' => 'topbar_text', 'translate' => true, 'label' => 'Infoleiste über dem Kopf (optional)', 'type' => 'text', 'max' => 120, 'help' => 'Kurzer Text neben Telefon und E-Mail – erscheint, wenn im Design eine Infoleiste gewählt ist.'],
+                ['name' => 'footer_text', 'translate' => true, 'label' => 'Text im Fuß (optional)', 'type' => 'textarea', 'rows' => 2, 'max' => 300],
+                ['name' => 'footer_statement', 'translate' => true, 'label' => 'Großer Satz im Fuß (Design „Statement“)', 'type' => 'text', 'max' => 120, 'help' => '*Wort* hebt hervor.'],
                 ['name' => 'notice_active', 'label' => 'Hinweisleiste zeigen', 'type' => 'bool', 'default' => false],
-                ['name' => 'notice_text', 'label' => 'Hinweis', 'type' => 'text', 'max' => 200, 'placeholder' => 'z. B. Vom 22.12. bis 6.1. geschlossen.'],
+                ['name' => 'notice_text', 'translate' => true, 'label' => 'Hinweis', 'type' => 'text', 'max' => 200, 'placeholder' => 'z. B. Vom 22.12. bis 6.1. geschlossen.'],
             ]],
             'legal' => ['label' => 'Recht & Suchmaschinen', 'fields' => [
                 ['name' => 'imprint_page', 'label' => 'Impressum', 'type' => 'link', 'width' => 'half'],
@@ -108,17 +108,50 @@ final class Settings
 
     public static function get(string $key, mixed $default = null): mixed
     {
+        // weitere Sprachen: Übersetzung, sonst Text der Startsprache
+        $lang = \Redaxo\Core\Language\Language::getCurrentId();
+        if ($lang !== \Redaxo\Core\Language\Language::getStartId()) {
+            $t = self::translations($lang)[$key] ?? null;
+            if (null !== $t && '' !== $t) {
+                return $t;
+            }
+        }
         $all = self::all();
 
         return array_key_exists($key, $all) && '' !== $all[$key] && null !== $all[$key] ? $all[$key] : $default;
     }
 
-    /** Werte eines Reiters speichern (nur Felder des Schemas) */
-    public static function save(string $tab, array $input): void
+    /** Übersetzte Werte einer weiteren Sprache (Felder mit 'translate' => true) */
+    public static function translations(int $languageId): array
+    {
+        $all = FluidAddon::instance()->getConfig(self::CONFIG . '_i18n', []);
+
+        return is_array($all[$languageId] ?? null) ? $all[$languageId] : [];
+    }
+
+    /** Felder eines Reiters, die je Sprache gepflegt werden */
+    public static function translatable(string $tab): array
+    {
+        return array_values(array_filter(self::schema()[$tab]['fields'] ?? [], static fn (array $f) => !empty($f['translate'])));
+    }
+
+    /** Werte eines Reiters speichern (nur Felder des Schemas); weitere Sprache: nur die übersetzbaren Felder */
+    public static function save(string $tab, array $input, ?int $languageId = null): void
     {
         $fields = self::schema()[$tab]['fields'] ?? null;
         if (null === $fields) {
             throw new ApiError('Unbekannter Bereich.');
+        }
+        if (null !== $languageId && $languageId !== \Redaxo\Core\Language\Language::getStartId()) {
+            $i18n = FluidAddon::instance()->getConfig(self::CONFIG . '_i18n', []);
+            $i18n = is_array($i18n) ? $i18n : [];
+            foreach (self::translatable($tab) as $f) {
+                $v = $input[$f['name']] ?? '';
+                $i18n[$languageId][$f['name']] = is_array($v) ? '' : mb_substr(trim((string) $v), 0, (int) ($f['max'] ?? 2000));
+            }
+            FluidAddon::instance()->setConfig(self::CONFIG . '_i18n', $i18n);
+
+            return;
         }
         $all = self::all();
         foreach ($fields as $f) {

@@ -45,7 +45,7 @@ final class SiteAdmin
         $msg = '';
         switch ($action) {
             case 'site_save':
-                Settings::save($tab, (array) (Request::post('site', 'array', [])));
+                Settings::save($tab, (array) (Request::post('site', 'array', [])), Request::post('lang', 'int', 0) ?: null);
                 $msg = 'Gespeichert.';
                 break;
             case 'domain_save':
@@ -75,20 +75,41 @@ final class SiteAdmin
                 return ['results' => Maps::geocode(Request::post('q', 'string', ''))];
         }
 
-        return ['html' => self::render($tab), 'tab' => $tab, 'tabs' => self::tabs(), 'message' => $msg, 'reload' => \in_array($action, ['site_save', 'language_save'], true)];
+        return ['html' => self::render($tab, Request::post('lang', 'int', 0) ?: Language::getStartId()), 'tab' => $tab, 'tabs' => self::tabs(), 'message' => $msg, 'reload' => \in_array($action, ['site_save', 'language_save'], true)];
     }
 
-    public static function render(string $tab): string
+    public static function render(string $tab, int $lang = 0): string
     {
+        $lang = $lang && Language::exists($lang) ? $lang : Language::getStartId();
         return match ($tab) {
             'domains' => self::domains(),
             'languages' => self::languages(),
             'redirects' => self::redirects(),
-            default => isset(Settings::schema()[$tab])
-                ? '<form data-site-form="site_save" data-tab="' . escape($tab) . '">' . FieldForm::standalone(Settings::schema()[$tab]['fields'], Settings::all(), 'site')
-                    . '<div class="site-actions"><button type="submit" class="btn btn--primary">Speichern</button></div></form>'
-                : '',
+            default => isset(Settings::schema()[$tab]) ? self::settingsForm($tab, $lang) : '',
         };
+    }
+
+    /** Reiter der Website-Einstellungen; ab zwei Sprachen mit Sprachwahl für die übersetzbaren Felder */
+    private static function settingsForm(string $tab, int $lang): string
+    {
+        $fields = Settings::schema()[$tab]['fields'];
+        $values = Settings::all();
+        $switch = '';
+        $translatable = Settings::translatable($tab);
+        if (\count(Language::getAll()) > 1 && $translatable) {
+            $switch = '<nav class="site-lang" aria-label="Sprache der Texte">' . implode('', array_map(static fn (Language $l) => '<button type="button" data-site-lang="' . $l->id . '"'
+                . ($l->id === $lang ? ' aria-current="true"' : '') . '>' . escape($l->name) . '</button>', Language::getAll())) . '</nav>';
+            if ($lang !== Language::getStartId()) {
+                // nur übersetzbare Felder; Text der Startsprache als Platzhalter
+                $fields = array_map(static fn (array $f) => ['placeholder' => (string) ($values[$f['name']] ?? ''), 'help' => 'Leer = Text der Startsprache.'] + $f, $translatable);
+                $values = Settings::translations($lang);
+                $switch .= '<p class="site-intro">Texte für <b>' . escape(Language::get($lang)?->name ?? '') . '</b>. Übrige Angaben (Adresse, Logo, Links …) gelten für alle Sprachen.</p>';
+            }
+        }
+
+        return $switch . '<form data-site-form="site_save" data-tab="' . escape($tab) . '"><input type="hidden" name="lang" value="' . $lang . '">'
+            . FieldForm::standalone($fields, $values, 'site')
+            . '<div class="site-actions"><button type="submit" class="btn btn--primary">Speichern</button></div></form>';
     }
 
     // ------------------------------------------------------------------ Sprachen (LanguageHandler des Cores)
