@@ -67,6 +67,12 @@ final class Structure
             $a = Article::get($id, $languageId) ?? throw new ApiError('Seite nicht gefunden.');
             self::requirePerm($user, $a->isStartArticle() && $a->categoryId === $a->id ? (Category::get($a->id)?->parentId) : $a->categoryId);
             $isCat = null !== Category::get($a->id) && $a->isStartArticle();
+            Perm::require($user, match ($action) {
+                'tree_move' => Perm::forPage($a, 'move'),
+                'tree_status' => Perm::forPage($a, 'publish'),
+                'tree_menu' => 'article2category[]',
+                default => Perm::forPage($a, 'delete'),
+            });
             switch ($action) {
                 case 'tree_move':
                     $msg = self::move($a, $isCat, Request::post('parent', 'int', 0) ?: null, max(0, Request::post('index', 'int', 0)), $user, $languageId);

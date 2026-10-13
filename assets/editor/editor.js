@@ -11,6 +11,8 @@
   const cfgEl = document.getElementById('blocks-editor-config');
   if (!cfgEl) return;
   const cfg = JSON.parse(cfgEl.textContent);
+  // Aktionsrechte des Cores (Rollen → Optionen); ohne Angabe erlaubt
+  const may = (k) => cfg.can?.[k] !== false;
   const unamp = (u) => String(u).replace(/&amp;/g, '&');
   const main = document.querySelector('main') || document.body;
 
@@ -85,10 +87,10 @@
             ${cfg.inbox ? `<button type="button" role="menuitem" data-inbox-open>Anfragen …${cfg.inbox.new ? ` <span class="badge">${cfg.inbox.new}</span>` : ''}</button>` : ''}
             <button type="button" role="menuitem" data-history-open>Verlauf & Entwürfe …</button>
             <button type="button" role="menuitem" data-compact>Kompaktansicht</button>
-            <button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>
+            ${may(cfg.article.menu ? 'editCategory' : 'editArticle') ? '<button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>' : ''}
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
-            <button type="button" role="menuitem" data-page-add>Neue Seite …</button>
-            <button type="button" role="menuitem" data-template-save>Als Vorlage speichern …</button>
+            ${may('addArticle') || may('addCategory') ? '<button type="button" role="menuitem" data-page-add>Neue Seite …</button>' : ''}
+            ${may('addArticle') ? '<button type="button" role="menuitem" data-template-save>Als Vorlage speichern …</button>' : ''}
             ${cfg.editing && cfg.state.workVersion ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
             <a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
@@ -160,7 +162,7 @@
   const tpanel = h(`
     <aside class="panel tpanel" hidden aria-labelledby="fluid-tree-title">
       <header class="panel__head"><h2 id="fluid-tree-title">Seiten</h2><button type="button" class="btn btn--icon" data-tree-close aria-label="Schließen">✕</button></header>
-      <div class="panel__body"><p class="tree__intro">Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen, nach links ziehen = eine Ebene höher), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
+      <div class="panel__body"><p class="tree__intro"${may('moveArticle') || may('moveCategory') ? '' : ' hidden'}>Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen, nach links ziehen = eine Ebene höher), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
       <footer class="panel__foot"><button type="button" class="btn" data-tree-new="0">+ Neue Seite (oberste Ebene)</button></footer>
     </aside>`);
   const tdlg = h(`
@@ -198,8 +200,8 @@
         <h2 id="fluid-new-t">Neue Seite</h2>
         <label class="newpage__field"><span>Titel</span><input type="text" name="name" required maxlength="191" autocomplete="off"></label>
         <fieldset class="newpage__field"><legend>Art</legend>
-          <label><input type="radio" name="kind" value="menu" checked> Menüpunkt <small>erscheint in der Navigation</small></label>
-          <label><input type="radio" name="kind" value="page"> Seite ohne Menüeintrag <small>z. B. Impressum, Aktion – nur per Link erreichbar</small></label>
+          <label${may('addCategory') ? '' : ' hidden'}><input type="radio" name="kind" value="menu"${may('addCategory') ? ' checked' : ' disabled'}> Menüpunkt <small>erscheint in der Navigation</small></label>
+          <label${may('addArticle') ? '' : ' hidden'}><input type="radio" name="kind" value="page"${may('addCategory') ? '' : ' checked'}${may('addArticle') ? '' : ' disabled'}> Seite ohne Menüeintrag <small>z. B. Impressum, Aktion – nur per Link erreichbar</small></label>
         </fieldset>
         <label class="newpage__field"><span>Inhalt</span><select name="from" data-new-from><option value="">Leere Seite</option><option value="copy">Kopie dieser Seite</option></select></label>
         <fieldset class="newpage__field" data-new-where><legend>Ort</legend>
@@ -215,6 +217,14 @@
   root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, hpanel, ipanel, picker, dialog, newdlg, tdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
+  // ohne Recht: Knöpfe ausblenden (die API prüft ohnehin)
+  const noperm = (sel) => root.querySelectorAll(sel).forEach((el) => el.setAttribute('data-noperm', ''));
+  if (!may('publish')) noperm('[data-publish]');
+  if (!may('moveSlice')) {
+    noperm('[data-bb-up], [data-bb-down], [data-bb-op="left"], [data-bb-op="right"]');
+    root.querySelector('[data-bb-label]')?.setAttribute('draggable', 'false');
+  }
+  if (!may('publishSlice')) noperm('[data-bb-status]');
   if (cfg.editing) document.documentElement.classList.add('blocks-editing');
 
   const $ = (sel, ctx = root) => ctx.querySelector(sel);
@@ -277,7 +287,7 @@
     let cls = 'ok';
     if (busy) [label, cls] = ['Speichert …', 'busy'];
     else if (dirty.size) [label, cls] = ['Ungespeichert', 'warn'];
-    else if (state.draft) [label, cls] = ['Entwurf – nicht veröffentlicht', 'draft'];
+    else if (state.draft) [label, cls] = [may('publish') ? 'Entwurf – nicht veröffentlicht' : 'Entwurf – wartet auf Freigabe', 'draft'];
     if (cfg.viewingDraft) [label, cls] = [state.draft ? 'Ansicht: Entwurf (nicht veröffentlicht)' : 'Ansicht: Entwurf = live', 'draft'];
     if (!cfg.article.online) label += ' · Seite offline';
     chip.textContent = label;
@@ -322,6 +332,12 @@
     }
     if (!state.draft) {
       location.href = a.href;
+      return;
+    }
+    if (!may('publish')) {
+      const r = await ask({ title: 'Entwurf gespeichert', body: 'Ihre Änderungen sind als Entwurf gespeichert. Veröffentlichen kann jemand mit Freigaberecht – Besucher sehen bis dahin die bisherige Fassung.', ok: 'Entwurf ansehen', cancel: 'Weiter bearbeiten', alt: 'Live ansehen' });
+      if (r === true) location.href = unamp(cfg.draftUrl);
+      else if (r === 'alt') location.href = a.href;
       return;
     }
     const r = await ask({ title: 'Noch nicht veröffentlicht', body: 'Ihre Änderungen sind als Entwurf gespeichert – Besucher sehen sie erst nach dem Veröffentlichen.', ok: 'Veröffentlichen', cancel: 'Weiter bearbeiten', alt: 'Entwurf ansehen' });
@@ -503,7 +519,7 @@
         if (v !== sl.value) sl.value = v;
       }
     });
-    $('[data-page-settings]').addEventListener('click', async () => {
+    $('[data-page-settings]')?.addEventListener('click', async () => {
       menu.hidden = true;
       if (!panel.hidden || !dpanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
       try {
@@ -548,7 +564,7 @@
         for (const t of res.templates || []) sel.insertAdjacentHTML('beforeend', `<option value="${t.id}" data-tpl>Vorlage: ${esc(t.name)}</option>`);
       } catch { /* ohne Vorlagen */ }
     });
-    $('[data-template-save]').addEventListener('click', () => {
+    $('[data-template-save]')?.addEventListener('click', () => {
       menu.hidden = true;
       const f = $('[data-tpl-form]');
       f.reset();
@@ -564,7 +580,7 @@
       if (dirty.size && !(await ask({ title: 'Erst speichern?', body: 'Ungespeicherte Änderungen kommen nicht in die Vorlage. Trotzdem fortfahren?', ok: 'Fortfahren' }))) return;
       try { const res = await api('template_save', new FormData(f)); tdlg.hidden = true; say(res.message); } catch (err) { say(err.message, true); }
     });
-    $('[data-page-add]').addEventListener('click', () => {
+    $('[data-page-add]')?.addEventListener('click', () => {
       menu.hidden = true;
       nform.reset();
       delete nform.dataset.parent;
@@ -607,22 +623,23 @@
       return null;
     };
     // nächste Menüseite oberhalb in derselben Ebene (Ziel für →)
+    const mv = (n) => may(n.menu ? 'moveCategory' : 'moveArticle');
     const menuBefore = (all, i) => all.slice(0, i).findLast((x) => x.menu) || null;
     const row = (n, depth, prev = null) => `
       <li role="treeitem" aria-expanded="${n.children?.length ? 'true' : 'false'}" data-id="${n.id}" data-menu="${n.menu ? 1 : 0}" class="tree__item${n.online ? '' : ' is-offline'}${n.id === cfg.article.id ? ' is-current' : ''}">
         <div class="tree__row" style="--d:${depth}">
-          <span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>
+          ${mv(n) ? '<span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>' : '<span class="tree__grip" aria-hidden="true"></span>'}
           <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a>
           <span class="tree__badge">${n.home ? 'Startseite' : n.menu ? 'Menü' : 'Seite'}${n.online ? '' : ' · offline'}</span>
           <span class="tree__tools">
-            ${n.home ? '' : `<button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
+            ${n.home || !mv(n) ? '' : `<button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
             <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>`}
-            ${depth ? `<button type="button" class="tree__btn" data-tree-act="out" title="Eine Ebene höher" aria-label="${esc(n.name)} eine Ebene höher">←</button>` : ''}
-            ${prev?.menu && !n.home ? `<button type="button" class="tree__btn" data-tree-act="in" title="Unter „${esc(prev.name)}“ einordnen" aria-label="${esc(n.name)} unter ${esc(prev.name)} einordnen">→</button>` : ''}
-            <button type="button" class="tree__btn" data-tree-act="tree_status" title="${n.online ? 'Offline schalten' : 'Online schalten'}" aria-label="${esc(n.name)}: ${n.online ? 'offline schalten' : 'online schalten'}">${n.online ? '●' : '○'}</button>
-            ${n.home ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_menu" title="${n.menu ? 'Aus dem Menü nehmen' : 'Ins Menü aufnehmen'}" aria-label="${esc(n.name)}: ${n.menu ? 'aus dem Menü nehmen' : 'ins Menü aufnehmen'}">☰</button>`}
-            ${n.menu ? `<button type="button" class="tree__btn" data-tree-new="${n.id}" title="Unterseite anlegen" aria-label="Unterseite von ${esc(n.name)} anlegen">+</button>` : ''}
-            ${n.home ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
+            ${depth && mv(n) ? `<button type="button" class="tree__btn" data-tree-act="out" title="Eine Ebene höher" aria-label="${esc(n.name)} eine Ebene höher">←</button>` : ''}
+            ${prev?.menu && !n.home && mv(n) ? `<button type="button" class="tree__btn" data-tree-act="in" title="Unter „${esc(prev.name)}“ einordnen" aria-label="${esc(n.name)} unter ${esc(prev.name)} einordnen">→</button>` : ''}
+            ${!may(n.menu ? 'publishCategory' : 'publishArticle') ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_status" title="${n.online ? 'Offline schalten' : 'Online schalten'}" aria-label="${esc(n.name)}: ${n.online ? 'offline schalten' : 'online schalten'}">${n.online ? '●' : '○'}</button>`}
+            ${n.home || !may('article2category') ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_menu" title="${n.menu ? 'Aus dem Menü nehmen' : 'Ins Menü aufnehmen'}" aria-label="${esc(n.name)}: ${n.menu ? 'aus dem Menü nehmen' : 'ins Menü aufnehmen'}">☰</button>`}
+            ${n.menu && (may('addArticle') || may('addCategory')) ? `<button type="button" class="tree__btn" data-tree-new="${n.id}" title="Unterseite anlegen" aria-label="Unterseite von ${esc(n.name)} anlegen">+</button>` : ''}
+            ${n.home || !may(n.menu ? 'deleteCategory' : 'deleteArticle') ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
           </span>
         </div>
         ${n.children?.length ? `<ul role="group">${n.children.map((c, i, all) => row(c, depth + 1, menuBefore(all, i))).join('')}</ul>` : ''}
@@ -1321,7 +1338,7 @@
       hint = document.createElement('div');
       hint.dataset.blocksEmpty = '';
       // in einer weiteren Sprache: Inhalt einer gefüllten Sprache übernehmen und dann übersetzen
-      const sources = (cfg.languages || []).filter((l) => !l.current && !l.empty);
+      const sources = may('copyContent') ? (cfg.languages || []).filter((l) => !l.current && !l.empty) : [];
       hint.innerHTML = '<p>Diese Seite hat noch keine Blöcke.</p><button type="button" data-first>+ Ersten Block einfügen</button>'
         + sources.map((l) => `<button type="button" data-lang-copy="${l.id}">Inhalt aus ${esc(l.name)} übernehmen</button>`).join('');
       hint.querySelector('[data-first]').addEventListener('click', () => openPicker(null));

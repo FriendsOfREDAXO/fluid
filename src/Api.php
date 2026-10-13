@@ -51,6 +51,22 @@ final class Api
                 self::send(['ok' => false, 'error' => 'Sitzung abgelaufen – bitte Seite neu laden.'], 419);
             }
             $article = Article::getCurrent() ?? self::fail('Artikel nicht gefunden.', 404);
+            // Aktionsrechte des Cores (wie im Backend)
+            $action = Request::get(self::PARAM, 'string');
+            $isCat = $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id);
+            $need = match ($action) {
+                'publish' => 'version[live_version]',
+                'move', 'reorder', 'col_move' => 'moveSlice[]',
+                'status' => 'publishSlice[]',
+                'lang_copy' => 'copyContent[]',
+                'page_save' => $isCat ? 'editCategory[]' : 'editArticle[]',
+                'page_add' => 'menu' === Request::post('kind', 'string', 'page') ? 'addCategory[]' : 'addArticle[]',
+                'template_save' => 'addArticle[]',
+                default => null,
+            };
+            if (null !== $need && !Perm::can($user, $need)) {
+                Perm::require($user, $need);
+            }
             $result = Editing::render(fn () => match (Request::get(self::PARAM, 'string')) {
                 'form' => self::form($article),
                 'preview' => self::preview($article),
@@ -101,10 +117,8 @@ final class Api
                     if ($from === $article->languageId || !\Redaxo\Core\Language\Language::exists($from)) {
                         self::fail('Bitte eine andere Sprache wählen.');
                     }
+                    // in den Entwurf bzw. live ohne Arbeitsversion – live bleibt unverändert bis „Veröffentlichen“
                     ContentHandler::copyContent($article->id, $article->id, $from, $article->languageId, FluidAddon::revision(), true);
-                    if (ArticleRevision::LIVE !== FluidAddon::revision() && !Sql::factory()->getArray('SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = 0 LIMIT 1', [$article->id, $article->languageId])) {
-                        // noch nie veröffentlicht: nur Entwurf – live bleibt leer bis „Veröffentlichen“
-                    }
                     ArticleCache::delete($article->id, $article->languageId);
                     Activity::log('save', $article->id, 'Inhalt aus ' . (\Redaxo\Core\Language\Language::get($from)?->name ?? $from) . ' übernommen');
 

@@ -52,7 +52,7 @@ final class Toolbar
 
         $config = [
             'editing' => $editing,
-            'article' => ['id' => $article->id, 'name' => $article->name, 'language' => $article->languageId, 'online' => $article->isOnline(), 'category' => $article->getCategory()?->name ?? ''],
+            'article' => ['id' => $article->id, 'name' => $article->name, 'language' => $article->languageId, 'online' => $article->isOnline(), 'category' => $article->getCategory()?->name ?? '', 'menu' => $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id)],
             'api' => Url::article($article->id, $article->languageId, [Api::PARAM => '__action__']),
             'csrf' => CsrfToken::factory(Api::CSRF)->getValue(),
             'editUrl' => Url::article($article->id, $article->languageId, [Editing::PARAM => 1]),
@@ -68,6 +68,8 @@ final class Toolbar
             'design' => $user->admin ? self::designSchema($article) : null,
             // Website-Einstellungen (Seitenleiste „Website“): nur Admins
             'site' => $user->admin ? ['tabs' => SiteAdmin::tabs()] : null,
+            // Aktionsrechte des Cores (Rollen → Optionen) – die Leiste zeigt nur, was erlaubt ist
+            'can' => Perm::flags($user),
             // Sprachwahl (ab zwei Sprachen): Seite in anderer Sprache im selben Modus öffnen; „leer“ = noch keine Blöcke
             'languages' => \count(\Redaxo\Core\Language\Language::getAll()) > 1 ? array_map(static fn (array $l) => $l + [
                 'href' => Url::article($article->id, $l['id'], $editing ? [Editing::PARAM => 1] : []),

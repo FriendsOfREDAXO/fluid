@@ -325,3 +325,6 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Schmale Seitenleiste: Felder untereinander */
 @container (max-width: 420px) { .blocks-form__field.is-half { grid-column: 1 / -1; } }
+
+/* fehlendes Recht (Rollen → Optionen) */
+[data-noperm] { display: none !important; }
