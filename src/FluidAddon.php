@@ -101,6 +101,22 @@ final class FluidAddon extends Addon
         Routing\Routes::rebuild();
     }
 
+    /** Backend: AddOns → fluid (Status, Hilfe) – nur Admins */
+    #[Override]
+    public function getPages(): iterable
+    {
+        $main = new \Redaxo\Core\Backend\MainPage('addons', 'fluid', 'fluid');
+        $main->setIcon('rex-icon fa-pen-to-square');
+        $main->setRequiredPermissions('admin');
+        $main->addSubpage(new \Redaxo\Core\Backend\Page('status', 'Status'));
+        $main->addSubpage(new \Redaxo\Core\Backend\Page('help', 'Hilfe'));
+        if (!Core::getUser()?->admin) {
+            $main->setHidden();
+        }
+
+        yield $main;
+    }
+
     #[Override]
     public function boot(): void
     {
