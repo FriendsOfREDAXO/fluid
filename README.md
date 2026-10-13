@@ -46,6 +46,9 @@ Website bearbeiten“; unter **AddOns → fluid** prüft „Status“ die Umgebu
 
 Nach einem Update von fluid: `php bin/console migrate` (aktualisiert Tabellen und kopiert die Assets neu).
 
+Entfernen: `php bin/console addon:uninstall fluid` (löscht Tabellen, Einstellungen, Suchindex und Cache von fluid),
+direkt danach `composer remove friendsofredaxo/fluid`. Artikel und Slices bleiben erhalten.
+
 ### Webserver: schöne Adressen
 
 fluid löst Adressen wie `/leistungen/beratung` selbst auf. Der Webserver muss alle Anfragen ohne Datei an `index.php`

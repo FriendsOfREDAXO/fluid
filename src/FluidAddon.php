@@ -101,6 +101,21 @@ final class FluidAddon extends Addon
         Routing\Routes::rebuild();
     }
 
+    /**
+     * Deinstallieren: Tabellen, Einstellungen, Suchindex und Cache von fluid entfernen. Inhalte (Slices der Blöcke) und
+     * Artikel bleiben – sie gehören dem Core; ohne fluid fehlen nur die Module, die sie ausgeben.
+     */
+    #[Override]
+    public function uninstall(): void
+    {
+        foreach ([PageSettings::TABLE, Routing\Routes::TABLE, Routing\Domains::TABLE, Routing\Redirects::TABLE, Routing\Redirects::TABLE_404, Activity::TABLE, Data\Inbox::TABLE] as $t) {
+            Table::get($t)->drop();
+        }
+        \Redaxo\Core\Config::removeNamespace($this->name);
+        \Redaxo\Core\Filesystem\Dir::delete($this->getDataPath());
+        \Redaxo\Core\Filesystem\Dir::delete($this->getCachePath());
+    }
+
     /** Backend: AddOns → fluid (Status, Hilfe) – nur Admins */
     #[Override]
     public function getPages(): iterable
