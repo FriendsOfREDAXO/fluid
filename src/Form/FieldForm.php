@@ -276,7 +276,8 @@ final class FieldForm
             $name = (string) $f['name'];
             $type = (string) ($f['type'] ?? 'text');
             if ('repeater' === $type) {
-                $items = is_array($data[$name] ?? null) ? array_values($data[$name]) : [];
+                // Vorgabe nur, wenn die Wiederholgruppe noch nie gespeichert wurde (neuer Block)
+                $items = is_array($data[$name] ?? null) ? array_values($data[$name]) : (!array_key_exists($name, $data) && is_array($f['default'] ?? null) ? $f['default'] : []);
                 /** @var list<array<string, mixed>> $sub */
                 $sub = $f['fields'] ?? [];
                 $data[$name] = array_map(static fn ($it) => self::withDefaults($sub, is_array($it) ? $it : []), $items);

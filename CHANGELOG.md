@@ -19,6 +19,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   mit Zwei-Klick-Lösung.
 - Blog / News: Menüseite als Blog, Beiträge mit Datum, Autor, Schlagworten; Block „Beiträge“ (Aufmacher, Karten, Liste,
   Blättern, Schlagworte), Beitragskopf und -navigation, RSS-Feed, „+ Neuer Beitrag“, Beiträge im Seitenbaum eingeklappt.
+- Formular-Baukasten auf der Website: Felder, Schritte (mehrstufig), speichern und/oder per E-Mail, Bestätigung an den Absender;
+  YForm-FormDefinition aus dem Block, Eingänge in der YForm-Tabelle „Formular-Eingänge“ und im Postfach.
 - Datenliste: Blättern, schöne Adressen für Einträge (/seite/titel-ID) mit eigenem Titel und Canonical, Sitemap; Vorlage `NewsTable`.
 - Formulare, Datenlisten und Anfragen-Postfach mit YForm 6; Karten ohne Einwilligung (eigener Proxy); Suche mit Loupe.
 - Erste Schritte: leere Installation → Startseite oder Beispielseiten mit einem Klick.

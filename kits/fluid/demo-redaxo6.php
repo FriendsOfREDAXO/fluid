@@ -225,6 +225,30 @@ return [
                     'filter_field' => 'rex_yf_news.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_news.date', 'sort_dir' => 'desc', 'limit' => 3, 'pager' => true, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
             ],
         ],
+        // ------------------------------------------------------------------ Anmeldung: eigenes Formular mit drei Schritten (BuiltForm, YForm)
+        [
+            'slug' => 'anmeldung', 'title' => 'Anmeldung', 'menu' => false, 'requires' => 'yform',
+            'blocks' => [
+                ['type' => 'form', 'data' => ['variant' => 'split', 'eyebrow' => 'Formular-Baukasten', 'title' => 'Zum Workshop anmelden',
+                    'intro' => 'Ein Formular, auf der Website zusammengestellt: drei Schritte, gespeichert in „Formular-Eingänge“, per E-Mail an das Team und mit Bestätigung an Sie.',
+                    'form' => '', 'mode' => 'save_mail', 'mail_to' => 'team@example.test', 'mail_subject' => 'Anmeldung von {name}',
+                    'confirm' => true, 'confirm_copy' => true, 'confirm_subject' => 'Ihre Anmeldung ist angekommen', 'confirm_text' => 'Hallo {name}, danke für Ihre Anmeldung zum Workshop „{workshop}“.',
+                    'submit' => 'Verbindlich anmelden', 'form_name' => 'Workshop-Anmeldung', 'success' => 'Danke! Ihre Anmeldung ist angekommen – die Bestätigung kommt per E-Mail.',
+                    'first_step' => 'Kontakt', 'note' => 'Beispiel – Ihre Angaben dienen nur der Anmeldung.',
+                    'fields' => [
+                        ['type' => 'text', 'label' => 'Name', 'required' => true, 'name' => 'name'],
+                        ['type' => 'email', 'label' => 'E-Mail', 'required' => true],
+                        ['type' => 'tel', 'label' => 'Telefon', 'help' => 'Für Rückfragen, optional'],
+                        ['type' => 'step', 'label' => 'Teilnahme'],
+                        ['type' => 'radio', 'label' => 'Workshop', 'name' => 'workshop', 'required' => true, 'options' => "Eigene Blöcke bauen\nVon REDAXO 5 nach 6\nBearbeiten auf der Website"],
+                        ['type' => 'checkboxes', 'label' => 'Interessen', 'options' => "Design\nYForm\nMehrsprachigkeit"],
+                        ['type' => 'date', 'label' => 'Wunschtermin'],
+                        ['type' => 'step', 'label' => 'Abschluss'],
+                        ['type' => 'textarea', 'label' => 'Ihre Frage vorab'],
+                        ['type' => 'checkbox', 'label' => 'Ich bin mit der Verarbeitung meiner Angaben zur Anmeldung einverstanden.', 'name' => 'datenschutz', 'required' => true],
+                    ]]],
+            ],
+        ],
         // ------------------------------------------------------------------ Blog: Menüseite mit „Blog / News“, Beiträge = Seiten darin
         [
             'slug' => 'neuigkeiten', 'title' => 'Neuigkeiten', 'menu' => true, 'blog' => true,
