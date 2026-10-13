@@ -309,17 +309,36 @@
     }
   });
 
-  // Modus wechseln mit ungespeicherten Änderungen
+  // Bearbeiten verlassen: erst ungespeicherte Änderungen klären, dann einen unveröffentlichten Entwurf
+  // (sonst zeigt „Ansehen“ die Live-Fassung und die Änderungen scheinen verloren)
   $('.modes').addEventListener('click', async (e) => {
-    const a = e.target.closest('a[data-mode]');
-    if (!a || !cfg.editing || !dirty.size) return;
+    const a = e.target.closest('a[data-mode="view"]');
+    if (!a || !cfg.editing || (!dirty.size && !state.draft)) return;
     e.preventDefault();
-    const r = await ask({ title: 'Ungespeicherte Änderungen', body: 'Vor dem Verlassen speichern? „Verwerfen“ nimmt nur die ungespeicherten Änderungen zurück – ein gespeicherter Entwurf bleibt.', ok: 'Speichern & beenden', cancel: 'Weiter bearbeiten', alt: 'Verwerfen', danger: false });
+    if (dirty.size) {
+      const r = await ask({ title: 'Ungespeicherte Änderungen', body: 'Vor dem Verlassen speichern? „Verwerfen“ nimmt nur die ungespeicherten Änderungen zurück – ein gespeicherter Entwurf bleibt.', ok: 'Speichern', cancel: 'Weiter bearbeiten', alt: 'Verwerfen' });
+      if (r === 'alt') dirty.clear();
+      else if (r !== true || !(await saveAll())) return;
+    }
+    if (!state.draft) {
+      location.href = a.href;
+      return;
+    }
+    const r = await ask({ title: 'Noch nicht veröffentlicht', body: 'Ihre Änderungen sind als Entwurf gespeichert – Besucher sehen sie erst nach dem Veröffentlichen.', ok: 'Veröffentlichen', cancel: 'Weiter bearbeiten', alt: 'Entwurf ansehen' });
     if (r === 'alt') {
-      dirty.clear();   // kein Nachfragen des Browsers beim Verlassen
-      location.href = a.href;
-    } else if (r === true && (await saveAll())) {
-      location.href = a.href;
+      location.href = unamp(cfg.draftUrl);
+    } else if (r === true) {
+      try {
+        busy++;
+        render();
+        await api('publish');
+        location.href = a.href;
+      } catch (err) {
+        say(err.message, true);
+      } finally {
+        busy--;
+        render();
+      }
     }
   });
 
