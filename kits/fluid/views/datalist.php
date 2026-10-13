@@ -28,20 +28,35 @@ $same = static fn ($a, $c) => $a && $c && $a->name === $c->name;
 $filterV = trim((string) ($d['filter_value'] ?? ''));
 $here = Url::article($b->slice->articleId, Language::getCurrentId());
 $detailOn = !empty($d['detail']);
-$href = static fn (int $id) => $here . (str_contains($here, '?') ? '&' : '?') . 'eintrag=' . $id . '#' . $b->domId();
 $edit = is_editing() ? static fn (?int $id = null) => YFormBridge::editUrl($t, $id) : static fn (?int $id = null) => null;
 $editBtn = static fn (?string $url, string $label) => $url ? '<a class="fdl-edit" href="' . e($url) . '" target="_blank" rel="noopener">' . e($label) . '</a>' : '';
 $title = static fn ($row) => $titleF ? YFormBridge::text($row, $titleF) : '#' . $row->id;
+// Detailansicht mit schöner Adresse /seite/titel-ID (Data\Detail, Router)
+$href = static fn ($row) => \FriendsOfRedaxo\Fluid\Data\Detail::url($here, $title($row), $row->id);
 $pic = static fn ($row, string $sizes, string $ratio) => '' !== ($file = YFormBridge::file($row, $imageF)) ? img($file, $sizes, ['ratio' => $ratio]) : '';
 
 // ------------------------------------------------------------------ Detailansicht
 $entry = $detailOn ? Request::get('eintrag', 'int', 0) : 0;
 $row = $entry > 0 ? YFormBridge::row($t, $entry, $filterF, $filterV) : null;
+if ($entry > 0 && !$row && !is_editing()) {
+    // Eintrag gibt es nicht (mehr) bzw. erfüllt die Bedingung nicht: 404 wie eine fehlende Seite
+    \Redaxo\Core\Http\Response::setStatus(\Redaxo\Core\Http\Response::HTTP_NOT_FOUND);
+    echo '<div class="wrap"><p class="dl-empty">' . e(lt('Diesen Eintrag gibt es nicht mehr.')) . ' <a href="' . e($here) . '">' . e(lt('Zur Übersicht')) . '</a></p></div>';
+
+    return;
+}
 if ($row):
     $img = $pic($row, '(min-width: 1280px) 1200px, 100vw', '16:9');
+    // Seitenkopf: Titel, Beschreibung, Bild und Canonical des Eintrags
+    \FriendsOfRedaxo\Fluid\PageSettings::override([
+        'title' => $title($row),
+        'description' => $textF ? mb_strimwidth(trim(strip_tags(YFormBridge::text($row, $textF))), 0, 160, '…') : '',
+        'image' => YFormBridge::file($row, $imageF),
+        'canonical' => \FriendsOfRedaxo\Fluid\Routing\Router::absolute($href($row)),
+    ]);
 ?>
 <div class="wrap df df--head fdl-detail">
-  <p class="df-back"><a href="<?= e($here . '#' . $b->domId()) ?>">← <?= e(lt('Zur Übersicht')) ?></a></p>
+  <p class="df-back"><a href="<?= e($here) ?>">← <?= e(lt('Zur Übersicht')) ?></a></p>
   <header class="df-head">
     <?php if ($metaF && ($m = YFormBridge::html($row, $metaF)) !== ''): ?><p class="df-meta"><?= $m ?></p><?php endif; ?>
     <h2 class="h2 df-title"><?= e($title($row)) ?></h2>
@@ -59,11 +74,14 @@ if ($row):
 endif;
 
 // ------------------------------------------------------------------ Liste
-$rows = YFormBridge::rows($t, [
+$opt = [
     'filter' => $filterF, 'value' => $filterV,
     'sort' => YFormBridge::field($t, (string) ($d['sort_field'] ?? '')), 'dir' => (string) ($d['sort_dir'] ?? 'asc'),
     'limit' => (int) ($d['limit'] ?? 0),
-]);
+];
+// Blättern: „Höchstens“ = Einträge je Seite, ?seite=2 …
+$pg = !empty($d['pager']) && $opt['limit'] > 0 ? YFormBridge::page($t, $opt, Request::get('seite', 'int', 1), $opt['limit']) : null;
+$rows = $pg ? $pg['rows'] : YFormBridge::rows($t, $opt);
 $cols = ['s' => 4, 'm' => 3, 'l' => 2][$d['size'] ?? 'm'] ?? 3;
 $hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
 ?>
@@ -80,7 +98,7 @@ $hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
     <tbody>
     <?php foreach ($rows as $r): ?>
       <tr>
-        <td><?= $detailOn ? '<a href="' . e($href($r->id)) . '">' . e($title($r)) . '</a>' : e($title($r)) ?> <?= $editBtn($edit($r->id), 'Bearbeiten') ?></td>
+        <td><?= $detailOn ? '<a href="' . e($href($r)) . '">' . e($title($r)) . '</a>' : e($title($r)) ?> <?= $editBtn($edit($r->id), 'Bearbeiten') ?></td>
         <?php foreach ([$metaF, $textF] as $f): if (!$f || $same($f, $titleF)) continue; ?><td><?= YFormBridge::html($r, $f) ?></td><?php endforeach; ?>
       </tr>
     <?php endforeach; ?>
@@ -88,7 +106,7 @@ $hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
   </table></div>
   <?php else: ?>
   <ul class="dl-items<?= $layout === 'cards' ? ' dl-cols-' . $cols : '' ?>" role="list">
-    <?php foreach ($rows as $r): $name = $title($r); $url = $detailOn ? $href($r->id) : null; ?>
+    <?php foreach ($rows as $r): $name = $title($r); $url = $detailOn ? $href($r) : null; ?>
     <li class="dl-item"><?= $editBtn($edit($r->id), 'Bearbeiten') ?>
       <?php if ($imageF): $p = $pic($r, $layout === 'cards' ? '(min-width: 1080px) 400px, 100vw' : '(min-width: 1080px) 320px, 40vw', '16:10'); ?>
       <div class="dl-img ratio-16-10"><?= $p !== '' ? $p : '<span class="dl-ph" aria-hidden="true"></span>' ?></div>
@@ -101,6 +119,13 @@ $hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
     </li>
     <?php endforeach; ?>
   </ul>
+  <?php endif; ?>
+  <?php if ($pg && $pg['pages'] > 1): $pq = static fn (int $n) => $here . ($n > 1 ? (str_contains($here, '?') ? '&' : '?') . 'seite=' . $n : '') . '#' . $b->domId(); ?>
+  <nav class="posts-pager" aria-label="<?= e(lt('Blättern')) ?>">
+    <?php if ($pg['page'] > 1): ?><a href="<?= e($pq($pg['page'] - 1)) ?>" rel="prev">← <?= e(lt('Zurück')) ?></a><?php else: ?><span></span><?php endif; ?>
+    <span class="posts-pager__n"><?= e(lt('Seite {n} von {total}', ['n' => $pg['page'], 'total' => $pg['pages']])) ?></span>
+    <?php if ($pg['page'] < $pg['pages']): ?><a href="<?= e($pq($pg['page'] + 1)) ?>" rel="next"><?= e(lt('Weiter')) ?> →</a><?php else: ?><span></span><?php endif; ?>
+  </nav>
   <?php endif; ?>
   <?php if ($new = $edit()): ?><p class="fdl-new"><?= $editBtn($new, '+ Neuer Eintrag') ?></p><?php endif; ?>
 </div>

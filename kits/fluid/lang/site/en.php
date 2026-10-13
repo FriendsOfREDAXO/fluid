@@ -416,4 +416,5 @@ return array (
   'Seite {n} von {total}' => 'Page {n} of {total}',
   'Alle Beiträge' => 'All posts',
   'Blättern' => 'Pagination',
+  'Diesen Eintrag gibt es nicht mehr.' => 'This entry no longer exists.',
 );

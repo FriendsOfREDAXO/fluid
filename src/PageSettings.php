@@ -28,9 +28,31 @@ final class PageSettings
         return ['description' => (string) ($row['description'] ?? ''), 'image' => (string) ($row['image'] ?? ''), 'noindex' => !empty($row['noindex']), 'title' => (string) ($row['title'] ?? '')];
     }
 
+    /** @var array{title?: string, description?: string, image?: string, canonical?: string} */
+    private static array $override = [];
+
+    /**
+     * Angaben für den Seitenkopf aus einer Ausgabe überschreiben – z. B. Detailansicht eines Eintrags:
+     * PageSettings::override(['title' => …, 'description' => …, 'image' => 'datei.jpg', 'canonical' => 'https://…']).
+     * Muss beim Rendern der Blöcke passieren (das Template rendert den Inhalt vor dem Kopf).
+     */
+    public static function override(array $values): void
+    {
+        self::$override = array_filter($values, static fn ($v) => \is_string($v) && '' !== trim($v)) + self::$override;
+    }
+
+    /** @internal */
+    public static function overridden(string $key): ?string
+    {
+        return self::$override[$key] ?? null;
+    }
+
     /** Titel im Browser-Tab und in Suchergebnissen: eigener SEO-Titel oder „Seite – Website“ (Startseite: Website) */
     public static function title(Article $article, string $siteName): string
     {
+        if (null !== ($t = self::$override['title'] ?? null)) {
+            return $t . ' – ' . $siteName;
+        }
         $own = self::get($article->id, $article->languageId)['title'];
         if ('' !== $own) {
             return $own;
@@ -77,7 +99,7 @@ final class PageSettings
     /** <meta>-Angaben für das Template (Beschreibung, Social-Bild, robots) */
     public static function head(Article $article, string $siteName): string
     {
-        $s = self::get($article->id, $article->languageId);
+        $s = array_merge(self::get($article->id, $article->languageId), array_intersect_key(self::$override, ['title' => 1, 'description' => 1, 'image' => 1]));
         // Ohne eigene Beschreibung: Standard aus „Website“
         if ('' === $s['description']) {
             $s['description'] = trim((string) Settings::get('default_meta_description', ''));

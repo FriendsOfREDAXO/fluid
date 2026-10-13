@@ -163,9 +163,32 @@ final class Router
             if ('' !== $rest && str_ends_with($raw, '/')) {
                 self::redirect(self::absolute(self::url($id, $lang, $query)), 301);
             }
+            // Datenliste: alter Link ?eintrag=ID → schöne Adresse /seite/titel-ID
+            $dp = \FriendsOfRedaxo\Fluid\Data\Detail::PARAM;
+            if (isset($query[$dp]) && ($cfg = \FriendsOfRedaxo\Fluid\Data\Detail::config($id, $lang)) && null !== ($t = \FriendsOfRedaxo\Fluid\Data\Detail::title($cfg, (int) $query[$dp]))) {
+                $eid = (int) $query[$dp];
+                unset($query[$dp]);
+                self::redirect(self::absolute(\FriendsOfRedaxo\Fluid\Data\Detail::url(self::url($id, $lang, $query), $t, $eid)), 301);
+            }
             self::select($id, $lang);
 
             return;
+        }
+        // Detailansicht einer Datenliste: /seite/titel-ID (falscher Titel-Teil → 301 auf die richtige Adresse)
+        if (null !== ($dm = \FriendsOfRedaxo\Fluid\Data\Detail::match($full, $lang)) && (!self::$landing || self::inLanding($dm[0]))) {
+            [$pid, $eid] = $dm;
+            $title = \FriendsOfRedaxo\Fluid\Data\Detail::title((array) \FriendsOfRedaxo\Fluid\Data\Detail::config($pid, $lang), $eid);
+            if (null !== $title) {
+                $want = \FriendsOfRedaxo\Fluid\Data\Detail::url(self::url($pid, $lang), $title, $eid);
+                if (substr(rawurldecode((string) parse_url($want, PHP_URL_PATH)), \strlen(self::base())) !== $raw) {
+                    self::redirect(self::absolute(\FriendsOfRedaxo\Fluid\Data\Detail::url(self::url($pid, $lang, $query), $title, $eid)), 301);
+                }
+                $r->query->set(\FriendsOfRedaxo\Fluid\Data\Detail::PARAM, (string) $eid);
+                $_GET[\FriendsOfRedaxo\Fluid\Data\Detail::PARAM] = (string) $eid;
+                self::select($pid, $lang);
+
+                return;
+            }
         }
         if (null !== $id && self::$landing) {
             // Seite außerhalb der Landingpage → Hauptadresse

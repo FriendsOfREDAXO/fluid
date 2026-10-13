@@ -187,6 +187,23 @@ final class YFormBridge
         return array_values(iterator_to_array($q->find()));
     }
 
+    /**
+     * Wie rows(), aber seitenweise (YForm Query::paginate): ['rows' => …, 'total' => …, 'page' => …, 'pages' => …]
+     */
+    public static function page(Table $table, array $o, int $page, int $perPage): array
+    {
+        $q = $table::query();
+        if (($f = $o['filter'] ?? null) && '' !== ($o['value'] ?? '')) {
+            $q->where($f->name, $f instanceof Checkbox ? (bool) $o['value'] : $o['value']);
+        }
+        if ($f = $o['sort'] ?? null) {
+            $q->orderBy($f->name, 'desc' === ($o['dir'] ?? '') ? 'DESC' : 'ASC');
+        }
+        $p = $q->paginate(max(1, $page), max(1, $perPage));
+
+        return ['rows' => array_values(iterator_to_array($p->items)), 'total' => $p->total, 'page' => $p->page, 'pages' => $p->pages];
+    }
+
     /** Eintrag für die Detailansicht – nur, wenn er die Bedingung der Liste erfüllt */
     public static function row(Table $table, int $id, ?Field $filter, string $value): ?Record
     {

@@ -58,6 +58,12 @@ final class Seo
                     }
                 }
                 $xml .= "</url>\n";
+                // Detailansichten einer Datenliste (/seite/titel-ID)
+                if ($cfg = \FriendsOfRedaxo\Fluid\Data\Detail::config($id, $lang)) {
+                    foreach (\FriendsOfRedaxo\Fluid\Data\Detail::entries($cfg) as [$eid, $etitle]) {
+                        $xml .= '  <url><loc>' . escape(\FriendsOfRedaxo\Fluid\Data\Detail::url($loc, $etitle, $eid)) . "</loc></url>\n";
+                    }
+                }
             }
         }
 
@@ -86,11 +92,11 @@ final class Seo
     public static function head(Article $article): string
     {
         $h = '';
-        if ('' !== ($c = Router::canonical($article->id, $article->languageId))) {
+        if ('' !== ($c = \FriendsOfRedaxo\Fluid\PageSettings::overridden('canonical') ?? Router::canonical($article->id, $article->languageId))) {
             $h .= '<link rel="canonical" href="' . escape($c) . '">' . "\n";
         }
         $langs = Routes::all()[$article->id] ?? [];
-        if (count($langs) > 1) {
+        if (count($langs) > 1 && null === \FriendsOfRedaxo\Fluid\PageSettings::overridden('canonical')) {
             foreach ($langs as $lang => $_) {
                 $a = Article::get($article->id, $lang);
                 if ($a && $a->isOnline()) {
