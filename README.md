@@ -40,7 +40,11 @@ php bin/console migrate
 php bin/console fluid:demo --set=redaxo6   # optional: Demo-Seiten (nur in leeren Installationen)
 ```
 
-Das Kit **fluid** bringt Template und Blöcke mit. Im Backend erscheint über den Slices „Auf der Website bearbeiten“.
+Das Kit **fluid** bringt Template und Blöcke mit. Solange es keine Seiten gibt, zeigt die Website „Erste Schritte“: Admins
+legen dort mit einem Klick eine leere Startseite oder die Beispielseiten an. Im Backend erscheint über den Slices „Auf der
+Website bearbeiten“; unter **AddOns → fluid** prüft „Status“ die Umgebung (Adressen, Mail, Suche, ffmpeg …).
+
+Nach einem Update von fluid: `php bin/console migrate` (aktualisiert Tabellen und kopiert die Assets neu).
 
 ### Webserver: schöne Adressen
 
@@ -172,6 +176,9 @@ Vorlagen: `examples/yform/` (`TerminTable`, `AnfrageTable`, `AnfrageForm`) – n
 
 ### Sprachen
 
+Website-Texte (Claim, Hinweisleiste, Fußtext …) pflegt man in „Website“ je Sprache; leer = Text der Startsprache.
+Eigene Einstellungen werden mit `'translate' => true` im Schema (EP `FLUID_SETTINGS_SCHEMA`) übersetzbar.
+
 Sprachen sind die des Cores (`LanguageHandler`) – angelegt unter Website → Sprachen oder im Backend. Feste Texte des Kits
 („Menü“, „Öffnungszeiten“ …) schreibt das Kit mit `lt('Text')`; Übersetzungen liegen in `kits/fluid/lang/site/{code}.php`
 (`['Menü' => 'Menu', …]`). Eigene Sprachen oder Änderungen ohne das Kit anzufassen:
@@ -208,8 +215,15 @@ sich nicht mit Dritten. Detailkacheln gibt es nur rund um Orte, die auf der Webs
 
 ### Rechte
 
-Bearbeiten auf der Website: Strukturrecht der Kategorie und Modulrecht des Blocks (wie im Backend). Design und
-Website-Einstellungen: Admins. YForm-Tabellen: Rechte von YForm (Tabellen ansehen/bearbeiten).
+fluid nutzt die Rechte des Cores – eine Rolle wirkt auf der Website genau wie im Backend:
+
+- **Kategorien** (Strukturrecht) und **Module** (welche Blöcke) bestimmen, was jemand bearbeiten und einfügen darf.
+- **Optionen** der Rolle schalten Aktionen frei: `version[live_version]` Veröffentlichen (ohne: „Entwurf – wartet auf
+  Freigabe“), `moveSlice[]` Blöcke verschieben, `publishSlice[]` Blöcke online/offline, `addArticle[]`/`addCategory[]`
+  neue Seiten bzw. Menüpunkte, `editArticle[]`/`editCategory[]` Seiteneinstellungen, `moveArticle[]`/`moveCategory[]`,
+  `publishArticle[]`/`publishCategory[]`, `deleteArticle[]`/`deleteCategory[]`, `article2category[]` (Menüpunkt ja/nein),
+  `copyContent[]` (Inhalt aus anderer Sprache). Die Leiste zeigt nur, was erlaubt ist; die API prüft jede Aktion.
+- Design und Website-Einstellungen: Admins. YForm-Tabellen: Rechte von YForm (Tabellen ansehen/bearbeiten).
 
 ## Lizenz und Danke
 
