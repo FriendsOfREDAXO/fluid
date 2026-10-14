@@ -180,6 +180,24 @@ fluid arbeitet mit den Mitteln von YForm 6 – Tabellen und Formulare sind Klass
   Wann Blog, wann Datenliste? Blog = Beiträge mit Blöcken, Entwurf und Versionen; Datenliste = gleichförmige Einträge
   mit festen Feldern, gepflegt in der YForm-Maske.
 
+### Blöcke in YForm-Tabellen: Feld „Fluid-Blöcke“
+
+Jede YForm-Tabelle kann Inhalt aus den Blöcken von fluid haben – ein Feld wie jedes andere in der Tabellenklasse:
+
+```php
+use FriendsOfRedaxo\Fluid\Data\FluidBlocks;
+
+yield FluidBlocks::new('inhalt')->label('Inhalt');
+yield FluidBlocks::new('inhalt')->label('Inhalt')->blocks('richtext', 'media_text', 'video');   // nur diese Blöcke
+```
+
+- Bearbeiten in der YForm-Maske: Blöcke hinzufügen, bearbeiten (dieselben Felder wie auf der Website – Medienpool,
+  Linkmap, Text-Editor), verschieben, entfernen. Gespeichert als JSON (`mediumtext`).
+- Ausgabe: Die Detailansicht der Datenliste zeigt das Feld automatisch als Blöcke. In eigenen Templates:
+  `echo \FriendsOfRedaxo\Fluid\BlockData::render($record->get('inhalt'));` – Klartext für Listen und Suche:
+  `BlockData::text(…)`.
+- Layout-Spalten gibt es im Feld nicht (sie brauchen Slices); Rechte: Modulrecht des Blocks wie auf den Seiten.
+
 Für eigene Ausgaben: `PageSettings::override(['title' => …, 'description' => …, 'image' => …, 'canonical' => …])`
 setzt den Seitenkopf aus einem Block heraus (z. B. eigene Detailansichten).
 

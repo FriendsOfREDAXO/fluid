@@ -10,7 +10,7 @@ $v = $b->variant() === 'split' ? 'split' : 'single';
 // Formular-Klasse aus dem Projekt (#[AsForm]) oder das eigene Formular aus den Feldern des Blocks (Data\BuiltForm)
 $def = YFormBridge::formDefinition((string) ($d['form'] ?? ''));
 if (!$def && YFormBridge::available() && [] !== (array) ($d['fields'] ?? [])) {
-    $def = \FriendsOfRedaxo\Fluid\Data\BuiltForm::make((string) $b->slice->id, $d, \Redaxo\Core\Content\Article::getCurrent());
+    $def = \FriendsOfRedaxo\Fluid\Data\BuiltForm::make($b->id, $d, \Redaxo\Core\Content\Article::getCurrent());
 }
 $form = '';
 if ($def) {

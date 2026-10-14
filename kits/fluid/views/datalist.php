@@ -26,7 +26,7 @@ $metaF = YFormBridge::field($t, (string) ($d['meta_field'] ?? ''));
 $filterF = YFormBridge::field($t, (string) ($d['filter_field'] ?? ''));
 $same = static fn ($a, $c) => $a && $c && $a->name === $c->name;
 $filterV = trim((string) ($d['filter_value'] ?? ''));
-$here = Url::article($b->slice->articleId, Language::getCurrentId());
+$here = Url::article($b->articleId, Language::getCurrentId());
 $detailOn = !empty($d['detail']);
 $edit = is_editing() ? static fn (?int $id = null) => YFormBridge::editUrl($t, $id) : static fn (?int $id = null) => null;
 $editBtn = static fn (?string $url, string $label) => $url ? '<a class="fdl-edit" href="' . e($url) . '" target="_blank" rel="noopener">' . e($label) . '</a>' : '';
@@ -64,11 +64,15 @@ if ($row):
     <?php if ($img !== ''): ?><div class="df-img ratio-16-9"><?= $img ?></div><?php endif; ?>
   </header>
   <dl class="df-dl">
-    <?php foreach (YFormBridge::detailFields($t) as $f): if ($same($f, $titleF) || $same($f, $imageF) || $same($f, $filterF) || ($h = YFormBridge::html($row, $f)) === '') continue; ?>
+    <?php $blocksHtml = ''; foreach (YFormBridge::detailFields($t) as $f):
+        // Feld „Fluid-Blöcke“: als Blöcke unter der Detailansicht (volle Breite), nicht als Text
+        if ($f instanceof \FriendsOfRedaxo\Fluid\Data\FluidBlocks) { $blocksHtml .= \FriendsOfRedaxo\Fluid\BlockData::render($row->get($f->name), $b->id . '-' . $f->name, $b->articleId); continue; }
+        if ($same($f, $titleF) || $same($f, $imageF) || $same($f, $filterF) || ($h = YFormBridge::html($row, $f)) === '') continue; ?>
     <div><dt><?= e($f->translatedLabel()) ?></dt><dd><?= $h ?></dd></div>
     <?php endforeach; ?>
   </dl>
 </div>
+<?php if ('' !== $blocksHtml): ?><div class="df-blocks"><?= $blocksHtml ?></div><?php endif; ?>
 <?php
     return;
 endif;

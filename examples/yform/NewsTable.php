@@ -2,6 +2,7 @@
 
 namespace Project\YForm;
 
+use FriendsOfRedaxo\Fluid\Data\FluidBlocks;
 use Yakamara\YForm\Attribute\AsTable;
 use Yakamara\YForm\Field\Checkbox;
 use Yakamara\YForm\Field\Date;
@@ -27,6 +28,8 @@ final class NewsTable extends Table
         yield Textarea::new('teaser')->label('Kurztext');
         yield Media::new('image')->label('Bild')->types('jpg', 'jpeg', 'png', 'webp', 'avif');
         yield Textarea::new('text')->label('Text');
+        // Inhalt aus Blöcken von fluid (Text, Bild + Text, Video …) – Ausgabe in der Detailansicht der Datenliste
+        yield FluidBlocks::new('content')->label('Inhalt (Blöcke)')->blocks('richtext', 'media_text', 'video', 'quote', 'faq', 'downloads', 'cta');
         yield Url::new('link')->label('Weiterführender Link');
         yield Checkbox::new('online')->label('Online')->default(true);
     }

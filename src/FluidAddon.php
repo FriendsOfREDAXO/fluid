@@ -140,6 +140,15 @@ final class FluidAddon extends Addon
     #[Override]
     public function boot(): void
     {
+        // YForm-Maske: Feld „Fluid-Blöcke“ (Data\FluidBlocks) braucht dieselben Formular-Skripte wie die Slices
+        if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'yform')) {
+            Asset::addCssFile($this->getAssetsUrl('form.css'));
+            Asset::addCssFile($this->getAssetsUrl('rte.css'));
+            Asset::addCssFile($this->getAssetsUrl('blocks-field.css'));
+            Asset::addJsFile($this->getAssetsUrl('form.js'));
+            Asset::addJsFile($this->getAssetsUrl('rte.js'));
+            Asset::addJsFile($this->getAssetsUrl('blocks-field.js'));
+        }
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'content')) {
             Asset::addCssFile($this->getAssetsUrl('form.css'));
             Asset::addCssFile($this->getAssetsUrl('rte.css'));

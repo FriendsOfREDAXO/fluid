@@ -60,6 +60,18 @@ final class Editing
         return self::$rendering;
     }
 
+    /** Bearbeiten-Markup für die Dauer von $fn ausschalten (Blöcke aus Daten, die nicht auf der Seite bearbeitet werden) */
+    public static function without(callable $fn): mixed
+    {
+        $old = self::$rendering;
+        self::$rendering = false;
+        try {
+            return $fn();
+        } finally {
+            self::$rendering = $old;
+        }
+    }
+
     /** @internal Bearbeiten-Markup für die Dauer von $fn einschalten (Vorschau einzelner Blöcke) */
     public static function render(callable $fn): mixed
     {

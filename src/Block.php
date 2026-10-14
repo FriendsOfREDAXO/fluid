@@ -18,14 +18,19 @@ final class Block
     /** @var array<string, mixed> */
     public readonly array $tunes;
 
+    /**
+     * @param ArticleSlice|null $slice null = Block aus Daten (z. B. YForm-Feld „Fluid-Blöcke“), dann $id und $articleId angeben
+     */
     public function __construct(
-        public readonly ArticleSlice $slice,
+        public readonly ?ArticleSlice $slice,
         public readonly BlockModule $module,
         /** @var array<string, mixed> */
         public readonly array $data,
         /** @var array<string, mixed> */
         array $tunes = [],
         public readonly ?self $prev = null,
+        private readonly string $ownId = '',
+        private readonly int $ownArticleId = 0,
     ) {
         if ('' === (string) ($tunes['background'] ?? '')) {
             unset($tunes['background']);   // leer = Standard des Blocks
@@ -34,7 +39,18 @@ final class Block
     }
 
     public string $id {
-        get => (string) $this->slice->id;
+        get => $this->slice ? (string) $this->slice->id : $this->ownId;
+    }
+
+    /** Seite, auf der der Block steht (für Adressen wie Blättern oder Detailansicht) */
+    public int $articleId {
+        get => $this->slice->articleId ?? ($this->ownArticleId ?: (int) \Redaxo\Core\Content\Article::getCurrentId());
+    }
+
+    /** Block aus einem Slice (Seite) oder aus Daten (YForm-Feld)? */
+    public function fromSlice(): bool
+    {
+        return null !== $this->slice;
     }
 
     /** Blocktyp ohne Kit-Präfix (`cta`, `media_text` …) */

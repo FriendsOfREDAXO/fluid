@@ -112,7 +112,7 @@ final class Search
     }
 
     /** Texte der Felder (rekursiv in Wiederholgruppen); Felder „title“/„eyebrow“/„q“ zählen als Überschrift */
-    private static function collect(array $fields, array $data, array &$headings, array &$text): void
+    public static function collect(array $fields, array $data, array &$headings, array &$text): void
     {
         foreach ($fields as $f) {
             $v = $data[$f['name']] ?? null;

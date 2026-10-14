@@ -235,6 +235,26 @@ abstract class BlockModule extends Module
             . $b->sectionBg() . $inner . "</section>\n";
     }
 
+    /** Block aus Daten (ohne Slice) – z. B. YForm-Feld „Fluid-Blöcke“, siehe BlockData */
+    public function blockFromData(string $id, array $data, array $tunes = [], ?Block $prev = null, int $articleId = 0): Block
+    {
+        return new Block(null, $this, FieldForm::withDefaults($this->fields(), $data, $this->variants()), $tunes, $prev, $id, $articleId);
+    }
+
+    /** Abschnitt eines Blocks aus Daten – wie renderBlock(), ohne Bearbeiten-Markup */
+    public function renderData(Block $b): string
+    {
+        $this->kit()->markUsed($b->type, $b->variant());
+        $inner = $this->renderInner($b);
+        if ('' === trim($inner)) {
+            return '';
+        }
+        $titled = str_contains($inner, 'id="' . $b->titleId() . '"');
+
+        return '<section id="' . escape($b->domId()) . '" class="' . escape($b->sectionClass()) . '"'
+            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . '>' . $b->sectionBg() . $inner . "</section>\n";
+    }
+
     /** @internal */
     public function block(ArticleSlice $slice, ?array $data = null, ?array $tunes = null, int $depth = 0): Block
     {

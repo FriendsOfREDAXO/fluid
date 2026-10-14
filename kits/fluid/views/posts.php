@@ -24,7 +24,7 @@ $pager = !empty($d['pager']);
 $page = $pager ? max(1, Request::get('seite', 'int', 1)) : 1;
 $tag = !empty($d['tags']) ? preg_replace('~[^a-z0-9-]~', '', Request::get('tag', 'string', '')) : '';
 $res = Blog::posts($blog, ['limit' => $limit, 'offset' => ($page - 1) * $limit, 'tag' => $tag, 'drafts' => is_editing()]);
-$here = Url::article($b->slice->articleId, Language::getCurrentId());
+$here = Url::article($b->articleId, Language::getCurrentId());
 $q = static fn (array $p) => $here . ([] !== ($p = array_filter($p)) ? '?' . http_build_query($p) : '') . '#' . $b->domId();
 $cols = ['s' => 4, 'm' => 3, 'l' => 2][$d['size'] ?? 'm'] ?? 3;
 // erster Block der Seite: Hauptüberschrift (ohne eigene Überschrift = Seitenname)
