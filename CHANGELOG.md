@@ -33,6 +33,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   Zurück-Taste und Screenreader-Ansage gehen mit, ohne JavaScript bleibt alles wie bisher.
 - Beiträge „Aufmacher + Karten“: Der Link des Aufmachers verdeckte die Schlagwort-Filter darüber.
 - Kopf: Die Suchseite erscheint nicht mehr zusätzlich als Menüpunkt, wenn die Lupe im Kopf zu ihr führt.
+- Sprachwahl im Kopf: ab drei Sprachen ein Menü (aktuelle Sprache, Liste mit Namen; Esc und Klick daneben schließen).
+  Im Handy-Menü und im Fuß bricht die Liste bei vielen Sprachen um, statt über den Rand zu laufen.
 - Suche zeigt nur Öffentliches:
   - Empfänger, Betreff und Bestätigungstexte von Formularen kommen nicht mehr in den Index, ebenso Platzhalter und
     Filterwerte.

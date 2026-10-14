@@ -136,7 +136,12 @@ return static function (ArticleContent $content): void {
     <div class="hdr__nav"><nav class="hnav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="hnav__list" role="list"><?= implode('', array_map($navItem, $menu)) ?></ul></nav></div>
     <?php endif; ?>
     <div class="hdr__tools">
-      <?php if (\count($langs) > 1): ?>
+      <?php if (\count($langs) > 2): $curLang = array_values(array_filter($langs, static fn ($l) => $l['current']))[0] ?? $langs[0]; // ab drei Sprachen: Menü (Popover) statt Leiste ?>
+      <div class="langmenu">
+        <button type="button" class="langmenu__btn" popovertarget="langmenu" aria-haspopup="true" aria-label="<?= e(lt('Sprache')) ?>: <?= e($curLang['name']) ?>"><span lang="<?= e($curLang['code']) ?>"><?= e(strtoupper($curLang['code'])) ?></span><?= icon('caret-down', ['class' => 'langmenu__chev']) ?></button>
+        <ul id="langmenu" class="langmenu__list" popover role="list" aria-label="<?= e(lt('Sprache')) ?>"><?php foreach ($langs as $l): ?><li><a href="<?= e($l['url']) ?>" hreflang="<?= e($l['code']) ?>" lang="<?= e($l['code']) ?>"<?= $l['current'] ? ' aria-current="true"' : '' ?>><span><?= e($l['name']) ?></span><span class="langmenu__code" aria-hidden="true"><?= e(strtoupper($l['code'])) ?></span></a></li><?php endforeach; ?></ul>
+      </div>
+      <?php elseif (\count($langs) > 1): ?>
       <ul class="langswitch" role="list" aria-label="<?= e(lt('Sprache')) ?>"><?php foreach ($langs as $l): ?><li><a href="<?= e($l['url']) ?>" hreflang="<?= e($l['code']) ?>" lang="<?= e($l['code']) ?>" title="<?= e($l['name']) ?>"<?= $l['current'] ? ' aria-current="true"' : '' ?>><?= e(strtoupper($l['code'])) ?></a></li><?php endforeach; ?></ul>
       <?php endif; ?>
       <?php if ('' !== ($searchPage = trim((string) setting('search_page', '')))): ?><a class="hdr__search" href="<?= e(link_href($searchPage)) ?>" title="<?= e(lt('Suche')) ?>"><?= icon('magnifying-glass') ?><span class="sr-only"><?= e(lt('Suche')) ?></span></a><?php endif; ?>
