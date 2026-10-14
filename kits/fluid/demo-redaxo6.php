@@ -71,7 +71,7 @@ $yform = [
 return [
     'yform' => $yform,
     // Website-Einstellungen (nur, wo noch nichts eingetragen ist)
-    'settings' => ['org_name' => 'REDAXO 6 Demo', 'tagline' => 'Inhalte pflegen, wo sie wirken.', 'search_page' => '/suche'],
+    'settings' => ['org_name' => 'REDAXO 6 Demo', 'tagline' => 'REDAXO im Frontend, einfach.', 'search_page' => '/suche'],
     'pages' => [
         // ------------------------------------------------------------------ Startseite
         [
@@ -79,7 +79,7 @@ return [
             'blocks' => [
                 ['type' => 'hero', 'data' => [
                     'variant' => 'type', 'eyebrow' => 'REDAXO 6 · in Entwicklung',
-                    'title' => 'Inhalte pflegen, *wo sie wirken*.',
+                    'title' => 'REDAXO im Frontend, *einfach*.',
                     'text' => 'REDAXO 6 räumt unter der Haube auf: PHP 8.5, Composer, Module und Templates als PHP-Klassen. Das macht etwas möglich, das in REDAXO lange gefehlt hat – Seiten direkt auf der Website bearbeiten, mit echten Slices.',
                     'button_label' => 'Was sich ändert', 'button_link' => '/was-sich-aendert',
                     'button2_label' => 'Bearbeiten auf der Website', 'button2_link' => '/bearbeiten',
