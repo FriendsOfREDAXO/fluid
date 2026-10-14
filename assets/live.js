@@ -6,7 +6,7 @@
  *
  * Neu laden auf Aktion (Live::region): [data-live-region] mit data-live-src. Links [data-live-nav] und GET-Formulare
  * [data-live-nav] holen den Block mit ihren Parametern neu und tauschen ihn aus (pushState); Eingabefelder [data-live-input]
- * nach einer Pause (data-live-delay, Standard 350 ms, replaceState). Zurück/Vor lädt passend nach. Fokus bleibt im Feld bzw.
+ * nach einer Pause (data-live-delay, Standard 350 ms, replaceState), erst ab data-live-min Zeichen. Zurück/Vor lädt passend nach. Fokus bleibt im Feld bzw.
  * geht an den Block, Ansage über eine Statuszeile (aria-live). Fehler → normaler Seitenaufruf.
  */
 (() => {
@@ -165,6 +165,9 @@ function cmsLiveRegions(me) {
     const f = inp?.form, region = inp && regionOf(inp);
     if (!f || !region || !f.matches('[data-live-nav]')) return;
     clearTimeout(timer);
+    // erst ab data-live-min Zeichen (leeres Feld = zurücksetzen) – vorher keine Anfrage
+    const len = inp.value.trim().length;
+    if (len && len < (+inp.dataset.liveMin || 0)) return;
     timer = setTimeout(() => load(regionOf(document.getElementById(inp.id) || inp) || region, formUrl(f), 'replace', false), +inp.dataset.liveDelay || 350);
   });
   addEventListener('popstate', () => {

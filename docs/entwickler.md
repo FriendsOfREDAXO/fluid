@@ -273,12 +273,14 @@ Eigener Block:
 // kit.php: 'reload' => true beim Block
 <div class="wrap …"<?= \FriendsOfRedaxo\Fluid\Live::region($b) ?>>
   <a href="?seite=2#<?= $b->domId() ?>" data-live-nav>Weiter</a>
-  <form method="get" data-live-nav><input name="q" id="…" data-live-input data-live-delay="350"></form>
+  <form method="get" data-live-nav><input name="q" id="…" data-live-input data-live-delay="600" data-live-min="3"></form>
   <p role="status" data-live-count>12 Treffer</p>
 </div>
 <?= \FriendsOfRedaxo\Fluid\Live::assets() ?>
 ```
 
+- Eingabefelder: `data-live-delay` = Pause nach dem letzten Tastendruck (Standard 350 ms), `data-live-min` = erst ab so
+  vielen Zeichen. Ein geleertes Feld lädt sofort neu (zurücksetzen). Die Suche nutzt 600 ms und 3 Zeichen.
 - `Live::region($b)` setzt `data-live-region` (= `domId`) und `data-live-src` (Seitenadresse mit `?fluid_block={slice}`).
   Im Bearbeiten-Modus und bei Blöcken aus Daten bleibt es leer.
 - `assets/live.js` holt den Block mit den Parametern des Links bzw. Formulars und tauscht `[data-live-region]` aus.

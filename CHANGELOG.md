@@ -29,7 +29,7 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Hat jemand anderes seit dem Öffnen gespeichert: ⚠ in der Leiste und Rückfrage vor dem Speichern. Es gibt keine
     Sperre, der vorige Stand bleibt als Version.
   - Kürzel im Seitenbaum, „Gerade aktiv“ unter Verlauf → Aktivität.
-- Datenliste, Beiträge und Suche: Blättern, Schlagworte und Treffer beim Tippen ohne Seitenwechsel. Adresse,
+- Datenliste, Beiträge und Suche: Blättern, Schlagworte und Treffer beim Tippen (nach einer kurzen Pause, ab 3 Zeichen) ohne Seitenwechsel. Adresse,
   Zurück-Taste und Screenreader-Ansage gehen mit, ohne JavaScript bleibt alles wie bisher.
 - Beiträge „Aufmacher + Karten“: Der Link des Aufmachers verdeckte die Schlagwort-Filter darüber.
 - Suche zeigt nur Öffentliches:

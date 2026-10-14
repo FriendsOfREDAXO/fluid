@@ -15,7 +15,7 @@ $id = $b->domId() . '-q';
   <?= fluid_head($b, '', null === $b->prev ? 'h1' : 'h2') /* erster Block der Seite: Hauptüberschrift */ ?>
   <form class="fsearch__form" role="search" method="get" data-live-nav action="#<?= e($b->domId()) ?>">
     <label class="sr-only" for="<?= e($id) ?>"><?= e(lt('Suchbegriff')) ?></label>
-    <input class="fsearch__input" id="<?= e($id) ?>" type="search" name="q" value="<?= e($q) ?>" placeholder="<?= e(trim((string) ($d['placeholder'] ?? '')) ?: lt('Wonach suchen Sie?')) ?>" maxlength="100" autocomplete="off" enterkeyhint="search" data-live-input<?= '' === $q && !is_editing() ? ' autofocus' : '' ?>>
+    <input class="fsearch__input" id="<?= e($id) ?>" type="search" name="q" value="<?= e($q) ?>" placeholder="<?= e(trim((string) ($d['placeholder'] ?? '')) ?: lt('Wonach suchen Sie?')) ?>" maxlength="100" autocomplete="off" enterkeyhint="search" data-live-input data-live-delay="600" data-live-min="3"<?= '' === $q && !is_editing() ? ' autofocus' : '' ?>>
     <button class="btn btn--primary" type="submit"><?= icon('magnifying-glass') ?><span><?= e(lt('Suchen')) ?></span></button>
   </form>
   <?php if (null !== $res): ?>
