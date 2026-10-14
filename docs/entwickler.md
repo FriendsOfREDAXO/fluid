@@ -396,6 +396,12 @@ ein – als **Kopie** (`symlink: false`). Nach Änderungen: `composer reinstall 
 > Vorsicht mit Symlinks: Ist `public/assets/addons/fluid` ein Symlink auf die Arbeitskopie, löscht `console migrate` beim
 > Neukopieren der Assets die Originale. Entweder kopieren lassen (wie oben) oder vor `migrate` den Symlink entfernen.
 
+**Upstream-Wächter** (`.github/workflows/upstream.yml`): Prüft täglich `redaxo/core` 6.x und `yakamara/yform` 6.x. Bei
+neuen Commits kommt ein Kommentar ins offene Issue „Neu in …“ (Label `upstream`). Gibt es kein offenes, entsteht ein
+neues. Darin stehen die Commits mit Links. Wer benachrichtigt werden will, beobachtet das Repo oder trägt sich in der
+Repo-Variable `UPSTREAM_NOTIFY` ein (GitHub-Namen, mit Leerzeichen getrennt). Ein Issue schließen heißt: gelesen. Starten
+lässt sich der Wächter auch von Hand (Actions → Upstream-Wächter → Run workflow).
+
 - PHPStan (Stufe 5): mit der PHPStan-Installation des Cores, Pfade `src`, `kits/fluid/src`, `kits/fluid/functions.php`.
 - Video: `node tools/video/trailer.mjs` bzw. `redaxo6-demo.mjs` – braucht Playwright, ffmpeg und eine lokale Anmelde-Hilfe
   (`LOGIN=…`), siehe Kopf der Skripte. Nur gegen Testinstallationen.

@@ -1,0 +1,83 @@
+# Upstream-Wächter: meldet neue Commits in REDAXO-Core 6.x und YForm 6.x als Issue (mit Liste der Änderungen).
+#
+# Je Quelle ein Issue (Label „upstream“). Neue Commits → Kommentar im offenen Issue; ist es geschlossen (= gelesen),
+# entsteht beim nächsten Mal ein neues. Der zuletzt gesehene Stand steht unsichtbar im Issue (<!-- upstream-sha:… -->).
+# Benachrichtigt wird, wer das Repo beobachtet – zusätzlich die Personen in der Repo-Variable UPSTREAM_NOTIFY
+# (GitHub-Namen ohne @, mit Leerzeichen getrennt).
+name: Upstream-Wächter
+
+on:
+  schedule:
+    - cron: '17 5 * * *'   # täglich früh
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          NOTIFY: ${{ vars.UPSTREAM_NOTIFY }}
+        with:
+          script: |
+            const sources = [
+              { repo: 'redaxo/core', branch: '6.x', name: 'REDAXO-Core' },
+              { repo: 'yakamara/yform', branch: '6.x', name: 'YForm' },
+            ];
+            const { owner, repo } = context.repo;
+            const label = 'upstream';
+            const mention = (process.env.NOTIFY || '').split(/\s+/).filter(Boolean).map((u) => '@' + u.replace(/^@/, '')).join(' ');
+            const marker = (sha) => `<!-- upstream-sha:${sha} -->`;
+            const readSha = (text) => (String(text || '').match(/<!-- upstream-sha:([0-9a-f]{40}) -->/g) || []).map((m) => m.slice(18, 58)).pop();
+
+            try { await github.rest.issues.getLabel({ owner, repo, name: label }); }
+            catch { await github.rest.issues.createLabel({ owner, repo, name: label, color: 'c5def5', description: 'Neues in REDAXO-Core oder YForm (Upstream-Wächter)' }); }
+
+            for (const src of sources) {
+              const [o, r] = src.repo.split('/');
+              const head = (await github.rest.repos.getBranch({ owner: o, repo: r, branch: src.branch })).data.commit.sha;
+              const title = `Neu in ${src.name} (${src.repo} ${src.branch})`;
+
+              // letztes Issue dieser Quelle (offen oder geschlossen) und der darin zuletzt gesehene Stand
+              const issues = (await github.rest.issues.listForRepo({ owner, repo, labels: label, state: 'all', sort: 'created', direction: 'desc', per_page: 50 }))
+                .data.filter((i) => !i.pull_request && i.title === title);
+              const last = issues[0];
+              let seen = null;
+              if (last) {
+                const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: last.number, per_page: 100 });
+                seen = [last.body, ...comments.map((c) => c.body)].map(readSha).filter(Boolean).pop() || null;
+              }
+              if (seen === head) { core.info(`${src.repo}: unverändert (${head.slice(0, 7)})`); continue; }
+
+              let lines = [];
+              let note = '';
+              if (seen) {
+                try {
+                  const cmp = (await github.rest.repos.compareCommitsWithBasehead({ owner: o, repo: r, basehead: `${seen}...${head}`, per_page: 100 })).data;
+                  lines = cmp.commits.slice().reverse().map((c) => `- [\`${c.sha.slice(0, 7)}\`](${c.html_url}) ${c.commit.message.split('\n')[0]} – ${c.commit.author?.name || ''}, ${c.commit.author?.date?.slice(0, 10) || ''}`);
+                  note = `${cmp.total_commits} neue${cmp.total_commits === 1 ? 'r' : ''} Commit${cmp.total_commits === 1 ? '' : 's'} · [Vergleich](${cmp.html_url})`;
+                } catch { seen = null; }   // alter Stand nicht mehr da (z. B. force-push)
+              }
+              if (!seen) {
+                const recent = (await github.rest.repos.listCommits({ owner: o, repo: r, sha: src.branch, per_page: 10 })).data;
+                lines = recent.map((c) => `- [\`${c.sha.slice(0, 7)}\`](${c.html_url}) ${c.commit.message.split('\n')[0]} – ${c.commit.author?.name || ''}, ${c.commit.author?.date?.slice(0, 10) || ''}`);
+                note = last ? 'Neuer Stand (der zuletzt gesehene ist nicht mehr im Zweig) – die letzten 10 Commits:' : 'Beobachtung gestartet – die letzten 10 Commits:';
+              }
+              const text = `${note}\n\n${lines.join('\n')}\n\nPrüfen: entfernte oder geänderte APIs gegen fluid greppen, Demo-Installation aktualisieren, Rauchtest.${mention ? '\n\n' + mention : ''}\n\n${marker(head)}`;
+
+              if (last && last.state === 'open') {
+                await github.rest.issues.createComment({ owner, repo, issue_number: last.number, body: text });
+                core.info(`${src.repo}: Kommentar in #${last.number}`);
+              } else {
+                const { data } = await github.rest.issues.create({ owner, repo, title, labels: [label], body: `Automatisch vom Upstream-Wächter (.github/workflows/upstream.yml). Schließen = gelesen; neue Änderungen öffnen dann ein neues Issue.\n\n${text}` });
+                core.info(`${src.repo}: Issue #${data.number}`);
+              }
+            }
