@@ -32,6 +32,7 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 - Datenliste, Beiträge und Suche: Blättern, Schlagworte und Treffer beim Tippen (nach einer kurzen Pause, ab 3 Zeichen) ohne Seitenwechsel. Adresse,
   Zurück-Taste und Screenreader-Ansage gehen mit, ohne JavaScript bleibt alles wie bisher.
 - Beiträge „Aufmacher + Karten“: Der Link des Aufmachers verdeckte die Schlagwort-Filter darüber.
+- Kopf: Die Suchseite erscheint nicht mehr zusätzlich als Menüpunkt, wenn die Lupe im Kopf zu ihr führt.
 - Suche zeigt nur Öffentliches:
   - Empfänger, Betreff und Bestätigungstexte von Formularen kommen nicht mehr in den Index, ebenso Platzhalter und
     Filterwerte.

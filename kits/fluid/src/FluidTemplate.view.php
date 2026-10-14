@@ -21,6 +21,11 @@ return static function (ArticleContent $content): void {
     $home = $landing ? (Article::get((int) $landing->articleId)?->getUrl() ?? '/') : (Article::getSiteStartArticle()?->getUrl() ?? '/');
     $isHome = $landing ? $article->id === $landing->articleId : $isHome;
     $menu = FluidTemplate::menu();
+    // Suchseite mit Lupe im Kopf: nicht noch einmal als Menüpunkt (die Lupe führt schon hin)
+    if ('' !== ($searchHref = trim((string) setting('search_page', '')))) {
+        $searchHref = rtrim((string) parse_url(link_href($searchHref), PHP_URL_PATH), '/');
+        $menu = array_values(array_filter($menu, static fn (array $m) => rtrim((string) parse_url((string) $m['href'], PHP_URL_PATH), '/') !== $searchHref || !empty($m['children'])));
+    }
     // Sprachwahl: Sprachen, in denen diese Seite online ist
     $langs = \FriendsOfRedaxo\Fluid\Routing\Router::alternates($article);
     $title = PageSettings::title($article, $name);
