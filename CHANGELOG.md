@@ -24,6 +24,14 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Vorschau des Stands als echte Seite (Desktop/Mobil), „Änderungen hervorheben“.
   - „Gegenüberstellen“ mit der Live-Fassung, gemeinsames Scrollen.
   - „Wiederherstellen“ in den Entwurf; Tastatur ↑/↓/Pos1/Ende/Esc.
+- Wer arbeitet gerade wo (aus KLXM Studio):
+  - Die Leiste zeigt, wer die Seite gerade bearbeitet, sonst wer zuletzt gespeichert hat.
+  - Hat jemand anderes seit dem Öffnen gespeichert: ⚠ in der Leiste und Rückfrage vor dem Speichern. Es gibt keine
+    Sperre, der vorige Stand bleibt als Version.
+  - Kürzel im Seitenbaum, „Gerade aktiv“ unter Verlauf → Aktivität.
+- Datenliste, Beiträge und Suche: Blättern, Schlagworte und Treffer beim Tippen ohne Seitenwechsel. Adresse,
+  Zurück-Taste und Screenreader-Ansage gehen mit, ohne JavaScript bleibt alles wie bisher.
+- Beiträge „Aufmacher + Karten“: Der Link des Aufmachers verdeckte die Schlagwort-Filter darüber.
 - Seiten: Seitenbaum (Ziehen, ↑ ↓ ← →, auch am Handy), neue Seiten leer, als Kopie oder aus einer Vorlage, Seiteneinstellungen
   mit Adresse und SEO-Angaben.
 - Website: Stammdaten, Kontakt und Öffnungszeiten, Kopf, Fuß und Hinweisleiste, Rechtliches, Sprachen, Domains,
@@ -60,3 +68,7 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   `FLUID_STRUCTURED_DATA`, `FLUID_ROBOTS`, `FLUID_EDITOR_CONFIG`, `FLUID_SITE_TRANSLATIONS`.
 - Media-Manager-Typ `fluid_poster`; Feldoption `types` für Dateifelder; Konsole `fluid:demo`, `fluid:search-index`.
 - Backend: AddOns → fluid (Status, Wartung, Hilfe).
+- `Live` (aus KLXM Studio `Core\Live`): Kanäle mit Versionen, signierte Abos, SSE-Stream `/fluid-live` mit Rückfall auf
+  Nachfragen. „Neu laden auf Aktion“ mit `'reload' => true`, `Live::region($b)`, `data-live-nav`/`data-live-input`.
+- Präsenz: `Presence` (Speicher, unverändert aus Studio), `PresenceApi` (`/fluid-presence`), `assets/editor/presence.js`.
+  Ereignisse `cms:before-save` (vor schreibenden Aktionen des Editors) und `cms:presence-scan`. Konsole `fluid:selftest`.

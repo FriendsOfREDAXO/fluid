@@ -11,6 +11,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Adressen, Domains, SEO](#adressen-domains-seo)
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
 - [Versionen](#versionen) · [MCP-Server](#mcp-server)
+- [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
 
@@ -241,6 +242,89 @@ curl -s https://example.org/fluid-mcp -H "Authorization: Bearer $TOKEN" -H "Cont
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"site_overview","arguments":{}}}'
 ```
 
+## Neu laden auf Aktion
+
+Filtern, Blättern und Suchen ohne Seitenwechsel – aus KLXM Studio (`Core\Live`, MIT), gleiche Attribute und Skripte.
+Die Blöcke Datenliste (Blättern), Beiträge (Schlagworte, Blättern) und Suche (Treffer beim Tippen) nutzen es.
+Ohne JavaScript bleiben es normale Links und Formulare.
+
+Eigener Block:
+
+```php
+// kit.php: 'reload' => true beim Block
+<div class="wrap …"<?= \FriendsOfRedaxo\Fluid\Live::region($b) ?>>
+  <a href="?seite=2#<?= $b->domId() ?>" data-live-nav>Weiter</a>
+  <form method="get" data-live-nav><input name="q" id="…" data-live-input data-live-delay="350"></form>
+  <p role="status" data-live-count>12 Treffer</p>
+</div>
+<?= \FriendsOfRedaxo\Fluid\Live::assets() ?>
+```
+
+- `Live::region($b)` setzt `data-live-region` (= `domId`) und `data-live-src` (Seitenadresse mit `?fluid_block={slice}`).
+  Im Bearbeiten-Modus und bei Blöcken aus Daten bleibt es leer.
+- `assets/live.js` holt den Block mit den Parametern des Links bzw. Formulars und tauscht `[data-live-region]` aus.
+  - Links und Absenden: `pushState`, Eingabe: `replaceState`, Zurück/Vor lädt passend nach.
+  - Laufende Anfragen werden abgebrochen, danach kommt das Ereignis `cms:content-replaced`.
+  - Der Fokus bleibt im Feld (mit Cursor) bzw. geht an den Block. Die Ansage für Screenreader nimmt den Text aus
+    `[data-live-count]`.
+  - Bei Fehlern lädt es die Seite normal.
+- Der Server (`Live::block()`, über `FE_OUTPUT`) rendert nur Blöcke mit `'reload'` oder `'live'` der veröffentlichten
+  Seite. Die übrigen Parameter liest der Block wie beim normalen Aufruf und prüft sie selbst. `fluid_block` ist reserviert.
+
+## Live-Aktualisierung
+
+Versionen statt Inhalte über Server-Sent Events: `GET /fluid-live?t={abo}`, Ereignis `v` = `{abo: version}`.
+
+- Kanäle sind Namen, deren Version steigt: `Live::touch('ext:shop:lager')`. fluid selbst setzt `page:{id}` beim
+  Veröffentlichen und `presence:default` bei Kommen und Gehen in der Präsenz.
+- Abos sind signiert (HMAC mit einem Schlüssel in der Konfiguration des AddOns): `Live::token([...])`,
+  `Live::attrs([...], $src)` fürs Element. `live.js` hält eine Verbindung je Seite. Neue Version → Element mit
+  `data-live-src` neu laden (`[data-live-list]`, `[data-live-id]`) bzw. Ereignis `cms:live` für eigenes JavaScript.
+- Betrieb: höchstens 16 offene Streams zu je 20 Sekunden. Darüber und auf dem Entwicklungsserver (`php -S`) antwortet
+  der Endpunkt sofort, und der Browser fragt alle 15 Sekunden nach.
+
+## Präsenz der Redaktion
+
+Wer arbeitet gerade wo – aus KLXM Studio (`Core\Presence`, `presence.mjs`), das Modul ist unverändert übernommen.
+
+- In der Leiste: „Anna bearbeitet gerade“ (Initialen), sonst „Zuletzt gespeichert: Ben, vor 5 Min.“ (aus der Aktivität).
+- Konflikt: Hat jemand anderes seit dem Öffnen gespeichert, zeigt die Leiste ⚠. Vor dem nächsten Speichern fragt fluid
+  nach. Es gibt keine Sperre, „Trotzdem speichern“ ist erlaubt, der vorige Stand bleibt als Version.
+- Im Seitenbaum ein Kürzel an Seiten, die gerade jemand bearbeitet. Unter „Verlauf & Entwürfe“ → Aktivität die Liste
+  „Gerade aktiv“.
+- Nur für angemeldete Backend-Benutzer mit Recht auf die Seite. Gespeichert werden nur Name, Ort und Zeitpunkt der letzten
+  Meldung (Cache des AddOns, 45 Sekunden), es gibt kein Protokoll. Abschalten: Config `presence` des AddOns auf `false`.
+
+Teile:
+
+| Teil | Aufgabe |
+|---|---|
+| `src/Presence.php` | Speicher: `beat($who, $meta)`, `leave($who)`, `list($filter)`; Schlüssel `site/type/id/user`, kennt keine Artikel |
+| `src/PresenceApi.php` | Anbindung: Endpunkt `/fluid-presence`, Rechte, „zuletzt gespeichert“, Attribute für die Leiste |
+| `assets/editor/presence.js` | Oberfläche, nur über data-Attribute und Ereignisse gekoppelt |
+| `Live` | Kanal `presence:default` – Kommen und Gehen sofort statt nach 15 Sekunden |
+
+Schema (wie in Studio):
+
+```
+POST /fluid-presence  {type: "article", id: "{sprache}:{artikel}", label?, url?, leave?, peek?, _csrf?}
+                      → {on, me, here: [Person], last: Stand|null, live: Abo}
+GET  /fluid-presence  → {on, me, items: [{type, id, label, url, …Person}], live: Abo}
+Person = {user, name, initials, avatar, since, at, self}     Stand = {user, name, at, self}
+```
+
+- `[data-presence-here]` mit `data-presence-endpoint/-type/-id/-label/-url/-csrf/-live/-texts/-editing` – meldet sich
+  alle 15 Sekunden (im Ansehen-Modus nur `peek`), beim Verlassen per `sendBeacon` ab.
+- `[data-presence-list]` mit `data-presence-type` und `-prefix`; Einträge `[data-id]` bekommen ein Kürzel in `[data-presence-slot]`.
+- `[data-presence-board]` – Liste „Gerade aktiv“, `[data-presence-board-box]` wird ohne Einträge ausgeblendet.
+- Später eingefügte Listen (Seitenleisten): Ereignis `cms:presence-scan` am `document`.
+- Konflikt: Der Editor löst vor schreibenden Aktionen `cms:before-save` aus (`detail.waitUntil(promise)`; `false` bricht ab).
+  Die Rückfrage läuft über `window.FluidEditor.ask`. Ereignis `cms:presence` am `document`: `{here, last, conflict}`.
+
+Einbau in andere Systeme: `Presence.php` und `presence.js` kopieren, einen Endpunkt nach dem Schema oben schreiben
+(Rechte prüfen, `beat`/`leave`/`list`, „zuletzt gespeichert“ aus der eigenen Historie) und die Attribute ausgeben.
+Ohne Live-Kanal funktioniert es auch, dann mit 15 Sekunden Verzögerung.
+
 ## Konsole
 
 | Befehl | |
@@ -252,6 +336,7 @@ curl -s https://example.org/fluid-mcp -H "Authorization: Bearer $TOKEN" -H "Cont
 | `… --page=slug` | nur eine Demo-Seite anhängen, z. B. `--page=projekte` |
 | `… --yform` | nur die Beispielzeilen der YForm-Tabellen schreiben |
 | `fluid:search-index` | Suchindex neu aufbauen (sonst automatisch nach dem Veröffentlichen) |
+| `fluid:selftest` | Live-Aktualisierung und Präsenz prüfen |
 
 ## Rechte
 

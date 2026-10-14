@@ -44,13 +44,16 @@ $card = static function ($p, string $sizes) use ($hTag, $layout) {
         . ('' !== $p->excerpt ? '<div class="dl-f dl-clamp dl-clamp-3"><p>' . e($p->excerpt) . '</p></div>' : '')
         . '</div></li>';
 };
+$pages = (int) ceil($res['total'] / $limit);
+// Filtern und Blättern ohne Seitenwechsel (Live::region – Links mit data-live-nav, ohne JavaScript normale Links)
+$reload = ($pager && $pages > 1) || !empty($d['tags']) ? \FriendsOfRedaxo\Fluid\Live::region($b) : '';
 ?>
-<div class="wrap dl dl--<?= e('list' === $layout ? 'list' : 'cards') ?> posts posts--<?= e($layout) ?>">
+<div class="wrap dl dl--<?= e('list' === $layout ? 'list' : 'cards') ?> posts posts--<?= e($layout) ?>"<?= $reload ?>>
   <?= '' !== $pageH1 ? $pageH1 : fluid_head($b, 'dl-head', $top ? 'h1' : 'h2') ?>
   <?php if (!empty($d['tags']) && ($all = Blog::tags($blog))): ?>
   <ul class="post-tags post-tags--filter" role="list" aria-label="<?= e(lt('Nach Schlagwort filtern')) ?>">
-    <li><a href="<?= e($q([])) ?>"<?= '' === $tag ? ' aria-current="true"' : '' ?>><?= e(lt('Alle')) ?></a></li>
-    <?php foreach ($all as $slug => [$name, $n]): ?><li><a href="<?= e($q(['tag' => $slug])) ?>"<?= $slug === $tag ? ' aria-current="true"' : '' ?>><?= e($name) ?> <span class="post-tags__n"><?= $n ?></span></a></li><?php endforeach; ?>
+    <li><a href="<?= e($q([])) ?>" data-live-nav<?= '' === $tag ? ' aria-current="true"' : '' ?>><?= e(lt('Alle')) ?></a></li>
+    <?php foreach ($all as $slug => [$name, $n]): ?><li><a href="<?= e($q(['tag' => $slug])) ?>" data-live-nav<?= $slug === $tag ? ' aria-current="true"' : '' ?>><?= e($name) ?> <span class="post-tags__n"><?= $n ?></span></a></li><?php endforeach; ?>
   </ul>
   <?php endif; ?>
   <?php if (is_editing()): ?>
@@ -75,12 +78,13 @@ $card = static function ($p, string $sizes) use ($hTag, $layout) {
   </ul>
   <?php endif; ?>
   <?php endif; ?>
-  <?php $pages = (int) ceil($res['total'] / $limit); if ($pager && $pages > 1): ?>
+  <?php if ($pager && $pages > 1): ?>
   <nav class="posts-pager" aria-label="<?= e(lt('Blättern')) ?>">
-    <?php if ($page > 1): ?><a href="<?= e($q(['tag' => $tag, 'seite' => $page > 2 ? $page - 1 : null])) ?>" rel="prev">← <?= e(lt('Neuere')) ?></a><?php else: ?><span></span><?php endif; ?>
-    <span class="posts-pager__n"><?= e(lt('Seite {n} von {total}', ['n' => $page, 'total' => $pages])) ?></span>
-    <?php if ($page < $pages): ?><a href="<?= e($q(['tag' => $tag, 'seite' => $page + 1])) ?>" rel="next"><?= e(lt('Ältere')) ?> →</a><?php else: ?><span></span><?php endif; ?>
+    <?php if ($page > 1): ?><a href="<?= e($q(['tag' => $tag, 'seite' => $page > 2 ? $page - 1 : null])) ?>" data-live-nav rel="prev">← <?= e(lt('Neuere')) ?></a><?php else: ?><span></span><?php endif; ?>
+    <span class="posts-pager__n" data-live-count><?= e(lt('Seite {n} von {total}', ['n' => $page, 'total' => $pages])) ?></span>
+    <?php if ($page < $pages): ?><a href="<?= e($q(['tag' => $tag, 'seite' => $page + 1])) ?>" data-live-nav rel="next"><?= e(lt('Ältere')) ?> →</a><?php else: ?><span></span><?php endif; ?>
   </nav>
   <?php endif; ?>
   <?php if (trim((string) ($d['more'] ?? '')) !== ''): ?><p class="posts-more"><a class="btn" <?= fluid_link_attrs((string) $d['more']) ?>><?= e(lt('Alle Beiträge')) ?> →</a></p><?php endif; ?>
 </div>
+<?= '' !== $reload ? \FriendsOfRedaxo\Fluid\Live::assets() : '' ?>

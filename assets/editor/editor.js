@@ -18,7 +18,16 @@
 
   // ------------------------------------------------------------------ Server
 
+  // Schreibende Aktionen: vorher „cms:before-save“ (z. B. Präsenz: jemand anderes hat inzwischen gespeichert → Rückfrage)
+  const WRITES = new Set(['save', 'add', 'move', 'reorder', 'col_move', 'paste', 'duplicate', 'status', 'delete', 'publish', 'discard', 'page_save', 'lang_copy', 'version_restore']);
+  async function beforeSave(action) {
+    const waits = [];
+    document.dispatchEvent(new CustomEvent('cms:before-save', { detail: { action, waitUntil: (p) => waits.push(p) } }));
+    if ((await Promise.all(waits)).some((ok) => ok === false)) throw new Error('Abgebrochen.');
+  }
+
   async function api(action, data = {}) {
+    if (WRITES.has(action)) await beforeSave(action);
     const fd = data instanceof FormData ? data : new FormData();
     if (!(data instanceof FormData)) {
       for (const [k, v] of Object.entries(data)) {
@@ -62,6 +71,7 @@
         <span class="kind">Seite</span>
         <strong class="name">${esc(cfg.article.name)}</strong>
         <button type="button" class="chip" data-chip aria-live="polite"></button>
+        ${cfg.presence ? `<span class="cms-presence" role="status"${cfg.presence.here} hidden></span>` : ''}
       </div>
       <nav class="modes" aria-label="Modus">
         <a href="${esc(unamp(cfg.viewUrl))}" data-mode="view"${cfg.editing ? '' : ' aria-current="page"'}>Ansehen</a>
@@ -164,7 +174,7 @@
   const tpanel = h(`
     <aside class="panel tpanel" hidden aria-labelledby="fluid-tree-title">
       <header class="panel__head"><h2 id="fluid-tree-title">Seiten</h2><button type="button" class="btn btn--icon" data-tree-close aria-label="Schließen">✕</button></header>
-      <div class="panel__body"><p class="tree__intro"${may('moveArticle') || may('moveCategory') ? '' : ' hidden'}>Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen, nach links ziehen = eine Ebene höher), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree></ul></div>
+      <div class="panel__body"><p class="tree__intro"${may('moveArticle') || may('moveCategory') ? '' : ' hidden'}>Ziehen am Griff ⠿ sortiert und verschiebt (auf eine Seite fallen lassen = darunter einordnen, nach links ziehen = eine Ebene höher), ohne Ziehen: ↑ ↓ sortieren, ← eine Ebene höher, → unter die Menüseite darüber. <b>Menüpunkte</b> stehen je Ebene vor Seiten ohne Menüeintrag.</p><ul class="tree" role="tree" data-tree${cfg.presence ? cfg.presence.list : ''}></ul></div>
       <footer class="panel__foot"><button type="button" class="btn" data-tree-new="0">+ Neue Seite (oberste Ebene)</button></footer>
     </aside>`);
   const tdlg = h(`
@@ -271,6 +281,9 @@
       dialog.addEventListener('keydown', onKey);
     });
   }
+
+  // Rückfrage für andere Module (z. B. Präsenz: assets/editor/presence.js)
+  window.FluidEditor = { ...(window.FluidEditor || {}), ask };
 
   // ------------------------------------------------------------------ Status
 
@@ -663,7 +676,7 @@
       <li role="treeitem" aria-expanded="${n.children?.length ? 'true' : 'false'}" data-id="${n.id}" data-menu="${n.menu ? 1 : 0}" class="tree__item${n.online ? '' : ' is-offline'}${n.id === cfg.article.id ? ' is-current' : ''}">
         <div class="tree__row" style="--d:${depth}">
           ${mv(n) ? '<span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>' : '<span class="tree__grip" aria-hidden="true"></span>'}
-          <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a>
+          <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a><span data-presence-slot></span>
           <span class="tree__badge">${n.home ? 'Startseite' : n.menu ? 'Menü' : 'Seite'}${n.online ? '' : ' · offline'}</span>
           <span class="tree__tools">
             ${n.home || !mv(n) ? '' : `<button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
@@ -683,6 +696,7 @@
     const draw = () => {
       const top = [...tree.filter((n) => n.home), ...tree.filter((n) => !n.home)];
       list.innerHTML = top.map((n, i, all) => row(n, 0, n.home ? null : menuBefore(all, i))).join('');
+      document.dispatchEvent(new CustomEvent('cms:presence-scan'));   // Präsenz: Kürzel an den Seiten
     };
     const run = async (action, data) => {
       try {
@@ -856,7 +870,7 @@
         ? '<p class="site-intro">Seiten mit Änderungen, die noch nicht veröffentlicht sind.</p><ul class="site-list" role="list">'
           + res.drafts.map((d) => `<li class="site-list__item"><span class="site-list__main"><a href="${esc(editHref(d.url))}"><b>${esc(d.name)}</b></a><small>zuletzt ${esc(when(d.changed))}${d.user ? ' · ' + esc(d.user) : ''}</small></span><a class="btn" href="${esc(editHref(d.url))}">Öffnen</a></li>`).join('') + '</ul>'
         : '<p class="site-intro">Keine offenen Entwürfe – alles ist veröffentlicht.</p>'),
-      activity: (res) => (res.activity?.length
+      activity: (res) => (cfg.presence ? `<div data-presence-board-box hidden><h3 class="site-h" style="margin-top:0">Gerade aktiv</h3><ul class="site-list cms-presence-board"${cfg.presence.board}></ul><h3 class="site-h">Zuletzt</h3></div>` : '') + (res.activity?.length
         ? '<ul class="site-list" role="list">' + res.activity.map((a) => `<li class="site-list__item"><span class="site-list__main"><span><b>${esc(a.user || 'Jemand')}</b> hat ${a.page ? `<a href="${esc(editHref(a.url))}">${esc(a.page)}</a> ` : ''}${esc(a.action)}</span><small>${esc(when(a.when))}${a.detail ? ' · ' + esc(a.detail) : ''}</small></span></li>`).join('') + '</ul>'
         : '<p class="site-intro">Noch keine Aktivität.</p>'),
     };
@@ -864,7 +878,7 @@
       tab = t;
       hpanel.querySelectorAll('[data-history-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.historyTab === t)));
       body.innerHTML = '<p class="site-intro">Lädt …</p>';
-      try { body.innerHTML = draw[t](await api(t, {})); } catch (err) { body.innerHTML = ''; say(err.message, true); }
+      try { body.innerHTML = draw[t](await api(t, {})); document.dispatchEvent(new CustomEvent('cms:presence-scan')); } catch (err) { body.innerHTML = ''; say(err.message, true); }
     };
     $('[data-history-open]').addEventListener('click', () => {
       menu.hidden = true;

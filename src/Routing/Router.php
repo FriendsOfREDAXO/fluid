@@ -80,6 +80,17 @@ final class Router
 
             return;
         }
+        // Live-Aktualisierung (SSE) und Präsenz der Redaktion – ebenfalls erst nach allen AddOns
+        if ('/' . \FriendsOfRedaxo\Fluid\Live::PATH === $path) {
+            Extension::register('PACKAGES_INCLUDED', static fn () => \FriendsOfRedaxo\Fluid\Live::stream());
+
+            return;
+        }
+        if ('/' . \FriendsOfRedaxo\Fluid\PresenceApi::PATH === $path) {
+            Extension::register('PACKAGES_INCLUDED', static fn () => \FriendsOfRedaxo\Fluid\PresenceApi::handle());
+
+            return;
+        }
         $query = $r->query->all();
         self::$canRedirect = in_array($r->getMethod(), ['GET', 'HEAD'], true);
         $domain = Domains::forHost($host);

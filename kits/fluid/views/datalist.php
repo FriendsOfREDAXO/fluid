@@ -88,8 +88,10 @@ $pg = !empty($d['pager']) && $opt['limit'] > 0 ? YFormBridge::page($t, $opt, Req
 $rows = $pg ? $pg['rows'] : YFormBridge::rows($t, $opt);
 $cols = ['s' => 4, 'm' => 3, 'l' => 2][$d['size'] ?? 'm'] ?? 3;
 $hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
+// Blättern ohne Seitenwechsel (Live::region – Links mit data-live-nav, ohne JavaScript normale Links)
+$reload = $pg && $pg['pages'] > 1 ? \FriendsOfRedaxo\Fluid\Live::region($b) : '';
 ?>
-<div class="wrap dl dl--<?= e($layout) ?>">
+<div class="wrap dl dl--<?= e($layout) ?>"<?= $reload ?>>
   <?= fluid_head($b, 'dl-head') ?>
   <?php if (!$rows): ?>
   <p class="dl-empty"><?= e(trim((string) ($d['empty_text'] ?? '')) ?: lt('Zurzeit gibt es hier keine Einträge.')) ?></p>
@@ -126,10 +128,11 @@ $hTag = trim((string) ($d['title'] ?? '')) !== '' ? 'h3' : 'h2';
   <?php endif; ?>
   <?php if ($pg && $pg['pages'] > 1): $pq = static fn (int $n) => $here . ($n > 1 ? (str_contains($here, '?') ? '&' : '?') . 'seite=' . $n : '') . '#' . $b->domId(); ?>
   <nav class="posts-pager" aria-label="<?= e(lt('Blättern')) ?>">
-    <?php if ($pg['page'] > 1): ?><a href="<?= e($pq($pg['page'] - 1)) ?>" rel="prev">← <?= e(lt('Zurück')) ?></a><?php else: ?><span></span><?php endif; ?>
-    <span class="posts-pager__n"><?= e(lt('Seite {n} von {total}', ['n' => $pg['page'], 'total' => $pg['pages']])) ?></span>
-    <?php if ($pg['page'] < $pg['pages']): ?><a href="<?= e($pq($pg['page'] + 1)) ?>" rel="next"><?= e(lt('Weiter')) ?> →</a><?php else: ?><span></span><?php endif; ?>
+    <?php if ($pg['page'] > 1): ?><a href="<?= e($pq($pg['page'] - 1)) ?>" data-live-nav rel="prev">← <?= e(lt('Zurück')) ?></a><?php else: ?><span></span><?php endif; ?>
+    <span class="posts-pager__n" data-live-count><?= e(lt('Seite {n} von {total}', ['n' => $pg['page'], 'total' => $pg['pages']])) ?></span>
+    <?php if ($pg['page'] < $pg['pages']): ?><a href="<?= e($pq($pg['page'] + 1)) ?>" data-live-nav rel="next"><?= e(lt('Weiter')) ?> →</a><?php else: ?><span></span><?php endif; ?>
   </nav>
   <?php endif; ?>
   <?php if ($new = $edit()): ?><p class="fdl-new"><?= $editBtn($new, '+ Neuer Eintrag') ?></p><?php endif; ?>
 </div>
+<?= '' !== $reload ? \FriendsOfRedaxo\Fluid\Live::assets() : '' /* live.js nur, wenn die Liste nachladen kann */ ?>

@@ -55,6 +55,8 @@ fluid läuft auch ohne.
   vom Einstieg über Text + Bild, Zahlen, Fragen & Antworten, Preise und Karten bis zum Video
 - **Layout und Greifer:** Spalten, Abstände, Textbreite und Aufteilung Bild/Text mit der Maus ziehen
 - **Entwurf und Veröffentlichen:** Änderungen erst im Entwurf, dann „Veröffentlichen“; ältere Stände wiederherstellen
+- **Wer arbeitet gerade wo:** In der Leiste und im Seitenbaum steht, wer eine Seite gerade bearbeitet. Hat jemand
+  anderes inzwischen gespeichert, fragt fluid vor dem Speichern nach.
 - **Seiten:** Seitenbaum mit Ziehen, neue Seiten (leer, als Kopie, aus einer Vorlage), Adresse und SEO-Angaben
 - **Design:** fertige Design-Vorlagen (u. a. „REDAXO · Blau“) oder Farben, Schriften und Formen einzeln – mit
   Kontrastprüfung, live auf der Seite
@@ -64,7 +66,7 @@ fluid läuft auch ohne.
 - **Daten aus YForm** als Karten oder Liste mit eigener Adresse je Eintrag – und Blöcke auch in Datensätzen
 - **Videos** mit automatischem Vorschaubild und Untertiteln, **Karten** ohne Einwilligung, **Suche** mit Tippfehler-Toleranz
 
-**Für Besucher:** schnelle, barrierearme Seiten, schöne Adressen, Sitemap, strukturierte Daten, keine Cookies für Karten.
+**Für Besucher:** schnelle, barrierearme Seiten, Blättern, Filtern und Suchen ohne Seitenwechsel, schöne Adressen, Sitemap, strukturierte Daten, keine Cookies für Karten.
 
 **Für Entwickler:** Blöcke sind kleine PHP-Klassen mit Feldschema und View, Extension Points an allen wichtigen
 Stellen, YForm-Tabellen und -Formulare als Klassen – mehr in der [Entwickler-Referenz](docs/entwickler.md).

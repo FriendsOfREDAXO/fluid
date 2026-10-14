@@ -1,0 +1,25 @@
+/* Live-Aktualisierung (Core\Live): Statuszeile mit Pause und Markierung neuer Einträge. Farben von der Umgebung (currentColor). */
+.cms-live-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 16px;font-size:.875rem}
+.cms-live-dot{width:9px;height:9px;border-radius:50%;background:#e03131;box-shadow:0 0 0 0 rgb(224 49 49 / .5)}
+.cms-live-label{font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.cms-live-pause{display:inline-flex;align-items:center;min-height:32px;padding:0 12px;border:1px solid currentColor;border-radius:999px;background:transparent;color:inherit;font:inherit;cursor:pointer;opacity:.8}
+.cms-live-pause:hover,.cms-live-pause:focus-visible{opacity:1}
+.cms-live-pause:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.cms-live-status{opacity:.75}
+.is-live-paused .cms-live-dot{background:currentColor;opacity:.4}
+@media (prefers-reduced-motion:no-preference){
+  [data-live]:not(.is-live-paused) .cms-live-dot{animation:cms-live-dot 2s ease-out infinite}
+  .is-live-new{animation:cms-live-in .6s cubic-bezier(.2,.8,.2,1) both}
+}
+.is-live-new{position:relative}
+.is-live-new::after{content:"";position:absolute;inset:-4px;border-radius:inherit;box-shadow:0 0 0 2px #e03131;opacity:0;pointer-events:none;animation:cms-live-ring 3s ease-out}
+@keyframes cms-live-dot{0%{box-shadow:0 0 0 0 rgb(224 49 49 / .55)}70%,100%{box-shadow:0 0 0 8px rgb(224 49 49 / 0)}}
+@keyframes cms-live-in{from{opacity:0;transform:translateY(-8px) scale(.98)}}
+@keyframes cms-live-ring{0%,60%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.is-live-new::after{animation-duration:6s}}
+@media (forced-colors:active){.cms-live-dot{background:CanvasText}.is-live-new::after{box-shadow:0 0 0 2px Highlight}}
+
+/* Neu laden auf Aktion (Core\Live::region): kurz gedämpft während des Ladens, Ansage nur für Screenreader */
+[data-live-region][aria-busy=true]{opacity:.55;transition:opacity .15s}
+[data-live-region]:focus{outline:none}
+.cms-live-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}

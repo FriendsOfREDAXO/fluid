@@ -337,3 +337,20 @@ textarea[data-blocks-rte] { display: none !important; }
 /* Seitenbaum: Beiträge eines Blogs ein-/ausklappen */
 .tree__more { display: block; margin: 0 0 2px; padding: 3px 6px 3px calc(30px + var(--d, 0) * 18px); border: 0; background: none; color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; }
 .tree__more:hover { color: var(--ink); }
+
+/* Präsenz (presence.js): wer bearbeitet gerade – Initialen, „zuletzt gespeichert“, Konflikt; Kürzel im Seitenbaum, „Gerade aktiv“ */
+.cms-presence { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; max-width: 260px; overflow: hidden; font-size: 12px; color: var(--muted); }
+.cms-presence[hidden] { display: none; }
+.cms-presence__avas { display: inline-flex; flex: none; }
+.cms-presence__ava { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: -6px; border-radius: 50%; border: 2px solid var(--bg); object-fit: cover; background: #4F6FD6; color: #fff; font: 700 10px/1 system-ui, sans-serif; }
+.cms-presence__ava:first-child { margin-left: 0; }
+.cms-presence__t { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.cms-presence__t--muted { opacity: .85; }
+.cms-presence__warn { display: inline-grid; place-items: center; flex: none; width: 24px; height: 24px; border-radius: 50%; background: #FDE68A; color: #5B3A00; font-weight: 700; font-size: 13px; }
+.cms-presence.is-conflict .cms-presence__t { display: none; }
+.cms-presence__sr, .cms-presence-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.cms-presence-mark { display: inline-flex; align-items: center; flex: none; }
+.cms-presence-mark .cms-presence__ava { width: 22px; height: 22px; font-size: 9.5px; }
+.cms-presence-board__i { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
+.cms-presence-board__i small { color: var(--muted); }
+@media (max-width: 900px) { .cms-presence__t { display: none; } }

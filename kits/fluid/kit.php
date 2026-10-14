@@ -433,6 +433,7 @@ return [
         'posts' => [
             'nestable' => ['list'],   // Block „Layout“: Liste in einer Spalte
             'label' => 'Beiträge', 'icon' => 'newspaper', 'group' => 'Website',
+            'reload' => true,   // Schlagworte und Blättern ohne Seitenwechsel (Live::region)
             'help' => 'Beiträge eines Blogs (Menüseite mit „Blog / News“ in den Seiteneinstellungen): Übersicht mit Blättern und Schlagworten oder die neuesten Beiträge, z. B. auf der Startseite.',
             'variants' => ['cards' => 'Karten', 'list' => 'Liste', 'featured' => 'Aufmacher + Karten'],
             'fields' => [
@@ -448,6 +449,7 @@ return [
         ],
         'search' => [
             'label' => 'Suche', 'icon' => 'magnifying-glass', 'group' => 'Website',
+            'reload' => true,   // Treffer beim Tippen (Live::region)
             'help' => 'Suchfeld mit Treffern der ganzen Website (Tippfehler-tolerant, ohne Cookies). Die Seite mit diesem Block unter „Website“ → Kopf eintragen – dann erscheint im Kopf eine Lupe.',
             'fields' => [
                 ...$head(false),
@@ -507,6 +509,7 @@ return [
         'datalist' => [
             'requires' => 'yform',
             'label' => 'Datenliste', 'icon' => 'rows', 'group' => 'Daten',
+            'reload' => true,   // Blättern ohne Seitenwechsel (Live::region)
             'help' => 'Einträge einer YForm-Tabelle als Karten, Liste oder Tabelle – mit Detailansicht auf derselben Seite. Die Tabelle ist eine Klasse im Projekt (#[AsTable]); im Bearbeiten-Modus öffnet „Bearbeiten“ am Eintrag die Maske von YForm im Popup.',
             'variants' => ['cards' => 'Karten', 'list' => 'Liste', 'table' => 'Tabelle'],
             'fields' => [

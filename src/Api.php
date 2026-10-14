@@ -369,6 +369,7 @@ final class Api
         Versions::snapshot($article->id, $article->languageId, ArticleRevision::LIVE, 'fluid_publish');
         ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::WORK, ArticleRevision::LIVE);
         ArticleCache::delete($article->id, $article->languageId);
+        Live::touch('page:' . $article->id);   // Live-Kanal der Seite (z. B. eigenes JavaScript von Kits)
         Activity::log('publish', $article->id);
         Search\Search::markDirty();
 

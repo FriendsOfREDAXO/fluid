@@ -82,6 +82,8 @@ final class Toolbar
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),
             'rteCss' => $addon->getAssetsUrl('rte.css') . '?v=' . self::version('rte.css'),
             // Versionen-Ansicht (Zeitleiste, Vorschau, Vergleich) – lädt erst beim Öffnen
+            // Präsenz der Redaktion: wer arbeitet gerade wo (PresenceApi, assets/editor/presence.js)
+            'presence' => PresenceApi::toolbar($article, $editing),
             'versions' => ['js' => $addon->getAssetsUrl('editor/versions.js') . '?v=' . self::version('editor/versions.js'), 'css' => $addon->getAssetsUrl('editor/versions.css') . '?v=' . self::version('editor/versions.css')],
         ];
 
@@ -92,7 +94,8 @@ final class Toolbar
             . ($editing ? Links::json($article->languageId) : '')
             . '<script src="' . escape($addon->getAssetsUrl('form.js') . '?v=' . self::version('form.js')) . '" defer></script>'
             . '<script src="' . escape($addon->getAssetsUrl('rte.js') . '?v=' . self::version('rte.js')) . '" defer></script>'
-            . '<script src="' . escape($addon->getAssetsUrl('editor/editor.js') . '?v=' . self::version('editor/editor.js')) . '" defer></script>';
+            . '<script src="' . escape($addon->getAssetsUrl('editor/editor.js') . '?v=' . self::version('editor/editor.js')) . '" defer></script>'
+            . (null !== ($config['presence'] ?? null) ? '<script type="module" src="' . escape((string) $config['presence']['js']) . '"></script>' : '');
 
         $html = preg_replace('~</head>~i', $head . '</head>', $html, 1) ?? $html;
         $pos = strripos($html, '</body>');

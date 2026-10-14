@@ -219,6 +219,11 @@ final class FluidAddon extends Addon
             Extension::register('FE_OUTPUT', static fn () => Api::handle());
         }
 
+        // Neu laden auf Aktion (?fluid_block=…): nur den Block der veröffentlichten Seite ausgeben (Live::block)
+        if (Request::get(Live::BLOCK, 'int', 0) > 0 && '' === Request::get(Api::PARAM, 'string') && 1 !== Request::get(Editing::PARAM, 'int', 0)) {
+            Extension::register('FE_OUTPUT', static fn () => Live::block());
+        }
+
         // Bearbeiten-Modus: Artikel live aus der Datenbank (Arbeitsversion, sofern eingeschaltet) statt aus dem Cache
         Extension::register('ART_INIT', static function (ExtensionPoint $ep): void {
             if (!Editing::requested()) {
