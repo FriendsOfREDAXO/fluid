@@ -1,62 +1,213 @@
-# fluid – Bearbeiten auf der Website für REDAXO 6
+# fluid – Bearbeiten direkt auf der Website für REDAXO 6
 
-**fluid** bringt Blöcke mit Feldschema und Bearbeiten direkt auf der Website nach REDAXO 6. Redakteure ändern Texte, Bilder,
-Seiten und das Design dort, wo sie wirken; Entwickler bauen Blöcke als kleine Klassen. Die Konzepte stammen aus
-[KLXM Studio](https://github.com/KLXM-Opensource/studio) (MIT).
+**fluid** bringt das Bearbeiten auf der Website nach REDAXO 6: Du klickst auf einen Text und tippst, fügst Blöcke ein,
+verschiebst sie, änderst das Design – genau dort, wo Besucher die Seite sehen. Unter der Haube bleibt alles REDAXO:
+Jeder Block ist ein echter Slice, mit Arbeitsversion, Rechten und Historie des Cores.
 
-Status: Prototyp für REDAXO 6 (Branch `6.x`) – Ziel Friends Of REDAXO.
+![Die Demo-Website mit fluid](docs/bilder/website.jpg)
 
-## Was es kann
+> **Status: Prototyp.** fluid baut auf REDAXO 6 auf, das noch in Entwicklung ist (`redaxo/core` Branch 6.x). Zum
+> Ausprobieren, Mitmachen und für eigene Experimente – noch nicht für Kundenseiten.
 
-**Für Redakteure** (alles auf der Website, Leiste oben):
+---
 
-- Texte direkt auf der Seite schreiben, Formatierungsleiste, Bilder aus dem Medienpool, Links über die Linkmap
-- Blöcke einfügen, verschieben (ziehen oder ↑ ↓), verdoppeln, kopieren und auf anderen Seiten einfügen, online/offline
-- Layout mit Spalten; Spaltenbreiten, Abstände, Textbreite und Aufteilung Bild/Text mit Greifern ziehen
-- Arbeitsversion: erst speichern, dann „Veröffentlichen“; Versionen wiederherstellen, Entwürfe-Übersicht, Aktivität
-- Seiten: Baum mit Ziehen oder ↑ ↓ ← → (auch am Handy), neue Seiten (leer, Kopie, Vorlage), Seiteneinstellungen mit Adresse und SEO-Angaben
-- Website: Name, Logo, Kontakt, Öffnungszeiten, Social Media, Hinweisleiste, Rechtliches, Sprachen, Domains, Weiterleitungen
-- Mehrsprachig: Sprache in der Leiste wechseln (DE | EN), leere Seite mit „Inhalt aus … übernehmen“ füllen und übersetzen
-- Design-Editor (Admins), Bildbearbeitung (AddOn image_editor), Formulare und Datenlisten (YForm), Anfragen-Postfach
-- Blog / News: eine Menüseite wird zum Blog, ihre Seiten sind Beiträge (Datum, Autor, Schlagworte); Block „Beiträge“ mit
-  Aufmacher, Karten oder Liste, Blättern und Schlagwort-Filter; „+ Neuer Beitrag“ direkt in der Übersicht; RSS-Feed
-- Videos: eigene Datei mit automatischem Vorschaubild, Untertiteln (.vtt/.srt aus dem Medienpool) und Transkript;
-  YouTube/Vimeo mit Zwei-Klick-Lösung
-- Redaktionskommentare `[# … #]` – nur im Bearbeiten-Modus sichtbar
+## Inhalt
 
-**Für Besucher:** schöne Adressen, Multidomain, Sitemap, strukturierte Daten, Suche mit Tippfehler-Toleranz, Karten
-ohne Einwilligung (eigener Proxy, keine Cookies), barrierearme Ausgabe.
+1. [Was fluid kann](#was-fluid-kann)
+2. [Schnellstart: in fünf Minuten zur eigenen Demo-Website](#schnellstart)
+3. [Erste Schritte auf der Website](#erste-schritte-auf-der-website)
+4. [Was in der Demo steckt](#was-in-der-demo-steckt)
+5. [fluid in ein bestehendes REDAXO-6-Projekt einbauen](#fluid-in-ein-bestehendes-projekt-einbauen)
+6. [Webserver: schöne Adressen](#webserver-schöne-adressen)
+7. [Häufige Probleme](#häufige-probleme)
+8. [Für Entwickler](#für-entwickler)
+9. [Lizenz und Danke](#lizenz-und-danke)
 
-## Voraussetzungen
+---
 
-- REDAXO 6 (`redaxo/core` 6.x), PHP 8.5, MySQL 8.4 / MariaDB 10.11
-- PHP-Erweiterungen: `pdo_sqlite` (Suche), `intl`, `mbstring`, GD oder Imagick (Bilder)
-- optional: [YForm 6](https://github.com/yakamara/yform/tree/6.x) für Formulare und Datenlisten,
-  `friendsofredaxo/image_editor` für die Bildbearbeitung
+## Was fluid kann
 
-## Installation
+**Für Redakteure** – alles auf der Website, über eine Leiste oben:
+
+- **Texte direkt auf der Seite** ändern, mit Formatierungsleiste; alle Felder eines Blocks in der Seitenleiste
+- **Blöcke** einfügen, verschieben (ziehen oder ↑ ↓), verdoppeln, kopieren, online/offline – 24 Blöcke im Kit,
+  vom Einstieg über Text + Bild, Zahlen, Fragen & Antworten, Preise und Karten bis zum Video
+- **Layout und Greifer:** Spalten, Abstände, Textbreite und Aufteilung Bild/Text mit der Maus ziehen
+- **Entwurf und Veröffentlichen:** Änderungen erst im Entwurf, dann „Veröffentlichen“; ältere Stände wiederherstellen
+- **Seiten:** Seitenbaum mit Ziehen, neue Seiten (leer, als Kopie, aus einer Vorlage), Adresse und SEO-Angaben
+- **Design:** fertige Design-Vorlagen (u. a. „REDAXO · Blau“) oder Farben, Schriften und Formen einzeln – mit
+  Kontrastprüfung, live auf der Seite
+- **Mehrsprachig:** Sprachwahl in der Leiste, Inhalte einer Sprache übernehmen und übersetzen, Sprachwahl für Besucher
+- **Blog / News** mit Schlagworten, RSS und „Neuer Beitrag“ direkt in der Übersicht
+- **Formulare** zum Zusammenklicken – auch mehrstufig, speichern und/oder per E-Mail, mit Bestätigung (YForm)
+- **Daten aus YForm** als Karten oder Liste mit eigener Adresse je Eintrag – und Blöcke auch in Datensätzen
+- **Videos** mit automatischem Vorschaubild und Untertiteln, **Karten** ohne Einwilligung, **Suche** mit Tippfehler-Toleranz
+
+**Für Besucher:** schnelle, barrierearme Seiten, schöne Adressen, Sitemap, strukturierte Daten, keine Cookies für Karten.
+
+**Für Entwickler:** Blöcke sind kleine PHP-Klassen mit Feldschema und View, Extension Points an allen wichtigen
+Stellen, YForm-Tabellen und -Formulare als Klassen – mehr in der [Entwickler-Referenz](docs/entwickler.md).
+
+| Formular in Schritten | Blöcke in einem YForm-Datensatz |
+|---|---|
+| ![Mehrstufiges Formular](docs/bilder/formular-schritte.jpg) | ![Blöcke eines Datensatzes bearbeiten](docs/bilder/bearbeiten-datensatz.jpg) |
+
+---
+
+## Schnellstart
+
+Mit einem Befehl entsteht eine komplette Website: REDAXO 6, YForm 6, fluid und – wenn du möchtest – die Demo mit
+allen Seiten, Beispieldaten, Bildern und dem Design „REDAXO · Blau“.
+
+### 1. Das brauchst du
+
+| | Version | So bekommst du es |
+|---|---|---|
+| **PHP** | 8.5 mit `pdo_mysql`, `pdo_sqlite`, `intl`, `mbstring`, `fileinfo`, `gd` oder `imagick` | Mac: [Herd](https://herd.laravel.com) oder `brew install php` · Windows: [Laragon](https://laragon.org) · Linux: Paketverwaltung |
+| **MySQL oder MariaDB** | MySQL 8.4 / MariaDB 10.11 oder neuer | in Herd/Laragon/MAMP enthalten, sonst [DBngin](https://dbngin.com) (Mac) |
+| **git** | beliebig | meist schon da: `git --version` |
+| Composer | 2.9 oder neuer | **lädt das Skript selbst**, wenn deins fehlt oder älter ist |
+| ffmpeg | optional | nur für automatische Video-Vorschaubilder |
+
+Prüfen kannst du PHP mit `php -v` – dort sollte `8.5` stehen.
+
+### 2. Installieren
+
+Im Terminal in den Ordner wechseln, in dem die Website entstehen soll, dann:
 
 ```bash
-composer require friendsofredaxo/fluid
-php bin/console migrate
-php bin/console fluid:demo --set=redaxo6   # optional: Demo-Seiten (nur in leeren Installationen)
+curl -fsSLO https://raw.githubusercontent.com/FriendsOfREDAXO/fluid/main/install-dev.sh
+bash install-dev.sh meine-seite
 ```
 
-Das Kit **fluid** bringt Template und Blöcke mit. Solange es keine Seiten gibt, zeigt die Website „Erste Schritte“: Admins
-legen dort mit einem Klick eine leere Startseite oder die Beispielseiten an. Im Backend erscheint über den Slices „Auf der
-Website bearbeiten“; unter **AddOns → fluid** prüft „Status“ die Umgebung (Adressen, Mail, Suche, ffmpeg …).
+Das Skript fragt nach der Datenbank, falls es sich nicht mit `root` ohne Passwort verbinden kann. Du kannst sie auch
+gleich mitgeben:
 
-Nach einem Update von fluid: `php bin/console migrate` (aktualisiert Tabellen und kopiert die Assets neu).
+```bash
+bash install-dev.sh meine-seite --db mysql://root:geheim@127.0.0.1:3306/meine_seite
+```
 
-Entfernen: `php bin/console addon:uninstall fluid` (löscht Tabellen, Einstellungen, Suchindex und Cache von fluid),
-direkt danach `composer remove friendsofredaxo/fluid`. Artikel und Slices bleiben erhalten.
+Die Datenbank legt das Skript selbst an. Nach etwa einer Minute erscheint:
 
-### Webserver: schöne Adressen
+```
+  Website:   http://127.0.0.1:8000/
+  Backend:   http://127.0.0.1:8000/redaxo/
+  Anmelden:  admin  /  (Passwort)
+```
 
-fluid löst Adressen wie `/leistungen/beratung` selbst auf. Der Webserver muss alle Anfragen ohne Datei an `index.php`
-geben.
+**Notier dir das Passwort** – es wird nirgends gespeichert. Der Server läuft dann schon; beenden mit `Strg + C`.
 
-**Apache** (`public/.htaccess`):
+### Mit oder ohne Demo-Inhalte
+
+| Befehl | Ergebnis |
+|---|---|
+| `bash install-dev.sh meine-seite` | **mit Demo:** alle Beispielseiten, Blog, Presse, Projekte, Formular, Bilder, Design „REDAXO · Blau“ |
+| `bash install-dev.sh meine-seite --empty` | **ohne Inhalte:** die Website zeigt „Erste Schritte“ – dort legst du mit einem Klick eine leere Startseite **oder** doch die Beispielseiten an |
+
+Weitere Optionen: `--port 8080` (anderer Port), `--admin name` (anderer Benutzername), `--no-start` (Server nicht
+starten). Alle Optionen: `bash install-dev.sh --help`.
+
+### 3. Später wieder starten
+
+```bash
+cd meine-seite
+php -S 127.0.0.1:8000 -t public dev-router.php
+```
+
+Dann im Browser http://127.0.0.1:8000/ öffnen. Nutzt du Herd, Laragon, MAMP oder Apache, kannst du auch dort einen
+Host auf den Ordner `public` zeigen lassen (siehe [Webserver](#webserver-schöne-adressen)).
+
+---
+
+## Erste Schritte auf der Website
+
+1. **Anmelden:** http://127.0.0.1:8000/redaxo/ öffnen und mit `admin` und deinem Passwort anmelden.
+2. **Zur Website:** Oben im Backend auf den Namen der Website klicken – oder http://127.0.0.1:8000/ öffnen. Weil du
+   angemeldet bist, siehst du oben die **Leiste von fluid**.
+3. **Bearbeiten:** In der Leiste auf **„Bearbeiten“**. Jetzt kannst du in jeden Text klicken und tippen. Über einem Block
+   erscheint seine Leiste: **Bearbeiten** öffnet alle Felder in der Seitenleiste, ↑ ↓ verschiebt, ⋯ verdoppelt oder kopiert.
+4. **Block einfügen:** Mit der Maus über einen Block fahren, unten auf das runde **+** klicken und einen Block wählen.
+5. **Speichern und veröffentlichen:** **„Speichern“** legt die Änderungen im Entwurf ab – Besucher sehen noch die alte
+   Fassung. **„Veröffentlichen“** bringt alles live.
+6. **Design:** **„Design“** öffnet die Vorlagen und alle Einstellungen. Ein Klick auf eine Vorlage zeigt sie sofort;
+   „Speichern“ übernimmt sie für die ganze Website.
+7. **Mehr im Menü ⋯:** Seiten (Seitenbaum), Neue Seite, Seiteneinstellungen, Website (Name, Logo, Kontakt, Sprachen,
+   Domains), Verlauf, Anfragen.
+
+Im Backend findest du unter **AddOns → fluid** eine Statusseite, die prüft, ob alles richtig eingerichtet ist.
+
+![Statusseite im Backend](docs/bilder/backend-status.jpg)
+
+---
+
+## Was in der Demo steckt
+
+| Seite | Zeigt |
+|---|---|
+| **Start** | Einstieg, Merkmale, Zahlen, Layout mit Text und Zitat in Spalten, Handlungsaufruf |
+| **Technik**, **Was sich ändert**, **Bearbeiten** | Schritte, Fließtext, Fragen & Antworten, Merkmale, Zitat, Spalten |
+| **Bausteine** | weitere Blöcke des Kits: Logos, Bento, Reiter, Preise |
+| **Daten** | YForm: Termine als Datenliste, Kontaktformular mit Postfach |
+| **Presse** | Kurzmeldungen aus YForm – nach Datum, mit Blättern und eigener Adresse je Meldung |
+| **Projekte** | Fallstudien: YForm-Einträge, deren Inhalt aus Blöcken besteht – direkt auf der Website bearbeitbar |
+| **Neuigkeiten** | Blog mit Beiträgen, Schlagworten und RSS |
+| **Anmeldung** | Formular-Baukasten mit drei Schritten (nicht im Menü: `/anmeldung`) |
+| **Suche** | Suche über alle Seiten |
+
+Die Beispiel-Tabellen (Termine, Anfragen, Meldungen, Projekte) liegen als YForm-Klassen in `src/YForm/` deines Projekts –
+du kannst sie ändern oder löschen. Im Backend stehen sie unter „Daten“.
+
+**Neu anfangen:** Willst du die Demo-Inhalte wieder loswerden, lösch die Seiten im Seitenbaum – oder setz die ganze
+Installation neu auf (Ordner und Datenbank löschen, Skript erneut starten).
+
+---
+
+## fluid in ein bestehendes Projekt einbauen
+
+Du hast schon ein REDAXO-6-Projekt (`composer create-project redaxo/project:6.x-dev`)? Dann reichen drei Schritte.
+Solange fluid und YForm 6 noch nicht auf Packagist stehen, holt Composer sie direkt von GitHub:
+
+```bash
+composer config repositories.yform '{"type": "vcs", "url": "https://github.com/yakamara/yform", "no-api": true}'
+composer config repositories.fluid '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/fluid", "no-api": true}'
+composer require yakamara/yform:6.x-dev@dev friendsofredaxo/fluid:*@dev
+
+php bin/console migrate
+```
+
+YForm ist optional – ohne YForm fehlen nur Formulare, Datenlisten und das Postfach. Für die Bildbearbeitung auf der
+Website gibt es das AddOn `friendsofredaxo/image_editor` (optional).
+
+Danach entweder auf der Website „Erste Schritte“ nutzen oder in der Konsole:
+
+```bash
+# Beispiel-Tabellen der Demo (optional, für Daten/Presse/Projekte)
+mkdir -p src/YForm && cp vendor/friendsofredaxo/fluid/examples/yform/*.php src/YForm/ && php bin/console migrate
+
+# komplette Demo mit Bildern und Design „REDAXO · Blau“
+php bin/console fluid:demo --set=redaxo6 --media --design=redaxo
+```
+
+`fluid:demo` legt Inhalte nur in einer **leeren** Installation an. In der Konsole kannst du mit `--page=projekte`
+einzelne Demo-Seiten anhängen.
+
+**Mail:** Formulare und Benachrichtigungen nutzen den Mailer des Cores – `MAILER_DSN` und `REX_MAILER_FROM` in
+`.env.local` (das Installationsskript setzt `null://null`: Mails werden dann nicht verschickt).
+
+**Nach Updates** (`composer update`): immer `php bin/console migrate` – das aktualisiert Tabellen und kopiert die
+Assets neu.
+
+---
+
+## Webserver: schöne Adressen
+
+fluid löst Adressen wie `/projekte/stadtwerke-musterstadt-1` selbst auf. Der Webserver muss deshalb alle Anfragen, zu
+denen es keine Datei gibt, an `public/index.php` geben. Die Wurzel des Webservers ist immer der Ordner **`public`**.
+
+**Eingebauter PHP-Server** (Entwicklung): `php -S 127.0.0.1:8000 -t public dev-router.php` – `dev-router.php` legt das
+Installationsskript an.
+
+**Apache** (`public/.htaccess` – das Skript ergänzt die Regeln):
 
 ```apache
 RewriteEngine On
@@ -68,222 +219,91 @@ RewriteRule ^ index.php [L]
 **nginx:**
 
 ```nginx
+root /pfad/zum/projekt/public;
 location / {
     try_files $uri $uri/ /index.php?$query_string;
 }
 ```
 
-Alte Aufrufe `index.php?article_id=…` leiten per 301 auf die schöne Adresse. Ändert sich eine Adresse (Umbenennen der
-Adresse, Verschieben), legt fluid automatisch eine 301-Weiterleitung an.
+**Herd / Valet / Laragon:** einen Host auf den Ordner `public` zeigen lassen – Rewrites sind dort schon eingerichtet.
 
-### Mail
+---
 
-Formulare (YForm) und Benachrichtigungen nutzen den Mailer des Cores: `MAILER_DSN` und `REX_MAILER_FROM` in `.env`.
+## Häufige Probleme
+
+**„PHP … ist zu alt“** – REDAXO 6 braucht PHP 8.5. Hast du mehrere PHP-Versionen, gib die richtige an:
+`PHP=/pfad/zu/php8.5 bash install-dev.sh meine-seite`.
+
+**„Keine Verbindung zur Datenbank“** – Läuft MySQL/MariaDB? Stimmen Benutzer, Passwort und Port? MAMP nutzt z. B.
+Port 8889 und `root`/`root`: `--db mysql://root:root@127.0.0.1:8889/meine_seite`.
+
+**Die Website hat keine Farben/Schriften** – Der Webserver zeigt nicht auf `public`. Beim PHP-Server `-t public`
+nicht vergessen.
+
+**Unterseiten liefern „404“, die Startseite geht** – Die Rewrite-Regeln fehlen (siehe [Webserver](#webserver-schöne-adressen)).
+
+**„Could not authenticate against github.com“** – Composer fragt GitHub über die API ab. Das Skript nutzt deshalb
+`"no-api": true`; trägst du die Repositories selbst ein, nimm dieselbe Schreibweise wie oben.
+
+**„This is an invalid domain“ in der Browser-Konsole** – kommt von der Passkey-Anmeldung im Backend auf einer
+IP-Adresse und ist harmlos. Mit `http://localhost:8000/` verschwindet die Meldung.
+
+**Nach `composer update` sieht etwas alt aus** – `php bin/console migrate` ausführen (kopiert die Assets neu).
+
+**Passwort vergessen** – `php bin/console user:set-password admin`.
+
+---
 
 ## Für Entwickler
 
-### Ein eigener Block
+Alles Technische steht in der **[Entwickler-Referenz](docs/entwickler.md)**:
 
-Ein Block ist eine Modulklasse mit Feldschema und eine View. Im Projekt, ohne das Kit zu ändern:
+- eigene Blöcke als Modulklasse + View, alle Feldtypen und Block-Optionen
+- Extension Points (`FLUID_BLOCK_DEFINITION`, `FLUID_BLOCK_VIEW`, `FLUID_SETTINGS_SCHEMA` …)
+- YForm: Formular-Baukasten, Datenliste, YForm-Feld „Fluid-Blöcke“, Postfach
+- Routing, Domains, SEO, Sprachen, Videos, Blog, Karten, Rechte, Konsole
+
+Ein eigener Block in Kürze:
 
 ```php
 // src/Block/Teaser.php
-namespace Project\Block;
-
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
-use Redaxo\Core\Content\AsModule;
-
 #[AsModule('fluid.teaser', 'Teaser')]
 final class Teaser extends FluidBlock
 {
     protected function define(): array
     {
-        return [
-            'label' => 'Teaser', 'icon' => 'star', 'group' => 'Inhalt',
-            'nestable' => true,   // darf in eine Layout-Spalte
-            'fields' => [
-                ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true, 'max' => 80],
-                ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 3],
-                ['name' => 'link', 'label' => 'Link', 'type' => 'link'],
-            ],
-        ];
+        return ['label' => 'Teaser', 'group' => 'Inhalt', 'fields' => [
+            ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true],
+            ['name' => 'text', 'label' => 'Text', 'type' => 'textarea'],
+        ]];
     }
 }
 ```
 
 ```php
-<?php // src/Block/Teaser.view.php – $b = Block, $d = Daten ?>
+<?php // src/Block/Teaser.view.php ?>
 <div class="wrap">
-  <h2 class="h3"<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
+  <h2<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
   <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
 </div>
 ```
 
-- `$b->edit('feld')` macht ein Feld direkt auf der Seite bearbeitbar (`'lines'` mehrzeilig, `'rich'` mit Formatierung).
-- Daten liegen als JSON in `value1`, Abschnitts-Optionen (Hintergrund, Abstände, Spalte) in `value2` – echte Slices
-  mit Rechten, Arbeitsversion und Historie des Cores.
-- Vorlage: `examples/block/`.
+`$b->edit('feld')` macht das Feld direkt auf der Website bearbeitbar – fertig ist der Block, mit Seitenleiste,
+Entwurf, Rechten und Historie.
 
-**Feldtypen:** `text`, `textarea`, `richtext`, `select` (`options`), `bool`, `number`, `url`, `time`, `media`, `file`,
-`link` (Linkmap), `mediacategory`, `repeater` (`fields`, `item_label`, `title_field`), `geo` (Koordinaten mit Adresssuche),
-`yform_form`, `yform_table`, `yform_field`. Optionen je Feld: `label`, `help`, `required`, `default`, `max`, `rows`,
-`placeholder`, `width` (`half`), `variants` (nur bei bestimmten Darstellungen), `types` (bei `file`: erlaubte Endungen, z. B. `['vtt', 'srt']`).
+**Mitmachen:** Fehler und Ideen gern als [Issue](https://github.com/FriendsOfREDAXO/fluid/issues), Pull Requests
+willkommen. Zum Entwickeln: Repo klonen und `FLUID_SOURCE=$PWD/fluid bash fluid/install-dev.sh fluid-dev`
+(siehe [Mitentwickeln](docs/entwickler.md#mitentwickeln)).
 
-**Block-Optionen:** `variants` (Darstellungen), `background`, `nestable`, `requires` (`'yform'`), `jsonld`
-(strukturierte Daten, z. B. `['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']`),
-`drags` (Greifer auf der Seite: `['field' => 'measure', 'target' => '.prose', 'class' => 'prose--m-{v}', 'label' => 'Textbreite']`).
-
-### Extension Points
-
-| Name | Subject | Params | Zweck |
-|---|---|---|---|
-| `FLUID_BLOCK_DEFINITION` | Definition (array) | `type`, `module`, `kit` | Felder ergänzen, Beschriftungen ändern |
-| `FLUID_BLOCK_VIEW` | Pfad der View | `type`, `variant`, `block` | Ausgabe eines Blocks überschreiben |
-| `FLUID_SETTINGS_SCHEMA` | Reiter der Website-Einstellungen | – | eigene Einstellungen (lesen mit `setting('name')`) |
-| `FLUID_SEARCH_DOCUMENT` | Dokument (array) oder null | `article` | Suchindex ergänzen, Seiten ausschließen |
-| `FLUID_STRUCTURED_DATA` | JSON-LD (`@graph`) | `article` | schema.org ergänzen |
-| `FLUID_ROBOTS` | Text der robots.txt | – | Regeln ergänzen |
-| `FLUID_SITE_TRANSLATIONS` | Übersetzungen (array) | `code` | feste Texte des Kits für eine Sprache ergänzen/ändern |
-| `FLUID_EDITOR_CONFIG` | Einstellungen des Editors | `article`, `user` | Blöcke/Menüpunkte für Rollen ausblenden |
-
-Dazu nutzt fluid die Extension Points des Cores, z. B. `URL_REWRITE` für die Adressen.
-
-```php
-// Eigene Website-Einstellung
-Extension::register('FLUID_SETTINGS_SCHEMA', static function (ExtensionPoint $ep) {
-    $schema = $ep->subject;
-    $schema['base']['fields'][] = ['name' => 'claim_en', 'label' => 'Claim (englisch)', 'type' => 'text'];
-    return $schema;
-});
-```
-
-### YForm: Formulare und Datenlisten
-
-fluid arbeitet mit den Mitteln von YForm 6 – Tabellen und Formulare sind Klassen im Projekt (`#[AsTable]`, `#[AsForm]`):
-
-- **Formular-Baukasten** (Block „Formular“, ohne gewählte Klasse): Die Redaktion stellt Felder auf der Website zusammen
-  (Textzeile, E-Mail, Telefon, Auswahl, Häkchen, Datum, Hinweistext …), teilt das Formular mit „— Neuer Schritt —“ in
-  Schritte und wählt, was nach dem Absenden passiert: speichern, per E-Mail senden oder beides, Bestätigung an den
-  Absender, Text oder Weiterleitung. Technisch eine YForm-`FormDefinition` (`Data\BuiltForm`), deren Felder aus dem Block
-  kommen – Prüfung, CSRF, Honigtopf und Aktionen (`SaveRecord`, `SendMail`, `Redirect`) laufen über YForm, ebenso der EP
-  `YFORM_FORM_SUBMITTED`. Schritte = Reiter des YForm-Layouts (`js/formsteps.js`, ohne JavaScript alle untereinander).
-  Gespeichert wird in die YForm-Tabelle **„Formular-Eingänge“** (`rex_fluid_form_entry`, Klasse in fluid, Postfach
-  „Anfragen“) oder in eine eigene YForm-Tabelle (Felder mit gleichem Feldnamen).
-- **Block „Formular“** mit Klasse und Formular im **Block „Kontakt“**: Die Redaktion wählt ein Formular. Prüfung, CSRF, Honigtopf
-  und Aktionen (`SaveRecord`, `SendMail`, `ShowMessage` …) kommen aus der Formular-Klasse; fluid gibt es im Stil des Kits aus.
-- **Block „Datenliste“**: eine Tabelle als Karten, Liste oder Tabelle mit Detailansicht (`?eintrag=ID`), Filter und
-  Sortierung; „Bearbeiten“ öffnet die Maske von YForm.
-- **Postfach „Anfragen“**: Einträge der Tabellen, in die die Formulare der Website speichern; Status neu/erledigt.
-- **Kurzmeldungen, Presse, Termine**: Datenliste mit Sortierung (z. B. Datum absteigend), Blättern („Höchstens“ = je Seite,
-  über YForms `paginate()`) und Detailansicht mit eigener Adresse `/seite/titel-ID` – Titel, Beschreibung, Bild und
-  Canonical des Eintrags, Eintrag in der Sitemap, 301 von alten `?eintrag=`-Links, 404 für fehlende Einträge.
-  Wann Blog, wann Datenliste? Blog = Beiträge mit Blöcken, Entwurf und Versionen; Datenliste = gleichförmige Einträge
-  mit festen Feldern, gepflegt in der YForm-Maske.
-
-### Blöcke in YForm-Tabellen: Feld „Fluid-Blöcke“
-
-Jede YForm-Tabelle kann Inhalt aus den Blöcken von fluid haben – ein Feld wie jedes andere in der Tabellenklasse:
-
-```php
-use FriendsOfRedaxo\Fluid\Data\FluidBlocks;
-
-yield FluidBlocks::new('inhalt')->label('Inhalt');
-yield FluidBlocks::new('inhalt')->label('Inhalt')->blocks('richtext', 'media_text', 'video');   // nur diese Blöcke
-```
-
-- Bearbeiten in der YForm-Maske: Blöcke hinzufügen, bearbeiten (dieselben Felder wie auf der Website – Medienpool,
-  Linkmap, Text-Editor), verschieben, entfernen. Gespeichert als JSON (`longtext`).
-- Ausgabe: Die Detailansicht der Datenliste zeigt das Feld automatisch als Blöcke. In eigenen Templates:
-  `echo \FriendsOfRedaxo\Fluid\BlockData::render($record->get('inhalt'));` – Klartext für Listen und Suche:
-  `BlockData::text(…)`.
-- **Auf der Website bearbeiten:** Im Bearbeiten-Modus sind die Blöcke eines Eintrags in der Detailansicht der Datenliste
-  bearbeitbar wie Seiten-Blöcke – Texte direkt auf der Seite, Seitenleiste, Greifer, hinzufügen (nur die im Feld
-  erlaubten Blöcke), verschieben (Pfeile, Ziehen), verdoppeln, kopieren/einfügen (auch zwischen Seite und Eintrag),
-  löschen. Gespeichert wird sofort in den Datensatz (YForm-Record-API mit Prüfung und Hooks) – Datensätze kennen keinen
-  Entwurf. Recht: YForm „Tabelle bearbeiten“ und Modulrecht des Blocks. Technisch: Block-IDs `r~tabelle~id~feld~uid`
-  (`Data\RecordBlocks`), jeder Block hat eine feste Kennung `uid`.
-- Layout-Spalten gibt es im Feld nicht (sie brauchen Slices); Rechte: Modulrecht des Blocks wie auf den Seiten.
-
-Für eigene Ausgaben: `PageSettings::override(['title' => …, 'description' => …, 'image' => …, 'canonical' => …])`
-setzt den Seitenkopf aus einem Block heraus (z. B. eigene Detailansichten).
-
-Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `ProjectTable`, `AnfrageTable`, `AnfrageForm`) – nach `src/` kopieren, `console migrate`.
-
-### Adressen, Domains, SEO
-
-- Adresse = Slugs der Elternseiten + eigener Slug (Tabelle `rex_fluid_route`); der Slug bleibt beim Umbenennen gleich.
-- Domains (Website → Domains): **Hauptadresse**, **weitere Domains** (301 auf die Hauptadresse), **Landing-Domains**
-  (eigene Domain für eine Seite, optional mit Unterseiten, Canonical „eigene Domain“ oder „Spiegel“).
-- `sitemap.xml` und `robots.txt` je Domain, Canonical, hreflang, schema.org-@graph (Organisation, WebSite, WebPage,
-  Brotkrumen, Blöcke).
-- Weitere Sprachen bekommen ein Präfix (`/en/…`); Sprachwahl im Kopf und im mobilen Menü zeigt nur Sprachen, in denen
-  die Seite online ist (`Router::alternates($article)`).
-
-### Sprachen
-
-Website-Texte (Claim, Hinweisleiste, Fußtext …) pflegt man in „Website“ je Sprache; leer = Text der Startsprache.
-Eigene Einstellungen werden mit `'translate' => true` im Schema (EP `FLUID_SETTINGS_SCHEMA`) übersetzbar.
-
-Sprachen sind die des Cores (`LanguageHandler`) – angelegt unter Website → Sprachen oder im Backend. Feste Texte des Kits
-(„Menü“, „Öffnungszeiten“ …) schreibt das Kit mit `lt('Text')`; Übersetzungen liegen in `kits/fluid/lang/site/{code}.php`
-(`['Menü' => 'Menu', …]`). Eigene Sprachen oder Änderungen ohne das Kit anzufassen:
-
-```php
-Extension::register('FLUID_SITE_TRANSLATIONS', static function (ExtensionPoint $ep) {
-    return 'fr' === $ep->getParam('code') ? $ep->subject + ['Menü' => 'Menu', 'Suche' => 'Recherche'] : $ep->subject;
-});
-```
-
-### Videos
-
-- **Vorschaubild:** Media-Manager-Typ `fluid_poster` – bei einem Video ein typisches Standbild per ffmpeg (bei ~10 % der
-  Laufzeit), bei einem Bild nur verkleinert; Ausgabe AVIF/WebP, gespeichert im Cache des Media Managers. Ohne ffmpeg
-  gibt es nur gewählte Vorschaubilder. Pfad bei Bedarf über `FFMPEG_BIN` / `FFPROBE_BIN` in `.env`.
-  `MediaManager::getUrl('fluid_poster', 'film.mp4')` funktioniert auch in eigenen Templates.
-- **Untertitel und Kapitel:** `.vtt` oder `.srt` im Medienpool, im Block je Spur Sprache und Art. fluid liefert sie geprüft
-  als WebVTT unter `/fluid-track/{datei}` aus (SRT umgewandelt; nur erlaubte WebVTT-Tags). Option „gleich einschalten“
-  wählt die Spur in der Sprache der Seite; „Transkript“ zeigt den Text darunter (`<details>`).
-- Eigene Ausgabe: `fluid_video_embed($url, $datei, $poster, $format, $titel, $spuren, $einschalten, $transkript)`
-  bzw. `FriendsOfRedaxo\Fluid\Media\Tracks` (`parse()`, `toVtt()`, `transcript()`).
-
-### Blog
-
-Beiträge sind normale Artikel in einer Kategorie mit „Blog / News“ (Seiteneinstellungen der Menüseite) – Editor, Entwurf,
-Versionen, Rechte, Adressen, Sprachen und Suche gelten wie überall. Dazu Datum, Autor, Schlagworte (`rex_fluid_page`);
-Teaserbild = Bild für soziale Netzwerke, Kurztext = Beschreibung. Sortierung nach Datum, neueste zuerst.
-
-- Beitragsseiten bekommen im Template Kopf (Titel, Datum, Autor, Schlagworte, Bild) und „Älterer/Neuerer Beitrag“
-  (`fluid_post_header()`, `fluid_post_footer()` im Kit), schema.org `BlogPosting`, die Übersicht `Blog`.
-- RSS 2.0 unter `/{blog}/feed.xml` (EP `FLUID_BLOG_FEED`), `<link rel="alternate">` im Kopf.
-- Eigene Ausgaben: `Blog::posts($blogId, ['limit' => 3, 'tag' => 'team'])` liefert `Post`-Objekte
-  (`article`, `date`, `author`, `tags`, `image`, `excerpt`, `url`); `Blog::blogOf($article)`, `Blog::tags($blogId)`.
-- Feldtyp `blog` (Auswahl der Blogs) für eigene Blöcke.
-
-### Karten
-
-MapLibre GL und OpenFreeMap über den eigenen Proxy `/proxy/ofm/…` (Cache im Cache-Ordner des AddOns). Besucher verbinden
-sich nicht mit Dritten. Detailkacheln gibt es nur rund um Orte, die auf der Website als Karte vorkommen.
-
-### Konsole
-
-| Befehl | |
-|---|---|
-| `fluid:demo --set=redaxo6 [--replace] [--page=slug] [--yform]` | Demo-Seiten, eine einzelne Seite anhängen, YForm-Beispieldaten |
-| `fluid:search-index` | Suchindex neu aufbauen (sonst automatisch nach dem Veröffentlichen) |
-
-### Rechte
-
-fluid nutzt die Rechte des Cores – eine Rolle wirkt auf der Website genau wie im Backend:
-
-- **Kategorien** (Strukturrecht) und **Module** (welche Blöcke) bestimmen, was jemand bearbeiten und einfügen darf.
-- **Optionen** der Rolle schalten Aktionen frei: `version[live_version]` Veröffentlichen (ohne: „Entwurf – wartet auf
-  Freigabe“), `moveSlice[]` Blöcke verschieben, `publishSlice[]` Blöcke online/offline, `addArticle[]`/`addCategory[]`
-  neue Seiten bzw. Menüpunkte, `editArticle[]`/`editCategory[]` Seiteneinstellungen, `moveArticle[]`/`moveCategory[]`,
-  `publishArticle[]`/`publishCategory[]`, `deleteArticle[]`/`deleteCategory[]`, `article2category[]` (Menüpunkt ja/nein),
-  `copyContent[]` (Inhalt aus anderer Sprache). Die Leiste zeigt nur, was erlaubt ist; die API prüft jede Aktion.
-- Design und Website-Einstellungen: Admins. YForm-Tabellen: Rechte von YForm (Tabellen ansehen/bearbeiten).
+---
 
 ## Lizenz und Danke
 
-MIT. Konzept und Teile des Codes aus KLXM Studio (MIT). Symbole: Phosphor Icons (MIT). Schriften: SIL Open Font License.
-Karten: MapLibre GL JS (BSD-3), OpenFreeMap, Daten © OpenStreetMap-Mitwirkende (ODbL). Suche: Loupe (MIT).
+MIT – siehe [LICENSE](LICENSE).
+
+- Konzept und Teile des Codes aus [KLXM Studio](https://github.com/KLXM-Opensource/studio) (MIT)
+- [REDAXO](https://redaxo.org) und [YForm](https://github.com/yakamara/yform) von Yakamara und der REDAXO-Community
+- Symbole: [Phosphor Icons](https://phosphoricons.com) (MIT) · Schriften: SIL Open Font License (Lizenzen in `assets/fonts/`)
+- Karten: [MapLibre GL JS](https://maplibre.org) (BSD-3), [OpenFreeMap](https://openfreemap.org), Daten © OpenStreetMap-Mitwirkende (ODbL)
+- Suche: [Loupe](https://github.com/loupe-php/loupe) (MIT)
+- Das REDAXO-Logo in der Demo gehört dem REDAXO-Projekt; es kommt aus dem Core und wird nur in der Demo verwendet.

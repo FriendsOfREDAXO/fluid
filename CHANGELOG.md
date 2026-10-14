@@ -29,6 +29,12 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 - Formulare, Datenlisten und Anfragen-Postfach mit YForm 6; Karten ohne Einwilligung (eigener Proxy); Suche mit Loupe.
 - Erste Schritte: leere Installation → Startseite oder Beispielseiten mit einem Klick.
 
+### Installation
+
+- `install-dev.sh`: REDAXO 6, YForm 6, fluid (und image_editor) mit einem Befehl – mit kompletter Demo oder leer;
+  prüft PHP, Erweiterungen und Datenbank, lädt Composer 2.9+ bei Bedarf, richtet Admin, `.env.local` und Webserver ein.
+- `fluid:demo --media --design=redaxo`; README für Einsteiger, Entwickler-Referenz in `docs/entwickler.md`.
+
 ### Für Entwickler
 
 - Blöcke als Modulklassen (`FluidBlock`) mit Feldschema und View; Kit fluid mit Template, Blöcken und Design-Editor.
