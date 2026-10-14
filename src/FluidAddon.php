@@ -196,6 +196,10 @@ final class FluidAddon extends Addon
         unset($mime);
         Routing\Router::boot();
 
+        // Suchindex: jede Inhaltsänderung des Cores (Blöcke hinzufügen, löschen, verschieben, online/offline, Inhalte kopieren –
+        // Backend und Website) markiert ihn; die nächste Suche baut ihn neu
+        Extension::register('ART_CONTENT_UPDATED', static fn () => Search\Search::markDirty());
+
         // Layout gelöscht (Backend oder Website): seine Spalten-Blöcke werden wieder normale Abschnitte
         Extension::register('SLICE_DELETE', static function (ExtensionPoint $ep): void {
             $slice = ArticleSlice::getArticleSliceById((int) $ep->getParam('slice_id'), (int) $ep->getParam('language_id'), (int) $ep->getParam('slice_revision'));

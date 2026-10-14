@@ -485,7 +485,7 @@ return [
                         ['name' => 'options', 'label' => 'Auswahl: eine Möglichkeit je Zeile', 'type' => 'textarea', 'rows' => 3],
                         ['name' => 'placeholder', 'label' => 'Platzhalter (optional)', 'type' => 'text', 'max' => 120, 'width' => 'half'],
                         ['name' => 'help', 'label' => 'Hilfetext (optional)', 'type' => 'text', 'max' => 200, 'width' => 'half'],
-                        ['name' => 'name', 'label' => 'Feldname (optional, für eine YForm-Tabelle)', 'type' => 'text', 'max' => 40, 'placeholder' => 'automatisch aus der Bezeichnung'],
+                        ['name' => 'name', 'label' => 'Feldname (optional, für eine YForm-Tabelle)', 'type' => 'text', 'max' => 40, 'placeholder' => 'automatisch aus der Bezeichnung', 'search' => false],
                     ]],
                 ['name' => 'mode', 'label' => 'Nach dem Absenden', 'type' => 'select', 'required' => true, 'default' => 'save_mail', 'width' => 'half',
                     'options' => ['save_mail' => 'Speichern und per E-Mail senden', 'save' => 'Nur speichern', 'mail' => 'Nur per E-Mail senden']],

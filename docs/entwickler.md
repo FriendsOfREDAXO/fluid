@@ -11,7 +11,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Adressen, Domains, SEO](#adressen-domains-seo)
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
 - [Versionen](#versionen) · [MCP-Server](#mcp-server)
-- [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
+- [Suche](#suche) · [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
 
@@ -241,6 +241,25 @@ Testen ohne KI-Werkzeug:
 curl -s https://example.org/fluid-mcp -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"site_overview","arguments":{}}}'
 ```
+
+## Suche
+
+`src/Search/Search.php` – Loupe (SQLite) je Sprache, aus den Blockdaten der veröffentlichten Fassung. In den Index kommt
+nur, was Besucher sehen können:
+
+- Seiten, die samt Eltern online sind, in einer Sprache, die online ist. Ohne „nicht indexieren“, ohne Seitenvorlagen,
+  ohne die Fehlerseite.
+- Nur die Live-Fassung, nie Entwürfe der Arbeitsversion.
+- Nur Blöcke, die online sind. Spalten eines Layouts zählen nur, wenn auch das Layout online ist.
+- Nur Felder vom Typ Text, Textarea und Rich-Text. Redaktionskommentare `[# … #]` werden entfernt.
+- Einstellungen, die nicht auf der Seite stehen, fehlen: Empfänger und Betreff von Formularen, Bestätigungstexte,
+  Platzhalter, Filterwerte, Hinweise für leere Listen (`Search::NO_FIELDS`).
+- Eigene Blöcke: `'search' => false` am Feld (z. B. interne Kennungen) oder am ganzen Block im Kit.
+
+Der Index wird neu aufgebaut, wenn sich etwas ändert: Veröffentlichen, Struktur (online/offline, verschieben, löschen),
+Inhalte im Backend (`ART_CONTENT_UPDATED`), jede Aktion mit Eintrag in der Aktivität (Editor, MCP). Außerdem prüft
+`Search::search()` jeden Treffer vor der Ausgabe noch einmal. Ist eine Seite inzwischen nicht mehr öffentlich, fällt
+der Treffer weg und der Index wird sofort neu aufgebaut. Das gilt auch für das MCP-Werkzeug `search`.
 
 ## Neu laden auf Aktion
 

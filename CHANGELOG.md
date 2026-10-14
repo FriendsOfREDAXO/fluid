@@ -32,6 +32,12 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 - Datenliste, Beiträge und Suche: Blättern, Schlagworte und Treffer beim Tippen ohne Seitenwechsel. Adresse,
   Zurück-Taste und Screenreader-Ansage gehen mit, ohne JavaScript bleibt alles wie bisher.
 - Beiträge „Aufmacher + Karten“: Der Link des Aufmachers verdeckte die Schlagwort-Filter darüber.
+- Suche zeigt nur Öffentliches:
+  - Empfänger, Betreff und Bestätigungstexte von Formularen kommen nicht mehr in den Index, ebenso Platzhalter und
+    Filterwerte.
+  - Blöcke in einem Offline-Layout fehlen.
+  - Der Index wird auch nach Änderungen im Backend und ohne Arbeitsversion neu aufgebaut.
+  - Jeder Treffer wird vor der Ausgabe geprüft (Seite online, Sprache online, nicht „nicht indexieren“).
 - Seiten: Seitenbaum (Ziehen, ↑ ↓ ← →, auch am Handy), neue Seiten leer, als Kopie oder aus einer Vorlage, Seiteneinstellungen
   mit Adresse und SEO-Angaben.
 - Website: Stammdaten, Kontakt und Öffnungszeiten, Kopf, Fuß und Hinweisleiste, Rechtliches, Sprachen, Domains,

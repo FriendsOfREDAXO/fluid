@@ -285,11 +285,12 @@ final class Live
         $slice = $article && $article->isOnline() ? ArticleSlice::getArticleSliceById($id, $article->languageId, ArticleRevision::LIVE) : null;
         $module = $slice && $slice->articleId === $article->id && 1 === $slice->status ? Module::get($slice->moduleKey) : null;
         $def = $module instanceof BlockModule ? $module->definition() : [];
-        if (!$module instanceof BlockModule || (empty($def['reload']) && empty($def['live']))) {
+        $parent = $module instanceof BlockModule ? Layout::parentOf($slice) : null;
+        // nur, was Besucher auf der Seite sehen: Block online, Layout darüber (Spalten-Block) ebenfalls
+        if (!$module instanceof BlockModule || (empty($def['reload']) && empty($def['live'])) || ($parent && 1 !== $parent->status)) {
             self::json(['error' => 'Nicht gefunden.'], 404);
         }
-        $html = Editing::without(static function () use ($module, $slice): string {
-            $parent = Layout::parentOf($slice);
+        $html = Editing::without(static function () use ($module, $slice, $parent): string {
             if ($parent && ($pm = Module::get($parent->moduleKey)) instanceof BlockModule) {
                 return $module->renderChild($slice, (string) $pm->block($parent)->tunes['background']);
             }
