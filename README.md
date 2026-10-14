@@ -1,8 +1,27 @@
 # fluid – Bearbeiten direkt auf der Website für REDAXO 6
 
-**fluid** bringt das Bearbeiten auf der Website nach REDAXO 6: Du klickst auf einen Text und tippst, fügst Blöcke ein,
-verschiebst sie, änderst das Design – genau dort, wo Besucher die Seite sehen. Unter der Haube bleibt alles REDAXO:
-Jeder Block ist ein echter Slice, mit Arbeitsversion, Rechten und Historie des Cores.
+**fluid** ist ein REDAXO-6-Projekt für komplette Websites, die du direkt auf der Seite bearbeitest. Du klickst auf
+einen Text und tippst, fügst Blöcke ein, verschiebst sie und änderst das Design, genau dort, wo Besucher die Seite sehen.
+Unter der Haube bleibt alles REDAXO: Jeder Block ist ein echter Slice, mit Arbeitsversion, Rechten und Historie des Cores.
+
+**Möglichst ohne weitere AddOns:** fluid bringt fast alles selbst mit. Das einzige externe AddOn ist derzeit
+**[YForm](https://github.com/yakamara/yform)**, für Formulare, Datenlisten und das Postfach. Auch ohne YForm läuft fluid,
+dann fehlen nur diese Teile. Alles andere ist eingebaut:
+
+| Eingebaut in fluid | statt eines eigenen AddOns für |
+|---|---|
+| Schöne Adressen, Domains und Landingpages, Weiterleitungen, Sitemap, robots.txt, canonical/hreflang | URL-Verwaltung und SEO |
+| Suche mit Tippfehler-Toleranz ([Loupe](https://github.com/loupe-php/loupe), per Composer) | Volltextsuche |
+| Blog/News mit Schlagworten und RSS | News und Blog |
+| Design-Vorlagen, Farben, Schriften (selbst gehostet) | Theme-Verwaltung |
+| Karten ohne Einwilligung (Proxy), Videos mit Vorschaubild und Untertiteln | Karten und Medien |
+| Mehrsprachigkeit für Inhalte und Website-Texte | Sprach-Werkzeuge |
+| Entwurf, Versionen mit Vorschau und Vergleich, Aktivität | Versionierung |
+| Formular-Baukasten, Datenlisten, Postfach (auf Basis von YForm) | Formulare |
+| MCP-Server für KI-Werkzeuge | Schnittstellen |
+
+Optional dazu gibt es [image_editor](https://github.com/FriendsOfREDAXO/image_editor), ebenfalls von FriendsOfREDAXO,
+zum Zuschneiden und Drehen von Bildern direkt auf der Website. fluid läuft auch ohne.
 
 ![Die Demo-Website mit fluid](docs/bilder/website.jpg)
 
@@ -184,7 +203,8 @@ composer require yakamara/yform:6.x-dev@dev friendsofredaxo/fluid:*@dev
 php bin/console migrate
 ```
 
-YForm ist optional – ohne YForm fehlen nur Formulare, Datenlisten und das Postfach. Für die Bildbearbeitung auf der
+YForm ist das einzige externe AddOn, das fluid nutzt, und auch das ist optional: Ohne YForm fehlen nur Formulare,
+Datenlisten und das Postfach. Für die Bildbearbeitung auf der
 Website gibt es das AddOn [image_editor](https://github.com/FriendsOfREDAXO/image_editor) (optional, das
 Installationsskript nimmt es mit):
 
