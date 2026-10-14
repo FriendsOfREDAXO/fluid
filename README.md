@@ -64,7 +64,8 @@ fluid läuft auch ohne.
 - **Blog / News** mit Schlagworten, RSS und „Neuer Beitrag“ direkt in der Übersicht
 - **Formulare** zum Zusammenklicken – auch mehrstufig, speichern und/oder per E-Mail, mit Bestätigung (YForm)
 - **Daten aus YForm** als Karten oder Liste mit eigener Adresse je Eintrag – und Blöcke auch in Datensätzen
-- **Videos** mit automatischem Vorschaubild und Untertiteln, **Karten** ohne Einwilligung, **Suche** mit Tippfehler-Toleranz
+- **Videos** mit automatischem Vorschaubild und Untertiteln, **Karten** ohne Einwilligung, **Suche** mit Tippfehler-Toleranz und Treffern beim Tippen – findet nur, was
+  öffentlich auf der Website steht
 
 **Für Besucher:** schnelle, barrierearme Seiten, Blättern, Filtern und Suchen ohne Seitenwechsel, schöne Adressen, Sitemap, strukturierte Daten, keine Cookies für Karten.
 
@@ -338,6 +339,8 @@ Alles Technische steht in der **[Entwickler-Referenz](docs/entwickler.md)**:
 - Extension Points (`FLUID_BLOCK_DEFINITION`, `FLUID_BLOCK_VIEW`, `FLUID_SETTINGS_SCHEMA` …)
 - YForm: Formular-Baukasten, Datenliste, YForm-Feld „Fluid-Blöcke“, Postfach
 - Routing, Domains, SEO, Sprachen, Videos, Blog, Karten, Rechte, Konsole
+- Suche (was in den Index kommt, `'search' => false`), Live-Aktualisierung per SSE, „Neu laden auf Aktion“
+  (`Live::region`, `data-live-nav`), Präsenz der Redaktion – Live und Präsenz wie in KLXM Studio
 
 Ein eigener Block in Kürze:
 
