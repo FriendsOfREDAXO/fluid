@@ -134,6 +134,13 @@ Host auf den Ordner `public` zeigen lassen (siehe [Webserver](#webserver-schöne
    „Speichern“ übernimmt sie für die ganze Website.
 7. **Mehr im Menü ⋯:** Seiten (Seitenbaum), Neue Seite, Seiteneinstellungen, Website (Name, Logo, Kontakt, Sprachen,
    Domains), Verlauf, Anfragen.
+8. **Versionen:** Menü ⋯ → **Verlauf & Entwürfe** → **„Zeitleiste mit Vorschau öffnen“**. Die Ansicht zeigt dir:
+   - links jeden gespeicherten Stand der Seite, nach Tagen sortiert,
+   - rechts die Seite so, wie sie damals aussah, am Desktop oder am Handy.
+   - **„Änderungen hervorheben“** markiert neue und geänderte Blöcke.
+   - **„Gegenüberstellen“** zeigt die Live-Fassung daneben; beide scrollen gemeinsam.
+   - **„Wiederherstellen“** holt einen Stand in den Entwurf. Live ändert sich erst mit „Veröffentlichen“, und der
+     bisherige Entwurf bleibt als Version erhalten.
 
 Im Backend findest du unter **AddOns → fluid** eine Statusseite, die prüft, ob alles richtig eingerichtet ist.
 

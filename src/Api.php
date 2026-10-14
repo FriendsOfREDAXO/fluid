@@ -98,8 +98,11 @@ final class Api
                 'site', 'site_save', 'language_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
                 'tree', 'tree_move', 'tree_status', 'tree_menu', 'tree_delete' => Structure::handle(Request::get(self::PARAM, 'string'), $user, $article->languageId),
                 'versions' => ['versions' => Versions::list($article->id, $article->languageId), 'work' => Versions::isWorkVersion()],
+                'version_view' => Versions::view($article),
                 'version_restore' => (static function () use ($article) {
-                    Versions::restore($article->id, $article->languageId, Request::post('date', 'string', ''), Request::post('revision', 'int', 0));
+                    // aus der Versionen-Ansicht kommt der Schlüssel des Stands (<revision>-<YmdHis>)
+                    $state = Versions::parseKey(Request::post('key', 'string', ''));
+                    Versions::restore($article->id, $article->languageId, $state['date'] ?? Request::post('date', 'string', ''), $state['revision'] ?? Request::post('revision', 'int', 0));
                     Activity::log('restore', $article->id, Request::post('date', 'string', ''));
 
                     return ['reload' => true, 'message' => 'Stand in den Entwurf geholt – prüfen und veröffentlichen.'];

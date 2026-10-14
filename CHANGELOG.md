@@ -10,6 +10,11 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   oder Pfeile), verdoppeln, kopieren und einfügen, online/offline; Greifer für Spalten, Abstände, Textbreite und Aufteilung.
 - Arbeitsversion: Entwurf speichern, veröffentlichen, verwerfen; Versionen wiederherstellen; Entwürfe-Übersicht und Aktivität.
   Beim Verlassen mit unveröffentlichtem Entwurf fragt fluid nach.
+- Versionen wie in KLXM Studio:
+  - Zeitleiste nach Tagen mit Uhr und Kalenderblatt; je Stand, was sich an den Blöcken geändert hat.
+  - Vorschau des Stands als echte Seite (Desktop/Mobil), „Änderungen hervorheben“.
+  - „Gegenüberstellen“ mit der Live-Fassung, gemeinsames Scrollen.
+  - „Wiederherstellen“ in den Entwurf; Tastatur ↑/↓/Pos1/Ende/Esc.
 - Seiten: Seitenbaum (Ziehen, ↑ ↓ ← →, auch am Handy), neue Seiten leer, als Kopie oder aus einer Vorlage, Seiteneinstellungen
   mit Adresse und SEO-Angaben.
 - Website: Stammdaten, Kontakt und Öffnungszeiten, Kopf, Fuß und Hinweisleiste, Rechtliches, Sprachen, Domains,

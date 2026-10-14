@@ -81,6 +81,8 @@ final class Toolbar
             'imageEditor' => class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null,
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),
             'rteCss' => $addon->getAssetsUrl('rte.css') . '?v=' . self::version('rte.css'),
+            // Versionen-Ansicht (Zeitleiste, Vorschau, Vergleich) – lädt erst beim Öffnen
+            'versions' => ['js' => $addon->getAssetsUrl('editor/versions.js') . '?v=' . self::version('editor/versions.js'), 'css' => $addon->getAssetsUrl('editor/versions.css') . '?v=' . self::version('editor/versions.css')],
         ];
 
         $head = '<link rel="stylesheet" href="' . escape($addon->getAssetsUrl('editor/editor.css') . '?v=' . self::version('editor/editor.css')) . '" data-blocks-editor>';

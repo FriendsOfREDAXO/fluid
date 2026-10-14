@@ -10,6 +10,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Blöcke in YForm-Tabellen](#blöcke-in-yform-tabellen-feld-fluid-blöcke)
 - [Adressen, Domains, SEO](#adressen-domains-seo)
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
+- [Versionen](#versionen)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
 
@@ -194,6 +195,21 @@ Teaserbild = Bild für soziale Netzwerke, Kurztext = Beschreibung. Sortierung na
 
 MapLibre GL und OpenFreeMap über den eigenen Proxy `/proxy/ofm/…` (Cache im Cache-Ordner des AddOns). Besucher verbinden
 sich nicht mit Dritten. Detailkacheln gibt es nur rund um Orte, die auf der Website als Karte vorkommen.
+
+## Versionen
+
+Stände entstehen beim Speichern (zusammengefasst, solange dieselbe Person innerhalb von 2 Minuten weiterarbeitet),
+vor dem Veröffentlichen, vor dem Verwerfen und vor dem Wiederherstellen. Sie liegen in der Historie-Tabelle des Cores
+(`rex_article_slice_history`), die letzten 40 je Seite und Sprache (`Versions::KEEP`).
+
+- Ansicht: `assets/editor/versions.js` + `versions.css` (aus KLXM Studio übernommen), Daten von `?fluid_api=version_view`.
+- Vorschau eines Stands: `?fluid_version=now|live|<revision>-<YmdHis>` rendert die Seite aus der Historie. Dafür
+  tauscht `ART_SLICES_QUERY` die Tabelle gegen die Zeilen des Stands. Die Vorschau gibt es nur mit Recht auf die Seite,
+  ohne Leiste und nie aus dem Cache. `&fluid_mark=1` setzt `data-vdiff="new|changed"` am äußersten Element geänderter
+  Blöcke (`SLICE_SHOW`).
+- Vergleich je Block: erst über die Slice-ID, dann über gleichen Inhalt, dann über Blocktyp in Reihenfolge.
+  Veröffentlichen und Wiederherstellen legen Slices mit neuen IDs an.
+- Ältere Stände mit demselben Inhalt wie ein neuerer erscheinen nicht.
 
 ## Konsole
 

@@ -213,6 +213,24 @@ final class FluidAddon extends Addon
             $article->sliceRevision = self::revision();
         });
 
+        // Versionen: Vorschau eines Stands (?fluid_version=…) – nur mit Recht auf die Seite, ohne Leiste, nie aus dem Cache
+        Extension::register('ART_INIT', static function (ExtensionPoint $ep): void {
+            $key = Request::get(Versions::PARAM, 'string', '');
+            if ('' === $key || null === Editing::user() || null === $state = Versions::parseKey($key)) {
+                return;
+            }
+            $article = Type::instanceOf($ep->subject, ArticleContent::class);
+            $article->eval = true;
+            $article->sliceRevision = $state['revision'];
+            Versions::$preview = $state;
+            if (1 === Request::get('fluid_mark', 'int', 0)) {
+                Versions::prepareMarks($article->articleId, $article->languageId, $key);
+            }
+            header('Cache-Control: no-store');
+        });
+        Extension::register('ART_SLICES_QUERY', static fn (ExtensionPoint $ep): string => Versions::sliceQuery((string) $ep->subject));
+        Extension::register('SLICE_SHOW', static fn (ExtensionPoint $ep): string => Versions::markSlice((string) $ep->subject, (int) $ep->getParam('slice_id')));
+
         // Im Bearbeiten-Modus auch Offline-Blöcke zeigen (gekennzeichnet), damit sie sich wieder einschalten lassen
         Extension::register('ART_SLICES_QUERY', static function (ExtensionPoint $ep): ?string {
             if (!Editing::active()) {
@@ -229,7 +247,7 @@ final class FluidAddon extends Addon
             if (!Editing::active() && str_contains($html, '[#')) {
                 $html = (string) preg_replace_callback('~<main\b.*?</main>~s', static fn (array $m) => (string) preg_replace('~\s?\[#.*?#\]~s', '', $m[0]), $html);
             }
-            if (null === Editing::user()) {
+            if (null === Editing::user() || null !== Versions::$preview) {
                 return $html;
             }
 

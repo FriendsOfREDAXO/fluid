@@ -846,8 +846,10 @@
     const editHref = (u) => unamp(u) + (u.includes('?') ? '&' : '?') + 'fluid_edit=1';
     const draw = {
       versions: (res) => (res.versions?.length
-        ? `<p class="site-intro">Stände beim Speichern und vor dem Veröffentlichen. „Wiederherstellen“ holt einen Stand in den <b>Entwurf</b> – live geht er erst mit „Veröffentlichen“. Der aktuelle Entwurf wird vorher gesichert.</p><ul class="site-list" role="list">`
+        ? `<p class="site-intro">Stände beim Speichern und vor dem Veröffentlichen. „Wiederherstellen“ holt einen Stand in den <b>Entwurf</b> – live geht er erst mit „Veröffentlichen“. Der aktuelle Entwurf wird vorher gesichert.</p>
+            <p><button type="button" class="btn btn--primary" data-versions-view>Zeitleiste mit Vorschau öffnen</button></p><ul class="site-list" role="list">`
           + res.versions.map((v) => `<li class="site-list__item"><span class="site-list__main"><b>${esc(when(v.date))}</b><small>${esc(v.label)} · ${v.revision ? 'Entwurf' : 'Live'} · ${v.blocks} Blöcke${v.user ? ' · ' + esc(v.user) : ''}</small></span>
+              <button type="button" class="btn" data-versions-view="${v.revision}-${esc(String(v.date).replace(/\D/g, ''))}">Ansehen</button>
               <button type="button" class="btn" data-restore="${esc(v.date)}" data-rev="${v.revision}">Wiederherstellen</button></li>`).join('') + '</ul>'
         : '<p class="site-intro">Noch keine gespeicherten Stände. Sie entstehen beim Speichern und Veröffentlichen.</p>'),
       drafts: (res) => (res.drafts?.length
@@ -875,6 +877,8 @@
     hpanel.addEventListener('click', async (e) => {
       const t = e.target.closest('[data-history-tab]');
       if (t) return load(t.dataset.historyTab);
+      const vv = e.target.closest('[data-versions-view]');
+      if (vv) return openVersions(vv.dataset.versionsView);
       const r = e.target.closest('[data-restore]');
       if (!r) return;
       if (dirty.size && !(await ask({ title: 'Ungespeicherte Änderungen', body: 'Sie gehen beim Wiederherstellen verloren. Fortfahren?', ok: 'Fortfahren', danger: true }))) return;
@@ -886,6 +890,27 @@
         location.reload();
       } catch (err) { say(err.message, true); }
     });
+  }
+
+
+  // Versionen-Ansicht wie in KLXM Studio (assets/editor/versions.js): Zeitleiste, Vorschau, Gegenüberstellen, Hervorheben
+  async function openVersions(select = '') {
+    try {
+      const mod = await import(cfg.versions.js);
+      await mod.open({
+        data: () => api('version_view'),
+        css: cfg.versions.css,
+        select,
+        restore: async (key) => {
+          // eigener Dialog läge hinter der Versionen-Ansicht – hier die Rückfrage des Browsers
+          if (dirty.size && !confirm('Ungespeicherte Änderungen gehen beim Wiederherstellen verloren. Fortfahren?')) throw new Error('Abgebrochen.');
+          const res = await api('version_restore', { key });
+          dirty.clear();
+          say(res.message);
+          location.reload();
+        },
+      });
+    } catch (err) { say(err.message, true); }
   }
 
 
