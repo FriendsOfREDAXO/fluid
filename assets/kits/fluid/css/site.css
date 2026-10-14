@@ -24,3 +24,4 @@
 .hbg-accent .hdr .hdr__search { color: var(--f-a-on); }
 .hbg-secondary .hdr .hdr__search { color: var(--f-b-on); }
 .hbg-dark .hdr .hdr__search { color: #fff; }
+/* Logo schrumpft nie – sonst ragt es ins Menü, statt dass das Menü rechtzeitig einklappt (site.js: is-overflow) */.hdr__brand:has(.brand__logo){flex-shrink:0}
