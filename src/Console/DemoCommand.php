@@ -40,7 +40,12 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Design des Kits auf den Standard zurücksetzen')] bool $resetDesign = false,
         #[Option(description: 'Nur diese Demo-Seite (Slug) anhängen, z. B. daten – vorhandene Inhalte bleiben')] string $page = '',
         #[Option(description: 'Nur Beispielzeilen in die YForm-Tabellen der Demo schreiben (Tabellen sind Klassen im Projekt)')] bool $yform = false,
+        #[Option(description: 'Demo-Bilder des Kits in den Medienpool übernehmen (vorhandene bleiben)')] bool $media = false,
+        #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …')] string $design = '',
     ): int {
+        if ($media) {
+            $io->note(self::media());
+        }
         if ($yform) {
             $demo = require FluidKit::instance()->path('redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php');
             if (!isset($demo['yform']) || !YFormBridge::available()) {
@@ -101,31 +106,31 @@ final class DemoCommand extends AbstractCommand
 
         // 1. Seiten: Menüpunkte als Kategorien, alle übrigen als Artikel auf oberster Ebene
         $prio = 1 + (int) ($sql->getArray('SELECT MAX(priority) AS p FROM rex_category')[0]['p'] ?? 0);
-        foreach ($demo['pages'] as $page) {
-            $slug = (string) $page['slug'];
+        foreach ($demo['pages'] as $def) {
+            $slug = (string) $def['slug'];
             // Startseite und Seiten außerhalb des Menüs (Impressum, Datenschutz): Artikel auf oberster Ebene;
             // 'parent' => 'slug': Seite in einer Menüseite (z. B. Beiträge eines Blogs, Angaben unter 'post')
-            if (!empty($page['is_home']) || empty($page['menu'])) {
-                $parent = isset($page['parent']) ? ($ids[(string) $page['parent']] ?? null) : null;
-                ArticleHandler::addArticle(['category_id' => $parent, 'priority' => !empty($page['is_home']) ? 1 : 99, 'name' => (string) $page['title'], 'template' => $kit->key()]);
+            if (!empty($def['is_home']) || empty($def['menu'])) {
+                $parent = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? null) : null;
+                ArticleHandler::addArticle(['category_id' => $parent, 'priority' => !empty($def['is_home']) ? 1 : 99, 'name' => (string) $def['title'], 'template' => $kit->key()]);
                 $ids[$slug] = (int) $sql->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
                 ArticleHandler::articleStatus($ids[$slug], $lang, 1);
-                if (isset($page['post']) && ($art = \Redaxo\Core\Content\Article::get($ids[$slug], $lang))) {
-                    $post = (array) $page['post'];
+                if (isset($def['post']) && ($art = \Redaxo\Core\Content\Article::get($ids[$slug], $lang))) {
+                    $post = (array) $def['post'];
                     \FriendsOfRedaxo\Fluid\PageSettings::save($art, $art->name, true, (string) ($post['excerpt'] ?? ''), (string) ($post['image'] ?? ''), false);
                     \FriendsOfRedaxo\Fluid\Blog\Blog::saveMeta($art, (string) ($post['date'] ?? date('Y-m-d')), (string) ($post['author'] ?? ''), (string) ($post['tags'] ?? ''));
                 }
-                if (!empty($page['is_home'])) {
+                if (!empty($def['is_home'])) {
                     Core::setConfig('start_article_id', $ids[$slug]);
                     Core::setConfig('notfound_article_id', $ids[$slug]);
                 }
                 continue;
             }
-            CategoryHandler::addCategory(null, ['catpriority' => $prio++, 'catname' => (string) $page['title'], 'status' => 1]);
+            CategoryHandler::addCategory(null, ['catpriority' => $prio++, 'catname' => (string) $def['title'], 'status' => 1]);
             $id = (int) $sql->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
             $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', [$kit->key(), $id]);
             $ids[$slug] = $id;
-            if (!empty($page['blog'])) {
+            if (!empty($def['blog'])) {
                 \FriendsOfRedaxo\Fluid\Blog\Blog::setBlog($id, true);
             }
         }
@@ -143,9 +148,9 @@ final class DemoCommand extends AbstractCommand
         };
         $count = 0;
         $skipped = [];
-        foreach ($demo['pages'] as $page) {
-            $articleId = $ids[(string) $page['slug']];
-            foreach ($page['blocks'] ?? [] as $block) {
+        foreach ($demo['pages'] as $def) {
+            $articleId = $ids[(string) $def['slug']];
+            foreach ($def['blocks'] ?? [] as $block) {
                 $key = $kit->key() . '.' . $block['type'];
                 if (!Module::get($key) instanceof BlockModule) {
                     $skipped[$block['type']] = true;
@@ -181,9 +186,66 @@ final class DemoCommand extends AbstractCommand
             FluidAddon::instance()->setConfig(\FriendsOfRedaxo\Fluid\Settings::CONFIG, $site);
         }
 
+        if ('' !== $design) {
+            $io->note(self::design($design));
+        }
         $io->success(sprintf('%d Seiten mit %d Blöcken angelegt.%s', count($ids), $count, $skipped ? ' Übersprungen (noch nicht portiert): ' . implode(', ', array_keys($skipped)) : ''));
 
         return Command::SUCCESS;
+    }
+
+    /** Demo-Bilder (kits/fluid/demo/media) in den Medienpool – nur fehlende */
+    private static function media(): string
+    {
+        $dir = FluidKit::instance()->path('demo/media');
+        $added = [];
+        foreach (glob($dir . '/*') ?: [] as $file) {
+            $name = basename($file);
+            if (\Redaxo\Core\MediaPool\Media::get($name)) {
+                continue;
+            }
+            $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
+            copy($file, $tmp);
+            \Redaxo\Core\MediaPool\MediaHandler::addMedia(['category_id' => null, 'title' => pathinfo($name, PATHINFO_FILENAME), 'file' => ['name' => $name, 'path' => $tmp]], false);
+            @unlink($tmp);
+            \Redaxo\Core\MediaPool\Media::clearInstances($name);   // „nicht vorhanden“ aus der Prüfung oben vergessen
+            $added[] = $name;
+        }
+
+        return $added ? 'Medienpool: ' . implode(', ', $added) : 'Medienpool: Demo-Bilder schon vorhanden.';
+    }
+
+    /** Design-Vorlage setzen; „redaxo“ zusätzlich mit dem REDAXO-Logo aus dem Core (grau und weiß), wenn noch kein Logo gesetzt ist */
+    private static function design(string $preset): string
+    {
+        $kit = FluidKit::instance();
+        $presets = (array) ($kit->design()->def()['presets'] ?? []);
+        if (!isset($presets[$preset])) {
+            return 'Design-Vorlage „' . $preset . '“ gibt es nicht (' . implode(', ', array_keys($presets)) . ').';
+        }
+        $kit->design()->save((array) $presets[$preset]['values']);
+        $msg = 'Design-Vorlage „' . $presets[$preset]['label'] . '“ gesetzt.';
+        // direkt aus der Konfiguration (Settings::all() puffert den Stand vor den Einstellungen der Demo)
+        $site = (array) FluidAddon::instance()->getConfig(\FriendsOfRedaxo\Fluid\Settings::CONFIG, []);
+        $logo = \Redaxo\Core\Filesystem\Path::core('assets/redaxo-logo.svg');
+        if ('redaxo' === $preset && '' === (string) ($site['logo'] ?? '') && is_file($logo)) {
+            $svg = (string) file_get_contents($logo);
+            foreach (['redaxo-logo.svg' => $svg, 'redaxo-logo-weiss.svg' => preg_replace('~fill="#[0-9A-Fa-f]{6}"~', 'fill="#FFFFFF"', $svg)] as $name => $content) {
+                if (!\Redaxo\Core\MediaPool\Media::get($name)) {
+                    $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
+                    file_put_contents($tmp, $content);
+                    \Redaxo\Core\MediaPool\MediaHandler::addMedia(['category_id' => null, 'title' => 'REDAXO-Logo', 'file' => ['name' => $name, 'path' => $tmp]], false);
+                    @unlink($tmp);
+                    \Redaxo\Core\MediaPool\Media::clearInstances($name);
+                }
+            }
+            $site['logo'] = 'redaxo-logo.svg';
+            $site['logo_dark'] = 'redaxo-logo-weiss.svg';
+            FluidAddon::instance()->setConfig(\FriendsOfRedaxo\Fluid\Settings::CONFIG, $site);
+            $msg .= ' Logo: REDAXO.';
+        }
+
+        return $msg;
     }
 
     /**
