@@ -360,7 +360,8 @@ final class Api
         return $layout ? ['reload' => true] : [];
     }
 
-    private static function publish(Article $article): array
+    /** @internal auch für den MCP-Server */
+    public static function publish(Article $article): array
     {
         if (ArticleRevision::LIVE === FluidAddon::revision()) {
             return [];

@@ -10,7 +10,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Blöcke in YForm-Tabellen](#blöcke-in-yform-tabellen-feld-fluid-blöcke)
 - [Adressen, Domains, SEO](#adressen-domains-seo)
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
-- [Versionen](#versionen)
+- [Versionen](#versionen) · [MCP-Server](#mcp-server)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
 
@@ -210,6 +210,36 @@ vor dem Veröffentlichen, vor dem Verwerfen und vor dem Wiederherstellen. Sie li
 - Vergleich je Block: erst über die Slice-ID, dann über gleichen Inhalt, dann über Blocktyp in Reihenfolge.
   Veröffentlichen und Wiederherstellen legen Slices mit neuen IDs an.
 - Ältere Stände mit demselben Inhalt wie ein neuerer erscheinen nicht.
+
+## MCP-Server
+
+`src/Mcp/` – Model Context Protocol über „Streamable HTTP“, zustandslos, JSON-Antworten (Aufbau wie in KLXM Studio).
+
+- Endpunkt `POST /fluid-mcp`. Ohne schöne Adressen geht `/index.php?fluid_mcp=1`. Der Router reicht die Anfrage an
+  `PACKAGES_INCLUDED` weiter, damit YForm geladen ist.
+- Anmeldung mit `Authorization: Bearer fluid_…` (alternativ `X-Api-Key`).
+  - In `rex_fluid_mcp_token` steht nur der SHA-256-Hash.
+  - Jeder Schlüssel handelt als REDAXO-Benutzer: `Core::setUser()` und `Editing::actAs()`. Dadurch gelten
+    Struktur- und Modulrechte, und Aktivität und Versionen nennen den Benutzer.
+- `Access`: Schlüssel (`read`/`write`, Veröffentlichen nur mit `version[live_version]`) oder öffentlich.
+  - Öffentlich gibt es nur, was der Admin in `fluid` → Config `mcp` freigibt: Seiten, Suche, Blog, Tabellen.
+  - Öffentlich heißt: nur live, ohne Offline-Blöcke, ohne Optionen.
+- `Tools`: Die Liste hängt vom Zugang ab. Werkzeuge ohne Recht erscheinen gar nicht. Fehler der Werkzeuge kommen als
+  `isError` zurück, Ergebnisse als `structuredContent` und als Text.
+- `Content`: Schreiben geht immer in den Entwurf und nutzt dieselben Wege wie der Editor (`BlockOps`, `Versions`,
+  `Activity`, `Api::publish`).
+  - Es werden nur Felder übernommen, die der Blocktyp kennt.
+  - Rich-Text läuft durch `RichText::html`, andere Texte ohne Tags.
+- Grenzen: 300 Anfragen je 5 Minuten und Schlüssel, 60 öffentlich je IP (Dateien im Cache des AddOns).
+  - Der Origin-Header wird geprüft (Schutz vor DNS-Rebinding).
+  - `GET` antwortet mit 405, es gibt keinen SSE-Stream.
+
+Testen ohne KI-Werkzeug:
+
+```bash
+curl -s https://example.org/fluid-mcp -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"site_overview","arguments":{}}}'
+```
 
 ## Konsole
 

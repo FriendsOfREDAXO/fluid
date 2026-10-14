@@ -74,6 +74,12 @@ final class Router
         if ('/index.php' === $path) {
             $path = '/';
         }
+        // MCP-Server: /fluid-mcp bzw. ?fluid_mcp=1 – erst wenn alle AddOns (YForm) geladen sind
+        if ('/' . \FriendsOfRedaxo\Fluid\Mcp\Server::PATH === $path || $r->query->has(\FriendsOfRedaxo\Fluid\Mcp\Server::PARAM)) {
+            Extension::register('PACKAGES_INCLUDED', static fn () => \FriendsOfRedaxo\Fluid\Mcp\Server::handle());
+
+            return;
+        }
         $query = $r->query->all();
         self::$canRedirect = in_array($r->getMethod(), ['GET', 'HEAD'], true);
         $domain = Domains::forHost($host);

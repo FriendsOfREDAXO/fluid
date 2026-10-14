@@ -84,6 +84,13 @@ final class Editing
         }
     }
 
+    /** @internal MCP-Server: Aktionen im Namen des Benutzers eines Zugangsschlüssels (Protokoll, Versionen) */
+    public static function actAs(?User $user): void
+    {
+        self::$user = $user;
+        self::$resolved = true;
+    }
+
     /** @internal vom Addon beim Start im Bearbeiten-Modus gesetzt */
     public static function start(): void
     {

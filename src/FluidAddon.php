@@ -43,6 +43,22 @@ final class FluidAddon extends Addon
             ->setPrimaryKey(['article_id', 'language_id'])
             ->ensure();
 
+        // MCP-Server: Zugangsschlüssel (nur Hash), Rechte des Benutzers gelten
+        Table::get(Mcp\Tokens::TABLE)
+            ->ensurePrimaryIdColumn()
+            ->ensureColumn(new Column('name', 'varchar(120)'))
+            ->ensureColumn(new Column('token_hash', 'char(64)'))
+            ->ensureColumn(new Column('prefix', 'varchar(16)'))
+            ->ensureColumn(new Column('scope', 'varchar(10)', false, 'read'))
+            ->ensureColumn(new Column('user_id', 'int(10) unsigned'))
+            ->ensureColumn(new Column('publish', 'tinyint(1)', false, '0'))
+            ->ensureColumn(new Column('expires', 'date', true))
+            ->ensureColumn(new Column('created', 'datetime', true))
+            ->ensureColumn(new Column('last_used', 'datetime', true))
+            ->ensureColumn(new Column('client', 'varchar(120)', true))
+            ->ensureIndex(new \Redaxo\Core\Database\Index('token_hash', ['token_hash'], \Redaxo\Core\Database\Index::UNIQUE))
+            ->ensure();
+
         // Schöne Adressen, Domains, Weiterleitungen (Routing\*)
         Table::get(Routing\Routes::TABLE)
             ->ensureColumn(new Column('article_id', 'int(10) unsigned'))
@@ -113,7 +129,7 @@ final class FluidAddon extends Addon
     #[Override]
     public function uninstall(): void
     {
-        foreach ([PageSettings::TABLE, Routing\Routes::TABLE, Routing\Domains::TABLE, Routing\Redirects::TABLE, Routing\Redirects::TABLE_404, Activity::TABLE, Data\Inbox::TABLE] as $t) {
+        foreach ([PageSettings::TABLE, Routing\Routes::TABLE, Routing\Domains::TABLE, Routing\Redirects::TABLE, Routing\Redirects::TABLE_404, Activity::TABLE, Data\Inbox::TABLE, Mcp\Tokens::TABLE] as $t) {
             Table::get($t)->drop();
         }
         \Redaxo\Core\Config::removeNamespace($this->name);
@@ -129,6 +145,7 @@ final class FluidAddon extends Addon
         $main->setIcon('rex-icon fa-pen-to-square');
         $main->setRequiredPermissions('admin');
         $main->addSubpage(new \Redaxo\Core\Backend\Page('status', 'Status'));
+        $main->addSubpage(new \Redaxo\Core\Backend\Page('mcp', 'MCP'));
         $main->addSubpage(new \Redaxo\Core\Backend\Page('help', 'Hilfe'));
         if (!Core::getUser()?->admin) {
             $main->setHidden();

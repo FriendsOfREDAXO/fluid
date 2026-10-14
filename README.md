@@ -19,9 +19,10 @@ Jeder Block ist ein echter Slice, mit Arbeitsversion, Rechten und Historie des C
 4. [Was in der Demo steckt](#was-in-der-demo-steckt)
 5. [fluid in ein bestehendes REDAXO-6-Projekt einbauen](#fluid-in-ein-bestehendes-projekt-einbauen)
 6. [Webserver: schöne Adressen](#webserver-schöne-adressen)
-7. [Häufige Probleme](#häufige-probleme)
-8. [Für Entwickler](#für-entwickler)
-9. [Lizenz und Danke](#lizenz-und-danke)
+7. [KI-Werkzeuge anbinden (MCP)](#ki-werkzeuge-anbinden-mcp)
+8. [Häufige Probleme](#häufige-probleme)
+9. [Für Entwickler](#für-entwickler)
+10. [Lizenz und Danke](#lizenz-und-danke)
 
 ---
 
@@ -242,6 +243,44 @@ location / {
 **Herd / Valet / Laragon:** einen Host auf den Ordner `public` zeigen lassen – Rewrites sind dort schon eingerichtet.
 
 ---
+
+## KI-Werkzeuge anbinden (MCP)
+
+fluid bringt einen **MCP-Server** mit (Model Context Protocol). Damit können KI-Werkzeuge wie Claude, ChatGPT oder
+Cursor deine Website lesen und, wenn du es erlaubst, Inhalte bearbeiten. Alles ist zunächst **aus**.
+
+1. Im Backend **AddOns → fluid → MCP** öffnen und **„MCP-Server einschalten“**.
+2. Unter **Zugangsschlüssel** einen Schlüssel erzeugen:
+   - **Handelt als Benutzer:** Dessen Rechte gelten (Struktur, Module, Veröffentlichen). Am besten legst du dafür
+     einen eigenen REDAXO-Benutzer mit passender Rolle an.
+   - **Darf:** „nur lesen“ oder „lesen und ändern“. Änderungen landen immer im **Entwurf**. Live geht erst
+     „Veröffentlichen“, entweder durch dich auf der Website oder durch einen Schlüssel mit **„darf veröffentlichen“**.
+   - Der Schlüssel erscheint nur einmal, zusammen mit dem fertigen Befehl für Claude Code
+     (`claude mcp add --transport http fluid https://…/fluid-mcp --header "Authorization: Bearer …"`) und einer
+     JSON-Vorlage für andere Programme.
+3. **Datentabellen** (YForm) gibst du einzeln frei: kein Zugriff, lesen, oder lesen und ändern.
+4. **Öffentlicher Zugang** (optional, ohne Schlüssel): Du entscheidest, was jeder lesen darf:
+   - veröffentlichte Seiten,
+   - die Suche,
+   - den Blog,
+   - einzelne Tabellen.
+   Entwürfe und Schreiben gibt es dort nie, und je IP sind höchstens 60 Anfragen in 5 Minuten möglich.
+
+Werkzeuge:
+
+| Werkzeug | Was es tut | Wer |
+|---|---|---|
+| `site_overview` | Name, Adresse, Sprachen, Blogs, Tabellen, Rechte des Zugangs | alle |
+| `list_pages` · `get_page` | Seitenbaum · Seite mit Blöcken (Entwurf oder live) | alle (öffentlich: nur online/live) |
+| `search` · `list_posts` | Suche · Blog-Beiträge | alle, wenn freigegeben |
+| `list_block_types` | Blocktypen mit Feldern | Schlüssel |
+| `list_entries` · `get_entry` | Einträge freigegebener Tabellen | Schlüssel, öffentlich nur freigegebene Tabellen |
+| `update_block` · `add_block` · `move_block` · `set_block_online` · `delete_block` | Blöcke bearbeiten (im Entwurf) | Schlüssel „lesen und ändern“ |
+| `create_page` · `save_entry` | Seite anlegen (offline) · Eintrag anlegen/ändern | Schlüssel „lesen und ändern“ |
+| `publish_page` | Entwurf veröffentlichen | Schlüssel mit „darf veröffentlichen“ |
+
+Jede Änderung erscheint im **Verlauf** (Aktivität und Versionen) wie eine Änderung auf der Website. Rich-Text läuft
+durch denselben Filter wie die Ausgabe, Bilder im Fließtext gibt es nicht.
 
 ## Häufige Probleme
 

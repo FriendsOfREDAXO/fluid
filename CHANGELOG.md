@@ -10,6 +10,11 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   oder Pfeile), verdoppeln, kopieren und einfügen, online/offline; Greifer für Spalten, Abstände, Textbreite und Aufteilung.
 - Arbeitsversion: Entwurf speichern, veröffentlichen, verwerfen; Versionen wiederherstellen; Entwürfe-Übersicht und Aktivität.
   Beim Verlassen mit unveröffentlichtem Entwurf fragt fluid nach.
+- MCP-Server für KI-Werkzeuge (`/fluid-mcp`, Backend → fluid → MCP, standardmäßig aus):
+  - Zugangsschlüssel je Benutzer mit „nur lesen“ oder „lesen und ändern“, optional veröffentlichen.
+  - Datentabellen werden einzeln freigegeben.
+  - Optional öffentlicher Lesezugang; welche Inhalte, legt der Admin fest.
+  - Änderungen landen im Entwurf, mit Versionen und Aktivität.
 - Versionen wie in KLXM Studio:
   - Zeitleiste nach Tagen mit Uhr und Kalenderblatt; je Stand, was sich an den Blöcken geändert hat.
   - Vorschau des Stands als echte Seite (Desktop/Mobil), „Änderungen hervorheben“.
