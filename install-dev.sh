@@ -107,7 +107,7 @@ ok "REDAXO 6 in ./$DIR"
 
 # ------------------------------------------------------------------ 3. YForm 6, fluid, image_editor
 
-b "3/7 YForm 6, fluid und image_editor hinzufügen"
+b "3/7 YForm 6 und fluid hinzufügen (image_editor, falls verfügbar)"
 repo() {   # Name, lokale Quelle (optional), GitHub-Adresse
   if [ -n "$2" ]; then
     $COMPOSER config "repositories.$1" "{\"type\": \"path\", \"url\": \"$2\", \"options\": {\"symlink\": false}}"
