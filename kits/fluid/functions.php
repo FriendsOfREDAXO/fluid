@@ -269,17 +269,23 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
     $eager = !empty($opt['eager']);
     $editor = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::class : null;
     $editable = $editor && null === $editor::editable($m);
+    // Bildformat (16:9 …): Ausschnitt je Format aus image_editor – eigener Ausschnitt oder automatisch um den Fokuspunkt.
+    // Nicht bei „Einpassen“ (contain): dann zeigt der Rahmen das ganze Bild.
+    $ratio = (string) ($opt['ratio'] ?? '');
+    if (!$editable || !\defined($editor . '::RATIOS') || !\in_array($ratio, $editor::RATIOS, true) || str_contains($editor::imgStyle($m->fileName), 'contain')) {
+        $ratio = '';
+    }
     if ($editable) {
-        [$w, $h] = $editor::size($m->fileName);
-        $src = $editor::url($m->fileName, 1280);
-        $srcset = ' srcset="' . e($editor::srcset($m->fileName)) . '" sizes="' . e($sizes) . '"';
+        [$w, $h] = $editor::size($m->fileName, '' !== $ratio ? $ratio : null);
+        $src = $editor::url($m->fileName, 1280, '' !== $ratio ? $ratio : null);
+        $srcset = ' srcset="' . e($editor::srcset($m->fileName, '' !== $ratio ? $ratio : null)) . '" sizes="' . e($sizes) . '"';
     } else {
         [$w, $h] = [(int) $m->width, (int) $m->height];
         $src = $m->getUrl();
         $srcset = '';
     }
     $wh = $w && $h ? ' width="' . $w . '" height="' . $h . '"' : '';
-    $ie = $editable && is_editing() ? ' data-ie-file="' . e($m->fileName) . '"' : '';
+    $ie = $editable && is_editing() ? ' data-ie-file="' . e($m->fileName) . '"' . ('' !== $ratio ? ' data-ie-ratio="' . e($ratio) . '"' : '') : '';
     // Fokuspunkt und Einpassen (image_editor): object-position / object-fit am Bild
     $style = $editable ? $editor::imgStyle($m->fileName) : '';
 

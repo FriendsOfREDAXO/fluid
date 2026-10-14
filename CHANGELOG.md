@@ -10,6 +10,10 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   oder Pfeile), verdoppeln, kopieren und einfügen, online/offline; Greifer für Spalten, Abstände, Textbreite und Aufteilung.
 - Arbeitsversion: Entwurf speichern, veröffentlichen, verwerfen; Versionen wiederherstellen; Entwürfe-Übersicht und Aktivität.
   Beim Verlassen mit unveröffentlichtem Entwurf fragt fluid nach.
+- Bilder in festen Formaten (16:9, 4:3 …) mit dem AddOn image_editor:
+  - Ausschnitt je Format, wie in KLXM Studio: Knopf „Ausschnitt“ am Bild.
+  - Ausgabe genau im Format (eigener Ausschnitt oder um den Fokuspunkt).
+- Bildknöpfe erscheinen auch bei Karten, deren Link über dem Bild liegt.
 - MCP-Server für KI-Werkzeuge (`/fluid-mcp`, Backend → fluid → MCP, standardmäßig aus):
   - Zugangsschlüssel je Benutzer mit „nur lesen“ oder „lesen und ändern“, optional veröffentlichen.
   - Datentabellen werden einzeln freigegeben.

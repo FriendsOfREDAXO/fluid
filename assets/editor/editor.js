@@ -1551,7 +1551,7 @@
 
   // ------------------------------------------------------------------ Bilder bearbeiten (Addon image_editor, optional)
 
-  const ieBtn = h('<div class="iebtn" hidden><button type="button" data-ie="edit">✎ Bearbeiten</button><button type="button" data-ie="adjust">◐ Anpassen</button></div>');
+  const ieBtn = h('<div class="iebtn" hidden><button type="button" data-ie="edit">✎ Bearbeiten</button><button type="button" data-ie="adjust">◐ Anpassen</button><button type="button" data-ie="crop" hidden>⬚ Ausschnitt</button></div>');
   root.append(ieBtn);
   let ieImg = null;
   // Skript-Lader in form.js: CSS und Dialog gehören in diese Ebene
@@ -1561,15 +1561,25 @@
     window.ImageEditor.setLayer(layer);
   });
   if (cfg.imageEditor) {
-    main.addEventListener('mouseover', (e) => {
-      const img = e.target.closest?.('img[data-ie-file]');
+    // Bild unter dem Zeiger – auch wenn eine Ebene darüber liegt (ganze Karte als Link mit ::after, Verlauf, Beschriftung);
+    // dann trifft mouseover nie das <img> (wie KLXM Studio _media.js imgAt)
+    const imgAt = (e) => e.target.closest?.('img[data-ie-file]')
+      || document.elementsFromPoint(e.clientX, e.clientY).find((x) => x.matches?.('img[data-ie-file]')) || null;
+    let ieRaf = 0;
+    main.addEventListener('mousemove', (e) => {
+      if (ieRaf) return;
+      ieRaf = requestAnimationFrame(() => { ieRaf = 0; showIe(imgAt(e)); });
+    }, { passive: true });
+    const showIe = (img) => {
       if (!img || img === ieImg) return;
       ieImg = img;
+      // „Ausschnitt“ nur, wenn das Bild in einem festen Format steht (data-ie-ratio)
+      ieBtn.querySelector('[data-ie="crop"]').hidden = !img.dataset.ieRatio;
+      ieBtn.hidden = false;
       const r = img.getBoundingClientRect();
       ieBtn.style.top = `${Math.max(bar.offsetHeight + 8, r.top + 10)}px`;
-      ieBtn.style.left = `${Math.max(8, r.right - 236)}px`;
-      ieBtn.hidden = false;
-    });
+      ieBtn.style.left = `${Math.max(8, r.right - ieBtn.offsetWidth - 10)}px`;
+    };
     window.addEventListener('scroll', () => { ieBtn.hidden = true; ieImg = null; }, { passive: true });
     ieBtn.addEventListener('click', async (e) => {
       const which = e.target.closest('[data-ie]')?.dataset.ie;
@@ -1580,7 +1590,9 @@
       try {
         const IE = await window.BlocksPick.imageEditor(cfg.imageEditor);
         const opts = { file: img.dataset.ieFile, api: cfg.imageEditor.api };
-        const item = which === 'adjust' ? await IE.adjust(opts) : await IE.open({ ...opts, tool: 'crop' });
+        const item = which === 'adjust' ? await IE.adjust(opts)
+          : which === 'crop' ? await IE.crop({ ...opts, ratio: img.dataset.ieRatio })
+          : await IE.open({ ...opts, tool: 'crop' });
         if (!item) return;
         const res = await api('render', { slice: sec.dataset.block });
         apply(res, sec);

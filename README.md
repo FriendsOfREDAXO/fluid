@@ -21,7 +21,8 @@ dann fehlen nur diese Teile. Alles andere ist eingebaut:
 | MCP-Server für KI-Werkzeuge | Schnittstellen |
 
 Optional dazu gibt es [image_editor](https://github.com/FriendsOfREDAXO/image_editor), ebenfalls von FriendsOfREDAXO,
-zum Zuschneiden und Drehen von Bildern direkt auf der Website. fluid läuft auch ohne.
+zum Zuschneiden und Drehen von Bildern direkt auf der Website, mit Fokuspunkt und eigenem Ausschnitt je Bildformat.
+fluid läuft auch ohne.
 
 ![Die Demo-Website mit fluid](docs/bilder/website.jpg)
 
