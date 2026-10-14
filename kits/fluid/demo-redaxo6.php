@@ -26,6 +26,38 @@ $yform = [
         ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => null, 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => false],
     ]],
     'rex_yf_anfrage' => ['rows' => []],
+    // Projekte (examples/yform/ProjectTable) – Seite „Projekte“: Fallstudien aus Blöcken (Feld „Fluid-Blöcke“)
+    'rex_yf_project' => ['rows' => [
+        ['title' => 'Stadtwerke Musterstadt: Portal in drei Sprachen', 'client' => 'Stadtwerke Musterstadt', 'year' => 2026, 'image' => 'testbild-verlauf.jpg', 'online' => true,
+            'teaser' => 'Ein Portal, drei Sprachen, eine Redaktion: Tarife, Störungsmeldungen und Neuigkeiten – gepflegt direkt auf der Website.',
+            'story' => [
+                ['module' => 'fluid.stats', 'data' => ['variant' => 'row', 'eyebrow' => 'Ergebnis', 'title' => 'Ein Jahr danach', 'items' => [
+                    ['value' => '3', 'label' => 'Sprachen', 'text' => 'Deutsch, Englisch, Türkisch'],
+                    ['value' => '−60 %', 'label' => 'Pflegeaufwand', 'text' => 'Texte direkt auf der Seite statt im Backend'],
+                    ['value' => '12', 'label' => 'Redakteure', 'text' => 'mit eigenen Rechten je Bereich'],
+                ]], 'tunes' => ['background' => 'muted']],
+                ['module' => 'fluid.richtext', 'data' => ['variant' => 'article', 'title' => 'Die Aufgabe', 'text' => '<p>Die alte Website war über Jahre gewachsen: drei Systeme, doppelte Inhalte, lange Wege für jede Änderung. Ziel war <strong>eine</strong> Website, die das Team selbst pflegt – ohne Schulung, ohne Agentur für jeden Tippfehler.</p><h3>Der Ansatz</h3><ul><li>REDAXO 6 mit fluid: Bearbeiten direkt auf der Seite</li><li>Tarife und Meldungen als YForm-Tabellen</li><li>Mehrsprachig mit „Inhalt übernehmen“</li></ul>'], 'tunes' => []],
+                ['module' => 'fluid.quote', 'data' => ['variant' => 'single', 'items' => [['text' => 'Wir ändern heute Texte in Minuten – genau dort, wo Besucher sie lesen.', 'name' => 'Erika Musterfrau', 'role' => 'Online-Redaktion', 'image' => null]]], 'tunes' => ['background' => 'accent']],
+                ['module' => 'fluid.media_text', 'data' => ['variant' => 'right', 'title' => 'Störungen in Echtzeit', 'text' => '<p>Meldungen kommen aus einer YForm-Tabelle und erscheinen sofort auf der Startseite – mit eigener Adresse je Meldung.</p>', 'image' => 'testbild-verlauf.jpg'], 'tunes' => []],
+            ]],
+        ['title' => 'Kulturverein: Programm, Anmeldung, Archiv', 'client' => 'Kulturverein Beispielhausen', 'year' => 2025, 'image' => null, 'online' => true,
+            'teaser' => 'Veranstaltungen als Datenliste, Anmeldung mit mehrstufigem Formular und ein Archiv, das von selbst wächst.',
+            'story' => [
+                ['module' => 'fluid.features', 'data' => ['variant' => 'cards', 'eyebrow' => 'Bausteine', 'title' => 'Was der Verein nutzt', 'items' => [
+                    ['icon' => 'calendar', 'title' => 'Programm', 'text' => 'Termine aus YForm, nach Datum sortiert, mit Blättern.'],
+                    ['icon' => 'list-checks', 'title' => 'Anmeldung', 'text' => 'Formular-Baukasten in drei Schritten, mit Bestätigung.'],
+                    ['icon' => 'archive', 'title' => 'Archiv', 'text' => 'Vergangene Termine wandern automatisch ins Archiv.'],
+                ]], 'tunes' => []],
+                ['module' => 'fluid.faq', 'data' => ['variant' => 'stacked', 'title' => 'Häufige Fragen', 'items' => [
+                    ['q' => 'Wer pflegt die Termine?', 'a' => '<p>Der Vorstand – über die YForm-Maske oder direkt auf der Website.</p>'],
+                    ['q' => 'Brauchen Mitglieder ein Konto?', 'a' => '<p>Nein. Die Anmeldung geht ohne Konto, die Daten landen im Postfach.</p>'],
+                ]], 'tunes' => ['background' => 'muted']],
+            ]],
+        ['title' => 'Praxis Dr. Beispiel: ruhig, klar, barrierearm', 'client' => 'Praxis Dr. Beispiel', 'year' => 2025, 'image' => 'testbild-verlauf.jpg', 'online' => true,
+            'teaser' => 'Eine Praxis-Website mit großer Schrift, hohem Kontrast und Öffnungszeiten, die sich selbst aktualisieren.',
+            'story' => []],
+        ['title' => 'Entwurf: noch nicht freigegeben', 'client' => '', 'year' => 2026, 'image' => null, 'teaser' => 'Offline – erscheint nicht.', 'story' => [], 'online' => false],
+    ]],
     // Kurzmeldungen (examples/yform/NewsTable) – Seite „Presse“
     'rex_yf_news' => ['rows' => [
         ['title' => 'REDAXO 6: Module und Templates als Klassen', 'date' => '2026-10-09', 'teaser' => 'Im Branch 6.x sind Module und Templates PHP-Klassen mit Attribut – auffindbar per ClassDiscovery.', 'image' => null, 'text' => "Beispielmeldung aus der YForm-Tabelle rex_yf_news.\n\nDie Datenliste zeigt sie nach Datum sortiert, mit eigener Adresse je Meldung.", 'link' => 'https://github.com/redaxo/core', 'online' => true],
@@ -223,6 +255,17 @@ return [
                 ['type' => 'datalist', 'data' => ['variant' => 'list', 'eyebrow' => '', 'title' => '', 'intro' => '',
                     'table' => 'rex_yf_news', 'title_field' => 'rex_yf_news.title', 'image_field' => 'rex_yf_news.image', 'text_field' => 'rex_yf_news.teaser', 'meta_field' => 'rex_yf_news.date',
                     'filter_field' => 'rex_yf_news.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_news.date', 'sort_dir' => 'desc', 'limit' => 3, 'pager' => true, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
+            ],
+        ],
+        // ------------------------------------------------------------------ Projekte: Fallstudien aus Blöcken im YForm-Datensatz (Feld „Fluid-Blöcke“)
+        [
+            'slug' => 'projekte', 'title' => 'Projekte', 'menu' => true, 'requires' => 'yform',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Referenzen',
+                    'title' => 'Projekte, die *für sich sprechen*', 'text' => 'Jedes Projekt ist ein YForm-Eintrag – die Fallstudie darin besteht aus Blöcken und lässt sich direkt auf der Website gestalten.']],
+                ['type' => 'datalist', 'data' => ['variant' => 'cards', 'eyebrow' => '', 'title' => '', 'intro' => '',
+                    'table' => 'rex_yf_project', 'title_field' => 'rex_yf_project.title', 'image_field' => 'rex_yf_project.image', 'text_field' => 'rex_yf_project.teaser', 'meta_field' => 'rex_yf_project.client',
+                    'filter_field' => 'rex_yf_project.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_project.year', 'sort_dir' => 'desc', 'limit' => 0, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
             ],
         ],
         // ------------------------------------------------------------------ Anmeldung: eigenes Formular mit drei Schritten (BuiltForm, YForm)

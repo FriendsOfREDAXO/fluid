@@ -75,3 +75,8 @@ html.blocks-editing section[data-block].fluid-dragging { opacity: .45; }
 
 /* Redaktionskommentare [# … #] – nur im Bearbeiten-Modus sichtbar */
 ::highlight(fluid-note) { background-color: #fef3c7; color: #92400e; text-decoration: underline dotted #d97706; }
+/* Blöcke eines YForm-Eintrags (Feld „Fluid-Blöcke“) im Bearbeiten-Modus */
+.df-blocks--edit { position: relative; outline: 2px dashed color-mix(in srgb, #4f46e5 45%, transparent); outline-offset: -2px; }
+.fbr-note { margin: 0; padding: 6px 12px; font: 600 12px/1.4 system-ui, sans-serif; color: #3730a3; background: #eef2ff; }
+.fbr-empty { padding: 32px 16px; text-align: center; font: 14px/1.5 system-ui, sans-serif; color: #4b5563; }
+.fbr-empty p { margin: 0 0 12px; }

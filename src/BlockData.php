@@ -16,18 +16,47 @@ use function Redaxo\Core\View\escape;
  */
 final class BlockData
 {
-    /** @return list<array{module: string, data: array<string, mixed>, tunes: array<string, mixed>}> */
+    /**
+     * Liste der Blöcke; `uid` = feste Kennung je Block (für das Bearbeiten auf der Website), fehlt bei alten Daten.
+     *
+     * @return list<array{module: string, data: array<string, mixed>, tunes: array<string, mixed>, uid?: string}>
+     */
     public static function decode(mixed $value): array
     {
         $list = \is_string($value) ? json_decode($value, true) : $value;
         $out = [];
         foreach (\is_array($list) ? $list : [] as $item) {
             if (\is_array($item) && \is_string($item['module'] ?? null) && self::module($item['module'])) {
-                $out[] = ['module' => $item['module'], 'data' => \is_array($item['data'] ?? null) ? $item['data'] : [], 'tunes' => \is_array($item['tunes'] ?? null) ? $item['tunes'] : []];
+                $row = ['module' => $item['module'], 'data' => \is_array($item['data'] ?? null) ? $item['data'] : [], 'tunes' => \is_array($item['tunes'] ?? null) ? $item['tunes'] : []];
+                if (\is_string($item['uid'] ?? null) && preg_match('~^[a-z0-9]{6,16}$~', $item['uid'])) {
+                    $row['uid'] = $item['uid'];
+                }
+                $out[] = $row;
             }
         }
 
         return $out;
+    }
+
+    /** Fehlende Kennungen ergänzen (doppelte werden neu vergeben) */
+    public static function withUids(array $blocks): array
+    {
+        $seen = [];
+        foreach ($blocks as $i => $b) {
+            $uid = (string) ($b['uid'] ?? '');
+            if ('' === $uid || isset($seen[$uid])) {
+                $uid = self::uid();
+                $blocks[$i]['uid'] = $uid;
+            }
+            $seen[$uid] = true;
+        }
+
+        return $blocks;
+    }
+
+    public static function uid(): string
+    {
+        return bin2hex(random_bytes(5));
     }
 
     public static function encode(array $blocks): ?string

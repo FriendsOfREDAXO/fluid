@@ -81,6 +81,8 @@
       });
       try {
         const res = await post(cfg.api, fd);
+        // feste Kennung des Blocks behalten (Bearbeiten auf der Website)
+        if (blocks[open.index]?.uid) res.item.uid = blocks[open.index].uid;
         blocks[open.index] = res.item;
         labels[open.index] = res.label;
         closeEditor();

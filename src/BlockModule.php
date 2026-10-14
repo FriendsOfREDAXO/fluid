@@ -241,8 +241,11 @@ abstract class BlockModule extends Module
         return new Block(null, $this, FieldForm::withDefaults($this->fields(), $data, $this->variants()), $tunes, $prev, $id, $articleId);
     }
 
-    /** Abschnitt eines Blocks aus Daten – wie renderBlock(), ohne Bearbeiten-Markup */
-    public function renderData(Block $b): string
+    /**
+     * Abschnitt eines Blocks aus Daten – wie renderBlock(). Mit $editId (Datensatz-Block, Data\RecordBlocks) und im
+     * Bearbeiten-Modus mit dem Markup des Editors, sonst ohne.
+     */
+    public function renderData(Block $b, string $editId = ''): string
     {
         $this->kit()->markUsed($b->type, $b->variant());
         $inner = $this->renderInner($b);
@@ -251,8 +254,12 @@ abstract class BlockModule extends Module
         }
         $titled = str_contains($inner, 'id="' . $b->titleId() . '"');
 
+        $edit = '' !== $editId && Editing::active()
+            ? ' data-block="' . escape($editId) . '" data-type="' . escape($b->type) . '" data-label="' . escape((string) ($this->definition()['label'] ?? $this->name)) . '" data-record'
+            : '';
+
         return '<section id="' . escape($b->domId()) . '" class="' . escape($b->sectionClass()) . '"'
-            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . '>' . $b->sectionBg() . $inner . "</section>\n";
+            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . $edit . '>' . $b->sectionBg() . $inner . "</section>\n";
     }
 
     /** @internal */

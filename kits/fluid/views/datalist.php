@@ -66,7 +66,7 @@ if ($row):
   <dl class="df-dl">
     <?php $blocksHtml = ''; foreach (YFormBridge::detailFields($t) as $f):
         // Feld „Fluid-Blöcke“: als Blöcke unter der Detailansicht (volle Breite), nicht als Text
-        if ($f instanceof \FriendsOfRedaxo\Fluid\Data\FluidBlocks) { $blocksHtml .= \FriendsOfRedaxo\Fluid\BlockData::render($row->get($f->name), $b->id . '-' . $f->name, $b->articleId); continue; }
+        if ($f instanceof \FriendsOfRedaxo\Fluid\Data\FluidBlocks) { $blocksHtml .= \FriendsOfRedaxo\Fluid\Data\RecordBlocks::render($t, $row, $f, $b->articleId); continue; }
         if ($same($f, $titleF) || $same($f, $imageF) || $same($f, $filterF) || ($h = YFormBridge::html($row, $f)) === '') continue; ?>
     <div><dt><?= e($f->translatedLabel()) ?></dt><dd><?= $h ?></dd></div>
     <?php endforeach; ?>

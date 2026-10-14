@@ -35,6 +35,8 @@
     }
     const json = await res.json().catch(() => ({ ok: false, error: `Ungültige Antwort (${res.status}).` }));
     if (!json.ok) throw new Error(json.error || 'Unbekannter Fehler.');
+    // Server verlangt neu laden (z. B. erster Block eines Datensatzes)
+    if (json.refresh) { dirty?.clear(); location.reload(); return new Promise(() => {}); }
     if (json.state) setState(json.state);
     return json;
   }
@@ -579,6 +581,13 @@
       if (!f.reportValidity()) return;
       if (dirty.size && !(await ask({ title: 'Erst speichern?', body: 'Ungespeicherte Änderungen kommen nicht in die Vorlage. Trotzdem fortfahren?', ok: 'Fortfahren' }))) return;
       try { const res = await api('template_save', new FormData(f)); tdlg.hidden = true; say(res.message); } catch (err) { say(err.message, true); }
+    });
+    // Datensatz ohne Blöcke: „+ Ersten Block einfügen“
+    main.addEventListener('click', (e) => {
+      const rb = e.target.closest('[data-record-add]');
+      if (!rb) return;
+      e.preventDefault();
+      openPicker(rb);
     });
     // Block „Beiträge“: „+ Neuer Beitrag“ – Seite ohne Menüeintrag im Blog
     main.addEventListener('click', (e) => {
@@ -1246,6 +1255,8 @@
     $('[data-bb-label]').textContent = sec.dataset.label || sec.dataset.type;
     const offline = sec.hasAttribute('data-offline');
     const st = $('[data-bb-status]');
+    // Datensatz-Blöcke: kein Online-Schalter, keine Spalten
+    st.toggleAttribute('data-noperm', sec.hasAttribute('data-record') || !may('publishSlice'));
     st.textContent = offline ? 'Offline' : 'Online';
     st.classList.toggle('is-off', offline);
     const sib = siblings(sec);
@@ -1299,7 +1310,7 @@
   $('[data-bb-delete]').addEventListener('click', async () => {
     const sec = target();
     if (!sec) return;
-    if (!(await ask({ title: `„${sec.dataset.label}“ löschen?`, body: 'Der Block wird aus dem Entwurf entfernt.', ok: 'Löschen', danger: true }))) return;
+    if (!(await ask({ title: `„${sec.dataset.label}“ löschen?`, body: sec.hasAttribute('data-record') ? 'Der Block wird aus dem Eintrag entfernt – sofort gespeichert.' : 'Der Block wird aus dem Entwurf entfernt.', ok: 'Löschen', danger: true }))) return;
     try {
       const res = await api('delete', { slice: sec.dataset.block });
       if (res.reload) { location.reload(); return; }
@@ -1326,7 +1337,9 @@
     insertInto = into;
     const list = $('[data-picker-list]');
     const groups = {};
-    cfg.modules.filter((m) => !col || m.nestable).forEach((m) => (groups[m.group] ||= []).push(m));
+    // Datensatz-Blöcke (Feld „Fluid-Blöcke“): nur die im Feld erlaubten Blöcke
+    const allowed = after?.closest?.('[data-record-blocks]')?.dataset.allowed?.split(',');
+    cfg.modules.filter((m) => (!col || m.nestable) && (!allowed || allowed.includes(m.key))).forEach((m) => (groups[m.group] ||= []).push(m));
     list.innerHTML = Object.entries(groups).map(([g, ms]) => `<p class="picker__group">${esc(g)}</p>`
       + ms.map((m) => `<button type="button" role="option" class="picker__item" data-key="${esc(m.key)}" data-q="${esc((m.label + ' ' + m.help).toLowerCase())}"><strong>${esc(m.label)}</strong>${m.help ? `<span>${esc(m.help)}</span>` : ''}</button>`).join('')).join('');
     picker.hidden = false;
@@ -1354,7 +1367,7 @@
     closePicker();
     try {
       await saveAll();
-      const res = await api('add', { module: item.dataset.key, after: insertAfter?.dataset.block || 0, col: insertCol });
+      const res = await api('add', { module: item.dataset.key, after: insertAfter?.dataset.block || insertAfter?.dataset.recordAdd || 0, col: insertCol });
       const el = h(res.html);
       if (insertInto && insertAfter?.parentElement === insertInto) insertAfter.after(el);
       else if (insertInto) {
@@ -1669,7 +1682,10 @@
   document.addEventListener('dragover', (e) => {
     if (!dragSec) return;
     e.preventDefault();
-    const secs = [...main.querySelectorAll('section[data-block]')].filter((s) => !s.closest('[data-lay-col]'));
+    // Datensatz-Blöcke nur innerhalb ihrer Liste, Seiten-Blöcke nicht in eine Datensatz-Liste
+    const secs = dragSec.hasAttribute('data-record')
+      ? siblings(dragSec)
+      : [...main.querySelectorAll('section[data-block]')].filter((s) => !s.closest('[data-lay-col]') && !s.hasAttribute('data-record'));
     dropBefore = secs.find((s) => { const r = s.getBoundingClientRect(); return e.clientY < r.top + r.height / 2; }) || null;
     const ref = dropBefore || secs[secs.length - 1];
     const r = ref.getBoundingClientRect();
@@ -1685,7 +1701,7 @@
     try {
       await saveAll();
       await api('reorder', { slice: sec.dataset.block, before: dropBefore?.dataset.block || 0 });
-      dropBefore ? dropBefore.before(sec) : main.querySelector('section[data-block]:last-of-type')?.after(sec);
+      dropBefore ? dropBefore.before(sec) : (sec.hasAttribute('data-record') ? siblings(sec).at(-1) : main.querySelector('section[data-block]:last-of-type'))?.after(sec);
       sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       say('Block verschoben.');
       place();

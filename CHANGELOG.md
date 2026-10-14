@@ -19,6 +19,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   mit Zwei-Klick-Lösung.
 - Blog / News: Menüseite als Blog, Beiträge mit Datum, Autor, Schlagworten; Block „Beiträge“ (Aufmacher, Karten, Liste,
   Blättern, Schlagworte), Beitragskopf und -navigation, RSS-Feed, „+ Neuer Beitrag“, Beiträge im Seitenbaum eingeklappt.
+- Blöcke von YForm-Einträgen direkt auf der Website bearbeiten (Detailansicht der Datenliste, sofort gespeichert); Demo „Projekte“
+  (Fallstudien aus Blöcken, `ProjectTable`).
 - YForm-Feld „Fluid-Blöcke“ (`FluidBlocks`): Inhalt aus Blöcken in jeder YForm-Tabelle, Bearbeiten in der Maske, Ausgabe in der
   Detailansicht der Datenliste bzw. mit `BlockData::render()`; Vorlage `NewsTable` mit Blöcken.
 - Formular-Baukasten auf der Website: Felder, Schritte (mehrstufig), speichern und/oder per E-Mail, Bestätigung an den Absender;

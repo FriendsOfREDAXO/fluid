@@ -53,6 +53,12 @@ final class Api
             $article = Article::getCurrent() ?? self::fail('Artikel nicht gefunden.', 404);
             // Aktionsrechte des Cores (wie im Backend)
             $action = Request::get(self::PARAM, 'string');
+            // Blöcke eines YForm-Datensatzes (Feld „Fluid-Blöcke“): eigener Handler, Rechte von YForm
+            $ref = Request::post('slice', 'string', '') ?: Request::post('after', 'string', '');
+            if (Data\RecordBlocks::is($ref) && \in_array($action, Data\RecordBlocks::ACTIONS, true)) {
+                $result = Editing::render(static fn () => Data\RecordBlocks::handle($action, $user, $article->id));
+                self::send(['ok' => true, 'state' => self::state($article)] + $result);
+            }
             $isCat = $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id);
             $need = match ($action) {
                 'publish' => 'version[live_version]',
@@ -590,8 +596,18 @@ final class Api
      */
     private static function input(ArticleSlice $slice): array
     {
-        $data = BlockModule::decode($slice->getValue(1));
-        $tunes = BlockModule::decode($slice->getValue(2));
+        return self::applyInput(BlockModule::decode($slice->getValue(1)), BlockModule::decode($slice->getValue(2)));
+    }
+
+    /**
+     * Eingaben der Anfrage auf Blockdaten anwenden: Formular der Seitenleiste (`f[1]`, `f[2]`) und Felder direkt auf der
+     * Seite (`patch[pfad] = wert`). Für Seiten-Blöcke (Slices) und Datensatz-Blöcke (Data\RecordBlocks).
+     *
+     * @internal
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>}
+     */
+    public static function applyInput(array $data, array $tunes): array
+    {
         $f = Request::post('f', 'array', []);
         if (isset($f[1]) && is_array($f[1])) {
             // gezogene Spaltenbreiten stehen nicht im Formular: behalten (ein anderes Raster verwirft sie beim Ausgeben)

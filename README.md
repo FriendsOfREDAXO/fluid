@@ -196,12 +196,18 @@ yield FluidBlocks::new('inhalt')->label('Inhalt')->blocks('richtext', 'media_tex
 - Ausgabe: Die Detailansicht der Datenliste zeigt das Feld automatisch als Blöcke. In eigenen Templates:
   `echo \FriendsOfRedaxo\Fluid\BlockData::render($record->get('inhalt'));` – Klartext für Listen und Suche:
   `BlockData::text(…)`.
+- **Auf der Website bearbeiten:** Im Bearbeiten-Modus sind die Blöcke eines Eintrags in der Detailansicht der Datenliste
+  bearbeitbar wie Seiten-Blöcke – Texte direkt auf der Seite, Seitenleiste, Greifer, hinzufügen (nur die im Feld
+  erlaubten Blöcke), verschieben (Pfeile, Ziehen), verdoppeln, kopieren/einfügen (auch zwischen Seite und Eintrag),
+  löschen. Gespeichert wird sofort in den Datensatz (YForm-Record-API mit Prüfung und Hooks) – Datensätze kennen keinen
+  Entwurf. Recht: YForm „Tabelle bearbeiten“ und Modulrecht des Blocks. Technisch: Block-IDs `r~tabelle~id~feld~uid`
+  (`Data\RecordBlocks`), jeder Block hat eine feste Kennung `uid`.
 - Layout-Spalten gibt es im Feld nicht (sie brauchen Slices); Rechte: Modulrecht des Blocks wie auf den Seiten.
 
 Für eigene Ausgaben: `PageSettings::override(['title' => …, 'description' => …, 'image' => …, 'canonical' => …])`
 setzt den Seitenkopf aus einem Block heraus (z. B. eigene Detailansichten).
 
-Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `AnfrageTable`, `AnfrageForm`) – nach `src/` kopieren, `console migrate`.
+Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `ProjectTable`, `AnfrageTable`, `AnfrageForm`) – nach `src/` kopieren, `console migrate`.
 
 ### Adressen, Domains, SEO
 
