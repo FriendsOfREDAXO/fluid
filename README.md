@@ -192,7 +192,7 @@ yield FluidBlocks::new('inhalt')->label('Inhalt')->blocks('richtext', 'media_tex
 ```
 
 - Bearbeiten in der YForm-Maske: Blöcke hinzufügen, bearbeiten (dieselben Felder wie auf der Website – Medienpool,
-  Linkmap, Text-Editor), verschieben, entfernen. Gespeichert als JSON (`mediumtext`).
+  Linkmap, Text-Editor), verschieben, entfernen. Gespeichert als JSON (`longtext`).
 - Ausgabe: Die Detailansicht der Datenliste zeigt das Feld automatisch als Blöcke. In eigenen Templates:
   `echo \FriendsOfRedaxo\Fluid\BlockData::render($record->get('inhalt'));` – Klartext für Listen und Suche:
   `BlockData::text(…)`.

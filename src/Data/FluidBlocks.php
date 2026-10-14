@@ -23,7 +23,7 @@ if (!class_exists(Field::class)) {
  *     yield FluidBlocks::new('inhalt')->label('Inhalt');
  *     yield FluidBlocks::new('inhalt')->label('Inhalt')->blocks('richtext', 'media_text', 'video');   // nur diese Blöcke
  *
- * Gespeichert als JSON (mediumtext): [{module, data, tunes}, …]. Bearbeiten in der YForm-Maske mit denselben Feldern
+ * Gespeichert als JSON (longtext): [{module, data, tunes}, …]. Bearbeiten in der YForm-Maske mit denselben Feldern
  * wie auf der Website (Medienpool, Linkmap, Text-Editor). Ausgabe: `BlockData::render($record->get('inhalt'))` – die
  * Detailansicht der Datenliste macht das automatisch. Layout-Spalten gibt es hier nicht (sie brauchen Slices).
  */
@@ -50,7 +50,7 @@ final class FluidBlocks extends Field
     #[Override]
     protected function columnType(): string
     {
-        return 'mediumtext';
+        return 'longtext';
     }
 
     #[Override]
