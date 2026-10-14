@@ -56,7 +56,8 @@ Stellen, YForm-Tabellen und -Formulare als Klassen – mehr in der [Entwickler-R
 
 ## Schnellstart
 
-Mit einem Befehl entsteht eine komplette Website: REDAXO 6, YForm 6, fluid und – wenn du möchtest – die Demo mit
+Mit einem Befehl entsteht eine komplette Website: REDAXO 6, YForm 6, fluid, die Bildbearbeitung
+[image_editor](https://github.com/FriendsOfREDAXO/image_editor) und – wenn du möchtest – die Demo mit
 allen Seiten, Beispieldaten, Bildern und dem Design „REDAXO · Blau“.
 
 ### 1. Das brauchst du
@@ -176,7 +177,13 @@ php bin/console migrate
 ```
 
 YForm ist optional – ohne YForm fehlen nur Formulare, Datenlisten und das Postfach. Für die Bildbearbeitung auf der
-Website gibt es das AddOn `friendsofredaxo/image_editor` (optional).
+Website gibt es das AddOn [image_editor](https://github.com/FriendsOfREDAXO/image_editor) (optional, das
+Installationsskript nimmt es mit):
+
+```bash
+composer config repositories.image_editor '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/image_editor", "no-api": true}'
+composer require friendsofredaxo/image_editor:*@dev && php bin/console migrate
+```
 
 Danach entweder auf der Website „Erste Schritte“ nutzen oder in der Konsole:
 
