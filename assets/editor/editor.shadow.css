@@ -362,3 +362,21 @@ textarea[data-blocks-rte] { display: none !important; }
 .gnote__btn { flex: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; background: var(--bg); color: inherit; font: inherit; cursor: pointer; }
 .gnote__btn[hidden] { display: none; }
 @media (max-width: 900px) { .gnote__text { display: none; } }
+
+/* Seitenleiste auf Touch-Geräten und schmalen Bildschirmen: 16 px Schrift (sonst zoomt iOS beim Antippen), 44 px Ziele,
+   mehr Luft zwischen den Feldern */
+.blocks-form > .blocks-form__field { margin-bottom: 14px; }
+@media (max-width: 760px), (pointer: coarse) {
+  .panel__body { padding: 16px 16px 28px; }
+  .blocks-form__grid { gap: 16px; }
+  .control-label { font-size: 15px; }
+  .help-block { font-size: 13px; line-height: 1.45; }
+  .form-control, select, input[type="text"], input[type="url"], input[type="email"], input[type="number"], input[type="search"], textarea { font-size: 16px; }
+  .form-control { min-height: 44px; padding: 10px 12px; }
+  textarea.form-control { min-height: 7.5em; resize: none; }
+  .panel__foot { padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+  .panel__foot .btn, .panel__head .btn { min-height: 44px; min-width: 44px; }
+  .blocks-form__check { min-height: 44px; }
+  .blocks-form__check input { width: 22px; height: 22px; }
+  .blocks-rep__item > summary { min-height: 44px; }
+}

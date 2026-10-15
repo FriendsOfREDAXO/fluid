@@ -1494,6 +1494,8 @@
   let previewTimer = 0;
   let previewSeq = 0;
   const form = $('[data-panel-form]');
+  // Mehrzeilige Felder wachsen mit dem Text (bis zur halben Bildschirmhöhe) – auf dem Handy kein Scrollen im Feld
+  const grow = (ta) => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, Math.round(innerHeight * 0.5)) + 'px'; };
 
   async function openPanel(sec) {
     if (dirty.has(sec.dataset.block) && !(await saveAll())) return;
@@ -1507,6 +1509,7 @@
       window.BlocksForm?.init(form, schedulePreview);
       Rich?.initFields(form);
       panel.hidden = false;
+      form.querySelectorAll('textarea.form-control').forEach(grow);   // erst sichtbar hat das Feld eine Höhe
       document.documentElement.classList.add('blocks-panel-open');
       sec.setAttribute('data-blocks-panel', '');
       sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1575,7 +1578,7 @@
     }, 350);
   }
 
-  form.addEventListener('input', () => schedulePreview());
+  form.addEventListener('input', (e) => { if (e.target.matches?.('textarea.form-control')) grow(e.target); schedulePreview(); });
   form.addEventListener('change', () => schedulePreview());
   form.addEventListener('click', (e) => e.target.closest('[data-blocks-add]') && setTimeout(() => Rich?.initFields(form)));
 
