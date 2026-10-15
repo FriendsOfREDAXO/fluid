@@ -80,7 +80,7 @@ return [
                 ['type' => 'hero', 'data' => [
                     'variant' => 'type', 'eyebrow' => 'REDAXO 6 · in Entwicklung',
                     'title' => 'REDAXO im Frontend, *einfach*.',
-                    'text' => 'REDAXO 6 räumt unter der Haube auf: PHP 8.5, Composer, Module und Templates als PHP-Klassen. Das macht etwas möglich, das in REDAXO lange gefehlt hat – Seiten direkt auf der Website bearbeiten, mit echten Slices.',
+                    'text' => 'REDAXO 6 räumt unter der Haube auf: PHP 8.5, Composer, Module und Templates als PHP-Klassen. Das macht etwas möglich, das in REDAXO lange gefehlt hat – Seiten direkt auf der Website bearbeiten, mit echten Slices. REDAXO 6 ist noch in Entwicklung – es kann sich noch einiges ändern.',
                     'button_label' => 'Was sich ändert', 'button_link' => '/was-sich-aendert',
                     'button2_label' => 'Bearbeiten auf der Website', 'button2_link' => '/bearbeiten',
                     'points' => "Seit 2004 · MIT-Lizenz\nModule als PHP-Klassen\nBearbeiten im Kontext",
