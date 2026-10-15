@@ -197,12 +197,12 @@ final class DemoCommand extends AbstractCommand
     /** Titel und Alt-Text der Demo-Bilder (Screenshots aus docs/bilder) */
     private const array MEDIA_TEXTS = [
         'fluid-website.jpg' => ['Startseite der Demo', 'Startseite der fluid-Demo mit blauem Kopf und großer Überschrift „REDAXO im Frontend, einfach.“'],
-        'fluid-bearbeiten-datensatz.jpg' => ['Blöcke in einem Datensatz', 'Detailansicht eines YForm-Eintrags im Bearbeiten-Modus, rechts die Seitenleiste mit den Feldern eines Blocks'],
+        'fluid-bearbeiten-datensatz.jpg' => ['Blöcke in einem Datensatz', 'Projekt-Detailseite im Bearbeiten-Modus: Block „Kennzahlen“ gewählt, rechts die Seitenleiste mit seinen Feldern'],
         'fluid-formular-schritte.jpg' => ['Formular in Schritten', 'Anmeldeformular mit drei Schritten: Kontakt, Teilnahme, Abschluss'],
         'fluid-blog.jpg' => ['Blog-Übersicht', 'Blog-Übersicht mit großem Aufmacher, Schlagworten und Beitragskarten'],
-        'fluid-yform-maske.jpg' => ['Eingabemaske von YForm', 'Eingabemaske einer YForm-Tabelle im Backend mit dem Feld „Fluid-Blöcke“'],
+        'fluid-yform-maske.jpg' => ['Eingabemaske von YForm', 'Eingabemaske eines Projekts im REDAXO-Backend (YForm) mit Bild, Kurztext und den Blöcken der Fallstudie'],
         'fluid-backend-status.jpg' => ['Statusseite im Backend', 'Statusseite von fluid im REDAXO-Backend mit Prüfungen und Wartung'],
-        'fluid-trailer.jpg' => ['Standbild aus dem Video', 'Standbild aus dem Vorstellungsvideo von fluid'],
+        'fluid-design.jpg' => ['Design-Leiste', 'Startseite im Bearbeiten-Modus, rechts die Design-Leiste mit den Vorlagen zum Wechseln'],
     ];
 
     /** Demo-Bilder (kits/fluid/demo/media) in den Medienpool – nur fehlende */
