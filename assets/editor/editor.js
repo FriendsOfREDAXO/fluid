@@ -1815,7 +1815,7 @@
     .h:is(:hover,:focus-visible,.is-drag) .g{opacity:1;scale:1.12}
     .h--x::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:var(--k);opacity:0;transition:opacity .15s}
     .h--x:is(:hover,:focus-visible,.is-drag)::before{opacity:.55}
-    .h--y::before{content:"";position:absolute;left:-28px;right:-600px;top:50%;height:2px;margin-top:-1px;background:var(--k);opacity:0;transition:opacity .15s;pointer-events:none}
+    .h--y::before{content:"";position:absolute;left:-28px;right:calc(-1 * min(600px, 100vw - 220px));top:50%;height:2px;margin-top:-1px;background:var(--k);opacity:0;transition:opacity .15s;pointer-events:none}
     .h--y:is(:hover,:focus-visible,.is-drag)::before{opacity:.45}
     .h:focus-visible{outline:2px solid var(--k);outline-offset:3px;border-radius:8px}
     .t{position:absolute;left:0;top:-32px;padding:4px 9px;border-radius:999px;background:var(--k);color:#fff;font:600 12px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 4px 12px rgb(0 0 0/.2)}
