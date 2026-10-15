@@ -236,6 +236,7 @@ $design = [
         'roboto-condensed' => ['label' => 'Roboto Condensed (schmal, für Überschriften · variabel)', 'stack' => '"Roboto Condensed","Arial Narrow",ui-sans-serif,system-ui,sans-serif', 'fontsource' => 'roboto-condensed', 'styles' => ['normal', 'italic']],
         'pt-sans' => ['label' => 'PT Sans (Grotesk, amtlich · 400/700)', 'stack' => '"PT Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif', 'fontsource' => 'pt-sans', 'styles' => ['normal', 'italic'], 'variable' => false, 'weights' => [400, 700]],
         'poppins' => ['label' => 'Poppins (geometrisch, rund · 300–800)', 'stack' => 'Poppins,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif', 'fontsource' => 'poppins', 'styles' => ['normal', 'italic'], 'variable' => false, 'weights' => [300, 400, 500, 600, 700, 800]],
+        'exo' => ['label' => 'Exo (technisch-geometrisch, für Überschriften · variabel)', 'stack' => 'Exo,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif', 'fontsource' => 'exo', 'styles' => ['normal', 'italic']],
         'manrope' => ['label' => 'Manrope (geometrisch, modern · variabel)', 'stack' => 'Manrope,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif', 'fontsource' => 'manrope'],
         'atkinson' => ['label' => 'Atkinson Hyperlegible Next (barrierearm, leicht unterscheidbare Zeichen · variabel)', 'stack' => '"Atkinson Hyperlegible Next","Atkinson Hyperlegible",ui-sans-serif,system-ui,sans-serif', 'fontsource' => 'atkinson-hyperlegible-next', 'styles' => ['normal', 'italic']],
         'nunito' => ['label' => 'Nunito (gerundet, freundlich · variabel)', 'stack' => 'Nunito,ui-rounded,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif', 'fontsource' => 'nunito', 'styles' => ['normal', 'italic']],
@@ -254,11 +255,11 @@ $design = [
         // Angelehnt an redaxo.org und das Backend des Cores (assets/scss/_variables.scss): blauer Kopf, blaue Überschriften,
         // Dunkelblau #343f50 für Text und Fuß, Grund #f3f6fb, Linien #dfe3e9, Source Sans. Die Blautöne sind dunklere Stufen
         // des REDAXO-Blaus #5b98d7/#4b9ad9 (dort Weiß darauf nur 3:1) – so erfüllen Kopf, Links und Buttons WCAG AA.
-        'redaxo' => $preset('REDAXO · Blau', 'Im Stil von redaxo.org: blauer Kopf, blaue Überschriften, Source Sans, dunkler Fuß, runde Buttons – Farben aus dem REDAXO-Backend.',
+        'redaxo' => $preset('REDAXO · Blau', 'Im Stil von redaxo.org: blauer Kopf, blaue Überschriften in Exo, Text in Source Sans, dunkler Fuß, runde Buttons – Farben aus dem REDAXO-Backend.',
             ['#2C6AA8', '#1F5A96', '#FFFFFF', '#DBEDF7', '#1D5288', '#343F50', '#596676', '#FFFFFF', '#F3F6FB', '#DFE3E9', '#343F50'],
             ['#8CBDEE', '#B3D4F4', '#0B1A2B', '#1F3A52', '#B8D6F5', '#D3DAE3', '#9AA6B4', '#10161D', '#18202A', '#2A3542', '#1D2835'],
             ['secondary' => '#2B8466', 'on_secondary' => '#FFFFFF', 'secondary@dark' => '#7FD3A8', 'on_secondary@dark' => '#06231A',
-             'font_body' => 'source-sans', 'font_head' => 'source-sans', 'fs_min' => 16.5, 'fs_max' => 19, 'ratio' => 1.25, 'heading_weight' => 600, 'heading_tracking' => 0,
+             'font_body' => 'source-sans', 'font_head' => 'exo', 'fs_min' => 16.5, 'fs_max' => 19, 'ratio' => 1.25, 'heading_weight' => 600, 'heading_tracking' => 0,
              'radius' => 3, 'buttons' => 'pill', 'cards' => 'outlined', 'shadow' => 'none', 'eyebrow' => 'plain', 'emphasis' => 'accent', 'icons' => 'duo',
              'header' => 'inline', 'header_bg' => 'accent', 'nav_style' => 'plain', 'footer' => 'columns', 'footer_bg' => 'dark', 'pagebg' => 'plain'] + $base),
         'kanzlei' => $preset('Kanzlei · Nachtblau & Serife', 'Seriös und ruhig: Newsreader-Überschriften, eckige Formen, zentrierter Kopf, flache Stufen.',
