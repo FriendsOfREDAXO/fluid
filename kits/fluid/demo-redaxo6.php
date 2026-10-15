@@ -20,7 +20,7 @@ $cta = [
 // Projekt (#[AsTable]/#[AsForm], Vorlagen in examples/yform) – YForm legt die Tabellen bei `console migrate` an.
 $yform = [
     'rex_yf_termin' => ['rows' => [
-        ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'testbild-verlauf.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => true],
+        ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'fluid-formular-schritte.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => true],
         ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => null, 'text' => 'Ein Block ist eine Modulklasse, ein Feldschema und eine View. Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => true],
         ['title' => 'Sprechstunde: Von REDAXO 5 nach 6', 'date' => '2026-12-03', 'place' => 'Online', 'image' => null, 'text' => 'Fragen zu Composer, Modulen als Klassen und console migrate – mitbringen, was im eigenen Projekt ansteht.', 'online' => true],
         ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => null, 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => false],
@@ -28,7 +28,7 @@ $yform = [
     'rex_yf_anfrage' => ['rows' => []],
     // Projekte (examples/yform/ProjectTable) – Seite „Projekte“: Fallstudien aus Blöcken (Feld „Fluid-Blöcke“)
     'rex_yf_project' => ['rows' => [
-        ['title' => 'Stadtwerke Musterstadt: Portal in drei Sprachen', 'client' => 'Stadtwerke Musterstadt', 'year' => 2026, 'image' => 'testbild-verlauf.jpg', 'online' => true,
+        ['title' => 'Stadtwerke Musterstadt: Portal in drei Sprachen', 'client' => 'Stadtwerke Musterstadt', 'year' => 2026, 'image' => 'fluid-website.jpg', 'online' => true,
             'teaser' => 'Ein Portal, drei Sprachen, eine Redaktion: Tarife, Störungsmeldungen und Neuigkeiten – gepflegt direkt auf der Website.',
             'story' => [
                 ['module' => 'fluid.stats', 'data' => ['variant' => 'row', 'eyebrow' => 'Ergebnis', 'title' => 'Ein Jahr danach', 'items' => [
@@ -38,9 +38,9 @@ $yform = [
                 ]], 'tunes' => ['background' => 'muted']],
                 ['module' => 'fluid.richtext', 'data' => ['variant' => 'article', 'title' => 'Die Aufgabe', 'text' => '<p>Die alte Website war über Jahre gewachsen: drei Systeme, doppelte Inhalte, lange Wege für jede Änderung. Ziel war <strong>eine</strong> Website, die das Team selbst pflegt – ohne Schulung, ohne Agentur für jeden Tippfehler.</p><h3>Der Ansatz</h3><ul><li>REDAXO 6 mit fluid: Bearbeiten direkt auf der Seite</li><li>Tarife und Meldungen als YForm-Tabellen</li><li>Mehrsprachig mit „Inhalt übernehmen“</li></ul>'], 'tunes' => []],
                 ['module' => 'fluid.quote', 'data' => ['variant' => 'single', 'items' => [['text' => 'Wir ändern heute Texte in Minuten – genau dort, wo Besucher sie lesen.', 'name' => 'Erika Musterfrau', 'role' => 'Online-Redaktion', 'image' => null]]], 'tunes' => ['background' => 'accent']],
-                ['module' => 'fluid.media_text', 'data' => ['variant' => 'right', 'title' => 'Störungen in Echtzeit', 'text' => '<p>Meldungen kommen aus einer YForm-Tabelle und erscheinen sofort auf der Startseite – mit eigener Adresse je Meldung.</p>', 'image' => 'testbild-verlauf.jpg'], 'tunes' => []],
+                ['module' => 'fluid.media_text', 'data' => ['variant' => 'right', 'title' => 'Störungen in Echtzeit', 'text' => '<p>Meldungen kommen aus einer YForm-Tabelle und erscheinen sofort auf der Startseite – mit eigener Adresse je Meldung.</p>', 'image' => 'fluid-backend-status.jpg'], 'tunes' => []],
             ]],
-        ['title' => 'Kulturverein: Programm, Anmeldung, Archiv', 'client' => 'Kulturverein Beispielhausen', 'year' => 2025, 'image' => null, 'online' => true,
+        ['title' => 'Kulturverein: Programm, Anmeldung, Archiv', 'client' => 'Kulturverein Beispielhausen', 'year' => 2025, 'image' => 'fluid-formular-schritte.jpg', 'online' => true,
             'teaser' => 'Veranstaltungen als Datenliste, Anmeldung mit mehrstufigem Formular und ein Archiv, das von selbst wächst.',
             'story' => [
                 ['module' => 'fluid.features', 'data' => ['variant' => 'cards', 'eyebrow' => 'Bausteine', 'title' => 'Was der Verein nutzt', 'items' => [
@@ -53,17 +53,17 @@ $yform = [
                     ['q' => 'Brauchen Mitglieder ein Konto?', 'a' => '<p>Nein. Die Anmeldung geht ohne Konto, die Daten landen im Postfach.</p>'],
                 ]], 'tunes' => ['background' => 'muted']],
             ]],
-        ['title' => 'Praxis Dr. Beispiel: ruhig, klar, barrierearm', 'client' => 'Praxis Dr. Beispiel', 'year' => 2025, 'image' => 'testbild-verlauf.jpg', 'online' => true,
+        ['title' => 'Praxis Dr. Beispiel: ruhig, klar, barrierearm', 'client' => 'Praxis Dr. Beispiel', 'year' => 2025, 'image' => 'fluid-blog.jpg', 'online' => true,
             'teaser' => 'Eine Praxis-Website mit großer Schrift, hohem Kontrast und Öffnungszeiten, die sich selbst aktualisieren.',
             'story' => []],
         ['title' => 'Entwurf: noch nicht freigegeben', 'client' => '', 'year' => 2026, 'image' => null, 'teaser' => 'Offline – erscheint nicht.', 'story' => [], 'online' => false],
     ]],
     // Kurzmeldungen (examples/yform/NewsTable) – Seite „Presse“
     'rex_yf_news' => ['rows' => [
-        ['title' => 'REDAXO 6: Module und Templates als Klassen', 'date' => '2026-10-09', 'teaser' => 'Im Branch 6.x sind Module und Templates PHP-Klassen mit Attribut – auffindbar per ClassDiscovery.', 'image' => null, 'text' => "Beispielmeldung aus der YForm-Tabelle rex_yf_news.\n\nDie Datenliste zeigt sie nach Datum sortiert, mit eigener Adresse je Meldung.", 'link' => 'https://github.com/redaxo/core', 'online' => true],
+        ['title' => 'REDAXO 6: Module und Templates als Klassen', 'date' => '2026-10-09', 'teaser' => 'Im Branch 6.x sind Module und Templates PHP-Klassen mit Attribut – auffindbar per ClassDiscovery.', 'image' => 'fluid-yform-maske.jpg', 'text' => "Beispielmeldung aus der YForm-Tabelle rex_yf_news.\n\nDie Datenliste zeigt sie nach Datum sortiert, mit eigener Adresse je Meldung.", 'link' => 'https://github.com/redaxo/core', 'online' => true],
         ['title' => 'YForm 6: Tabellen und Formulare im Projekt', 'date' => '2026-10-02', 'teaser' => 'Tabellen und Formulare sind Klassen im Projekt (#[AsTable], #[AsForm]); console migrate legt die Tabellen an.', 'image' => null, 'text' => 'Beispielmeldung – Felder, Prüfungen und Aktionen legt die Klasse fest.', 'link' => 'https://github.com/yakamara/yform', 'online' => true],
-        ['title' => 'fluid: Bearbeiten auf der Website', 'date' => '2026-09-25', 'teaser' => 'Blöcke als echte Slices, Arbeitsversion, Rechte wie im Backend – direkt auf der Seite.', 'image' => 'testbild-verlauf.jpg', 'text' => 'Beispielmeldung mit Bild.', 'link' => '', 'online' => true],
-        ['title' => 'Medien: Video-Vorschaubilder und Untertitel', 'date' => '2026-09-18', 'teaser' => 'Standbild per ffmpeg über den Media Manager, Untertitel aus dem Medienpool.', 'image' => null, 'text' => 'Beispielmeldung.', 'link' => '', 'online' => true],
+        ['title' => 'fluid: Bearbeiten auf der Website', 'date' => '2026-09-25', 'teaser' => 'Blöcke als echte Slices, Arbeitsversion, Rechte wie im Backend – direkt auf der Seite.', 'image' => 'fluid-bearbeiten-datensatz.jpg', 'text' => 'Beispielmeldung mit Bild.', 'link' => '', 'online' => true],
+        ['title' => 'Medien: Video-Vorschaubilder und Untertitel', 'date' => '2026-09-18', 'teaser' => 'Standbild per ffmpeg über den Media Manager, Untertitel aus dem Medienpool.', 'image' => 'fluid-trailer.jpg', 'text' => 'Beispielmeldung.', 'link' => '', 'online' => true],
         ['title' => 'Entwurf: noch nicht freigegeben', 'date' => '2026-10-12', 'teaser' => 'Offline – erscheint nicht.', 'image' => null, 'text' => '', 'link' => '', 'online' => false],
     ]],
 ];
@@ -85,6 +85,10 @@ return [
                     'button2_label' => 'Bearbeiten auf der Website', 'button2_link' => '/bearbeiten',
                     'points' => "Seit 2004 · MIT-Lizenz\nModule als PHP-Klassen\nBearbeiten im Kontext",
                 ]],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Ausprobieren', 'title' => 'Bilder in Form bringen',
+                    'text' => '<p>Unter „Bearbeiten“ wählen Sie beim Bild das Format (16:9, 4:3, quadratisch …), die Darstellung (Bild links, rechts, randlos geteilt) und ziehen die Aufteilung zwischen Bild und Text direkt auf der Seite.</p>',
+                    'list' => "Bildformat in der Seitenleiste\nAufteilung per Ziehen am Bildrand\nDarstellung oben im Block wählen",
+                    'image' => 'fluid-website.jpg', 'ratio' => '16:9', 'split' => 'media']],
                 ['type' => 'features', 'data' => [
                     'variant' => 'cards', 'eyebrow' => 'Unter der Haube', 'title' => 'Was REDAXO 6 mitbringt',
                     'intro' => 'Ein modernes Fundament – vertraut für alle, die REDAXO kennen, und ohne Altlasten.',
@@ -190,6 +194,10 @@ return [
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
                     'title' => 'Bearbeiten direkt auf der Website', 'text' => 'Ein Feldschema je Block – daraus entstehen Backend-Formular, Bearbeiten im Kontext, Live-Vorschau und Ausgabe.']],
+                ['type' => 'media_text', 'data' => ['variant' => 'left', 'title' => 'Blöcke in Datensätzen', 'text' => '<p>Auch Einträge aus YForm-Tabellen bekommen Blöcke – bearbeitet direkt in der Detailansicht, mit derselben Seitenleiste wie auf jeder Seite.</p>',
+                    'image' => 'fluid-bearbeiten-datensatz.jpg', 'ratio' => '4:3', 'split' => 'even']],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'title' => 'Formulare zum Zusammenklicken', 'text' => '<p>Felder, Schritte, Bestätigung: Formulare entstehen in der Seitenleiste und speichern über YForm.</p>',
+                    'image' => 'fluid-formular-schritte.jpg', 'ratio' => '4:3', 'split' => 'even']],
                 ['type' => 'features', 'data' => [
                     'variant' => 'icons', 'eyebrow' => 'Im Alltag', 'title' => 'Was die Redaktion kann', 'intro' => '', 'size' => 'm',
                     'items' => [
@@ -343,9 +351,9 @@ return [
                     ['size' => 's', 'tone' => 'card', 'icon' => 'package', 'image' => null, 'eyebrow' => '', 'title' => 'Composer-Pakete', 'text' => 'fluid und image_editor als AddOns.', 'link' => ''],
                 ]]],
                 ['type' => 'tabs', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'top', 'eyebrow' => 'Für wen', 'title' => 'Ein System, drei Blickwinkel', 'intro' => '', 'items' => [
-                    ['label' => 'Redaktion', 'text' => '<p>Sehen, was man ändert: Text direkt auf der Seite, alle Felder in der Seitenleiste, Bilder aus dem Medienpool, Links über die Linkmap. Änderungen landen im Entwurf – erst „Veröffentlichen“ bringt sie live.</p>', 'image' => null],
-                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in value1/value2 – keine eigenen Tabellen.</p>', 'image' => null],
-                    ['label' => 'Agentur', 'text' => '<p>Kits mit Design-System und Vorlagen: ein Projekt schnell auf das Erscheinungsbild der Kundschaft bringen – und die Redaktion pflegt danach selbst.</p>', 'image' => null],
+                    ['label' => 'Redaktion', 'text' => '<p>Sehen, was man ändert: Text direkt auf der Seite, alle Felder in der Seitenleiste, Bilder aus dem Medienpool, Links über die Linkmap. Änderungen landen im Entwurf – erst „Veröffentlichen“ bringt sie live.</p>', 'image' => 'fluid-bearbeiten-datensatz.jpg'],
+                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in value1/value2 – keine eigenen Tabellen.</p>', 'image' => 'fluid-yform-maske.jpg'],
+                    ['label' => 'Agentur', 'text' => '<p>Kits mit Design-System und Vorlagen: ein Projekt schnell auf das Erscheinungsbild der Kundschaft bringen – und die Redaktion pflegt danach selbst.</p>', 'image' => 'fluid-website.jpg'],
                 ]]],
                 ['type' => 'pricing', 'data' => ['variant' => 'cards', 'eyebrow' => 'Mitmachen', 'title' => 'Drei Wege zu fluid', 'intro' => 'Open Source unter MIT-Lizenz – Beispielwege, keine Preisliste.', 'items' => [
                     ['name' => 'Ausprobieren', 'badge' => '', 'price' => '0 €', 'period' => 'MIT-Lizenz', 'text' => 'Lokal mit REDAXO 6 installieren und die Demo durchklicken.', 'features' => "REDAXO 6 (Branch 6.x)\nfluid:demo legt alles an\nKeine Anmeldung nötig", 'highlight' => false, 'button_label' => 'Technik', 'button_link' => '/technik'],

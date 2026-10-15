@@ -194,6 +194,17 @@ final class DemoCommand extends AbstractCommand
         return Command::SUCCESS;
     }
 
+    /** Titel und Alt-Text der Demo-Bilder (Screenshots aus docs/bilder) */
+    private const array MEDIA_TEXTS = [
+        'fluid-website.jpg' => ['Startseite der Demo', 'Startseite der fluid-Demo mit blauem Kopf und großer Überschrift „REDAXO im Frontend, einfach.“'],
+        'fluid-bearbeiten-datensatz.jpg' => ['Blöcke in einem Datensatz', 'Detailansicht eines YForm-Eintrags im Bearbeiten-Modus, rechts die Seitenleiste mit den Feldern eines Blocks'],
+        'fluid-formular-schritte.jpg' => ['Formular in Schritten', 'Anmeldeformular mit drei Schritten: Kontakt, Teilnahme, Abschluss'],
+        'fluid-blog.jpg' => ['Blog-Übersicht', 'Blog-Übersicht mit großem Aufmacher, Schlagworten und Beitragskarten'],
+        'fluid-yform-maske.jpg' => ['Eingabemaske von YForm', 'Eingabemaske einer YForm-Tabelle im Backend mit dem Feld „Fluid-Blöcke“'],
+        'fluid-backend-status.jpg' => ['Statusseite im Backend', 'Statusseite von fluid im REDAXO-Backend mit Prüfungen und Wartung'],
+        'fluid-trailer.jpg' => ['Standbild aus dem Video', 'Standbild aus dem Vorstellungsvideo von fluid'],
+    ];
+
     /** Demo-Bilder (kits/fluid/demo/media) in den Medienpool – nur fehlende */
     private static function media(): string
     {
@@ -206,8 +217,17 @@ final class DemoCommand extends AbstractCommand
             }
             $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
             copy($file, $tmp);
-            \Redaxo\Core\MediaPool\MediaHandler::addMedia(['category_id' => null, 'title' => pathinfo($name, PATHINFO_FILENAME), 'file' => ['name' => $name, 'path' => $tmp]], false);
+            [$title, $alt] = self::MEDIA_TEXTS[$name] ?? [pathinfo($name, PATHINFO_FILENAME), ''];
+            $res = \Redaxo\Core\MediaPool\MediaHandler::addMedia(['category_id' => null, 'title' => $title, 'file' => ['name' => $name, 'path' => $tmp]], false);
             @unlink($tmp);
+            // Alt-Text (Spalte meta_alt des Cores, je Sprache) – für Screenreader und für img()/picture()
+            if ('' !== $alt) {
+                try {
+                    \Redaxo\Core\Database\Sql::factory()->setQuery('UPDATE rex_media_translation t JOIN rex_media m ON m.id = t.media_id SET t.meta_alt = ? WHERE m.filename = ?', [$alt, (string) ($res['filename'] ?? $name)]);
+                } catch (\Throwable) {
+                    // ohne Spalte meta_alt: nur Titel
+                }
+            }
             \Redaxo\Core\MediaPool\Media::clearInstances($name);   // „nicht vorhanden“ aus der Prüfung oben vergessen
             $added[] = $name;
         }
