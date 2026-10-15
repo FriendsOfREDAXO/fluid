@@ -112,6 +112,7 @@
             ${cfg.editing && cfg.state.workVersion && !cfg.guest ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
             ${cfg.guest ? '' : `<a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>`}
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
+            ${(cfg.notice?.buttons || []).map((b) => `<button type="button" role="menuitem" data-notice-event="${esc(b.event)}">${esc(b.label)} …</button>`).join('')}
           </div>
         </div>
       </div>
@@ -1232,7 +1233,12 @@
   });
 
   // Hinweis-Leiste von AddOns (cfg.notice): Knöpfe lösen ihr Ereignis am document aus; Meldungen über „fluid:notice“
-  root.querySelectorAll('[data-notice-event]').forEach((b) => b.addEventListener('click', () => document.dispatchEvent(new CustomEvent(b.dataset.noticeEvent, { detail: { button: b } }))));
+  // (auch im Menü ⋯ – auf schmalen Bildschirmen ist der Titelbereich der Leiste ausgeblendet)
+  root.querySelectorAll('[data-notice-event]').forEach((b) => b.addEventListener('click', () => {
+    menu.hidden = true;
+    moreBtn.setAttribute('aria-expanded', 'false');
+    document.dispatchEvent(new CustomEvent(b.dataset.noticeEvent, { detail: { button: b } }));
+  }));
   document.addEventListener('fluid:notice', (e) => say(String(e.detail || ''), true));
 
   // ------------------------------------------------------------------ Blockleiste und „+“
