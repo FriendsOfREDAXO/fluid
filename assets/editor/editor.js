@@ -395,8 +395,12 @@
   // Schriften und Options-Stylesheets. „Speichern“ gilt für die ganze Website.
   function initDesign() {
     const D = cfg.design;
-    let saved = { ...D.values };
-    let values = { ...D.values };
+    // Nur Vorschau (Gäste, z. B. Demo): „Übernehmen“ behält die Wahl im Browser (Ereignis fluid:design-keep), gespeichert wird nichts.
+    // window.fluidDesignInitial: zuvor übernommene Werte, beim Laden der Seite gleich als Vorschau anwenden.
+    const keepOnly = cfg.designSave === false;
+    const initial = keepOnly && window.fluidDesignInitial && typeof window.fluidDesignInitial === 'object' ? window.fluidDesignInitial : null;
+    let saved = { ...D.values, ...(initial || {}) };
+    let values = { ...saved };
     let timer = 0;
     let seq = 0;
     const body = $('[data-design-body]');
@@ -508,7 +512,19 @@
     $('[data-design-close]').addEventListener('click', () => { values = { ...saved }; preview(); close(); });
     $('[data-design-cancel]').addEventListener('click', () => { values = { ...saved }; preview(); close(); });
     $('[data-design-reset]').addEventListener('click', () => { values = { ...D.defaults }; draw(); preview(); });
+    if (keepOnly) {
+      $('[data-design-save]').textContent = 'Übernehmen (Vorschau)';
+      $('[data-design-save]').title = 'Gilt für diese Demo in Ihrem Browser – gespeichert wird nichts';
+    }
+    if (initial) preview();
     $('[data-design-save]').addEventListener('click', async () => {
+      if (keepOnly) {
+        saved = { ...values };
+        document.dispatchEvent(new CustomEvent('fluid:design-keep', { detail: { values: { ...values } } }));
+        say('Design übernommen – nur in Ihrem Browser. Auf einer echten Website gilt es nach dem Speichern für alle Besucher.');
+        close();
+        return;
+      }
       try {
         const res = await api('design_save', { values: JSON.stringify(values) });
         saved = { ...values };

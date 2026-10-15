@@ -66,7 +66,9 @@ final class Toolbar
             'user' => $user->name ?: $user->login,
             'modules' => $modules,
             'state' => Api::state($article),
-            'design' => $user->admin && !$guest ? self::designSchema($article) : null,
+            // Design: Admins speichern; Gäste (z. B. Demo) nur Vorschau im eigenen Browser – Speichern lehnt die API ab
+            'design' => $user->admin || $guest ? self::designSchema($article) : null,
+            'designSave' => $user->admin && !$guest,
             // Website-Einstellungen (Seitenleiste „Website“): nur Admins
             'site' => $user->admin && !$guest ? ['tabs' => SiteAdmin::tabs()] : null,
             // Aktionsrechte des Cores (Rollen → Optionen) – die Leiste zeigt nur, was erlaubt ist

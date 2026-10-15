@@ -535,7 +535,8 @@ final class Api
      */
     private static function design(Article $article, User $user, bool $save): array
     {
-        if (!$user->admin) {
+        // Vorschau (ohne Speichern) auch für Gäste (Gastzugang, z. B. Demo) – gespeichert wird nur von Admins
+        if (!$user->admin && ($save || !Editing::isGuest())) {
             self::fail('Das Design dürfen nur Admins ändern.', 403);
         }
         $template = $article->templateKey ? Template::get($article->templateKey) : null;
