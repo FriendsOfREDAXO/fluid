@@ -12,7 +12,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
 - [Versionen](#versionen) · [MCP-Server](#mcp-server)
 - [Suche](#suche) · [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
-- [Konsole](#konsole) · [Rechte](#rechte) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
+- [Konsole](#konsole) · [Rechte](#rechte) · [Gastzugang](#gastzugang-für-addons) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
 
 ## Ein eigener Block
@@ -370,6 +370,33 @@ fluid nutzt die Rechte des Cores – eine Rolle wirkt auf der Website genau wie 
   `publishArticle[]`/`publishCategory[]`, `deleteArticle[]`/`deleteCategory[]`, `article2category[]` (Menüpunkt ja/nein),
   `copyContent[]` (Inhalt aus anderer Sprache). Die Leiste zeigt nur, was erlaubt ist; die API prüft jede Aktion.
 - Design und Website-Einstellungen: Admins. YForm-Tabellen: Rechte von YForm (Tabellen ansehen/bearbeiten).
+
+## Gastzugang (für AddOns)
+
+fluid selbst kennt nur angemeldete Backend-Benutzer. Ein AddOn kann Besucher ohne Anmeldung als **Gäste** zulassen,
+zum Beispiel `fluid_demo`, die Demo zum Ausprobieren. Ohne ein solches AddOn gibt es keine Gäste.
+
+- `FLUID_GUEST_USER` (Subjekt `null`): Liefert ein AddOn einen `User`, arbeitet der Besucher mit dessen Rechten.
+  Admins werden abgewiesen. `Editing::isGuest()` ist dann `true`.
+- `Editing::guestRevision(int)`: Revision, in der Gäste arbeiten. `fluid_demo` nutzt die Live-Fassung, aber nur in
+  einer Transaktion, die immer zurückgerollt wird.
+- `FLUID_API_ACTION` (Parameter `action`, `article`, `user`, `guest`, `run`, `state`): Ein AddOn kann jede Aktion des
+  Editors übernehmen und `['result' => [...], 'state' => [...]]` zurückgeben. `run()` führt die Aktion mit dem
+  normalen Code aus (`Api::dispatch()`), `state()` liefert den Stand des Artikels. **Aktionen von Gästen führt fluid
+  nie selbst aus.** Übernimmt kein AddOn, antwortet die API mit 403.
+- Für Gäste aus: Präsenz, Versionen-Vorschau, Blöcke in YForm-Datensätzen, YForm-Links, Bildeditor, Medienpool,
+  Postfach, Design, Website-Einstellungen, Seitenbaum, Verlauf, Backend-Links. Die Beitragsliste zeigt keine Entwürfe.
+  Die Sprachwahl zeigt nur Sprachen, in denen die Seite online ist. Der Suchindex wird nicht als veraltet markiert.
+- Editor: AddOns hängen sich über `FLUID_EDITOR_CONFIG` ein:
+  - `scripts`: Skripte, die vor dem Editor laden.
+  - `notice`: `{tag, text, buttons: [{label, event, hidden}]}`, ein Hinweis in der Leiste. Die Knöpfe lösen ihr
+    Ereignis am `document` aus.
+  - Im Browser: `window.fluidEditorWait` (Promises, auf die der Editor beim Start wartet), `fluid:api-request`
+    (`detail.fd` ergänzen), `fluid:api-done` (`detail.json`), `fluid:notice` (Meldung zeigen),
+    `window.FluidEditor.ask/discard`.
+  - `window.fluidPickerOff` (Text): Statt Medienpool oder Linkmap erscheint nur dieser Hinweis.
+- Interne Felder, die Gäste nicht sehen sollen, nennt `Search::NO_FIELDS` bzw. `'search' => false` am Feld. Die Demo
+  leert sie, bevor Gäste etwas zu sehen bekommen.
 
 ## Aufbau des AddOns
 

@@ -29,6 +29,7 @@ final class Toolbar
         }
 
         $editing = Editing::requested();
+        $guest = Editing::isGuest();   // Gastzugang (FLUID_GUEST_USER, z. B. AddOn fluid_demo): nur Blöcke dieser Seite
         $addon = FluidAddon::instance();
         $perm = $user->getComplexPerm('modules');
         $modules = [];
@@ -61,29 +62,35 @@ final class Toolbar
             'draftUrl' => Url::article($article->id, $article->languageId, ['rex_version' => ArticleRevision::WORK]),
             'viewingDraft' => !$editing && ArticleRevision::WORK === Request::get('rex_version', 'int', ArticleRevision::LIVE),
             'backendUrl' => Url::backendPage('content/edit', ['article_id' => $article->id, 'language' => $article->languageId, 'mode' => 'edit']),
-            'mediapoolUrl' => Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_media']),
+            'mediapoolUrl' => $guest ? null : Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_media']),
             'user' => $user->name ?: $user->login,
             'modules' => $modules,
             'state' => Api::state($article),
-            'design' => $user->admin ? self::designSchema($article) : null,
+            'design' => $user->admin && !$guest ? self::designSchema($article) : null,
             // Website-Einstellungen (Seitenleiste „Website“): nur Admins
-            'site' => $user->admin ? ['tabs' => SiteAdmin::tabs()] : null,
+            'site' => $user->admin && !$guest ? ['tabs' => SiteAdmin::tabs()] : null,
             // Aktionsrechte des Cores (Rollen → Optionen) – die Leiste zeigt nur, was erlaubt ist
-            'can' => Perm::flags($user),
+            // Gäste: nur Blöcke bearbeiten – Seiten anlegen, Seiteneinstellungen usw. sind aus
+            'can' => $guest ? ['editArticle' => false, 'editCategory' => false, 'addArticle' => false, 'addCategory' => false] + Perm::flags($user) : Perm::flags($user),
+            // Gastzugang: Leiste ohne Seitenbaum, Verlauf, Backend-Links; Hinweis und Knöpfe in der Leiste über 'notice' (FLUID_EDITOR_CONFIG)
+            'guest' => $guest,
+            'notice' => null,
+            // weitere Skripte von AddOns (FLUID_EDITOR_CONFIG), laufen vor dem Editor; window.fluidEditorWait: Promises, auf die der Editor wartet
+            'scripts' => [],
             // Sprachwahl (ab zwei Sprachen): Seite in anderer Sprache im selben Modus öffnen; „leer“ = noch keine Blöcke
             'languages' => \count(\Redaxo\Core\Language\Language::getAll()) > 1 ? array_map(static fn (array $l) => $l + [
                 'href' => Url::article($article->id, $l['id'], $editing ? [Editing::PARAM => 1] : []),
                 'empty' => !\Redaxo\Core\Database\Sql::factory()->getArray('SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? LIMIT 1', [$article->id, $l['id']]),
-            ], Routing\Router::alternates($article, true)) : null,
+            ], Routing\Router::alternates($article, !$guest)) : null,   // Gäste: nur Sprachen, in denen die Seite online ist
             // Anfragen-Postfach: nur, wenn es Formulare mit YForm-Tabellen gibt
-            'inbox' => [] !== Data\Inbox::tables($user) ? ['new' => Data\Inbox::countNew($user)] : null,
+            'inbox' => !$guest && [] !== Data\Inbox::tables($user) ? ['new' => Data\Inbox::countNew($user)] : null,
             // Addon image_editor (optional): Bilder auf der Website bearbeiten
-            'imageEditor' => class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null,
+            'imageEditor' => !$guest && class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null,
             'css' => $addon->getAssetsUrl('editor/editor.shadow.css') . '?v=' . self::version('editor/editor.shadow.css'),
             'rteCss' => $addon->getAssetsUrl('rte.css') . '?v=' . self::version('rte.css'),
             // Versionen-Ansicht (Zeitleiste, Vorschau, Vergleich) – lädt erst beim Öffnen
             // Präsenz der Redaktion: wer arbeitet gerade wo (PresenceApi, assets/editor/presence.js)
-            'presence' => PresenceApi::toolbar($article, $editing),
+            'presence' => $guest ? null : PresenceApi::toolbar($article, $editing),
             'versions' => ['js' => $addon->getAssetsUrl('editor/versions.js') . '?v=' . self::version('editor/versions.js'), 'css' => $addon->getAssetsUrl('editor/versions.css') . '?v=' . self::version('editor/versions.css')],
         ];
 
@@ -92,6 +99,7 @@ final class Toolbar
         $config = (array) \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_EDITOR_CONFIG', $config, ['article' => $article, 'user' => $user]));
         $body = '<script type="application/json" id="blocks-editor-config">' . json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>'
             . ($editing ? Links::json($article->languageId) : '')
+            . implode('', array_map(static fn ($src) => '<script src="' . escape((string) $src) . '" defer></script>', (array) ($config['scripts'] ?? [])))
             . '<script src="' . escape($addon->getAssetsUrl('form.js') . '?v=' . self::version('form.js')) . '" defer></script>'
             . '<script src="' . escape($addon->getAssetsUrl('rte.js') . '?v=' . self::version('rte.js')) . '" defer></script>'
             . '<script src="' . escape($addon->getAssetsUrl('editor/editor.js') . '?v=' . self::version('editor/editor.js')) . '" defer></script>'

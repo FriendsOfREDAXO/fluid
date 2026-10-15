@@ -81,7 +81,7 @@ final class PresenceApi
     public static function handle(): never
     {
         $user = Editing::user();
-        if (!$user) {
+        if (!$user || Editing::isGuest()) {   // Gastzugang (z. B. AddOn fluid_demo): Gäste erscheinen nicht in der Präsenz
             self::send(['on' => false, 'error' => 'Keine Berechtigung.'], 403);
         }
         if (!self::on()) {

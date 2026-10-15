@@ -77,6 +77,14 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   `FLUID_STRUCTURED_DATA`, `FLUID_ROBOTS`, `FLUID_EDITOR_CONFIG`, `FLUID_SITE_TRANSLATIONS`.
 - Media-Manager-Typ `fluid_poster`; Feldoption `types` für Dateifelder; Konsole `fluid:demo`, `fluid:search-index`.
 - Backend: AddOns → fluid (Status, Wartung, Hilfe).
+- Gastzugang für AddOns (z. B. `fluid_demo`):
+  - `FLUID_GUEST_USER` meldet Besucher ohne Anmeldung mit den Rechten eines Benutzers an, nie als Admin.
+  - `FLUID_API_ACTION` übernimmt Aktionen des Editors. Gäste bedient fluid nie selbst, ohne AddOn gibt es 403.
+  - `Editing::isGuest()`, `Editing::guestRevision()`, `Api::dispatch()`.
+  - Editor: `cfg.scripts`, `cfg.notice`, Ereignisse `fluid:api-request` und `fluid:api-done`, `window.fluidEditorWait`,
+    `window.fluidPickerOff`.
+  - Für Gäste aus: Präsenz, Versionen-Vorschau, Bildeditor, Medienpool, Postfach, Design, Website-Einstellungen,
+    Seitenbaum, Verlauf, Entwürfe in der Beitragsliste.
 - `Live` (aus KLXM Studio `Core\Live`): Kanäle mit Versionen, signierte Abos, SSE-Stream `/fluid-live` mit Rückfall auf
   Nachfragen. „Neu laden auf Aktion“ mit `'reload' => true`, `Live::region($b)`, `data-live-nav`/`data-live-input`.
 - Präsenz: `Presence` (Speicher, unverändert aus Studio), `PresenceApi` (`/fluid-presence`), `assets/editor/presence.js`.

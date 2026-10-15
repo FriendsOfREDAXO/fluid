@@ -23,7 +23,7 @@ $limit = max(1, min(60, (int) ($d['limit'] ?? 9) ?: 9));
 $pager = !empty($d['pager']);
 $page = $pager ? max(1, Request::get('seite', 'int', 1)) : 1;
 $tag = !empty($d['tags']) ? preg_replace('~[^a-z0-9-]~', '', Request::get('tag', 'string', '')) : '';
-$res = Blog::posts($blog, ['limit' => $limit, 'offset' => ($page - 1) * $limit, 'tag' => $tag, 'drafts' => is_editing()]);
+$res = Blog::posts($blog, ['limit' => $limit, 'offset' => ($page - 1) * $limit, 'tag' => $tag, 'drafts' => is_editing() && !\FriendsOfRedaxo\Fluid\Editing::isGuest()]);
 $here = Url::article($b->articleId, Language::getCurrentId());
 $q = static fn (array $p) => $here . ([] !== ($p = array_filter($p)) ? '?' . http_build_query($p) : '') . '#' . $b->domId();
 $cols = ['s' => 4, 'm' => 3, 'l' => 2][$d['size'] ?? 'm'] ?? 3;

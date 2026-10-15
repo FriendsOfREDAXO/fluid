@@ -354,3 +354,11 @@ textarea[data-blocks-rte] { display: none !important; }
 .cms-presence-board__i { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; }
 .cms-presence-board__i small { color: var(--muted); }
 @media (max-width: 900px) { .cms-presence__t { display: none; } }
+
+/* ------------------------------------------------------------ Hinweis-Leiste von AddOns (cfg.notice, z. B. fluid_demo) */
+.gnote { display: inline-flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--muted); }
+.gnote__tag { flex: none; padding: 3px 8px; border-radius: 99px; background: #8a5200; color: #fff; font-weight: 700; letter-spacing: .02em; }
+.gnote__text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gnote__btn { flex: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; background: var(--bg); color: inherit; font: inherit; cursor: pointer; }
+.gnote__btn[hidden] { display: none; }
+@media (max-width: 900px) { .gnote__text { display: none; } }

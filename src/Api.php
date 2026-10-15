@@ -18,6 +18,7 @@ use Redaxo\Core\Content\Template;
 use Redaxo\Core\Core;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\ExtensionPoint\Extension;
+use Redaxo\Core\ExtensionPoint\ExtensionPoint;
 use Redaxo\Core\Http\Request;
 use Redaxo\Core\Security\CsrfToken;
 use Redaxo\Core\Security\User;
@@ -53,116 +54,140 @@ final class Api
             $article = Article::getCurrent() ?? self::fail('Artikel nicht gefunden.', 404);
             // Aktionsrechte des Cores (wie im Backend)
             $action = Request::get(self::PARAM, 'string');
-            // Blöcke eines YForm-Datensatzes (Feld „Fluid-Blöcke“): eigener Handler, Rechte von YForm
-            $ref = Request::post('slice', 'string', '') ?: Request::post('after', 'string', '');
-            if (Data\RecordBlocks::is($ref) && \in_array($action, Data\RecordBlocks::ACTIONS, true)) {
-                $result = Editing::render(static fn () => Data\RecordBlocks::handle($action, $user, $article->id));
-                self::send(['ok' => true, 'state' => self::state($article)] + $result);
+            // FLUID_API_ACTION: AddOns können eine Aktion übernehmen – Rückgabe ['result' => array, 'state' => array].
+            // Parameter: action, article, user, guest, run (führt die Aktion aus) und state (Stand des Artikels).
+            // Gäste (Editing::isGuest(), z. B. AddOn fluid_demo) bedient fluid nie selbst: ohne AddOn → 403.
+            $taken = Extension::dispatch(new ExtensionPoint('FLUID_API_ACTION', null, [
+                'action' => $action, 'article' => $article, 'user' => $user, 'guest' => Editing::isGuest(),
+                'run' => static fn () => self::dispatch($action, $article, $user), 'state' => static fn () => self::state($article),
+            ]));
+            if (\is_array($taken) && \is_array($taken['result'] ?? null)) {
+                self::send(['ok' => true, 'state' => (array) ($taken['state'] ?? self::state($article))] + $taken['result']);
             }
-            $isCat = $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id);
-            $need = match ($action) {
-                'publish' => 'version[live_version]',
-                'move', 'reorder', 'col_move' => 'moveSlice[]',
-                'status' => 'publishSlice[]',
-                'lang_copy' => 'copyContent[]',
-                'page_save' => $isCat ? 'editCategory[]' : 'editArticle[]',
-                'page_add' => 'menu' === Request::post('kind', 'string', 'page') ? 'addCategory[]' : 'addArticle[]',
-                'template_save' => 'addArticle[]',
-                default => null,
-            };
-            if (null !== $need && !Perm::can($user, $need)) {
-                Perm::require($user, $need);
+            if (Editing::isGuest()) {
+                self::fail('Für Gäste nicht verfügbar.', 403);
             }
-            $result = Editing::render(fn () => match (Request::get(self::PARAM, 'string')) {
-                'form' => self::form($article),
-                'preview' => self::preview($article),
-                'save' => self::save($article, $user),
-                'add' => self::add($article, $user),
-                'move' => self::move($article),
-                'reorder' => (static function () use ($article) { BlockOps::reorder($article, Request::post('slice', 'int', 0), Request::post('before', 'int', 0)); return []; })(),
-                'col_move' => (static function () use ($article) { BlockOps::column($article, Request::post('slice', 'int', 0), 'left' === Request::post('dir', 'string') ? -1 : 1); return []; })(),
-                'copy' => BlockOps::payload($article, Request::post('slice', 'int', 0)),
-                'paste', 'duplicate' => (static function () use ($article, $user) {
-                    $clip = 'duplicate' === Request::get(self::PARAM, 'string')
-                        ? BlockOps::payload($article, Request::post('slice', 'int', 0))['clip']
-                        : (json_decode(Request::post('clip', 'string', ''), true) ?: self::fail('Die Zwischenablage ist leer.'));
-                    $id = BlockOps::insert($article, $user, Request::post('after', 'int', 0), $clip);
-
-                    return ['slice' => $id] + self::render($article, $id, false);
-                })(),
-                'render' => self::render($article, Request::post('slice', 'int', 0), false),
-                'status' => self::status($article),
-                'delete' => self::delete($article),
-                'publish' => self::publish($article),
-                'discard' => self::discard($article),
-                'site', 'site_save', 'language_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
-                'tree', 'tree_move', 'tree_status', 'tree_menu', 'tree_delete' => Structure::handle(Request::get(self::PARAM, 'string'), $user, $article->languageId),
-                'versions' => ['versions' => Versions::list($article->id, $article->languageId), 'work' => Versions::isWorkVersion()],
-                'version_view' => Versions::view($article),
-                'version_restore' => (static function () use ($article) {
-                    // aus der Versionen-Ansicht kommt der Schlüssel des Stands (<revision>-<YmdHis>)
-                    $state = Versions::parseKey(Request::post('key', 'string', ''));
-                    Versions::restore($article->id, $article->languageId, $state['date'] ?? Request::post('date', 'string', ''), $state['revision'] ?? Request::post('revision', 'int', 0));
-                    Activity::log('restore', $article->id, Request::post('date', 'string', ''));
-
-                    return ['reload' => true, 'message' => 'Stand in den Entwurf geholt – prüfen und veröffentlichen.'];
-                })(),
-                'drafts' => ['drafts' => Drafts::all($article->languageId, $user)],
-                'inbox' => ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)],
-                'inbox_state' => (static function () use ($user) {
-                    Data\Inbox::setState($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0), Request::post('state', 'string', 'done'));
-
-                    return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)];
-                })(),
-                'inbox_delete' => (static function () use ($user) {
-                    Data\Inbox::delete($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0));
-
-                    return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user), 'message' => 'Anfrage gelöscht.'];
-                })(),
-                'activity' => ['activity' => Activity::recent(150)],
-                // Inhalt einer Seite aus einer anderen Sprache übernehmen (in den Entwurf bzw. live ohne Arbeitsversion)
-                'lang_copy' => (static function () use ($article) {
-                    $from = Request::post('from', 'int', \Redaxo\Core\Language\Language::getStartId());
-                    if ($from === $article->languageId || !\Redaxo\Core\Language\Language::exists($from)) {
-                        self::fail('Bitte eine andere Sprache wählen.');
-                    }
-                    // in den Entwurf bzw. live ohne Arbeitsversion – live bleibt unverändert bis „Veröffentlichen“
-                    ContentHandler::copyContent($article->id, $article->id, $from, $article->languageId, FluidAddon::revision(), true);
-                    ArticleCache::delete($article->id, $article->languageId);
-                    Activity::log('save', $article->id, 'Inhalt aus ' . (\Redaxo\Core\Language\Language::get($from)->name ?? $from) . ' übernommen');
-
-                    return ['reload' => true, 'message' => 'Inhalt übernommen – jetzt übersetzen und veröffentlichen.'];
-                })(),
-                'page' => self::page($article),
-                'page_save' => self::pageSave($article),
-                'page_add' => self::pageAdd($article, $user),
-                'template_save' => (static function () use ($article, $user) {
-                    $perm = $user->getComplexPerm('structure');
-                    $cat = PageTemplates::categoryId();
-                    if (!$user->admin && !($perm instanceof StructurePermission && $perm->hasCategoryPerm($cat))) {
-                        self::fail('Vorlagen dürfen nur Admins bzw. Benutzer mit Recht auf „Seitenvorlagen“ speichern.', 403);
-                    }
-
-                    return self::templateSave($article);
-                })(),
-                'templates' => ['templates' => PageTemplates::all($article->languageId)],
-                'design' => self::design($article, $user, false),
-                'design_save' => self::design($article, $user, true),
-                default => self::fail('Unbekannte Aktion.', 400),
-            });
-            // Aktivitätsprotokoll (Speichern, Veröffentlichen, Verwerfen und Wiederherstellen protokollieren die Aktionen selbst)
-            $log = ['add' => 'block_add', 'delete' => 'block_delete', 'paste' => 'block_add', 'duplicate' => 'block_add', 'page_add' => 'page_add', 'page_save' => 'page_settings',
-                'design_save' => 'design', 'site_save' => 'site', 'domain_save' => 'site', 'redirect_save' => 'site', 'tree_move' => 'tree', 'tree_status' => 'tree',
-                'tree_menu' => 'tree', 'tree_delete' => 'tree', 'template_save' => 'page_add'][Request::get(self::PARAM, 'string')] ?? null;
-            if ($log) {
-                Activity::log($log, $article->id, (string) ($result['message'] ?? ''));
-            }
+            $result = self::dispatch($action, $article, $user);
             self::send(['ok' => true, 'state' => self::state($article)] + $result);
         } catch (ApiError $e) {
             self::send(['ok' => false, 'error' => $e->getMessage()], $e->getCode() ?: 400);
         } catch (Throwable $e) {
             self::send(['ok' => false, 'error' => 'Fehler: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Eine Aktion des Editors ausführen (Rechte prüfen, Ergebnis liefern) – auch für AddOns (FLUID_API_ACTION, z. B. fluid_demo).
+     *
+     * @internal
+     */
+    public static function dispatch(string $action, Article $article, User $user): array
+    {
+        // Blöcke eines YForm-Datensatzes (Feld „Fluid-Blöcke“): eigener Handler, Rechte von YForm
+        $ref = Request::post('slice', 'string', '') ?: Request::post('after', 'string', '');
+        if (Data\RecordBlocks::is($ref) && \in_array($action, Data\RecordBlocks::ACTIONS, true)) {
+            return Editing::render(static fn () => Data\RecordBlocks::handle($action, $user, $article->id));
+        }
+        $isCat = $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id);
+        $need = match ($action) {
+            'publish' => 'version[live_version]',
+            'move', 'reorder', 'col_move' => 'moveSlice[]',
+            'status' => 'publishSlice[]',
+            'lang_copy' => 'copyContent[]',
+            'page_save' => $isCat ? 'editCategory[]' : 'editArticle[]',
+            'page_add' => 'menu' === Request::post('kind', 'string', 'page') ? 'addCategory[]' : 'addArticle[]',
+            'template_save' => 'addArticle[]',
+            default => null,
+        };
+        if (null !== $need && !Perm::can($user, $need)) {
+            Perm::require($user, $need);
+        }
+        $result = Editing::render(fn () => match (Request::get(self::PARAM, 'string')) {
+            'form' => self::form($article),
+            'preview' => self::preview($article),
+            'save' => self::save($article, $user),
+            'add' => self::add($article, $user),
+            'move' => self::move($article),
+            'reorder' => (static function () use ($article) { BlockOps::reorder($article, Request::post('slice', 'int', 0), Request::post('before', 'int', 0)); return []; })(),
+            'col_move' => (static function () use ($article) { BlockOps::column($article, Request::post('slice', 'int', 0), 'left' === Request::post('dir', 'string') ? -1 : 1); return []; })(),
+            'copy' => BlockOps::payload($article, Request::post('slice', 'int', 0)),
+            'paste', 'duplicate' => (static function () use ($article, $user) {
+                $clip = 'duplicate' === Request::get(self::PARAM, 'string')
+                    ? BlockOps::payload($article, Request::post('slice', 'int', 0))['clip']
+                    : (json_decode(Request::post('clip', 'string', ''), true) ?: self::fail('Die Zwischenablage ist leer.'));
+                $id = BlockOps::insert($article, $user, Request::post('after', 'int', 0), $clip);
+
+                return ['slice' => $id] + self::render($article, $id, false);
+            })(),
+            'render' => self::render($article, Request::post('slice', 'int', 0), false),
+            'status' => self::status($article),
+            'delete' => self::delete($article),
+            'publish' => self::publish($article),
+            'discard' => self::discard($article),
+            'site', 'site_save', 'language_save', 'domain_save', 'domain_delete', 'redirect_save', 'redirect_delete', 'geocode' => SiteAdmin::handle(Request::get(self::PARAM, 'string'), $user),
+            'tree', 'tree_move', 'tree_status', 'tree_menu', 'tree_delete' => Structure::handle(Request::get(self::PARAM, 'string'), $user, $article->languageId),
+            'versions' => ['versions' => Versions::list($article->id, $article->languageId), 'work' => Versions::isWorkVersion()],
+            'version_view' => Versions::view($article),
+            'version_restore' => (static function () use ($article) {
+                // aus der Versionen-Ansicht kommt der Schlüssel des Stands (<revision>-<YmdHis>)
+                $state = Versions::parseKey(Request::post('key', 'string', ''));
+                Versions::restore($article->id, $article->languageId, $state['date'] ?? Request::post('date', 'string', ''), $state['revision'] ?? Request::post('revision', 'int', 0));
+                Activity::log('restore', $article->id, Request::post('date', 'string', ''));
+
+                return ['reload' => true, 'message' => 'Stand in den Entwurf geholt – prüfen und veröffentlichen.'];
+            })(),
+            'drafts' => ['drafts' => Drafts::all($article->languageId, $user)],
+            'inbox' => ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)],
+            'inbox_state' => (static function () use ($user) {
+                Data\Inbox::setState($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0), Request::post('state', 'string', 'done'));
+
+                return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user)];
+            })(),
+            'inbox_delete' => (static function () use ($user) {
+                Data\Inbox::delete($user, Request::post('table', 'string', ''), Request::post('id', 'int', 0));
+
+                return ['items' => Data\Inbox::list($user, Request::post('filter', 'string', 'new')), 'new' => Data\Inbox::countNew($user), 'message' => 'Anfrage gelöscht.'];
+            })(),
+            'activity' => ['activity' => Activity::recent(150)],
+            // Inhalt einer Seite aus einer anderen Sprache übernehmen (in den Entwurf bzw. live ohne Arbeitsversion)
+            'lang_copy' => (static function () use ($article) {
+                $from = Request::post('from', 'int', \Redaxo\Core\Language\Language::getStartId());
+                if ($from === $article->languageId || !\Redaxo\Core\Language\Language::exists($from)) {
+                    self::fail('Bitte eine andere Sprache wählen.');
+                }
+                // in den Entwurf bzw. live ohne Arbeitsversion – live bleibt unverändert bis „Veröffentlichen“
+                ContentHandler::copyContent($article->id, $article->id, $from, $article->languageId, FluidAddon::revision(), true);
+                ArticleCache::delete($article->id, $article->languageId);
+                Activity::log('save', $article->id, 'Inhalt aus ' . (\Redaxo\Core\Language\Language::get($from)->name ?? $from) . ' übernommen');
+
+                return ['reload' => true, 'message' => 'Inhalt übernommen – jetzt übersetzen und veröffentlichen.'];
+            })(),
+            'page' => self::page($article),
+            'page_save' => self::pageSave($article),
+            'page_add' => self::pageAdd($article, $user),
+            'template_save' => (static function () use ($article, $user) {
+                $perm = $user->getComplexPerm('structure');
+                $cat = PageTemplates::categoryId();
+                if (!$user->admin && !($perm instanceof StructurePermission && $perm->hasCategoryPerm($cat))) {
+                    self::fail('Vorlagen dürfen nur Admins bzw. Benutzer mit Recht auf „Seitenvorlagen“ speichern.', 403);
+                }
+
+                return self::templateSave($article);
+            })(),
+            'templates' => ['templates' => PageTemplates::all($article->languageId)],
+            'design' => self::design($article, $user, false),
+            'design_save' => self::design($article, $user, true),
+            default => self::fail('Unbekannte Aktion.', 400),
+        });
+        // Aktivitätsprotokoll (Speichern, Veröffentlichen, Verwerfen und Wiederherstellen protokollieren die Aktionen selbst)
+        $log = ['add' => 'block_add', 'delete' => 'block_delete', 'paste' => 'block_add', 'duplicate' => 'block_add', 'page_add' => 'page_add', 'page_save' => 'page_settings',
+            'design_save' => 'design', 'site_save' => 'site', 'domain_save' => 'site', 'redirect_save' => 'site', 'tree_move' => 'tree', 'tree_status' => 'tree',
+            'tree_menu' => 'tree', 'tree_delete' => 'tree', 'template_save' => 'page_add'][Request::get(self::PARAM, 'string')] ?? null;
+        if ($log) {
+            Activity::log($log, $article->id, (string) ($result['message'] ?? ''));
+        }
+
+        return $result;
     }
 
     /** Stand des Artikels: Unterscheidet sich die Arbeitsversion von der veröffentlichten Fassung? */

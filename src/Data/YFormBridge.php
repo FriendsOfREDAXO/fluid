@@ -264,7 +264,7 @@ final class YFormBridge
     public static function editUrl(Table $table, ?int $id = null): ?string
     {
         $user = Editing::user();
-        if (!$user || !Access::canEdit($table, $user)) {
+        if (!$user || Editing::isGuest() || !Access::canEdit($table, $user)) {
             return null;
         }
 

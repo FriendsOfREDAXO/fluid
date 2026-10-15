@@ -93,6 +93,11 @@
 
   /** Popup öffnen; Ergebnis: { value, name } oder null (Fenster ohne Auswahl geschlossen) */
   function pick(url) {
+    // Gastzugang ohne Backend (z. B. AddOn fluid_demo setzt window.fluidPickerOff): Hinweis statt Medienpool/Linkmap
+    if (window.fluidPickerOff) {
+      document.dispatchEvent(new CustomEvent('fluid:notice', { detail: String(window.fluidPickerOff) }));
+      return Promise.resolve(null);
+    }
     if (pending) pending.resolve(null);
     // erst beim Öffnen setzen: das Backend legt window.rex ggf. später neu an
     window.rex = window.rex || {};

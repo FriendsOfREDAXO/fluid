@@ -5,9 +5,11 @@
  * der Website sie nicht beeinflusst. Blöcke kennzeichnet der Server im Bearbeiten-Modus mit
  * [data-block][data-type][data-label] (Abschnitte bzw. Blöcke in Layout-Spalten mit data-col), Textfelder mit [data-edit="pfad"].
  */
-(() => {
+(async () => {
   'use strict';
 
+  // AddOns (cfg.scripts, z. B. fluid_demo) können den Start verzögern, etwa bis die Seite ausgetauscht ist
+  await Promise.all(window.fluidEditorWait || []);
   const cfgEl = document.getElementById('blocks-editor-config');
   if (!cfgEl) return;
   const cfg = JSON.parse(cfgEl.textContent);
@@ -36,6 +38,8 @@
       }
     }
     fd.append('_csrf_token', cfg.csrf);
+    // AddOns können Felder ergänzen (z. B. fluid_demo: gemerkte Änderungen) und erfahren vom Erfolg (fluid:api-done)
+    document.dispatchEvent(new CustomEvent('fluid:api-request', { detail: { action, fd } }));
     let res;
     try {
       res = await fetch(unamp(cfg.api).replace('__action__', action), { method: 'POST', body: fd, credentials: 'same-origin' });
@@ -44,6 +48,7 @@
     }
     const json = await res.json().catch(() => ({ ok: false, error: `Ungültige Antwort (${res.status}).` }));
     if (!json.ok) throw new Error(json.error || 'Unbekannter Fehler.');
+    document.dispatchEvent(new CustomEvent('fluid:api-done', { detail: { action, fd, json } }));
     // Server verlangt neu laden (z. B. erster Block eines Datensatzes)
     if (json.refresh) { dirty?.clear(); location.reload(); return new Promise(() => {}); }
     if (json.state) setState(json.state);
@@ -66,12 +71,13 @@
   root.append(h(`<link rel="stylesheet" href="${esc(unamp(cfg.rteCss))}">`));
   const bar = h(`
     <header class="bar" role="toolbar" aria-label="Bearbeiten">
-      <a class="brand" href="${esc(unamp(cfg.backendUrl))}" title="Im Backend öffnen">R</a>
+      ${cfg.guest ? '<span class="brand">R</span>' : `<a class="brand" href="${esc(unamp(cfg.backendUrl))}" title="Im Backend öffnen">R</a>`}
       <div class="title">
         <span class="kind">Seite</span>
         <strong class="name">${esc(cfg.article.name)}</strong>
         <button type="button" class="chip" data-chip aria-live="polite"></button>
         ${cfg.presence ? `<span class="cms-presence" role="status"${cfg.presence.here} hidden></span>` : ''}
+        ${cfg.notice ? `<span class="gnote" role="note"><span class="gnote__tag">${esc(cfg.notice.tag || '')}</span><span class="gnote__text">${esc(cfg.notice.text || '')}</span>${(cfg.notice.buttons || []).map((b) => `<button type="button" class="gnote__btn" data-notice-event="${esc(b.event)}"${b.hidden ? ' hidden' : ''}>${esc(b.label)}</button>`).join('')}</span>` : ''}
       </div>
       <nav class="modes" aria-label="Modus">
         <a href="${esc(unamp(cfg.viewUrl))}" data-mode="view"${cfg.editing ? '' : ' aria-current="page"'}>Ansehen</a>
@@ -81,7 +87,7 @@
       <nav class="modes modes--lang" aria-label="Sprache">
         ${cfg.languages.map((l) => `<a href="${esc(unamp(l.href))}" hreflang="${esc(l.code)}"${l.current ? ' aria-current="page"' : ''} title="${esc(l.name)}${l.online ? '' : ' (offline)'}${l.empty ? ' – noch ohne Inhalt' : ''}" class="${l.online ? '' : 'is-off'}${l.empty ? ' is-empty' : ''}">${esc(l.code.toUpperCase())}</a>`).join('')}
       </nav>` : ''}
-      ${!cfg.editing && cfg.state.workVersion ? `
+      ${!cfg.editing && cfg.state.workVersion && !cfg.guest ? `
       <nav class="modes modes--version" aria-label="Fassung ansehen">
         <a href="${esc(unamp(cfg.viewUrl))}"${cfg.viewingDraft ? '' : ' aria-current="page"'} title="Was Besucher sehen">Live</a>
         <a href="${esc(unamp(cfg.draftUrl))}"${cfg.viewingDraft ? ' aria-current="page"' : ''} title="Arbeitsversion – noch nicht veröffentlicht">Entwurf</a>
@@ -95,16 +101,16 @@
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
             ${cfg.design ? '<button type="button" role="menuitem" class="menu-sm" data-design-menu>Design …</button>' : ''}
-            <button type="button" role="menuitem" data-tree-open>Seiten …</button>
+            ${cfg.guest ? '' : '<button type="button" role="menuitem" data-tree-open>Seiten …</button>'}
             ${cfg.inbox ? `<button type="button" role="menuitem" data-inbox-open>Anfragen …${cfg.inbox.new ? ` <span class="badge">${cfg.inbox.new}</span>` : ''}</button>` : ''}
-            <button type="button" role="menuitem" data-history-open>Verlauf & Entwürfe …</button>
+            ${cfg.guest ? '' : '<button type="button" role="menuitem" data-history-open>Verlauf & Entwürfe …</button>'}
             <button type="button" role="menuitem" data-compact>Kompaktansicht</button>
             ${may(cfg.article.menu ? 'editCategory' : 'editArticle') ? '<button type="button" role="menuitem" data-page-settings>Seiteneinstellungen …</button>' : ''}
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
             ${may('addArticle') || may('addCategory') ? '<button type="button" role="menuitem" data-page-add>Neue Seite …</button>' : ''}
             ${may('addArticle') ? '<button type="button" role="menuitem" data-template-save>Als Vorlage speichern …</button>' : ''}
-            ${cfg.editing && cfg.state.workVersion ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
-            <a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>
+            ${cfg.editing && cfg.state.workVersion && !cfg.guest ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
+            ${cfg.guest ? '' : `<a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>`}
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
           </div>
         </div>
@@ -283,7 +289,7 @@
   }
 
   // Rückfrage für andere Module (z. B. Präsenz: assets/editor/presence.js)
-  window.FluidEditor = { ...(window.FluidEditor || {}), ask };
+  window.FluidEditor = { ...(window.FluidEditor || {}), ask, discard: () => dirty.clear() };
 
   // ------------------------------------------------------------------ Status
 
@@ -716,7 +722,7 @@
       const i = group.findIndex((x) => x.id === beforeId);
       return i < 0 ? group.length : i;
     };
-    $('[data-tree-open]').addEventListener('click', async () => {
+    $('[data-tree-open]')?.addEventListener('click', async () => {
       menu.hidden = true;
       if (!panel.hidden || !dpanel.hidden || !ppanel.hidden || !spanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
       tpanel.hidden = false;
@@ -880,7 +886,7 @@
       body.innerHTML = '<p class="site-intro">Lädt …</p>';
       try { body.innerHTML = draw[t](await api(t, {})); document.dispatchEvent(new CustomEvent('cms:presence-scan')); } catch (err) { body.innerHTML = ''; say(err.message, true); }
     };
-    $('[data-history-open]').addEventListener('click', () => {
+    $('[data-history-open]')?.addEventListener('click', () => {
       menu.hidden = true;
       if (!panel.hidden || !dpanel.hidden || !ppanel.hidden || !spanel.hidden || !tpanel.hidden) return say('Bitte zuerst die andere Seitenleiste schließen.', true);
       hpanel.hidden = false;
@@ -1224,6 +1230,10 @@
     await api('discard').catch((err) => say(err.message, true));
     location.reload();
   });
+
+  // Hinweis-Leiste von AddOns (cfg.notice): Knöpfe lösen ihr Ereignis am document aus; Meldungen über „fluid:notice“
+  root.querySelectorAll('[data-notice-event]').forEach((b) => b.addEventListener('click', () => document.dispatchEvent(new CustomEvent(b.dataset.noticeEvent, { detail: { button: b } }))));
+  document.addEventListener('fluid:notice', (e) => say(String(e.detail || ''), true));
 
   // ------------------------------------------------------------------ Blockleiste und „+“
 

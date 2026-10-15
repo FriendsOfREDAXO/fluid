@@ -198,7 +198,7 @@ final class FluidAddon extends Addon
 
         // Suchindex: jede Inhaltsänderung des Cores (Blöcke hinzufügen, löschen, verschieben, online/offline, Inhalte kopieren –
         // Backend und Website) markiert ihn; die nächste Suche baut ihn neu
-        Extension::register('ART_CONTENT_UPDATED', static fn () => Search\Search::markDirty());
+        Extension::register('ART_CONTENT_UPDATED', static fn () => Editing::isGuest() ? null : Search\Search::markDirty());   // Gäste ändern nie dauerhaft
 
         // Layout gelöscht (Backend oder Website): seine Spalten-Blöcke werden wieder normale Abschnitte
         Extension::register('SLICE_DELETE', static function (ExtensionPoint $ep): void {
@@ -242,7 +242,7 @@ final class FluidAddon extends Addon
         // Versionen: Vorschau eines Stands (?fluid_version=…) – nur mit Recht auf die Seite, ohne Leiste, nie aus dem Cache
         Extension::register('ART_INIT', static function (ExtensionPoint $ep): void {
             $key = Request::get(Versions::PARAM, 'string', '');
-            if ('' === $key || null === Editing::user() || null === $state = Versions::parseKey($key)) {
+            if ('' === $key || null === Editing::user() || Editing::isGuest() || null === $state = Versions::parseKey($key)) {
                 return;
             }
             $article = Type::instanceOf($ep->subject, ArticleContent::class);
@@ -284,6 +284,9 @@ final class FluidAddon extends Addon
     /** Revision, in der auf der Website bearbeitet wird: Arbeitsversion, wenn eingeschaltet – sonst live */
     public static function revision(): int
     {
+        if (null !== ($guest = Editing::revisionForGuest())) {
+            return $guest;   // Gastzugang (z. B. AddOn fluid_demo)
+        }
         return Core::getConfig('article_work_version', false) ? ArticleRevision::WORK : ArticleRevision::LIVE;
     }
 }

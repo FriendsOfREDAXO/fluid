@@ -60,7 +60,7 @@ final class RecordBlocks
     public static function render(Table $table, Record $record, FluidBlocks $field, int $articleId): string
     {
         $user = Editing::user();
-        if (!Editing::active() || !self::canEdit($user, $table)) {
+        if (!Editing::active() || Editing::isGuest() || !self::canEdit($user, $table)) {
             return BlockData::render($record->get($field->name), 'r' . $record->id . '-' . $field->name, $articleId);
         }
         $name = $table->definition->name;

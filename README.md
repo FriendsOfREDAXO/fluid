@@ -64,6 +64,8 @@ fluid läuft auch ohne.
 - **Blog / News** mit Schlagworten, RSS und „Neuer Beitrag“ direkt in der Übersicht
 - **Formulare** zum Zusammenklicken – auch mehrstufig, speichern und/oder per E-Mail, mit Bestätigung (YForm)
 - **Daten aus YForm** als Karten oder Liste mit eigener Adresse je Eintrag – und Blöcke auch in Datensätzen
+- **Demo zum Ausprobieren** (eigenes AddOn `fluid_demo`, getrennt zu installieren): Besucher starten per Knopf eine
+  Demo und bearbeiten die Website – gespeichert wird nichts
 - **Videos** mit automatischem Vorschaubild und Untertiteln, **Karten** ohne Einwilligung, **Suche** mit Tippfehler-Toleranz und Treffern beim Tippen – findet nur, was
   öffentlich auf der Website steht
 

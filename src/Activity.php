@@ -23,7 +23,9 @@ final class Activity
     public static function log(string $action, ?int $articleId = null, string $detail = ''): void
     {
         // Suchindex: jede protokollierte Änderung (Editor, MCP) kann live sein (ohne Arbeitsversion) – neu aufbauen lassen
-        Search\Search::markDirty();
+        if (!Editing::isGuest()) {   // Gäste (Gastzugang) ändern nie dauerhaft
+            Search\Search::markDirty();
+        }
         try {
             $user = Editing::user();
             Sql::factory()->setTable(self::TABLE)->setValues([

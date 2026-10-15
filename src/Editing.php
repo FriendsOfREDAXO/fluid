@@ -25,6 +25,8 @@ final class Editing
     private static ?User $user = null;
     private static bool $resolved = false;
     private static bool $rendering = false;
+    private static bool $guest = false;
+    private static ?int $guestRevision = null;
 
     public static function user(): ?User
     {
@@ -36,6 +38,16 @@ final class Editing
             return null;
         }
         $user = BackendLogin::createUser();
+        // Gastzugang (FLUID_GUEST_USER, z. B. AddOn fluid_demo): Besucher ohne Anmeldung bekommen die Rechte eines Benutzers.
+        // Nie mit Admin-Rechten. Schreibende Aktionen von Gästen führt fluid nur aus, wenn ein AddOn sie über FLUID_API_ACTION
+        // übernimmt (z. B. in einer Transaktion, die zurückgerollt wird) – sonst lehnt Api sie ab.
+        if (!$user) {
+            $guest = \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_GUEST_USER', null));
+            if ($guest instanceof User && !$guest->admin) {
+                $user = $guest;
+                self::$guest = true;
+            }
+        }
         if (!$user) {
             return null;
         }
@@ -46,6 +58,29 @@ final class Editing
         }
 
         return self::$user = $user;
+    }
+
+    /** Gastzugang: die Person ist nicht angemeldet, sondern arbeitet über FLUID_GUEST_USER (z. B. Demo) */
+    public static function isGuest(): bool
+    {
+        self::user();
+
+        return self::$guest;
+    }
+
+    /**
+     * Revision, in der Gäste arbeiten (z. B. live, wenn ein AddOn alle Änderungen in einer Transaktion zurückrollt).
+     * Ohne Angabe wie angemeldete Benutzer (FluidAddon::revision()).
+     */
+    public static function guestRevision(?int $revision): void
+    {
+        self::$guestRevision = $revision;
+    }
+
+    /** @internal FluidAddon::revision() */
+    public static function revisionForGuest(): ?int
+    {
+        return self::isGuest() ? self::$guestRevision : null;
     }
 
     /** Bearbeiten-Modus angefordert und erlaubt */

@@ -40,8 +40,8 @@ final class Search
 {
     private const string DIRTY = 'search_dirty';
     private const array HL = ["\u{E000}", "\u{E001}"];
-    /** Einstellungen von Blöcken, die nicht (oder nur in Sonderfällen) sichtbar auf der Seite stehen */
-    private const array NO_FIELDS = ['placeholder', 'empty_text', 'filter_value', 'mail_to', 'mail_subject', 'confirm_subject', 'confirm_text',
+    /** Einstellungen von Blöcken, die nicht (oder nur in Sonderfällen) sichtbar auf der Seite stehen – auch für Gäste ausgeblendet (fluid_demo) */
+    public const array NO_FIELDS = ['placeholder', 'empty_text', 'filter_value', 'mail_to', 'mail_subject', 'confirm_subject', 'confirm_text',
         'form_name', 'success', 'lang', 'redirect'];
 
     private static function loupe(int $languageId): Loupe
