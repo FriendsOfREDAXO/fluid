@@ -497,7 +497,7 @@
       body.querySelectorAll('details').forEach((d, i) => (d.open = open[i] ?? d.open));
       body.querySelector(`[data-preset="${CSS.escape(p.dataset.preset)}"]`)?.classList.add('is-active');
       preview();
-      say(`Vorlage „${D.presets[p.dataset.preset].label}“ – Vorschau. Speichern übernimmt sie für die Website.`);
+      say(`Vorlage „${D.presets[p.dataset.preset].label}“ – Vorschau. ${keepOnly ? '„Übernehmen“ behält sie in Ihrem Browser für alle Seiten.' : 'Speichern übernimmt sie für die Website.'}`);
     });
 
     const close = () => { dpanel.hidden = true; openBtn?.setAttribute('aria-expanded', 'false'); document.documentElement.classList.remove('blocks-panel-open'); };
