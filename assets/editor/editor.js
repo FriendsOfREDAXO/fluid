@@ -1821,7 +1821,8 @@
     .t{position:absolute;left:0;top:-32px;padding:4px 9px;border-radius:999px;background:var(--k);color:#fff;font:600 12px/1.2 system-ui,-apple-system,sans-serif;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 4px 12px rgb(0 0 0/.2)}
     .h--x .t{top:50%;left:50%;translate:-50% calc(-50% - 44px)}
     .h:is(:hover,:focus-visible,.is-drag) .t{opacity:1}
-    @media (prefers-reduced-motion:reduce){.g,.t{transition:none}}`;
+    @media (prefers-reduced-motion:reduce){.g,.t{transition:none}}
+    @media (max-width:760px){.h--split,.h--width{display:none}}`;   /* Handy: Bild und Text stehen untereinander – Aufteilung/Textbreite ohne Wirkung */
   const ICON_Y = '<svg viewBox="0 0 24 24"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4"/></svg>';
   const ICON_X = '<svg viewBox="0 0 24 24"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"/></svg>';
   const SPACE = { none: 'Kein', small: 'Klein', normal: 'Normal', large: 'Groß' };

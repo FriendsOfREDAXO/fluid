@@ -80,3 +80,8 @@ html.blocks-editing section[data-block].fluid-dragging { opacity: .45; }
 .fbr-note { margin: 0; padding: 6px 12px; font: 600 12px/1.4 system-ui, sans-serif; color: #3730a3; background: #eef2ff; }
 .fbr-empty { padding: 32px 16px; text-align: center; font: 14px/1.5 system-ui, sans-serif; color: #4b5563; }
 .fbr-empty p { margin: 0 0 12px; }
+
+/* Bearbeiten: Greifer, Hilfslinien und Hinweise dürfen die Seite nie breiter als den Bildschirm machen (sonst verkleinert
+   iOS die ganze Seite) */
+html.blocks-editing, html.blocks-editing body { overflow-x: clip; }
+@supports not (overflow: clip) { html.blocks-editing body { overflow-x: hidden; } }
