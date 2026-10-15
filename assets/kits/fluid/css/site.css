@@ -44,3 +44,7 @@
 .hdr__tools > .langmenu{margin-right:.25rem}
 @media (max-width:760px){.hdr__tools > .langmenu{display:none}}
 :is(.hbg-accent,.hbg-secondary,.hbg-dark) .hdr .langmenu__btn{color:var(--f-fg);border-color:color-mix(in srgb,currentColor 45%,transparent)}
+
+/* Symbole „Dünner Rahmen, zweifarbig“ (Design → Symbole): ohne Fläche, Rahmen im Verlauf Akzent → Zweitfarbe */
+.ic-duo .feat__ico{background:linear-gradient(var(--f-sec-bg,var(--f-bg)),var(--f-sec-bg,var(--f-bg))) padding-box,linear-gradient(135deg,var(--f-a),var(--f-b)) border-box;border:1.5px solid transparent;color:var(--f-ico,var(--f-a))}
+@media (forced-colors:active){.ic-duo .feat__ico{border-color:CanvasText}}
