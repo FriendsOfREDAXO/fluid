@@ -143,7 +143,7 @@ ok ".env.local geschrieben"
 
 b "5/7 REDAXO einrichten"
 PASSWORD=$("$PHP" -r 'echo rtrim(strtr(base64_encode(random_bytes(12)), "+/", "-_"), "=");')
-"$PHP" bin/console setup -n --lang=de_de --agree-license --db-createdb=no --db-setup=normal --admin-username="$ADMIN" --admin-password="$PASSWORD" >/dev/null
+"$PHP" bin/console setup -n --lang=de_de --db-createdb=no --admin-username="$ADMIN" --admin-password="$PASSWORD" >/dev/null
 ok "Admin „${ADMIN}“ angelegt"
 if [ "$MODE" = "demo" ]; then
   # Beispiel-Tabellen der Demo (YForm-Klassen im Projekt)

@@ -67,6 +67,10 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 - `install-dev.sh`: REDAXO 6, YForm 6, fluid (und image_editor) mit einem Befehl – mit kompletter Demo oder leer;
   prüft PHP, Erweiterungen und Datenbank, lädt Composer 2.9+ bei Bedarf, richtet Admin, `.env.local` und Webserver ein.
 - `fluid:demo --media --design=redaxo`; README für Einsteiger, Entwickler-Referenz in `docs/entwickler.md`.
+- Angepasst an REDAXO-Core `cf598c1` (Oktober 2026):
+  - Statt `uninstall()` meldet fluid seine Tabellen über `getOwnedSchema()`. Nach `composer remove` entfernt
+    `console migrate:cleanup` sie samt Einstellungen und Cache.
+  - `install-dev.sh` nutzt `console setup` ohne die entfallenen Optionen `--agree-license` und `--db-setup`.
 
 ### Für Entwickler
 

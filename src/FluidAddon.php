@@ -4,6 +4,7 @@ namespace FriendsOfRedaxo\Fluid;
 
 use Override;
 use Redaxo\Core\Addon\Addon;
+use Redaxo\Core\Addon\OwnedSchema;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\ArticleRevision;
@@ -123,18 +124,14 @@ final class FluidAddon extends Addon
     }
 
     /**
-     * Deinstallieren: Tabellen, Einstellungen, Suchindex und Cache von fluid entfernen. Inhalte (Slices der Blöcke) und
-     * Artikel bleiben – sie gehören dem Core; ohne fluid fehlen nur die Module, die sie ausgeben.
+     * Tabellen von fluid: Der Core entfernt sie mit `console migrate:cleanup`, sobald fluid per Composer entfernt ist –
+     * samt Einstellungen, Daten und Cache. Inhalte (Slices der Blöcke) und Artikel bleiben, sie gehören dem Core; ohne
+     * fluid fehlen nur die Module, die sie ausgeben.
      */
     #[Override]
-    public function uninstall(): void
+    public function getOwnedSchema(): OwnedSchema
     {
-        foreach ([PageSettings::TABLE, Routing\Routes::TABLE, Routing\Domains::TABLE, Routing\Redirects::TABLE, Routing\Redirects::TABLE_404, Activity::TABLE, Data\Inbox::TABLE, Mcp\Tokens::TABLE] as $t) {
-            Table::get($t)->drop();
-        }
-        \Redaxo\Core\Config::removeNamespace($this->name);
-        \Redaxo\Core\Filesystem\Dir::delete($this->getDataPath());
-        \Redaxo\Core\Filesystem\Dir::delete($this->getCachePath());
+        return new OwnedSchema(tables: [PageSettings::TABLE, Routing\Routes::TABLE, Routing\Domains::TABLE, Routing\Redirects::TABLE, Routing\Redirects::TABLE_404, Activity::TABLE, Data\Inbox::TABLE, Mcp\Tokens::TABLE]);
     }
 
     /** Backend: AddOns → fluid (Status, Hilfe) – nur Admins */
