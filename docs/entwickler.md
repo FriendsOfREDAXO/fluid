@@ -374,7 +374,7 @@ fluid nutzt die Rechte des Cores – eine Rolle wirkt auf der Website genau wie 
 ## Gastzugang (für AddOns)
 
 fluid selbst kennt nur angemeldete Backend-Benutzer. Ein AddOn kann Besucher ohne Anmeldung als **Gäste** zulassen,
-zum Beispiel `fluid_demo`, die Demo zum Ausprobieren. Ohne ein solches AddOn gibt es keine Gäste.
+zum Beispiel [`fluid_demo`](https://github.com/FriendsOfREDAXO/fluid_demo), die Demo zum Ausprobieren. Ohne ein solches AddOn gibt es keine Gäste.
 
 - `FLUID_GUEST_USER` (Subjekt `null`): Liefert ein AddOn einen `User`, arbeitet der Besucher mit dessen Rechten.
   Admins werden abgewiesen. `Editing::isGuest()` ist dann `true`.
