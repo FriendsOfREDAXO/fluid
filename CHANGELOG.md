@@ -83,6 +83,11 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Design-Werte je Kit; ein abgeleitetes Kit ohne eigene übernimmt die des Eltern-Kits.
   - Assets nach `assets/fluid-kits/{kit}/` (bei `migrate` und bei Bedarf je Datei).
   - `bin/console fluid:kit:create name --view=hero,cards --template` legt ein Kit im Projekt an.
+- Formulare: Ein Mailfehler verwirft die Eingabe nicht mehr. Ist der Eintrag gespeichert, wird der Fehler protokolliert
+  (Systemprotokoll, Aktivität „Formular-Mail nicht gesendet“), die Bestätigung wird trotzdem versucht, und Besucher sehen
+  die Erfolgsmeldung – mit Hinweis, falls die Bestätigung nicht rausging. Vorher: „Fehler – bitte noch einmal“ trotz
+  gespeichertem Eintrag (doppelte Einträge beim erneuten Absenden).
+- Angepasst an REDAXO-Core `3173c0d`: `Redaxo\Core\Console\AbstractCommand`.
 - Bausteine statt fester Verdrahtung (Vorbereitung für eigene AddOns, wie beim Bildeditor):
   - Routing kennt keinen anderen Teil von fluid mehr. Bausteine melden sich an: `Router::endpoint()`, `resolver()`,
     `onPage()`, `gate()`, `keep()`, `Sitemap::exclude()/children()`; Antworten über `Router::respond()`/`redirectTo()`.
