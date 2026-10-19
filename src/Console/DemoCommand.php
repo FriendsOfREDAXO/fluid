@@ -41,7 +41,8 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Nur diese Demo-Seite (Slug) anhängen, z. B. daten – vorhandene Inhalte bleiben')] string $page = '',
         #[Option(description: 'Nur Beispielzeilen in die YForm-Tabellen der Demo schreiben (Tabellen sind Klassen im Projekt)')] bool $yform = false,
         #[Option(description: 'Demo-Bilder des Kits in den Medienpool übernehmen (vorhandene bleiben)')] bool $media = false,
-        #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …')] string $design = '',
+        #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …; auf einer Website mit Seiten nur die Vorlage')] string $design = '',
+        #[Option(name: 'kit', description: 'Kit, für das --design gilt (Standard: das gewählte), z. B. native')] string $designKit = '',
     ): int {
         if ($media) {
             $io->note(self::media());
@@ -76,6 +77,12 @@ final class DemoCommand extends AbstractCommand
             Cache::delete();
             $io->note('Alle Inhalte gelöscht.');
         } elseif (!$force && $sql->getArray('SELECT id FROM rex_article LIMIT 1')) {
+            // Website mit Seiten: nur die Design-Vorlage setzen
+            if ('' !== $design) {
+                $io->note(self::design($design, $designKit));
+
+                return Command::SUCCESS;
+            }
             $io->error('Es gibt schon Artikel. Mit --force trotzdem anlegen, mit --replace vorher alles löschen.');
 
             return Command::FAILURE;
@@ -187,7 +194,7 @@ final class DemoCommand extends AbstractCommand
         }
 
         if ('' !== $design) {
-            $io->note(self::design($design));
+            $io->note(self::design($design, $designKit));
         }
         $io->success(sprintf('%d Seiten mit %d Blöcken angelegt.%s', count($ids), $count, $skipped ? ' Übersprungen (noch nicht portiert): ' . implode(', ', array_keys($skipped)) : ''));
 
@@ -256,9 +263,12 @@ final class DemoCommand extends AbstractCommand
     }
 
     /** Design-Vorlage setzen; „redaxo“ zusätzlich mit dem REDAXO-Logo aus dem Core (grau und weiß), wenn noch kein Logo gesetzt ist */
-    private static function design(string $preset): string
+    private static function design(string $preset, string $kitKey = ''): string
     {
-        $kit = Kit::active();
+        $kit = '' !== $kitKey ? Kit::get($kitKey) : Kit::active();
+        if (null === $kit) {
+            return 'Kit „' . $kitKey . '“ gibt es nicht (' . implode(', ', array_keys(Kit::all())) . ').';
+        }
         $presets = (array) ($kit->design()->def()['presets'] ?? []);
         if (!isset($presets[$preset])) {
             return 'Design-Vorlage „' . $preset . '“ gibt es nicht (' . implode(', ', array_keys($presets)) . ').';

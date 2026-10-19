@@ -1,0 +1,186 @@
+/**
+ * ncss - Select-Komponente (Layer "components").
+ *
+ * Fallback-first: das Basisstyling (Pfeil-Indikator per mask-image statt Hintergrundbild,
+ * damit die Farbe aus unseren Tokens statt einem fest codierten SVG-Wert kommt) läuft in
+ * JEDEM Browser. appearance: base-select wird nur ergänzt, wo unterstützt UND (Stand
+ * jetzt) nicht WebKit/Safari ist (siehe @supports-Begründung unten) - "The Golden Rule of
+ * Customizable Select" (https://webkit.org/blog/18117/the-golden-rule-of-customizable-select/):
+ * natives <select> bleibt die funktionale Baseline, nie nur ein Enhancement-Layer ohne
+ * Fallback.
+ *
+ * Markup: <span class="ncss-select-wrapper"><select class="ncss-select">...</select></span>
+ * - der Wrapper trägt den Pfeil-Indikator (Formularelemente selbst unterstützen kein
+ * generiertes ::after-Content).
+ *
+ * IMMER einen expliziten <button type="button"><selectedcontent></selectedcontent></button>
+ * als erstes Kind des <select> mitgeben, auch bei ganz normalem Text-Select ohne reichen
+ * Options-Inhalt - laut Spec optional (der Browser erzeugt sonst selbst einen passenden
+ * Default-Button), macht das Verhalten aber über alle Browser hinweg konsistent und
+ * vorhersehbar.
+ *
+ * WEBKIT/SAFARI BEWUSST AUSGESCHLOSSEN (Stand August 2026, zwei Runden nötig): User-Report
+ * (Safari 26, stabile Version, KEIN Beta) zeigte einen doppelten Pfeil bei appearance:
+ * base-select. RUNDE 1: appearance: base-select in WebKit komplett deaktiviert (Diagnose
+ * damals: vermutlich ein unfertiger WebKit-Implementierungs-Bug in diesem sehr neuen
+ * Feature). Reichte NICHT - User meldete den Doppelpfeil nach Deploy erneut, diesmal mit
+ * einem direkten Experiment in echtem Safari als Beweis: `.ncss-select-wrapper::after`
+ * (unser EIGENER Pfeil-Indikator) probeweise entfernt -> nur noch EIN korrekter Pfeil
+ * übrig. TATSÄCHLICHE, jetzt real-Safari-bestätigte Ursache: `appearance: none`
+ * unterdrückt in echtem Safari den NATIVEN `<select>`-Pfeil nicht zuverlässig (anders als
+ * in Chromium/Firefox) - im Fallback-Zweig (den WebKit seit Runde 1 IMMER nimmt) kam
+ * unser eigener `::after`-Pfeil zusätzlich zum weiterhin sichtbaren nativen Safari-Pfeil
+ * oben drauf. Nicht in Playwrights WebKit-Build reproduzierbar (zeigt in BEIDEN Zuständen
+ * nur einen korrekten Pfeil) - dieselbe Lücke wie bei initial-letter (Fallstrick 9):
+ * generische Test-Engines bilden manche echten Safari-Eigenheiten nicht exakt nach, macht
+ * ein gezieltes Experiment durch den Nutzer selbst manchmal zuverlässiger als eine weitere
+ * Hypothese von hier aus. RUNDE 2 (endgültiger Fix): zusätzlich zu base-select auch
+ * unseren eigenen `::after`-Pfeil in WebKit deaktivieren (siehe eigener @supports-Block
+ * unten) - Safaris nativer Pfeil bleibt als einziger sichtbar (schlichter, nicht per
+ * Tokens einfärbbar, aber korrekt). Sobald Apple beide Ursachen behebt (neu gegentestet
+ * werden, sobald Safari 27 reguläre Unterstützung bekommt), können BEIDE WebKit-
+ * Ausschlüsse in dieser Datei wieder entfernt werden.
+ *
+ * WebKit-Erkennung per Feature-Kombination, die (Stand jetzt) nur in WebKit gleichzeitig
+ * zutrifft, kein User-Agent-Sniffing (per echtem Test in Chromium/WebKit/Firefox
+ * bestätigt: nur WebKit liefert bei allen drei Bedingungen gemeinsam `true`) -
+ * `hanging-punctuation`/`font: -apple-system-body` sind reine WebKit-Eigenheiten,
+ * `-webkit-appearance: none` grenzt zusätzlich gegen ältere/andere Browser ein, die
+ * zufällig eine der ersten beiden ebenfalls unterstützen könnten.
+ */
+
+.ncss-select-wrapper {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.ncss-select-wrapper::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: var(--ncss-space-xs);
+  inset-block-start: 50%;
+  translate: 0 -50%;
+  width: var(--ncss-icon-size-sm);
+  height: var(--ncss-icon-size-sm);
+  background-color: var(--ncss-color-text-muted);
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 6l4 4 4-4' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  pointer-events: none;
+}
+
+.ncss-select {
+  appearance: none;
+  padding-inline-end: var(--ncss-space-lg);
+  width: 100%;
+}
+
+/* WebKit/Safari bekommt NICHT unseren eigenen Pfeil-Indikator - per Nutzer-Test direkt
+   bestätigt (nicht nur vermutet): `appearance: none` unterdrückt in echtem Safari den
+   NATIVEN Pfeil des <select> nicht zuverlässig (anders als in Chromium/Firefox, wo das
+   zuverlässig funktioniert) - unser eigener `::after`-Pfeil kam oben drauf, das ergab den
+   ursprünglich gemeldeten Doppelpfeil. War NICHT der eigentlich vermutete base-select-
+   Bug (siehe @supports-Block unten, dessen WebKit-Ausschluss allein den Doppelpfeil NICHT
+   behoben hat) - Ursache lag schon in der einfachen Fallback-Ebene, unabhängig von
+   base-select. Fix: in WebKit unseren Pfeil komplett weglassen, Safaris eigener nativer
+   Pfeil bleibt als einziger sichtbar (schlichter, nicht per Tokens einfärbbar, aber
+   garantiert korrekt und einfach). Dieselbe WebKit-Erkennung wie beim base-select-
+   Ausschluss oben, hier aber POSITIV (kein `not`) - */
+@supports (hanging-punctuation: first) and (font: -apple-system-body) and (-webkit-appearance: none) {
+  .ncss-select-wrapper::after {
+    display: none;
+  }
+}
+
+/* Nur dort aktiv, wo appearance:base-select tatsächlich unterstützt wird UND es nicht
+   WebKit/Safari ist (siehe Kopf-Kommentar: dort bekannter, nicht selbst fixbarer
+   Doppelpfeil-Bug in Safari 26) - Chrome/Edge 135+ bekommen die volle Optik, Firefox/
+   ältere Browser UND WebKit/Safari bleiben beim Fallback oben, voll funktionsfähig, nur
+   schlichter gestylt. */
+@supports (appearance: base-select) and (not ((hanging-punctuation: first) and (font: -apple-system-body) and (-webkit-appearance: none))) {
+  .ncss-select {
+    appearance: base-select;
+  }
+
+  /* Eigener Pfeil überflüssig - base-select liefert eine eigene, per ::picker-icon
+     stylebare Anzeige; unser mask-Pfeil würde sich sonst doppeln. */
+  .ncss-select-wrapper::after {
+    display: none;
+  }
+
+  .ncss-select::picker-icon {
+    color: var(--ncss-color-text-muted);
+  }
+
+  /* Das Dropdown-Popup selbst - komplett eigenständig stylebar, läuft im Top-Layer
+     (wie <dialog>), braucht daher KEIN z-index-Gefrickel gegen anderen Seiteninhalt. */
+  .ncss-select::picker(select) {
+    appearance: base-select;
+    background-color: var(--ncss-color-surface);
+    color: var(--ncss-color-text);
+    border: var(--ncss-border-width) solid var(--ncss-color-border);
+    border-radius: var(--ncss-radius-md);
+    box-shadow: var(--ncss-shadow-md);
+    padding: var(--ncss-space-2xs);
+    margin-block-start: var(--ncss-space-2xs);
+  }
+
+  /* display:flex erlaubt REICHE Inhalte pro <option> (nicht nur Text) - <img>/<span> als
+     Icon+Label nebeneinander, siehe "The Golden Rule of Customizable Select"
+     (https://webkit.org/blog/18117/the-golden-rule-of-customizable-select/): Text bleibt
+     PFLICHT (sichtbar oder per .ncss-visually-hidden), Icons sind eine Ergänzung, nie ein
+     Ersatz - sonst fehlt der Wert in der Barrierefreiheits-Struktur. Plain-Text-Options
+     (die überwiegende Mehrheit bestehender <select>-Nutzung) rendern unverändert, da ein
+     einzelner Text-Knoten als Flex-Item keine sichtbare Änderung bewirkt. */
+  .ncss-select option {
+    display: flex;
+    align-items: center;
+    gap: var(--ncss-space-2xs);
+    border-radius: var(--ncss-radius-sm);
+    padding: var(--ncss-space-2xs) var(--ncss-space-xs);
+  }
+
+  .ncss-select option:hover,
+  .ncss-select option:focus-visible {
+    background-color: var(--ncss-color-bg-subtle);
+  }
+
+  .ncss-select option:checked {
+    background-color: var(--ncss-color-brand);
+    color: var(--ncss-color-brand-contrast);
+  }
+
+  /* Häkchen bei der aktuell gewählten Option, ans Ende der Zeile geschoben (order+
+     margin-inline-start:auto, nicht text-align, damit es bei mehrzeiligem/mehrteiligem
+     Options-Inhalt zuverlässig rechtsbündig bleibt statt mit dem Text zu verrutschen). */
+  .ncss-select option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: currentColor;
+  }
+
+  /* Optionaler <button><selectedcontent></selectedcontent></button> als erstes Kind von
+     <select> - steuert, WIE die aktuelle Auswahl im GESCHLOSSENEN Zustand angezeigt wird
+     (z.B. inkl. Icon). Ohne dieses Markup rendert der Browser selbst einen passenden
+     Default-Button (reiner Text) - beides funktioniert, dieser Block greift nur, wenn das
+     optionale Markup vorhanden ist. */
+  .ncss-select selectedcontent {
+    display: flex;
+    align-items: center;
+    gap: var(--ncss-space-2xs);
+  }
+
+  /* Konsistente Icon-Größe für <img>/<svg> direkt in <option>/<selectedcontent> -
+     verhindert, dass eine beliebig große Bilddatei die Zeilenhöhe sprengt. Nur direkte
+     Kinder, damit ein Bild TIEFER im Options-Inhalt (eigentlicher Sonderfall) unberührt
+     bleibt. */
+  .ncss-select option > img,
+  .ncss-select option > svg,
+  .ncss-select selectedcontent > img,
+  .ncss-select selectedcontent > svg {
+    width: var(--ncss-icon-size-sm);
+    height: var(--ncss-icon-size-sm);
+    flex: 0 0 auto;
+  }
+}

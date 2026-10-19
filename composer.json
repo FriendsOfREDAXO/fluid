@@ -40,7 +40,8 @@
     "autoload": {
         "psr-4": {
             "FriendsOfRedaxo\\Fluid\\": "src/",
-            "FriendsOfRedaxo\\Fluid\\Kit\\Fluid\\": "kits/fluid/src/"
+            "FriendsOfRedaxo\\Fluid\\Kit\\Fluid\\": "kits/fluid/src/",
+            "FriendsOfRedaxo\\Fluid\\Kit\\Native\\": "kits/native/src/"
         }
     },
     "extra": {

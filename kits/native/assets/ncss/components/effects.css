@@ -1,0 +1,236 @@
+/**
+ * ncss - Effekt-Komponenten (Layer "components"): animierter Verlaufsrahmen (Glow-Border),
+ * pulsierendes Leuchten (Glow-Pulse) und Glassmorphism (Glass) - rein dekorativ, bewusst
+ * OPTIONAL (eigene Klassen zum Zukombinieren, kein Bestandteil von .ncss-card/-btn o.ä.).
+ * Demo: demo/effects.html.
+ *
+ * .ncss-glow-border braucht KEIN zusätzliches Markup (kein Wrapper-<span> wie im
+ * klassischen "Siri-Button"-Trick, keine zweite Hintergrundfarbe für die Mitte nötig):
+ * ein ::before mit einem echten "Loch" in der Mitte (mask-composite: exclude schneidet
+ * die content-box aus der padding-box heraus) zeichnet NUR den rotierenden
+ * conic-gradient()-Ring, die Mitte bleibt vollständig transparent - der eigene Inhalt des
+ * Elements bleibt unberührt sichtbar, unabhängig von dessen eigenem Hintergrund.
+ * (Der naheliegendere Ansatz - ein ::before mit negativem z-index als "Rahmen dahinter" -
+ * funktioniert NICHT: laut Stacking-Reihenfolge malen negative z-index-Nachfahren VOR dem
+ * eigenen Hintergrund des Elements, nicht danach - der "Rahmen" würde die komplette Fläche
+ * überdecken statt nur den Rand, per echtem Test gefunden.) Funktioniert auf JEDEM Element
+ * mit border-radius (Button, Card, Input-Wrapper, ...), nicht nur auf einer eigens dafür
+ * gebauten Komponente.
+ *
+ * prefers-reduced-motion: reduce wird bereits GLOBAL in reset.css respektiert (Animation
+ * läuft dann nur noch 1 Frame) - keine eigene Media Query hier nötig.
+ */
+
+/* @property registriert --ncss-glow-angle als typisierten <angle>-Wert - erst DADURCH
+   kann die Browser-Engine zwischen "from 0deg" und "from 360deg" sauber interpolieren
+   (ein unregistrierter Custom Property-Wert ist für Animationen nur diskret, kein
+   Zwischenwert, siehe Spec). Baseline seit 2024 (Chrome/Edge/Safari 16.4+/Firefox 128+) -
+   ohne Unterstützung bleibt der Ring einfach unbewegt bei --ncss-glow-angle-start stehen,
+   kein Darstellungsfehler. */
+@property --ncss-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.ncss-glow-border {
+  position: relative;
+  border-radius: var(--ncss-glow-radius, var(--ncss-radius-lg));
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: var(--ncss-glow-thickness, 2px);
+    background: conic-gradient(
+      from var(--ncss-glow-angle, 0deg),
+      var(--ncss-glow-colors, var(--ncss-color-brand), var(--ncss-color-brand-2), var(--ncss-color-success), var(--ncss-color-brand))
+    );
+    animation: ncss-glow-rotate var(--ncss-glow-speed, 4s) linear infinite;
+
+    /* Loch in der Mitte: padding-box (innerer Rand) von der vollen Box (border-box)
+       abziehen - "exclude" verknüpft beide Masken per XOR, übrig bleibt nur der Ring
+       zwischen padding-box und border-box. -webkit-Präfix nötig, Safari kennt nur den
+       präfixierten mask-composite-Wert "xor" (andere Syntax als das W3C-"exclude"). */
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+}
+
+@keyframes ncss-glow-rotate {
+  to {
+    --ncss-glow-angle: 360deg;
+  }
+}
+
+/* Pulsierendes Leuchten - eigenständig einsetzbar ODER mit .ncss-glow-border kombinierbar
+   (unterschiedliche Animation-Properties, box-shadow vs. ::before-background, keine
+   Überschneidung). */
+.ncss-glow-pulse {
+  animation: ncss-glow-pulse-scale var(--ncss-glow-pulse-speed, 3s) ease-in-out infinite;
+}
+
+@keyframes ncss-glow-pulse-scale {
+  0%, 100% {
+    box-shadow: 0 0 0.6rem 0 var(--ncss-glow-shadow-color, light-dark(rgb(0 87 216 / 30%), rgb(110 168 255 / 45%)));
+  }
+  50% {
+    box-shadow: 0 0 1.5rem 0.2rem var(--ncss-glow-shadow-color, light-dark(rgb(0 87 216 / 45%), rgb(110 168 255 / 60%)));
+  }
+}
+
+/* Glassmorphism - halbtransparente Fläche + backdrop-filter (Unschärfe/Sättigung
+   dahinter). -webkit-Präfix nötig (Safari verlangt ihn weiterhin, backdrop-filter selbst
+   ist nicht Baseline "weit verfügbar" - @supports-Fallback: ohne Unterstützung bleibt es
+   eine normale halbtransparente Fläche ohne Unschärfe, kein Darstellungsfehler).
+
+   ACHTUNG - backdrop-filter (wie filter/transform/perspective/will-change) erzeugt per
+   Spec einen NEUEN CONTAINING BLOCK für position:fixed-Nachfahren. Auf einem Element mit
+   einem <wa-dropdown>/<wa-popover>/o.ä. darin (die intern typischerweise position:fixed
+   relativ zum VIEWPORT nutzen) verursacht das ein sichtbares Zucken beim Scrollen bei
+   geöffnetem Menü (per echtem Test an demo/landing.html gefunden - Web Awesomes
+   Popup-Neuberechnung bei jedem Scroll-Event geriet mit dem verschobenen Containing
+   Block in Konflikt). .ncss-glass NICHT direkt auf ein Element mit einer solchen
+   Floating-UI-Komponente als Nachfahre setzen - stattdessen als eigenes, rein
+   dekoratives Element davor/dahinter platzieren (siehe demo/landing.html: eigenes
+   `.landing-topbar-backdrop` VOR dem eigentlichen Nav-Inhalt, nicht der Nav-Inhalt
+   selbst mit .ncss-glass). */
+.ncss-glass {
+  background: var(--ncss-glass-bg, light-dark(rgb(255 255 255 / 55%), rgb(20 20 30 / 45%)));
+  border: 1px solid var(--ncss-glass-border, light-dark(rgb(255 255 255 / 65%), rgb(255 255 255 / 12%)));
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .ncss-glass {
+    backdrop-filter: blur(var(--ncss-glass-blur, 12px)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--ncss-glass-blur, 12px)) saturate(160%);
+  }
+}
+
+/* --- Stamped (Prägung/Stanzung) - feiner gravierter Rahmen ------------------------------
+   Zweiter Anlauf (siehe Skill-Dokument Punkt 19 für den ersten, verworfenen Versuch mit
+   einer gefüllten Neumorphism-Fläche - brauchte einen Mittelton-Hintergrund, um überhaupt
+   sichtbar zu sein, und wirkte selbst dann eher wie eine schwebende Karte). Zeichnet
+   stattdessen NUR einen hauchdünnen, zweifarbigen Rahmen (dunkel oben-links nach hell
+   unten-rechts - wie eine Kante, die von oben-links beleuchtet ins Material graviert ist),
+   über dieselbe Masken-Ring-Technik wie .ncss-glow-border (::before + Padding als Ringdicke
+   + mask-composite: exclude schneidet die content-box heraus, siehe dort für Details).
+   Bewusst KEINE eigene background-color: funktioniert dadurch auf JEDER Fläche inkl.
+   reinem Weiß, ohne dass eine Hintergrundfarbe abgeglichen werden müsste.
+
+   Der Gradient hat NUR zwei Farbstopps (dunkel 0%, hell 100%) - ein dritter, mittiger
+   `transparent`-Stopp (erster Versuch) lässt die Ringdicke dort komplett verschwinden statt
+   weich zwischen den beiden Farben zu blenden: bei nur 1px Ringdicke ist der Übergang durch
+   `transparent` in der Mitte breit genug, um wie eine echte Lücke im Rahmen auszusehen statt
+   wie ein sanftes Verblassen (per echtem Screenshot als Bug gefunden, User-Report: "die
+   Rahmen laufen aus... sieht cool als eigener Stil, ist aber nicht was gedacht war"). Zwei
+   Stopps lassen den Ring stattdessen DURCHGEHEND sichtbar bleiben und in der Mitte einfach
+   zu einem Grauton aus beiden Farben überblenden - die tatsächlich gravierte Kante.
+
+   .ncss-stamped: Ruhezustand = flacher, gravierter Rahmen. :hover hebt das Element an
+   ("kommt nach vorne", translateY nach oben + Drop-Shadow). :active drückt tiefer als der
+   Ruhezustand ein - JEDES Sinken (egal ob :active oder .ncss-stamped--press) bekommt
+   zusätzlich zum translateY einen echten inset box-shadow (aus derselben
+   --ncss-stamped-shadow-dark wie der Rahmen abgeleitet), sonst würde nur die Position
+   wandern, ohne dass die Fläche selbst sichtbar nachgibt.
+   .ncss-stamped--press (Zusatzklasse, ZUSÄTZLICH zu .ncss-stamped): kehrt das Hover-
+   Verhalten um - sinkt beim Hover selbst tiefer ein (translateY + inset shadow), statt
+   sich zu heben (für zwei nebeneinander liegende Elemente, von denen sich eins hebt und
+   eins senkt). */
+.ncss-stamped {
+  --ncss-stamped-shadow-dark: var(--ncss-stamped-dark, rgb(0 0 0 / 35%));
+  --ncss-stamped-shadow-light: var(--ncss-stamped-light, rgb(255 255 255 / 90%));
+  position: relative;
+  /* Eigene border-radius nötig für den Alleingang-Fall (Demo: .ncss-stamped ohne jede
+     andere Komponente) - kombiniert mit einer Komponente, die SELBST schon eine radius
+     mitbringt (z.B. .ncss-btn, --ncss-radius-sm), gewinnt diese hier immer (components-
+     Layer schlägt helpers), der Button bekäme also sichtbar zu runde --ncss-radius-lg-
+     Ecken statt seiner eigenen Form. Kein automatischer Cross-Layer-Fallback dafür gebaut
+     (ein `revert-layer`-Trick funktioniert nur, wenn der Ambient-Default TATSÄCHLICH im
+     helpers-Layer selbst liegt - das würde .ncss-stamped über zwei Dateien/Layer
+     verstreuen, schlechter für Wartbarkeit als die einfache, bewusste Lösung: beim
+     Kombinieren --ncss-stamped-radius explizit auf den Wert der anderen Komponente
+     setzen, siehe demo/effects.html). */
+  border-radius: var(--ncss-stamped-radius, var(--ncss-radius-lg));
+  transition: transform var(--ncss-motion-duration) var(--ncss-motion-easing), box-shadow var(--ncss-motion-duration) var(--ncss-motion-easing);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: var(--ncss-stamped-thickness, 1px);
+    background: linear-gradient(135deg, var(--ncss-stamped-shadow-dark) 0%, var(--ncss-stamped-shadow-light) 100%);
+    pointer-events: none;
+
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  /* transition-duration überschreibt hier NUR den Einstieg in :active (siehe
+     helpers/forms.css für dieselbe Begründung/Technik an .ncss-btn) - ein Tap ist oft
+     kürzer als die normale Übergangsdauer, das Einsinken kam dadurch nie sichtbar fertig
+     an. Das Zurückfedern beim Loslassen bleibt bei der normalen, oben deklarierten Dauer. */
+  &:active {
+    box-shadow: inset 0 2px 4px var(--ncss-stamped-shadow-dark);
+    transform: translateY(var(--ncss-stamped-lift, 3px));
+    transition-duration: var(--ncss-motion-duration-fast);
+  }
+}
+
+/* :hover-Effekte NUR für Geräte mit echtem Zeigegerät (Maus/Trackpad) - siehe README
+   "Touch-Geräte haben kein :hover" für die projektweite Begründung dieses Musters.
+   .ncss-stamped bleibt auf Touch trotzdem voll funktionsfähig: :active (das "Einsinken")
+   gilt unverändert für JEDES Zeigegerät inkl. Touch - nur das zusätzliche "Abheben" beim
+   Hover ist rein für Maus/Trackpad gedacht und auf Touch ohnehin bedeutungslos.
+
+   :not(:active) zusätzlich auf beiden Selektoren: eine gehaltene Maustaste erfüllt
+   :hover UND :active GLEICHZEITIG (gleiche Spezifität, :hover steht als spätere Regel im
+   Quelltext) - ohne dieses :not(:active) hätte :hover beim Gedrückthalten gewonnen, der
+   Button wäre sichtbar "angehoben" statt "eingesunken" geblieben, obwohl die Maustaste
+   noch gedrückt ist (per echtem Test beim Verifizieren der schnelleren :active-Rückmeldung
+   gefunden - matrix()-Wert zeigte -2.67px statt der erwarteten +3px). */
+@media (hover: hover) and (pointer: fine) {
+  .ncss-stamped:hover:not(:active) {
+    box-shadow: 0 4px 10px rgb(0 0 0 / 12%);
+    transform: translateY(calc(-1 * var(--ncss-stamped-lift, 3px)));
+  }
+  .ncss-stamped--press:hover:not(:active) {
+    box-shadow: inset 0 2px 4px var(--ncss-stamped-shadow-dark);
+    transform: translateY(var(--ncss-stamped-lift, 3px));
+  }
+}
+.ncss-stamped--press:active {
+  box-shadow: inset 0 3px 6px var(--ncss-stamped-shadow-dark);
+  transform: translateY(calc(var(--ncss-stamped-lift, 3px) * 1.6));
+  transition-duration: var(--ncss-motion-duration-fast);
+}
+
+/* --- Grain (Korn-/Sandtextur) -----------------------------------------------------------
+   Feines Rauschen per SVG-<feTurbulence>-Filter als data-URI, kein Bild-Asset nötig (bleibt
+   damit im "reines CSS, kein Build-Schritt"-Prinzip). ::after statt ::before, da die
+   Textur ÜBER dem Inhalt liegen muss (mix-blend-mode blendet sie mit dem, was darunter
+   liegt) - pointer-events:none, damit sie Klicks/Hover auf den eigentlichen Inhalt nicht
+   blockiert. isolation:isolate auf dem Element selbst hält den Blend-Modus AUF dieses
+   Element beschränkt, statt mit dahinterliegenden Seiteninhalten zu blenden (eigener
+   Stacking-Context, dieselbe Technik wie bei einer Blend-Mode-Karte). */
+.ncss-grain {
+  position: relative;
+  isolation: isolate;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: var(--ncss-grain-opacity, 0.12);
+    mix-blend-mode: var(--ncss-grain-blend, overlay);
+  }
+}

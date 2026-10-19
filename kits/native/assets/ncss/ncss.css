@@ -1,0 +1,104 @@
+/**
+ * ncss (native css) - eigenständiges Design System, kein UIkit-Erbe.
+ *
+ * Aufbau (in genau dieser Reihenfolge geladen und in Cascade Layers dieser Priorität,
+ * niedrig -> hoch): tokens < reset < base < helpers < components < webawesome-bridge <
+ * browser-fixes. Der Layer "webawesome-bridge" bleibt HIER registriert, auch wenn diese
+ * Datei selbst nichts mehr hineinlädt (siehe unten, Web Awesome ist komplett opt-in) -
+ * die Layer-ORDER ist seitenweit global, ein Projekt, das integrations/
+ * webawesome-bridge.css später selbst einbindet, landet automatisch an genau dieser
+ * Prioritätsposition, unabhängig von der eigenen <link>-Reihenfolge.
+ *
+ * @layer regelt die Priorität EXPLIZIT statt über Selektor-Spezifität/!important zu
+ * kämpfen (siehe uikit_theme_builder diese Session: genau das war die Ursache mehrerer
+ * Bugs - Bridge-CSS vs. info_center, revert-Hacks etc.). Eine spätere Layer-Regel
+ * gewinnt immer gegen eine frühere, unabhängig von Selektor-Spezifität. Unlayered CSS
+ * (z.B. Inline-Styles, ein <style> ohne @layer) schlägt IMMER jede Layer-Regel - das
+ * ist Absicht der Spec und praktisch: Utility-Overrides im Markup funktionieren immer.
+ *
+ * Die wa-*-Namen vorne (wa-native, wa-base, ...) sind Web Awesomes EIGENE Layer (siehe
+ * vendor/webawesome/dist-cdn/styles/layers.css) - hier mit aufgeführt und vor unsere
+ * eigenen Layer gesetzt, damit die Priorität GARANTIERT unabhängig von der <link>-
+ * Reihenfolge im HTML ist (die Layer-Order ist seitenweit global, nicht pro Stylesheet -
+ * ohne diese Zeile würde gewinnen, welche Bibliothek zufällig zuerst geladen wird). So
+ * schlägt integrations/webawesome-bridge.css IMMER Web Awesomes eigenes Default-Theme,
+ * ganz ohne !important.
+ */
+
+@layer wa-native, wa-base, wa-utilities, wa-color-palette, wa-color-variant, wa-theme, wa-theme-dimension, wa-theme-overrides,
+  tokens, reset, base, helpers, components, webawesome-bridge, browser-fixes;
+
+@import url("colors.css") layer(tokens);
+@import url("tokens.css") layer(tokens);
+@import url("reset.css") layer(reset);
+@import url("base.css") layer(base);
+
+@import url("helpers/icons.css") layer(helpers);
+@import url("helpers/layout.css") layer(helpers);
+@import url("helpers/typography.css") layer(helpers);
+@import url("helpers/a11y.css") layer(helpers);
+@import url("helpers/visibility.css") layer(helpers);
+@import url("helpers/forms.css") layer(helpers);
+@import url("helpers/tables.css") layer(helpers);
+@import url("helpers/media.css") layer(helpers);
+@import url("helpers/scroll.css") layer(helpers);
+@import url("helpers/surfaces.css") layer(helpers);
+@import url("helpers/float.css") layer(helpers);
+@import url("helpers/animations.css") layer(helpers);
+@import url("helpers/elevation.css") layer(helpers);
+
+@import url("components/hero.css") layer(components);
+@import url("components/search.css") layer(components);
+@import url("components/select.css") layer(components);
+@import url("components/input-group.css") layer(components);
+@import url("components/combobox.css") layer(components);
+@import url("components/placeholder.css") layer(components);
+@import url("components/sparkline.css") layer(components);
+@import url("components/video.css") layer(components);
+@import url("components/audio.css") layer(components);
+@import url("components/card.css") layer(components);
+@import url("components/split.css") layer(components);
+@import url("components/tile.css") layer(components);
+@import url("components/accordion-split.css") layer(components);
+@import url("components/marginnote.css") layer(components);
+@import url("components/slideshow.css") layer(components);
+@import url("components/dialog-close.css") layer(components);
+@import url("components/modal.css") layer(components);
+@import url("components/scroll-progress.css") layer(components);
+@import url("components/scroll-stack.css") layer(components);
+@import url("components/roadmap.css") layer(components);
+@import url("components/topbar.css") layer(components);
+@import url("components/off-canvas.css") layer(components);
+@import url("components/nav.css") layer(components);
+@import url("components/disclosure.css") layer(components);
+@import url("components/badge.css") layer(components);
+@import url("components/breadcrumb.css") layer(components);
+@import url("components/lists.css") layer(components);
+@import url("components/cover.css") layer(components);
+@import url("components/overlay.css") layer(components);
+@import url("components/footer.css") layer(components);
+@import url("components/effects.css") layer(components);
+@import url("components/code-block.css") layer(components);
+@import url("components/events.css") layer(components);
+@import url("components/downloads.css") layer(components);
+/* Weitere Komponenten (Tabs, Accordion, ...) folgen hier, je eine Datei.
+   JS liegt gesammelt unter js/, nicht neben dem jeweiligen Komponenten-CSS - separat
+   einbinden (<script src="ncss/js/command-fallback.js">) - generischer Fallback für
+   command/commandfor (Modal/Off-Canvas/Nav), nur nötig für Browser ohne native
+   Unterstützung, siehe die Datei selbst. */
+
+/* Web Awesome/Font Awesome sind komplett OPT-IN - ncss.css importiert dafür bewusst
+   NICHTS (auch nicht die Bridge), damit ein Projekt ohne Web Awesome keine Zeile davon
+   ausliefert. Wird Web Awesome tatsächlich genutzt, integrations/webawesome-bridge.css
+   selbst zusätzlich laden (NACH ncss.css, wegen der Layer-Reihenfolge unten - die
+   @layer-Deklaration registriert "webawesome-bridge" bereits an der richtigen Stelle,
+   unabhängig davon, welche Datei tatsächlich etwas in diesen Layer einträgt):
+     <link rel="stylesheet" href="ncss.css">
+     <link rel="stylesheet" href="integrations/webawesome-bridge.css">
+   Siehe integrations/webawesome-bridge.css für das Token-Mapping,
+   integrations/fontawesome-font-display-fix.css für den separaten Font-Awesome-Fix
+   (ebenfalls opt-in, gleicher Ordner). */
+
+/* Browser-spezifische Workarounds, immer zuletzt geladen (höchste Priorität) - siehe
+   browser-fixes.css für die Begründung, warum das eine eigene Datei ist. */
+@import url("browser-fixes.css") layer(browser-fixes);

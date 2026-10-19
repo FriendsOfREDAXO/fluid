@@ -1,0 +1,77 @@
+/**
+ * ncss - Medien-Helper (Layer "helpers"): Bilder, Video, Aspect Ratios. base.css setzt
+ * bereits sinnvolle Defaults (display:block, max-width:100%) - hier nur zusätzliche,
+ * gezielt einsetzbare Klassen.
+ */
+
+/* aspect-ratio statt alter "Padding-Hack"-Technik (padding-top: 56.25% etc.) - natives
+   CSS, kein Wrapper-Element nötig. */
+.ncss-ratio-video { aspect-ratio: var(--ncss-aspect-video); }
+.ncss-ratio-square { aspect-ratio: var(--ncss-aspect-square); }
+.ncss-ratio-portrait { aspect-ratio: var(--ncss-aspect-portrait); }
+
+/* object-position statt der Default-"center": erlaubt einen Fokuspunkt pro Bild, wenn das
+   Motiv beim Zuschneiden nicht mittig sitzen soll - siehe --ncss-focus-point in tokens.css. */
+.ncss-ratio-video img,
+.ncss-ratio-square img,
+.ncss-ratio-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--ncss-focus-point);
+}
+
+.ncss-img-cover { object-fit: cover; object-position: var(--ncss-focus-point); }
+.ncss-img-contain { object-fit: contain; }
+
+.ncss-img-rounded { border-radius: var(--ncss-radius-md); }
+.ncss-img-circle { border-radius: var(--ncss-radius-full); aspect-ratio: var(--ncss-aspect-square); object-fit: cover; object-position: var(--ncss-focus-point); }
+
+/* Reagiert auf Systemeinstellung ohne JS - z.B. für Icons/Illustrationen mit hartem
+   Hintergrund, die im Dark Mode sonst wie ein weißes Loch wirken. */
+@media (prefers-color-scheme: dark) {
+  .ncss-img-dim-in-dark {
+    filter: brightness(0.85);
+  }
+}
+
+/* Figure mit Bildunterschrift - figcaption-Styling sitzt bereits in base.css, hier nur
+   das Layout drumherum. */
+.ncss-figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ncss-space-2xs);
+}
+
+/* --- Breite/Ausrichtung eines einzelnen Bildes im Fliesstext -----------------------------
+   Fuer ein freistehendes Bild (typischerweise in ein <figure> gewrapt, z.B. aus einem
+   Rich-Text-Editor) mitten in normalem Textfluss - bewusst getrennt von den
+   .ncss-width-1-2/-1-3/etc.-Klassen in helpers/layout.css, die für Geschwister-Kacheln
+   in einem .ncss-flex-grid gedacht sind (kein Textumfluss, kein Fliesstext-Kontext).
+   Markup: <figure class="ncss-figure ncss-figure--width-50 ncss-figure--align-left">
+   <img src="..." alt="..."><figcaption>...</figcaption></figure> */
+.ncss-figure--width-25 { width: 25%; }
+.ncss-figure--width-50 { width: 50%; }
+.ncss-figure--width-75 { width: 75%; }
+.ncss-figure--width-full { width: 100%; }
+
+/* float statt Grid/Flexbox: Text soll um das Bild herumfliessen, nicht daneben stehen -
+   derselbe technische Grund wie bei .ncss-float-start/-end in helpers/float.css (siehe
+   dortiger Docblock). Bewusst OHNE Container-Query-Schwelle (anders als
+   .ncss-float-start/-end): eine Bildbreiten-Auswahl ist bereits eine explizite
+   redaktionelle Entscheidung, kein automatisches Zusammenbrechen auf schmalen
+   Bildschirmen noetig/gewuenscht. */
+.ncss-figure--align-left {
+  float: inline-start;
+  margin-inline-end: var(--ncss-space-md);
+  margin-block-end: var(--ncss-space-sm);
+}
+.ncss-figure--align-right {
+  float: inline-end;
+  margin-inline-start: var(--ncss-space-md);
+  margin-block-end: var(--ncss-space-sm);
+}
+.ncss-figure--align-center {
+  margin-inline: auto;
+  margin-block-end: var(--ncss-space-sm);
+}

@@ -60,6 +60,8 @@ fluid läuft auch ohne.
 - **Seiten:** Seitenbaum mit Ziehen, neue Seiten (leer, als Kopie, aus einer Vorlage), Adresse und SEO-Angaben
 - **Design:** fertige Design-Vorlagen (u. a. „REDAXO · Blau“) oder Farben, Schriften und Formen einzeln – mit
   Kontrastprüfung, live auf der Seite
+- **Kits:** zwei Gestaltungen zur Wahl – „Fluid“ und „NativeCSS“ (auf Basis von [NativeCSS](https://github.com/skerbis/nativecss)),
+  umschaltbar unter Website → Kit; die Inhalte bleiben. Eigene Kits erben von „Fluid“ (Entwickler-Referenz).
 - **Mehrsprachig:** Sprachwahl in der Leiste, Inhalte einer Sprache übernehmen und übersetzen, Sprachwahl für Besucher
 - **Blog / News** mit Schlagworten, RSS und „Neuer Beitrag“ direkt in der Übersicht
 - **Formulare** zum Zusammenklicken – auch mehrstufig, speichern und/oder per E-Mail, mit Bestätigung (YForm)
@@ -389,4 +391,5 @@ MIT – siehe [LICENSE](LICENSE).
 - Symbole: [Phosphor Icons](https://phosphoricons.com) (MIT) · Schriften: SIL Open Font License (Lizenzen in `assets/fonts/`)
 - Karten: [MapLibre GL JS](https://maplibre.org) (BSD-3), [OpenFreeMap](https://openfreemap.org), Daten © OpenStreetMap-Mitwirkende (ODbL)
 - Suche: [Loupe](https://github.com/loupe-php/loupe) (MIT)
+- Kit „NativeCSS“: [NativeCSS](https://github.com/skerbis/nativecss) von Thomas Skerbis / KLXM Crossmedia (MIT, unverändert in `kits/native/assets/ncss/`)
 - Das REDAXO-Logo in der Demo gehört dem REDAXO-Projekt; es kommt aus dem Core und wird nur in der Demo verwendet.

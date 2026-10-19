@@ -1,0 +1,444 @@
+/**
+ * ncss - Formular-Helper (Layer "helpers"). Native Formularelemente werden hier zu Ende
+ * gestylt (base.css setzt nur font/color-Reset) - bewusst weiter mit echten <input>/
+ * <select>/<textarea> statt Web-Awesome-Nachbauten, wo natives HTML genügt (siehe
+ * ncss-Prinzip). Fokus-Handling erbt von reset.css (:focus-visible), hier nur Look.
+ */
+
+.ncss-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ncss-space-3xs);
+}
+
+.ncss-label {
+  font-size: var(--ncss-font-size-sm);
+  font-weight: 600;
+}
+
+.ncss-label--required::after {
+  content: " *";
+  color: var(--ncss-color-danger);
+}
+
+.ncss-input,
+.ncss-select,
+.ncss-textarea {
+  font: inherit;
+  color: var(--ncss-color-text);
+  background-color: var(--ncss-color-surface);
+  border: var(--ncss-border-width) solid var(--ncss-color-border);
+  border-radius: var(--ncss-radius-sm);
+  padding: var(--ncss-space-2xs) var(--ncss-space-xs);
+  width: 100%;
+  transition: border-color var(--ncss-motion-duration) var(--ncss-motion-easing);
+}
+
+/* Nur Geräte mit echtem Zeigegerät (Maus/Trackpad) - siehe README "Touch-Geräte haben
+   kein :hover". :focus-visible unten (Tastatur-Fokus) bleibt bewusst UNGATED - gilt
+   unabhängig vom Zeigegerät. */
+@media (hover: hover) and (pointer: fine) {
+  .ncss-input:hover,
+  .ncss-select:hover,
+  .ncss-textarea:hover {
+    border-color: var(--ncss-color-text-muted);
+  }
+}
+
+.ncss-input:focus-visible,
+.ncss-select:focus-visible,
+.ncss-textarea:focus-visible {
+  border-color: var(--ncss-color-focus-ring);
+}
+
+.ncss-textarea {
+  resize: vertical;
+  min-height: var(--ncss-textarea-min-height);
+}
+
+/* :user-invalid statt :invalid: feuert erst NACH einer Interaktion (oder Submit-Versuch),
+   nicht schon beim ersten Rendern eines leeren required-Felds - deutlich weniger nervig,
+   ohne JS. (Baseline 2024, gute aktuelle Browserunterstützung; :invalid als Fallback für
+   ältere Browser bleibt automatisch wirksam, wo :user-invalid fehlt.) */
+.ncss-input:user-invalid,
+.ncss-select:user-invalid,
+.ncss-textarea:user-invalid {
+  border-color: var(--ncss-color-danger);
+}
+
+.ncss-field-hint {
+  font-size: var(--ncss-font-size-sm);
+  color: var(--ncss-color-text-muted);
+}
+
+.ncss-field-error {
+  font-size: var(--ncss-font-size-sm);
+  color: var(--ncss-color-danger);
+}
+
+/* --- Datei-Upload -----------------------------------------------------------------------
+   <input type="file"> ist der Input-Typ mit dem größten Cross-Browser-Unterschied - Chrome/
+   Edge/Safari zeichnen einen eigenen "Datei auswählen"-Button + Dateiname-Text INNERHALB
+   des Feldes, Firefox einen "Durchsuchen…"-Button. Der Button selbst ist ein eigenes
+   Pseudo-Element (::file-selector-button, Baseline seit 2023) - ::-webkit-file-upload-
+   button ist die ältere, WebKit-spezifische Schreibweise davor (schadet nicht, parallel
+   angegeben - ein Browser ignoriert das ihm unbekannte Pseudo-Element einfach). Ohne beide
+   bleibt der Button auf seinem nativen, je nach Browser unterschiedlichen Grau hängen,
+   während das Feld drumherum bereits ncss-Rahmen/-Radius trägt - ein sichtbarer Stilbruch.
+   Optik entspricht .ncss-btn--secondary (Rahmen statt Füllung), damit sich der Button klar
+   vom übrigen Feldinhalt (Dateiname) absetzt, ohne mit den echten Formular-Buttons zu
+   konkurrieren. */
+.ncss-input[type="file"] {
+  padding-block: var(--ncss-space-3xs);
+  cursor: pointer;
+}
+.ncss-input[type="file"]::file-selector-button,
+.ncss-input[type="file"]::-webkit-file-upload-button {
+  font: inherit;
+  font-weight: 600;
+  color: var(--ncss-color-text);
+  background-color: transparent;
+  border: var(--ncss-border-width) solid var(--ncss-color-border);
+  border-radius: var(--ncss-radius-sm);
+  padding: var(--ncss-space-3xs) var(--ncss-space-xs);
+  margin-inline-end: var(--ncss-space-xs);
+  cursor: pointer;
+  transition: background-color var(--ncss-motion-duration) var(--ncss-motion-easing);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ncss-input[type="file"]:hover::file-selector-button,
+  .ncss-input[type="file"]:hover::-webkit-file-upload-button {
+    background-color: var(--ncss-color-bg-subtle);
+  }
+}
+.ncss-input[type="file"]:disabled {
+  cursor: not-allowed;
+}
+.ncss-input[type="file"]:disabled::file-selector-button,
+.ncss-input[type="file"]:disabled::-webkit-file-upload-button {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* --- Farbe --------------------------------------------------------------------------------
+   Nur die Swatch-Fläche selbst individualisierbar (Browser-eigener Picker-Dialog beim Klick
+   bleibt nativ, wie bei date/color-typischen Eingaben üblich - kein Bereich, den CSS
+   erreicht). ::-webkit-color-swatch(-wrapper) für Chromium/Safari, ::-moz-color-swatch für
+   Firefox - beide parallel nötig, kein gemeinsamer Standardname bisher. */
+.ncss-input[type="color"] {
+  width: 4rem;
+  /* Ohne explizite Höhe bemisst jeder Browser das Swatch-"Feld" anders, statt wie bei
+     Text-artigen Inputs (die die Höhe aus Zeilenhöhe + Padding + Rahmen ableiten) die
+     GLEICHE Formel anzuwenden - per echtem Test bestätigt: WebKit rendert dadurch nur
+     23px (statt 49px bei den anderen Feldern) - ein sichtbar schmaler Streifen statt
+     eines vollwertigen Feldes (User-Report: "im Safari nur ein schmaler Strich"), Chromium
+     (27px) und Firefox (32px) weichen ebenfalls ab, nur weniger extrem. 1lh (Baseline seit
+     2023) + dieselben Padding-/Rahmen-Token wie .ncss-input oben errechnen exakt dieselbe
+     Höhe wie ein normales Textfeld, unabhängig von Schriftgröße/Zeilenhöhe-Änderungen -
+     robuster als ein geschätzter fester px/em-Wert. */
+  height: calc(1lh + 2 * var(--ncss-space-2xs) + 2 * var(--ncss-border-width));
+  padding: var(--ncss-space-3xs);
+  cursor: pointer;
+}
+.ncss-input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.ncss-input[type="color"]::-webkit-color-swatch {
+  border: none;
+  border-radius: var(--ncss-radius-sm);
+}
+.ncss-input[type="color"]::-moz-color-swatch {
+  border: none;
+  border-radius: var(--ncss-radius-sm);
+}
+
+/* --- Datum/Zeit -----------------------------------------------------------------------
+   date/time/datetime-local/month/week teilen sich denselben Kalender-/Uhr-Icon-Mechanismus
+   in Chromium/Safari (::-webkit-calendar-picker-indicator, Firefox zeichnet sein eigenes,
+   nicht per CSS erreichbares Icon). Die Icon-FARBE selbst muss NICHT manuell ans Theme
+   angepasst werden - color-scheme:light dark (colors.css, :root) sorgt bereits dafür, dass
+   Chromium/Safari das zum jeweiligen Modus passende (helle/dunkle) System-Icon zeichnen,
+   kein zusätzliches invert()/filter nötig (per echtem Test in beiden Modi bestätigt). Hier
+   nur der Cursor + etwas Abstand zum Feldrand. */
+.ncss-input[type="date"]::-webkit-calendar-picker-indicator,
+.ncss-input[type="time"]::-webkit-calendar-picker-indicator,
+.ncss-input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.ncss-input[type="month"]::-webkit-calendar-picker-indicator,
+.ncss-input[type="week"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: var(--ncss-radius-sm);
+  margin-inline-start: var(--ncss-space-2xs);
+}
+
+/* --- Suche ----------------------------------------------------------------------------
+   Ohne dieses appearance:none rundet Safari ein type="search" auf eigene Faust komplett ab
+   (ignoriert border-radius aus der gemeinsamen .ncss-input-Regel oben) - erst danach
+   verhält sich das Feld optisch wie jedes andere .ncss-input. Das native "×"-Icon zum
+   Leeren (::-webkit-search-cancel-button) bleibt bewusst unangetastet - eigenständig
+   nachzubauen wäre reiner Aufwand ohne echten optischen Zugewinn. */
+.ncss-input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Checkbox/Radio: native Elemente, nur Ausrichtung + Akzentfarbe (accent-color deckt die
+   allermeiste Individualisierung ab, ganz ohne Custom-Markup/-CSS für den Haken/Punkt
+   selbst - genau der "erst HTML/CSS, dann mehr" Fall). */
+.ncss-choice {
+  display: flex;
+  align-items: center;
+  gap: var(--ncss-space-2xs);
+}
+.ncss-choice input[type="checkbox"],
+.ncss-choice input[type="radio"] {
+  accent-color: var(--ncss-color-brand);
+  width: var(--ncss-choice-size);
+  height: var(--ncss-choice-size);
+}
+
+/* --- Switch (Toggle) -------------------------------------------------------------------
+   Natives <input type="checkbox">, per appearance:none komplett neu gezeichnet (Track +
+   Thumb über ::before) - kein <wa-switch>/JS nötig für den einfachen Fall. role="switch"
+   im Markup ergänzen (kein eigenes CSS nötig) - Screenreader kündigen es dann als Schalter
+   statt als Checkbox an, Verhalten bleibt identisch (checked/unchecked).
+   Markup: <label class="ncss-switch"><input type="checkbox" role="switch"> Label</label> */
+.ncss-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ncss-space-2xs);
+  cursor: pointer;
+}
+.ncss-switch input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: 0 0 auto;
+  width: 2.25em;
+  height: 1.25em;
+  margin: 0;
+  border-radius: var(--ncss-radius-full);
+  background-color: var(--ncss-color-border);
+  cursor: pointer;
+  transition: background-color var(--ncss-motion-duration) var(--ncss-motion-easing);
+}
+.ncss-switch input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  inset-block-start: 0.15em;
+  inset-inline-start: 0.15em;
+  width: 0.95em;
+  height: 0.95em;
+  border-radius: var(--ncss-radius-full);
+  background-color: white;
+  transition: translate var(--ncss-motion-duration) var(--ncss-motion-easing);
+}
+.ncss-switch input[type="checkbox"]:checked {
+  background-color: var(--ncss-color-brand);
+}
+.ncss-switch input[type="checkbox"]:checked::before {
+  translate: 1em 0;
+}
+.ncss-switch input[type="checkbox"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.ncss-switch:has(input:disabled) {
+  cursor: not-allowed;
+}
+
+/* --- Range-Slider -----------------------------------------------------------------------
+   accent-color reicht für die Grundfarbe (wie schon bei Checkbox/Radio oben) - hier
+   zusätzlich Track/Thumb etwas vereinheitlicht, weil <input type="range"> sich ohne jede
+   Politur stärker zwischen Browsern unterscheidet als Checkbox/Radio. */
+.ncss-range {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: 1.25em;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--ncss-color-brand);
+  cursor: pointer;
+}
+.ncss-range::-webkit-slider-runnable-track {
+  height: 0.35em;
+  border-radius: var(--ncss-radius-full);
+  background-color: var(--ncss-color-border);
+}
+.ncss-range::-moz-range-track {
+  height: 0.35em;
+  border-radius: var(--ncss-radius-full);
+  background-color: var(--ncss-color-border);
+}
+.ncss-range::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  margin-block-start: -0.45em;
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: var(--ncss-radius-full);
+  background-color: var(--ncss-color-brand);
+  border: none;
+}
+.ncss-range::-moz-range-thumb {
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: var(--ncss-radius-full);
+  background-color: var(--ncss-color-brand);
+  border: none;
+}
+.ncss-range:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* --- Fieldset/Legend --------------------------------------------------------------------
+   Ungestylt bekommt <fieldset> vom UA-Stylesheet einen 2px "groove"-3D-Rahmen + eigenes
+   Margin, <legend> überlappt diesen Rahmen automatisch - beides wirkt neben den flachen,
+   eckig-radierten ncss-Feldern wie aus einer anderen Design-Sprache. Kein eigener Klassen-
+   name nötig (anders als .ncss-choice/.ncss-switch, die ECHTES natives Markup mit einer
+   ganz eigenen Optik neu zeichnen) - <fieldset>/<legend> sind reine Gruppierungs-Elemente,
+   bekommen deshalb wie <blockquote> in base.css direkt einen sinnvollen Default ohne
+   zusätzliche Klasse. */
+fieldset {
+  border: var(--ncss-border-width) solid var(--ncss-color-border);
+  border-radius: var(--ncss-radius-sm);
+  padding: var(--ncss-space-sm);
+  margin: 0;
+}
+fieldset > legend {
+  padding-inline: var(--ncss-space-2xs);
+  font-weight: 600;
+  font-size: var(--ncss-font-size-sm);
+}
+
+/* --- Progress/Meter ---------------------------------------------------------------------
+   Zwei semantisch unterschiedliche, aber optisch verwandte Elemente: <progress> (Fortschritt
+   einer laufenden Aufgabe, z.B. Datei-Upload - value/max ohne max wird zum unbestimmten
+   "läuft"-Zustand) und <meter> (ein Messwert INNERHALB einer bekannten Skala, z.B.
+   Speicherplatz-Auslastung - kein "läuft gerade"-Konzept). accent-color reicht bei BEIDEN
+   für die Grundfarbe (dieselbe Technik wie Checkbox/Radio/Range oben), Chromium/Safari/
+   Firefox setzen sie unterschiedlich auf ihre jeweiligen internen Pseudo-Elemente um, ganz
+   ohne dass hier selbst welche benannt werden müssten.
+
+   <meter> bleibt trotz accent-color grün, solange kein optimum/low/high gesetzt ist (per
+   echtem Test in allen drei Engines bestätigt, einheitlich) - BEWUSST nicht per
+   ::-webkit-meter-*-Pseudo-Elementen zur Markenfarbe gezwungen: die Grün/Gelb/Rot-Logik
+   ist die eigentliche Funktion von <meter> (zeigt an, ob ein Wert im guten/mittleren/
+   kritischen Bereich liegt, sobald diese Attribute gesetzt sind), keine Optik-Macke wie
+   bei den anderen Elementen hier. Wer wirklich Markenfarbe statt Semantik will: <progress>
+   verwenden (kein Wertungs-Konzept, respektiert accent-color vollständig). */
+progress,
+meter {
+  width: 100%;
+  height: 0.6em;
+  accent-color: var(--ncss-color-brand);
+}
+
+/* --- Output -----------------------------------------------------------------------------
+   <output> (berechnetes/abgeleitetes Ergebnis eines Formulars, z.B. eine Summe) erbt ohne
+   eigenes CSS bereits font/color korrekt von base.css - hier nur als eigenständiges
+   Element hervorgehoben, damit es sich sichtbar vom umgebenden Fließtext absetzt. */
+output {
+  font-weight: 600;
+  color: var(--ncss-color-brand);
+}
+
+/* --- Buttons -------------------------------------------------------------------------- */
+.ncss-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ncss-space-2xs);
+  font: inherit;
+  font-weight: 600;
+  /* .ncss-btn läuft genauso oft auf einem <a> (Link, der wie ein Button aussehen soll)
+     wie auf einem <button> - base.css lässt die Standard-Unterstreichung von <a> bewusst
+     bestehen (guter Default für Fließtext-Links), ein Button-artiges Element soll aber
+     NIE unterstrichen wirken, unabhängig vom zugrundeliegenden Tag. Ohne diese Zeile
+     erbte ein <a class="ncss-btn"> die Unterstreichung trotzdem (per echtem Test
+     gefunden - .ncss-btn selbst setzte text-decoration nie zurück). */
+  text-decoration: none;
+  border-radius: var(--ncss-radius-sm);
+  padding: var(--ncss-space-2xs) var(--ncss-space-sm);
+  border: var(--ncss-border-width) solid transparent;
+  cursor: pointer;
+  transition: background-color var(--ncss-motion-duration) var(--ncss-motion-easing),
+              border-color var(--ncss-motion-duration) var(--ncss-motion-easing),
+              scale var(--ncss-motion-duration) var(--ncss-motion-easing);
+}
+.ncss-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* :active statt :hover für die taktile Rückmeldung selbst - gilt für JEDES Zeigegerät
+   inkl. Touch (siehe README "Touch-Geräte haben kein :hover"), anders als die
+   farblichen :hover-Zustände der Varianten unten. transition-duration überschreibt hier
+   NUR die Dauer für den EINSTIEG in :active auf --ncss-motion-duration-fast (100ms statt
+   200ms) - ein Tap dauert oft nicht länger, die normale Dauer erreichte den Zielwert
+   bisher oft gar nicht erst (User-Report: "kann kaum touch feedbacks feststellen"). Das
+   Zurückfedern beim Loslassen nutzt weiterhin die normale Dauer von .ncss-btn oben (gilt
+   wieder, sobald :active nicht mehr matcht). scale 0.97->0.95: der kleinere Wert allein
+   reichte nicht als spürbare Rückmeldung, siehe unten außerdem die pro Variante ECHTE
+   Farbänderung (identisch zum jeweiligen :hover, nur per :active statt :hover ausgelöst -
+   :hover bleibt zusätzlich für Maus/Trackpad bestehen, siehe Media Query unten). */
+.ncss-btn:active:not(:disabled) {
+  scale: 0.95;
+  transition-duration: var(--ncss-motion-duration-fast);
+}
+
+.ncss-btn--primary {
+  background-color: var(--ncss-color-brand);
+  color: var(--ncss-color-brand-contrast);
+}
+.ncss-btn--primary:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--ncss-color-brand) 75%, black);
+}
+
+/* border-color/color/:active-Hintergrund bewusst NICHT über feste Seiten-Tokens
+   (--ncss-color-border/-text/-bg-subtle), sondern über currentColor - ein
+   --secondary-Button landet oft auf einer farbigen Fläche (Hero, CTA-Sektion,
+   dunkle Karte), auf der die festen Werte (für die normale, helle Seitenfläche
+   kalibriert) unlesbar würden (User-Report: "dunkle Schrift auf dunklem
+   Hintergrund" in einem grünen Hero). currentColor übernimmt automatisch die an
+   dieser Stelle bereits korrekte Textfarbe (z.B. weiß, wenn ein Vorfahre
+   color:#fff setzt) - keine Seiten-lokale Override-Regel mehr nötig. Prozentwerte
+   (15%/5%) so gewählt, dass sie im Standardfall (helle Seitenfläche) fast exakt
+   den bisherigen --ncss-color-border/-bg-subtle-Werten entsprechen - keine
+   sichtbare Änderung für bereits bestehende Buttons auf normaler Fläche. */
+.ncss-btn--secondary {
+  background-color: transparent;
+  border-color: color-mix(in oklch, currentColor 15%, transparent);
+  color: currentColor;
+}
+.ncss-btn--secondary:active:not(:disabled) {
+  background-color: color-mix(in oklch, currentColor 12%, transparent);
+}
+
+/* Nur Geräte mit echtem Zeigegerät (Maus/Trackpad) - siehe README "Touch-Geräte haben
+   kein :hover". Dieselben Farbwerte wie die jeweilige :active-Regel oben (nur etwas
+   dezenter bei --primary, siehe dortiger Kommentar) - :hover UND :active bleiben beide
+   erreichbar, z.B. Maus gedrückt halten zeigt zuerst :hover-, dann :active-Farbe. */
+@media (hover: hover) and (pointer: fine) {
+  .ncss-btn--primary:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ncss-color-brand) 85%, black);
+  }
+  .ncss-btn--secondary:hover:not(:disabled) {
+    background-color: color-mix(in oklch, currentColor 6%, transparent);
+  }
+}
+
+.ncss-btn--danger {
+  background-color: var(--ncss-color-danger);
+  color: var(--ncss-color-brand-contrast);
+}
+.ncss-btn--danger:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--ncss-color-danger) 75%, black);
+}
+/* --danger hatte bisher GAR KEINEN :hover (vorbestehende Lücke) - beim Ergänzen der
+   :active-Rückmeldung gleich mitgeschlossen, dieselbe Formel wie --primary. */
+@media (hover: hover) and (pointer: fine) {
+  .ncss-btn--danger:hover:not(:disabled) {
+    background-color: color-mix(in srgb, var(--ncss-color-danger) 85%, black);
+  }
+}

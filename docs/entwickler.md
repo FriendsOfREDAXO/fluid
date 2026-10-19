@@ -72,6 +72,13 @@ Ein Kit bestimmt die Gestaltung der ganzen Website: Seitenrahmen, CSS, Ausgabe d
 das Kit `fluid` mit. Weitere Kits liegen im Projekt oder kommen als Composer-Paket; welches gilt, wählen Admins unter
 **Website → Kit** (der Reiter erscheint, sobald es mehr als ein Kit gibt).
 
+Mitgeliefert sind zwei Kits: **`fluid`** (Grund-Kit) und **`native`** („NativeCSS“, `kits/native/`). Das zweite ist zugleich
+das Beispiel für ein abgeleitetes Kit: eigener Seitenrahmen und eigene Views für Einstieg, Karten, Text + Bild,
+Handlungsaufruf und FAQ mit den Komponenten von [NativeCSS](https://github.com/skerbis/nativecss); alle übrigen Blöcke
+und seltene Varianten kommen von `fluid`. Die Reihenfolge der Cascade Layers (`tokens, reset, base` von NativeCSS, dann
+das Grund-CSS von fluid als Layer `fluid`, dann `helpers, components`, dann `native`) steht in `kits/native/template.view.php`,
+die Brücke von der Design-Leiste (`--f-…`) zu den Tokens von NativeCSS (`--ncss-…`) in `assets/css/native.css`.
+
 **Inhalte bleiben beim Wechsel.** Die Block-Module (`fluid.hero`, `fluid.cards` …) gehören zu keinem Kit, sie zeigen
 sich im gewählten. Jedes Kit erbt von einem Eltern-Kit (Standard `fluid`) und bringt nur mit, was es ändert – alle
 Blöcke sind also immer da, und Updates von fluid kommen beim abgeleiteten Kit mit an.
@@ -425,7 +432,8 @@ Ohne Live-Kanal funktioniert es auch, dann mit 15 Sekunden Verzögerung.
 |---|---|
 | `fluid:demo --set=redaxo6` | Demo-Website anlegen (nur in einer leeren Installation; YForm-Beispieldaten gleich mit) |
 | `… --media` | Demo-Bilder des Kits in den Medienpool übernehmen |
-| `… --design=redaxo` | Design-Vorlage setzen (`redaxo` zusätzlich mit REDAXO-Logo aus dem Core); andere: `kanzlei`, `handwerk`, `praxis`, `aurora` … |
+| `… --design=redaxo` | Design-Vorlage setzen (`redaxo` zusätzlich mit REDAXO-Logo aus dem Core); andere: `kanzlei`, `handwerk`, `praxis`, `aurora` … – auf einer Website mit Seiten nur die Vorlage |
+| `… --design=native --kit=native` | Design-Vorlage für ein bestimmtes Kit setzen (Standard: das gewählte) |
 | `… --replace` | vorher **alle** Seiten löschen – nur Testinstallationen |
 | `… --page=slug` | nur eine Demo-Seite anhängen, z. B. `--page=projekte` |
 | `… --yform` | nur die Beispielzeilen der YForm-Tabellen schreiben |
@@ -480,6 +488,7 @@ zum Beispiel [`fluid_demo`](https://github.com/FriendsOfREDAXO/fluid_demo), die 
 | `src/Data/` | YForm-Anbindung: `YFormBridge`, Formular-Baukasten `BuiltForm`, Feld `FluidBlocks`, `RecordBlocks`, `Detail`, Postfach |
 | `kits/fluid/` | das Grund-Kit: `kit.php` (Blöcke), `design.php` (Design-Tokens, Vorlagen), `views/` (Ausgaben), `functions.php`, `lang/` |
 | `src/Kit.php`, `src/AsKit.php` | Kits: Anmeldung, Auswahl (`Kit::active()`), Vererbung, Assets |
+| `kits/native/` | Kit „NativeCSS“: `template.view.php`, `views/`, `kit.php`, `assets/css/native.css`, NativeCSS in `assets/ncss/` |
 | `assets/` | Editor (`editor/`), Formulare (`form.js`, `rte.js`), Kit-CSS/JS (`kits/fluid/`), Schriften, MapLibre |
 | `examples/` | Vorlagen für eigene Blöcke und YForm-Tabellen |
 | `pages/` | Backend-Seite AddOns → fluid |

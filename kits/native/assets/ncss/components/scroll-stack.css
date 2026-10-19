@@ -1,0 +1,363 @@
+/**
+ * ncss - Scroll-Stack-Komponente (Layer "components"): EINE Vollbild-Sektion, in der
+ * Karten beim Scrollen INNERHALB dieser einen Sektion übereinander gleiten und sich zu
+ * einem gefächerten Stapel aufbauen - anders als .ncss-snap-sections (helpers/scroll.css,
+ * Sektion für Sektion vollflächig einrasten, jede Sektion nimmt ihren EIGENEN Scroll-
+ * Abschnitt), bleibt hier die Bühne selbst die ganze Zeit über ein einziges Vollbild,
+ * nur der INHALT dieser einen Bühne wechselt/stapelt sich während man hindurchscrollt
+ * (klassisches "Pinned Scrollytelling"-Muster).
+ *
+ * Struktur - drei Ebenen, jede mit eigener Aufgabe:
+ * .ncss-stack-section (außen)  - reine Scroll-DISTANZ, sonst unsichtbar. Höhe =
+ *                                 Kartenanzahl × 100lvh (--ncss-stack-count MUSS von Hand
+ *                                 gesetzt werden - sibling-count() ist aktuell noch
+ *                                 weniger verbreitet unterstützt als selbst
+ *                                 animation-timeline, also kein Auto-Zählen).
+ * .ncss-stack-stage (Bühne)    - position:sticky; top:0; height:100lvh - bleibt exakt EIN
+ *                                 Vollbild lang oben "kleben", während die Zusatzhöhe der
+ *                                 Sektion darum herum vorbeiscrollt. overflow:clip
+ *                                 verhindert, dass ankommende Karten (die von unten
+ *                                 hereinfahren) kurzzeitig über die Bühne hinausragen.
+ * .ncss-stack-card (Karten)    - position:absolute, alle exakt an derselben Stelle
+ *                                 innerhalb der Bühne gestapelt, ein fester
+ *                                 --ncss-stack-fan-Versatz pro Karte (--ncss-stack-index,
+ *                                 PRO INSTANZ per Inline-Style, siehe Markup unten) sorgt
+ *                                 dafür, dass jede bereits angekommene Karte ein Stück
+ *                                 ihrer Kante sichtbar behält.
+ *
+ * Baseline (kein JS, funktioniert überall): OHNE animation-timeline-Unterstützung liegen
+ * alle Karten einfach von Anfang an fertig gefächert da (kein Fehlerzustand, nur ohne die
+ * Rein-Scroll-Animation) - jede Karte bekommt einen fixen transform-Versatz, der GENAU
+ * der "flach angekommen"-Zwischenposition der Scroll-Animation entspricht (keine zwei
+ * unterschiedlichen Ruhezustände, siehe die 50%-Keyframe-Marke unten).
+ *
+ * Scroll-Animation (Progressive Enhancement, animation-timeline aktuell NICHT Baseline -
+ * per Recherche bestätigt): view-timeline-name auf .ncss-stack-section erzeugt eine
+ * benannte Fortschritts-Timeline über die GESAMTE Sektionshöhe, jede Karte hört per
+ * animation-timeline auf denselben Namen. Jede Karte fährt WÄHREND ihres eigenen
+ * Scheiben-Abschnitts herein, bleibt dann flach/unverzerrt stehen, solange sie die
+ * aktuell sichtbare (vorderste) Karte ist, und kippt/verkleinert sich per 3D-Transform
+ * erst WÄHREND des Abschnitts der NÄCHSTEN Karte zurück, wenn diese sie tatsächlich zu
+ * bedecken beginnt - nicht schon vorher (siehe animation-range-Kommentar unten für die
+ * Technik dahinter).
+ *
+ * Markup (--ncss-stack-index UND die Sektion --ncss-stack-count von Hand gesetzt):
+ * <div class="ncss-stack-section" style="--ncss-stack-count: 4;">
+ *   <div class="ncss-stack-stage">
+ *     <div class="ncss-stack-card" style="--ncss-stack-index: 0;">...</div>
+ *     <div class="ncss-stack-card" style="--ncss-stack-index: 1;">...</div>
+ *     <div class="ncss-stack-card" style="--ncss-stack-index: 2;">...</div>
+ *     <div class="ncss-stack-card" style="--ncss-stack-index: 3;">...</div>
+ *   </div>
+ * </div>
+ *
+ * Modifier .ncss-stack-section--horizontal auf der äußeren Sektion: dieselbe Bühne/
+ * Timeline-Mechanik, Fächer und Anfahrt laufen auf der X- statt der Y-Achse (seitlich
+ * gestaffelt, fährt von rechts herein, kippt um die Y- statt die X-Achse zurück) - siehe
+ * "Modifier: --horizontal" weiter unten.
+ *
+ * --ncss-stack-stage-height (Default 100lvh) und --ncss-stack-stage-top (Default 0px)
+ * machen die Bühne beliebig klein/verschoben statt zwingend vollbildgroß - z.B. eine
+ * Bühne in einem gewöhnlichen .ncss-container statt vollflächig (Demo:
+ * "Stacked Cards, in einem normalen Container" in demo/stacked-cards.html).
+ *
+ * WICHTIG - echter Fallback ohne animation-timeline-Unterstützung: Die frühere Baseline
+ * (siehe "Ruheposition" weiter unten) reichte NICHT als echter Fallback - sie positioniert
+ * Karten weiterhin absolut übereinander, per --ncss-stack-fan versetzt. Bei --ncss-stack-fan:
+ * 0px (Vollbild-Variante, Karten sollen volle Bühnenfläche einnehmen) liegen dadurch OHNE
+ * Scroll-Animation alle Karten exakt deckungsgleich übereinander - nur die letzte (oberste im
+ * DOM) ist sichtbar/erreichbar, die anderen bleiben komplett verdeckt, ohne jede Möglichkeit
+ * sie anzusehen (User-Feedback: "die karten liegen halt übereinander und man kann sie sich
+ * nicht anschauen"). Deshalb zusätzlich ein eigener @supports not(...)-Block ganz unten in
+ * dieser Datei: dort wird die gesamte Pinning-/Absolut-Stapel-Mechanik abgeschaltet und die
+ * Karten laufen stattdessen ganz normal im Fluss untereinander (position:static, keine
+ * Transforms) - garantiert jede Karte einzeln sichtbar/scrollbar, unabhängig von
+ * --ncss-stack-fan, --ncss-stack-count oder der horizontal-Variante.
+ *
+ * --ncss-stack-stage-height nutzt 100lvh als Default, bewusst NICHT 100dvh: "large
+ * viewport height" verhält sich wie das klassische 100vh (rechnet mit vollständig
+ * eingeklapptem mobilem Browser-Chrome, ändert sich NICHT während des Scrollens) -
+ * "dynamic viewport height" dagegen würde sich live mit ein-/ausblendender Adressleiste
+ * MITTEN im Scrollen neu berechnen. Genau das ist hier riskant: die Bühnenhöhe fließt
+ * direkt in die Scroll-Distanz der Sektion (Zeile unten), das view-timeline-inset UND die
+ * Off-Stage-Position der Karten (siehe @keyframes ncss-stack-arrive weiter unten) ein -
+ * eine mitten im Scrollen wachsende/schrumpfende Bühnenhöhe würde alle drei Berechnungen
+ * gleichzeitig verschieben, während der Nutzer noch scrollt (bekanntes reales
+ * dvh-Ruckel-Verhalten in mobilem Safari). lvh bleibt stattdessen stabil über die gesamte
+ * Geste - genau das bereits fein kalibrierte Timing (siehe die dokumentierten Bugs oben
+ * und bei @keyframes ncss-stack-arrive) bleibt dadurch unangetastet, nur der veraltete
+ * Name wird durch die modernere, absichtliche Variante ersetzt.
+ */
+
+.ncss-stack-section {
+  position: relative;
+  height: calc(var(--ncss-stack-count, 4) * var(--ncss-stack-stage-height, 100lvh));
+}
+
+.ncss-stack-stage {
+  position: sticky;
+  top: var(--ncss-stack-stage-top, 0px);
+  height: var(--ncss-stack-stage-height, 100lvh);
+  overflow: clip;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* perspective als eigene Eigenschaft (nicht als Transform-Funktion wie bei
+     .ncss-modal--3d) - reicht hier, weil die Bühne ganz normal im Fluss steht
+     (position:sticky bleibt im normalen Stacking-Kontext), anders als ein <dialog>, das
+     in den Top Layer rendert und dort den perspective-Elternbezug verliert. */
+  perspective: var(--ncss-stack-perspective, 1200px);
+}
+
+.ncss-stack-card {
+  position: absolute;
+  width: var(--ncss-stack-card-width, min(90vw, 40rem));
+  height: var(--ncss-stack-card-height, 60vh);
+  border-radius: var(--ncss-stack-radius, var(--ncss-radius-lg));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--ncss-space-lg);
+  overflow: clip;
+}
+/* Ruheposition (auch der Baseline-Endzustand ohne Scroll-Animation, siehe oben) - jede
+   Karte um --ncss-stack-fan tiefer als die vorherige, macht den gefächerten Stapel
+   sichtbar. Karte 0 bleibt bei 0 (keine eigene Regel nötig, Custom-Property-Default). */
+.ncss-stack-card {
+  transform: translateY(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem)));
+}
+
+@supports (view-timeline-name: --ncss-stack-progress) {
+  .ncss-stack-section {
+    view-timeline-name: --ncss-stack-progress;
+    /* OHNE Inset misst die Default-"cover"-Reichweite von view-timeline VOM ERSTEN
+       sichtbaren Pixel des Elements (Sektion ragt gerade erst von unten ins Bild) BIS
+       ZUM LETZTEN (Sektion verlässt gerade den oberen Rand) - das schließt die
+       Entry-/Exit-Phase mit ein, zusammen ein Bildschirm-hoch PRO Seite mehr, als die
+       Bühne tatsächlich gepinnt ist. Per echtem Test gefunden: Karte 0 landete dadurch
+       schon bei 2% Scroll-Fortschritt durch die Sektion mitten in ihrer eigenen
+       "Zurückweichen"-Phase statt flach zu bleiben - die 0%/100%-Marken der Timeline
+       lagen NICHT bei Sektionsanfang/-ende, sondern jeweils eine Bildschirmhöhe davor/
+       danach. Die beiden Inset-Werte sind NICHT symmetrisch, auch wenn das beim
+       100lvh-Vollbild-Default zufällig gleich aussieht: der STARTwert muss immer die
+       tatsächliche VIEWPORT-Höhe sein (0% soll bei "Sektions-Oberkante erreicht
+       Viewport-Oberkante" liegen, unabhängig von der Bühnengröße), der ENDwert dagegen
+       die BÜHNENHÖHE selbst (100% soll bei "Bühne löst sich wieder", also
+       Sektions-Restlänge = Bühnenhöhe, liegen) - bei --ncss-stack-stage-height kleiner
+       als 100lvh (z.B. eine Bühne in einem normalen Container statt Vollbild) MÜSSEN
+       beide Werte deshalb unterschiedlich sein, sonst verschiebt sich die 100%-Marke. */
+    view-timeline-inset: 100lvh var(--ncss-stack-stage-height, 100lvh);
+  }
+
+  /* Eigenes @media (prefers-reduced-motion) hier, ZUSÄTZLICH zur globalen Regel in
+     reset.css: die globale Regel kappt animation-duration auf 0.01ms - sinnvoll für
+     zeitbasierte Animationen, aber eine scroll-timeline-gekoppelte Animation hat keine
+     echte Zeitdauer (der Fortschritt kommt vom Scroll-Offset), das Kappen könnte sich
+     deshalb unvorhersehbar verhalten statt die Animation sauber zu deaktivieren. Hier
+     stattdessen der ganze Mechanismus unter reduced-motion gar nicht erst aktiviert - der
+     Baseline-Endzustand (siehe oben, identische Ruheposition) bleibt unverändert stehen. */
+  @media (prefers-reduced-motion: no-preference) {
+    .ncss-stack-card {
+      animation: ncss-stack-arrive linear both;
+      animation-timeline: --ncss-stack-progress;
+      transform-style: preserve-3d;
+      /* Bereich über ZWEI Kartenbreiten der Gesamt-Timeline, beginnend an der EIGENEN
+         Scheibe dieser Karte (index bis index+2, NICHT zentriert - eine zentrierte
+         Version ließ Karten schon MITTEN in der eigenen, noch aktiven Scheibe
+         zurückweichen, per echtem Test mit Transform-Matrix-Auslese gefunden). Dadurch
+         liegt die 0%-Marke am Start der EIGENEN Scheibe, die 50%-Marke (siehe
+         @keyframes unten, "angekommen/flach") GENAU am ÜBERGANG zur nächsten Scheibe,
+         und die 100%-Marke ("zurückgewichen") am Ende der nächsten Scheibe. Ergebnis:
+         die Karte bleibt flach/unverzerrt, solange SIE die aktuell sichtbare ist
+         (0%-50% ist ihre eigene Anfahrt/Ankunft), und kippt/verkleinert sich erst
+         WÄHREND die nächste Karte sie bedeckt (50%-100%) - nicht vorher (User-Feedback:
+         "müsste erst nach hinten kippen animieren, wenn man vom Vollbild wegscrollt").
+         Der Wert nach 100% (bei der letzten Karte) wird von der Timeline automatisch
+         geklammert - sie erreicht das "zurückweichen"-Ende gar nicht erst (nichts kommt
+         danach, wovon sie bedeckt werden müsste), bleibt bei ihrer eigenen 50%-Marke
+         (flach) stehen. */
+      animation-range:
+        calc(var(--ncss-stack-index, 0) / var(--ncss-stack-count, 4) * 100%)
+        calc((var(--ncss-stack-index, 0) + 2) / var(--ncss-stack-count, 4) * 100%);
+    }
+    /* Karte 0 hat keine "eigene Scheibe davor" - sie ist schon da, wenn die Bühne
+       ankommt, statt erst hereinzufahren. Eigene Keyframes OHNE die
+       Anfahrt-Zwischenstufe bei 0% (die sonst als kurzes, unerwünschtes Aufblitzen
+       sichtbar würde) - sonst identisch zu .ncss-stack-arrive (dieselbe Bereich-Formel
+       oben gilt für alle Karten gleich, nur der Name hier unterscheidet sich). */
+    .ncss-stack-card:first-child {
+      animation-name: ncss-stack-settle;
+    }
+  }
+}
+
+/* Bewusst KEIN opacity-Fade beim Ankommen (0%->50%) - die Karte ist bereits blickdicht
+   und malt dank normaler DOM-Reihenfolge automatisch über die vorherige(n), ein
+   zusätzlicher Opacity-Übergang ließ die darunterliegende(n) Karte(n) währenddessen
+   unschön durchscheinen (matschige Doppelbelichtung, per Screenshot-Review gefunden). */
+@keyframes ncss-stack-settle {
+  0%, 50% {
+    transform: translateY(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem))) scale(1);
+    filter: brightness(1);
+  }
+  100% {
+    transform:
+      translateY(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem)))
+      scale(var(--ncss-stack-scale, 0.92))
+      translateZ(var(--ncss-stack-depth, -80px))
+      rotateX(var(--ncss-stack-tilt, 6deg));
+    filter: brightness(var(--ncss-stack-brightness, 0.75));
+  }
+}
+
+@keyframes ncss-stack-arrive {
+  /* Off-Stage-Versatz relativ zur BÜHNEN- und Kartenhöhe berechnet (halbe Bühnenhöhe +
+     halbe Kartenhöhe), nicht als fixer Wert: Die Karte sitzt per flex zentriert in der
+     Bühne, ihre Oberkante muss also mindestens die halbe Bühnenhöhe + die halbe eigene
+     Höhe nach unten wandern, um die Bühnen-Unterkante zu erreichen - danach schneidet
+     overflow:clip der Bühne sie vollständig ab. Ein fixer 60vh-Wert (erster Versuch)
+     reichte bei --ncss-stack-card-height:60vh (Default) nicht aus - die Karte blieb am
+     unteren Rand der Bühne sichtbar, per Screenshot-Review gefunden (User: "der grüne
+     ist initial über der Karte 1 sichtbar"). Ursprünglich fix "50vh" statt der halben
+     BÜHNENHÖHE angenommen (galt nur, solange --ncss-stack-stage-height sein Default
+     100lvh hatte) - bei einer kleineren Bühne (z.B. in einem normalen Container statt
+     Vollbild) war das zu wenig Versatz, Karten kamen schon halb sichtbar an. Mit dem
+     Bühnenhöhe-Token funktioniert es automatisch für jede --ncss-stack-stage-height. */
+  0% {
+    transform: translateY(calc(var(--ncss-stack-stage-height, 100lvh) / 2 + var(--ncss-stack-card-height, 60vh) / 2 + var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem))) scale(0.92);
+  }
+  50% {
+    transform: translateY(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem))) scale(1);
+    filter: brightness(1);
+  }
+  100% {
+    transform:
+      translateY(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem)))
+      scale(var(--ncss-stack-scale, 0.92))
+      translateZ(var(--ncss-stack-depth, -80px))
+      rotateX(var(--ncss-stack-tilt, 6deg));
+    filter: brightness(var(--ncss-stack-brightness, 0.75));
+  }
+}
+
+/* --- Modifier: --horizontal (Fächer/Anfahrt X statt Y) -----------------------------------
+   Dieselbe Bühne/Timeline/animation-range-Mechanik wie oben, nur die BEWEGUNGSACHSE
+   getauscht - Karten fächern sich seitlich statt nach unten, fahren von rechts statt von
+   unten herein, kippen beim Zurückweichen um die Y- statt die X-Achse (rotateY statt
+   rotateX - fühlt sich für eine seitliche Staffelung natürlicher an, wie umblätternde
+   Seiten statt nach hinten kippende Karten). Eigene Keyframes statt eines Achsen-
+   Multiplikator-Tricks in EINER gemeinsamen Formel - bewusst, bleibt so für beide Fälle
+   einzeln lesbar statt einer schwerer nachvollziehbaren generischen Formel. */
+.ncss-stack-section--horizontal .ncss-stack-card {
+  transform: translateX(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem)));
+}
+
+@supports (view-timeline-name: --ncss-stack-progress) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ncss-stack-section--horizontal .ncss-stack-card {
+      animation-name: ncss-stack-arrive-horizontal;
+    }
+    .ncss-stack-section--horizontal .ncss-stack-card:first-child {
+      animation-name: ncss-stack-settle-horizontal;
+    }
+  }
+}
+
+@keyframes ncss-stack-settle-horizontal {
+  0%, 50% {
+    transform: translateX(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem))) scale(1);
+    filter: brightness(1);
+  }
+  100% {
+    transform:
+      translateX(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem)))
+      scale(var(--ncss-stack-scale, 0.92))
+      translateZ(var(--ncss-stack-depth, -80px))
+      rotateY(var(--ncss-stack-tilt, 6deg));
+    filter: brightness(var(--ncss-stack-brightness, 0.75));
+  }
+}
+
+@keyframes ncss-stack-arrive-horizontal {
+  /* Off-Stage-Versatz relativ zur eigenen Kartenbreite (50vw + halbe Kartenbreite) -
+     dieselbe Rechnung wie bei ncss-stack-arrive, nur an der Bühnen-/Kartenbreite statt
+     -höhe gespiegelt. */
+  0% {
+    transform: translateX(calc(50vw + var(--ncss-stack-card-width, min(90vw, 40rem)) / 2 + var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem))) scale(0.92);
+  }
+  50% {
+    transform: translateX(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem))) scale(1);
+    filter: brightness(1);
+  }
+  100% {
+    transform:
+      translateX(calc(var(--ncss-stack-index, 0) * var(--ncss-stack-fan, 1.25rem)))
+      scale(var(--ncss-stack-scale, 0.92))
+      translateZ(var(--ncss-stack-depth, -80px))
+      rotateY(var(--ncss-stack-tilt, 6deg));
+    filter: brightness(var(--ncss-stack-brightness, 0.75));
+  }
+}
+
+/* --- Echter Fallback ohne animation-timeline-Unterstützung ---------------------------------
+   Die "Ruheposition" oben (transform: translateY/X(index * fan)) ist KEIN ausreichender
+   Fallback: bei --ncss-stack-fan: 0px (z.B. die Vollbild-Variante, Karten sollen die ganze
+   Bühne füllen) landen ohne Scroll-Animation ALLE Karten exakt deckungsgleich übereinander -
+   nur die letzte (oberste im DOM) bleibt sichtbar/erreichbar, der Rest ist unwiederbringlich
+   verdeckt (User-Feedback: "die karten liegen halt übereinander und man kann sie sich nicht
+   anschauen"). Statt also auf --ncss-stack-fan als einzigen Unterscheidungs-Mechanismus zu
+   setzen (der bewusst 0 sein darf), wird die ganze Pinning-/Absolut-Stapel-Mechanik hier
+   komplett abgeschaltet: die Sektion braucht keine künstliche Scroll-Distanz mehr (kein
+   Pinning ohne animation-timeline), die Bühne verliert sticky/clip/feste Höhe, die Karten
+   verlieren position:absolute + Transform und laufen stattdessen ganz normal im
+   Flex-Fluss untereinander (funktioniert identisch für die --horizontal-Variante - auch
+   dort ein einfacher vertikaler Karten-Stapel statt Seiten-Scroll, bewusst simpel statt
+   eines zweiten Fallback-Layouts). Ergebnis: jede Karte ist immer einzeln sichtbar und ganz
+   normal wegscrollbar, unabhängig von --ncss-stack-fan/-count oder der Variante. */
+@supports not (view-timeline-name: --ncss-stack-progress) {
+  .ncss-stack-section {
+    height: auto;
+  }
+
+  .ncss-stack-stage {
+    position: static;
+    height: auto;
+    overflow: visible;
+    flex-direction: column;
+    gap: var(--ncss-stack-gap, var(--ncss-space-lg));
+    padding-block: var(--ncss-space-lg);
+  }
+
+  .ncss-stack-card,
+  .ncss-stack-section--horizontal .ncss-stack-card {
+    position: relative;
+    transform: none;
+  }
+}
+
+/* --- JS-Fallback-Unterstützung (js/scroll-stack-fallback.js, opt-in) --------------
+   Das Script prüft SELBST per CSS.supports(), ob animation-timeline fehlt, und setzt in dem
+   Fall diese Klasse auf .ncss-stack-section - stellt exakt dieselbe Bühnen-/Absolut-Stapel-
+   Struktur wieder her wie der native @supports(view-timeline-name)-Block oben, NUR ohne
+   animation/-timeline/-range selbst (die übernimmt das Script direkt per transform/filter
+   beim Scrollen, siehe dortiger Kommentar für die nachgerechnete view-timeline-inset-
+   Formel). Alle drei Selektoren binden .ncss-stack-js-active mit EIN statt es separat
+   voranzustellen (zwei Klassen Spezifität statt einer) - gewinnt dadurch zuverlässig gegen
+   den @supports not()-Fallback oben, unabhängig von der Reihenfolge im Stylesheet.
+   flex-direction/gap/padding-block des Fallbacks oben brauchen KEIN explizites Zurücksetzen
+   - beides wirkt nur auf normal fließende Kinder, absolut positionierte Karten ignorieren
+   es ohnehin. */
+.ncss-stack-js-active.ncss-stack-section {
+  height: calc(var(--ncss-stack-count, 4) * var(--ncss-stack-stage-height, 100lvh));
+}
+.ncss-stack-js-active .ncss-stack-stage {
+  position: sticky;
+  top: var(--ncss-stack-stage-top, 0px);
+  height: var(--ncss-stack-stage-height, 100lvh);
+  overflow: clip;
+}
+.ncss-stack-js-active .ncss-stack-card {
+  position: absolute;
+  transform-style: preserve-3d;
+}

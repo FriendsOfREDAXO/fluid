@@ -1,0 +1,377 @@
+/**
+ * ncss - Modal-Komponente (Layer "components"): natives <dialog>, zentriert, als
+ * "Karte mit Schatten" - für Bestätigungen/Formulare/Hinweise. Für seitlich einschiebende
+ * Panels siehe stattdessen components/off-canvas.css - beide nutzen dasselbe native
+ * <dialog> + command/commandfor, aber mit bewusst UNTERSCHIEDLICHER Optik (deshalb keine
+ * Meinung dazu in base.css, siehe dort).
+ *
+ * KEINE eigene Lightbox-Komponente: eine Lightbox ist konzeptionell nur ein Modal mit
+ * anderer Darstellung (Vollbild, dunkel) - siehe .ncss-modal--fullscreen/--dark unten,
+ * statt eine zweite, fast identische <dialog>-Komponente zu pflegen.
+ *
+ * Markup (Standard):
+ * <button type="button" command="show-modal" commandfor="modal1">Öffnen</button>
+ * <dialog id="modal1" class="ncss-modal">
+ *   <button type="button" class="ncss-dialog-close" command="close" commandfor="modal1"
+ *           aria-label="Schließen">&times;</button>
+ *   <div class="ncss-modal-header"><h3>Titel</h3></div>
+ *   <div class="ncss-modal-body">Inhalt</div>
+ *   <div class="ncss-modal-footer">
+ *     <button type="button" class="ncss-btn ncss-btn--secondary" command="close"
+ *             commandfor="modal1">Abbrechen</button>
+ *     <button type="button" class="ncss-btn ncss-btn--primary">Bestätigen</button>
+ *   </div>
+ * </dialog>
+ *
+ * Markup (Lightbox-artig, Bild):
+ * <dialog id="modal2" class="ncss-modal ncss-modal--fullscreen ncss-modal--dark">
+ *   <button type="button" class="ncss-dialog-close" command="close" commandfor="modal2"
+ *           aria-label="Schließen">&times;</button>
+ *   <img src="full.jpg" alt="Beschreibung">
+ * </dialog>
+ */
+
+.ncss-modal {
+  /* position/inset/margin bewusst EXPLIZIT gesetzt, nicht dem UA-Stylesheet überlassen:
+     das native "dialog:modal { position:fixed; inset:0; margin:auto; }" ist an die
+     :modal-Pseudoklasse GEKOPPELT - und die hört per echtem Test SOFORT auf zu greifen,
+     sobald close() aufgerufen wird (noch bevor die Fade-Transition sichtbar fertig ist,
+     display bleibt dank @starting-style/allow-discrete extra lang "block"). Ohne eigene,
+     unbedingte Regel hier verliert der Dialog die Zentrierung MITTEN in der eigenen
+     Schließen-Animation - margin fällt von "auto" auf "0" zurück, inset:0 zieht die Box
+     dadurch sichtbar nach oben links, wie ein "Rausfliegen" in die Ecke (per echtem Test
+     an Position/:modal/Zeitstempeln bestätigt - betraf JEDES .ncss-modal, nicht nur
+     .ncss-modal--3d). Diese eigene Regel bleibt unabhängig von :modal bestehen, die
+     Zentrierung hält deshalb über die GESAMTE Schließen-Animation durch. */
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  border: none;
+  border-radius: var(--ncss-radius-lg);
+  box-shadow: var(--ncss-shadow-lg);
+  padding: var(--ncss-space-lg);
+  color: var(--ncss-color-text);
+  background-color: var(--ncss-color-surface);
+  max-width: min(var(--ncss-modal-max-width, var(--ncss-dialog-max-width)), calc(100vw - 2 * var(--ncss-space-md)));
+}
+
+.ncss-modal::backdrop {
+  background-color: var(--ncss-color-overlay);
+  backdrop-filter: blur(2px);
+}
+
+/* Close-Button: geteilte Basis in components/dialog-close.css, hier keine Ausnahme
+   nötig - Default-Position (innen oben rechts) passt bereits. */
+
+.ncss-modal-header {
+  margin-block-end: var(--ncss-space-sm);
+  padding-inline-end: var(--ncss-space-lg);
+}
+.ncss-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ncss-space-xs);
+  margin-block-start: var(--ncss-space-md);
+}
+
+/* Fade+Scale beim Öffnen/Schließen - identische @starting-style/allow-discrete-Mechanik
+   wie components/lightbox.css (siehe dort für die ausführliche Erklärung). `translate`
+   steht mit in der Liste, obwohl die Basisregel selbst keinen Wert dafür setzt (wie
+   `scale` bereits zuvor auch auf ::backdrop wirkungslos mitläuft) - die Einblendvarianten
+   --slide-up/--slide-down weiter unten setzen NUR den Wert, keine eigene transition-
+   Deklaration, sie brauchen dafür aber `translate` bereits hier in der Property-Liste
+   (sonst springt der Wert ohne Zwischenschritt direkt zum Ziel, per echtem Test mit
+   Zwischenwert-Sampling gefunden - `opacity` animierte sauber, `translate` blieb die
+   ganze Zeit beim bereits fertigen Wert). */
+.ncss-modal,
+.ncss-modal::backdrop {
+  transition:
+    opacity var(--ncss-motion-duration) var(--ncss-motion-easing),
+    scale var(--ncss-motion-duration) var(--ncss-motion-easing),
+    translate var(--ncss-motion-duration) var(--ncss-motion-easing),
+    display var(--ncss-motion-duration) allow-discrete,
+    overlay var(--ncss-motion-duration) allow-discrete;
+}
+.ncss-modal {
+  opacity: 1;
+  scale: 1;
+}
+.ncss-modal::backdrop {
+  opacity: 1;
+}
+@starting-style {
+  .ncss-modal:modal {
+    opacity: 0;
+    scale: 0.95;
+  }
+  .ncss-modal:modal::backdrop {
+    opacity: 0;
+  }
+}
+.ncss-modal:not(:modal) {
+  opacity: 0;
+  scale: 0.95;
+}
+
+/* --- Varianten ---------------------------------------------------------------------- */
+
+/* Vollbild statt zentrierter Karte - der "Lightbox"-Fall (Bilder, Medien). Eigener Inhalt
+   wird zentriert statt wie im Standard-Modal linksbündig gestapelt.
+   "display: flex" GEZIELT auf :modal beschränkt, nicht auf .ncss-modal--fullscreen direkt:
+   ein geschlossener <dialog> hat UA-seitig "display: none" - eine unbedingte eigene
+   display-Deklaration hätte das überschrieben und den Dialog PERMANENT sichtbar gemacht,
+   unabhängig vom offen/geschlossen-Zustand (per echtem Test gefunden: der Dialog blockierte
+   danach seinen eigenen Öffnen-Button). Breite/Höhe/Radius sind zustandslos, dürfen normal
+   gesetzt werden - die wirken nur, wenn der Dialog ohnehin schon sichtbar ist. */
+.ncss-modal--fullscreen {
+  width: 100vw;
+  max-width: 100vw;
+  border-radius: 0;
+  /* 100vh als Fallback, 100svh überschreibt direkt danach - siehe tokens.css'
+     --ncss-sticky-container-max-height für dieselbe Begründung (mobiles Browser-Chrome).
+     Nur die HÖHE betroffen (vw ist von der Adressleiste unabhängig, deshalb width/
+     max-width oben unverändert bei 100vw). */
+  height: 100vh;
+  height: 100svh;
+  max-height: 100vh;
+  max-height: 100svh;
+}
+.ncss-modal--fullscreen:modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ncss-modal--fullscreen img,
+.ncss-modal--fullscreen video {
+  display: block;
+  max-width: 100%;
+  max-height: calc(100vh - 2 * var(--ncss-space-lg));
+  max-height: calc(100svh - 2 * var(--ncss-space-lg));
+  border-radius: var(--ncss-radius-md);
+}
+
+/* Dunkle Darstellung UNABHÄNGIG vom aktuellen Light/Dark-Theme der Seite - typisch für
+   Bild-/Medien-Betrachtung, wo ein heller Rahmen ums Bild stört. Setzt nur color-scheme;
+   alle ncss-Tokens im Inhalt (color/background/border via light-dark()) lösen dadurch
+   automatisch auf ihre Dark-Werte auf, ganz ohne diese Werte hier zu duplizieren. */
+.ncss-modal--dark {
+  color-scheme: dark;
+  background-color: #0a0a0a;
+  color: #f0f0f0;
+}
+.ncss-modal--dark::backdrop {
+  background-color: var(--ncss-color-overlay-strong);
+  backdrop-filter: blur(4px);
+}
+
+/* --- Einblendvarianten: Slide statt Skalierung -----------------------------------------
+   Ersetzt die Standard-Skalierungsbewegung (ganz oben: scale 0.95 → 1) durch eine
+   Verschiebung aus einer Richtung, Fade bleibt in allen Varianten unverändert von der
+   Basisregel geerbt (Layer-Kaskade - hier wird NUR scale/translate überschrieben).
+   scale bewusst auf 1 fixiert (keine Kombination aus Skalierung UND Verschiebung -
+   dieselbe Überlegung wie bei --3d oben, zwei parallel wirkende Bewegungs-Eigenschaften
+   lesen sich unruhig). Die geöffnete Position (`:modal { translate: 0 0; }`) explizit
+   deklariert statt sich auf den ererbten Startwert `none` zu verlassen - dokumentiert
+   den Bewegungspfad an Ort und Stelle, statt ihn nur aus der geschlossenen Gegenseite
+   zu erschließen. Kombinierbar mit --fullscreen/--dark (unterschiedliche Eigenschaften,
+   keine Kollision), NICHT mit --3d (beide beanspruchen dieselbe Transform-Achse).
+
+   Eigene, LANGSAMERE `transition`-Deklaration (überschreibt die Basisregel ganz oben
+   komplett, wie --3d es schon vormacht - ein Custom-Property-Shorthand wie `transition`
+   lässt sich nicht teilweise überschreiben, nur als Ganzes neu deklarieren) mit
+   `--ncss-motion-duration-slow` statt der normalen Dauer und der eigens dafür
+   angelegten `--ncss-motion-easing-emphasized`-Kurve (tokens.css) statt der neutralen
+   Standardkurve - startet zügig, bremst dann spürbar lang aus, wirkt dadurch
+   gewichtiger/weicher als der knappe Standard-Fade (User-Vorgabe: "langsamere bezier
+   animationen"). */
+.ncss-modal--slide-up,
+.ncss-modal--slide-down,
+.ncss-modal--slide-left,
+.ncss-modal--slide-right,
+.ncss-modal--slide-up::backdrop,
+.ncss-modal--slide-down::backdrop,
+.ncss-modal--slide-left::backdrop,
+.ncss-modal--slide-right::backdrop {
+  transition:
+    opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    scale var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    translate var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    display var(--ncss-motion-duration-slow) allow-discrete,
+    overlay var(--ncss-motion-duration-slow) allow-discrete;
+}
+
+.ncss-modal--slide-up:not(:modal) {
+  scale: 1;
+  translate: 0 1.5rem;
+}
+.ncss-modal--slide-up:modal {
+  translate: 0 0;
+}
+@starting-style {
+  .ncss-modal--slide-up:modal {
+    scale: 1;
+    translate: 0 1.5rem;
+  }
+}
+
+.ncss-modal--slide-down:not(:modal) {
+  scale: 1;
+  translate: 0 -1.5rem;
+}
+.ncss-modal--slide-down:modal {
+  translate: 0 0;
+}
+@starting-style {
+  .ncss-modal--slide-down:modal {
+    scale: 1;
+    translate: 0 -1.5rem;
+  }
+}
+
+.ncss-modal--slide-left:not(:modal) {
+  scale: 1;
+  translate: 1.5rem 0;
+}
+.ncss-modal--slide-left:modal {
+  translate: 0 0;
+}
+@starting-style {
+  .ncss-modal--slide-left:modal {
+    scale: 1;
+    translate: 1.5rem 0;
+  }
+}
+
+.ncss-modal--slide-right:not(:modal) {
+  scale: 1;
+  translate: -1.5rem 0;
+}
+.ncss-modal--slide-right:modal {
+  translate: 0 0;
+}
+@starting-style {
+  .ncss-modal--slide-right:modal {
+    scale: 1;
+    translate: -1.5rem 0;
+  }
+}
+
+/* Deutlichere Skalierung als der Standard-Fade (0.95 → 1) - für Einstiege, die mehr
+   "aus dem Nichts heranwachsen" sollen statt nur sanft einzublenden. Braucht keine
+   eigene translate-Regel, keine eigene :modal-Regel - beides erbt unverändert von der
+   Basisregel ganz oben (nur der geschlossene/startende scale-Wert wird hier ersetzt). */
+.ncss-modal--zoom:not(:modal) {
+  scale: 0.8;
+}
+@starting-style {
+  .ncss-modal--zoom:modal {
+    scale: 0.8;
+  }
+}
+
+/* --- Variante: 3D-Tiefeneffekt beim Öffnen/Schließen --------------------------------------
+   Statt des Standard-Fade+Scale (oben) kippt das Modal wie aus der Tiefe nach vorne herein.
+   perspective() als TRANSFORM-FUNKTION direkt in der eigenen transform-Kette, NICHT die
+   separate perspective-Eigenschaft auf einem Elternelement: ein geöffneter <dialog>
+   rendert im "Top Layer" (eigene Stapel-Ebene außerhalb des normalen DOM-Renderbaums) -
+   eine auf einem DOM-Vorfahren gesetzte perspective-Eigenschaft würde dort nicht
+   zuverlässig respektiert, perspective() im eigenen transform dagegen schon (per echtem
+   Test bestätigt).
+   Überschreibt scale bewusst auf 1 (Basis-Regel oben nutzt es für den normalen Fade+Scale)
+   - die komplette Bewegung steckt hier stattdessen in EINER transform-Kette, zwei parallel
+   wirkende Eigenschaften (scale UND transform) würden sich nicht sauber kombinieren lassen.
+   --ncss-modal-3d-depth parametrisiert, wie weit "hinten" das Modal startet (negative
+   translateZ), pro Instanz überschreibbar: style="--ncss-modal-3d-depth: -40rem". */
+.ncss-modal--3d {
+  scale: 1;
+  transform: perspective(75rem) rotateX(0deg) translateZ(0);
+  transition:
+    opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing),
+    transform var(--ncss-motion-duration-slow) var(--ncss-motion-easing),
+    display var(--ncss-motion-duration-slow) allow-discrete,
+    overlay var(--ncss-motion-duration-slow) allow-discrete;
+
+  &::backdrop {
+    transition: opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing);
+  }
+  &:not(:modal) {
+    opacity: 0;
+    scale: 1;
+    transform: perspective(75rem) rotateX(12deg) translateZ(var(--ncss-modal-3d-depth));
+  }
+  @starting-style {
+    &:modal {
+      opacity: 0;
+      scale: 1;
+      transform: perspective(75rem) rotateX(12deg) translateZ(var(--ncss-modal-3d-depth));
+    }
+  }
+}
+
+/* --- Variante: Karten-Flip um die Hochachse -----------------------------------------------
+   Dreht sich beim Öffnen einmal um die eigene Y-Achse herein (90deg = exakt kantig/
+   unsichtbar, wie eine Karte, die man von der Seite betrachtet - deckt sich ohnehin mit
+   opacity:0 im selben Zustand, der genaue Winkel ist optisch also nicht kritisch).
+   `transform-origin` bewusst NICHT gesetzt (bleibt beim Default 50% 50%, mittig) - der
+   Unterschied zu --3d-swing unten ist genau diese Drehachse: mittig = symmetrischer
+   Flip, Kante = Tür-Scharnier-Gefühl. Dieselbe langsamere `--ncss-motion-easing-
+   emphasized`-Kurve wie die Slide-Varianten oben (User-Vorgabe: "langsamere bezier
+   animationen"). */
+.ncss-modal--3d-flip {
+  scale: 1;
+  transform: perspective(75rem) rotateY(0deg);
+  transition:
+    opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    transform var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    display var(--ncss-motion-duration-slow) allow-discrete,
+    overlay var(--ncss-motion-duration-slow) allow-discrete;
+
+  &::backdrop {
+    transition: opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized);
+  }
+  &:not(:modal) {
+    opacity: 0;
+    scale: 1;
+    transform: perspective(75rem) rotateY(90deg);
+  }
+  @starting-style {
+    &:modal {
+      opacity: 0;
+      scale: 1;
+      transform: perspective(75rem) rotateY(90deg);
+    }
+  }
+}
+
+/* --- Variante: Tür-Scharnier um die linke Kante -------------------------------------------
+   Wie --3d-flip oben, aber `transform-origin: 0% 50%` (linke Kante statt Mitte) - dreht
+   sich dadurch wie eine Tür um ein Scharnier herein statt symmetrisch um die eigene
+   Mitte zu kippen. Etwas über 90deg hinaus (100deg) für einen Hauch Schwung beim
+   Aufschwingen, rein optisch motiviert (bei genau 90deg wäre die Kante exakt auf der
+   Drehachse, wirkt weniger nach Bewegung). */
+.ncss-modal--3d-swing {
+  scale: 1;
+  transform-origin: 0% 50%;
+  transform: perspective(75rem) rotateY(0deg);
+  transition:
+    opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    transform var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized),
+    display var(--ncss-motion-duration-slow) allow-discrete,
+    overlay var(--ncss-motion-duration-slow) allow-discrete;
+
+  &::backdrop {
+    transition: opacity var(--ncss-motion-duration-slow) var(--ncss-motion-easing-emphasized);
+  }
+  &:not(:modal) {
+    opacity: 0;
+    scale: 1;
+    transform: perspective(75rem) rotateY(-100deg);
+  }
+  @starting-style {
+    &:modal {
+      opacity: 0;
+      scale: 1;
+      transform: perspective(75rem) rotateY(-100deg);
+    }
+  }
+}

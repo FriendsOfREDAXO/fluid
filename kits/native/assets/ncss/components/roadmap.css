@@ -1,0 +1,173 @@
+/**
+ * ncss - Roadmap/Timeline-Komponente (Layer "components"): eine vertikale Liste von
+ * Meilensteinen, verbunden durch eine ZWEIFARBIGE Linie - ein statischer, gedämpfter
+ * "Track" (immer voll sichtbar, die ganze Höhe) UND eine markenfarbene "Progress"-Linie
+ * darüber, die sich beim Scrollen selbst "nachzeichnet" (Baseline: Progress-Linie ist
+ * einfach von Anfang an fertig gezeichnet, deckt den Track komplett ab - kein
+ * Fehlerzustand). Absichtlich ZWEI Linien statt einer: eine einzige, einfarbige Linie
+ * (erster Anlauf) macht den Zeichen-Effekt kaum sichtbar - der "noch nicht gezeichnete"
+ * Teil ist unsichtbar und verschmilzt optisch mit dem Seitenhintergrund, der Fortschritt
+ * selbst blieb dadurch praktisch unbemerkbar (User-Feedback: "das stimmt nicht und ist
+ * eigentlich sinnfrei ... jetzt ist sie einfach durchgezogen"). Der Track macht den
+ * JEWEILIGEN Fortschritt dagegen als klaren Farbkontrast sichtbar (klassisches
+ * Fortschrittsbalken-Muster, nur vertikal).
+ *
+ * Markup:
+ * <div class="ncss-roadmap">
+ *   <div class="ncss-roadmap-line">
+ *     <div class="ncss-roadmap-line-track"></div>
+ *     <div class="ncss-roadmap-line-progress"></div>
+ *   </div>
+ *   <ol class="ncss-roadmap-list" role="list">
+ *     <li class="ncss-roadmap-item">
+ *       <span class="ncss-roadmap-dot"></span>
+ *       <div class="ncss-roadmap-card">...</div>
+ *     </li>
+ *     ...
+ *   </ol>
+ * </div>
+ *
+ * ZWEITER ANLAUF - kein SVG mehr, reine `<div>`s mit `scale` statt
+ * `stroke-dasharray`/`-dashoffset`: der erste Anlauf (ein `<svg>` mit zwei `<line>`s,
+ * Zeichnen per animiertem `stroke-dashoffset`) sah in Chromium UND Playwright-WebKit
+ * korrekt aus, blieb aber in ECHTEM Safari 26 als reine statische Linie stehen, keine
+ * sichtbare Fortschritts-Animation (User-Report: "in chrome geht es" / "jetzt is es nur
+ * ne blaue linie" in Safari - per Playwright-WebKit NICHT reproduzierbar, siehe erneut
+ * das wiederkehrende Muster "nur in echtem Safari", Punkt 21 weiter unten). `stroke-
+ * dashoffset` ist eine PAINT-Eigenschaft (erzwingt bei jeder Änderung ein echtes
+ * Neuzeichnen der SVG-Geometrie) - anders als `transform`/`opacity`, die der Compositor
+ * ohne Repaint pro Frame interpolieren kann. Scroll-getriebene Animationen laufen
+ * technisch am ehesten zuverlässig über GENAU diese compositor-freundlichen
+ * Eigenschaften; eine über eine `view()`-Timeline angesteuerte Paint-Eigenschaft ist ein
+ * bekannt riskanteres Pflaster, das Chromium zwar unterstützt, aber nicht jede Engine
+ * gleich zuverlässig pro Scroll-Frame nachzieht. Fix: dieselbe, bereits in
+ * `scroll-progress.css` bewährte Technik (dort horizontal, hier vertikal) - zwei simple
+ * `<div>`s statt `<svg>`/`<line>`, die Progress-"Linie" per `scale` (Y-Achse) von 0 auf 1
+ * gezogen, `transform-origin: top`. Kein SVG, kein `pathLength`, kein `vector-effect`
+ * mehr nötig - insgesamt auch einfacher als der SVG-Anlauf.
+ */
+
+.ncss-roadmap {
+  position: relative;
+}
+
+.ncss-roadmap-line {
+  position: absolute;
+  inset-inline-start: calc(var(--ncss-roadmap-gutter, 2.5rem) / 2 - var(--ncss-roadmap-line-width, 2px) / 2);
+  top: 0;
+  width: var(--ncss-roadmap-line-width, 2px);
+  height: 100%;
+}
+
+.ncss-roadmap-line-track,
+.ncss-roadmap-line-progress {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+}
+
+.ncss-roadmap-line-track {
+  background-color: var(--ncss-roadmap-track-color, var(--ncss-color-border));
+}
+
+.ncss-roadmap-line-progress {
+  background-color: var(--ncss-roadmap-line-color, var(--ncss-color-brand));
+}
+
+.ncss-roadmap-list {
+  /* base.css setzt auf JEDEM ul/ol per Default ein eigenes padding-inline-start (Listen-
+     Einzug) - würde hier die komplette Liste (und damit jedes Item + seinen Punkt, siehe
+     .ncss-roadmap-dot) zusätzlich zum eigenen --ncss-roadmap-gutter nach rechts schieben,
+     während die Linie (absolut relativ zu .ncss-roadmap, NICHT zur Liste positioniert)
+     unverändert an ihrer berechneten Stelle bleibt - Punkte lagen dadurch sichtbar NEBEN
+     statt AUF der Linie (per echtem Test mit getBoundingClientRect() bestätigt: Item-Box
+     begann nicht bei 0, sondern schon um genau diesen Default-Einzug verschoben). Der
+     Gutter/Einzug kommt hier ausschließlich von .ncss-roadmap-item selbst - der Liste
+     eigenes padding muss deshalb explizit auf 0.
+     */
+  padding-inline-start: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ncss-roadmap-gap, var(--ncss-space-xl));
+}
+
+.ncss-roadmap-item {
+  position: relative;
+  padding-inline-start: var(--ncss-roadmap-gutter, 2.5rem);
+}
+
+.ncss-roadmap-dot {
+  position: absolute;
+  inset-inline-start: calc(var(--ncss-roadmap-gutter, 2.5rem) / 2 - var(--ncss-roadmap-dot-size, 0.75rem) / 2);
+  top: 0.35em;
+  width: var(--ncss-roadmap-dot-size, 0.75rem);
+  height: var(--ncss-roadmap-dot-size, 0.75rem);
+  border-radius: 50%;
+  background-color: var(--ncss-roadmap-dot-color, var(--ncss-color-brand));
+  /* Ring in der Seiten-Hintergrundfarbe statt eines Rahmens - trennt den Punkt optisch
+     von der durchlaufenden Linie dahinter, ohne dass die Linie sichtbar unterbrochen
+     wirkt (kein clip-path/z-index-Trick nötig). */
+  box-shadow: 0 0 0 4px var(--ncss-color-bg);
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ncss-roadmap-line-progress {
+      transform-origin: top;
+      scale: 1 0;
+      animation: ncss-roadmap-draw linear both;
+      animation-timeline: view(block);
+      /* NICHT den Default-Bereich "cover" (0%=erster sichtbarer Pixel, 100%=Element
+         VOLLSTÄNDIG aus dem Viewport verschwunden) verwenden - bei einer Linie, die die
+         GESAMTE (meist sehr lange) Liste überspannt, verlangt "100% erreicht" genug
+         Restscroll-Weg NACH der Liste, dass sie komplett über den oberen Bildschirmrand
+         hinausgewandert ist. Steht die Roadmap wie üblich kurz vor dem Footer (kein
+         zusätzlicher Puffer danach), reicht der tatsächlich vorhandene Rest-Scrollweg der
+         Seite dafür NICHT aus - die Linie bleibt dauerhaft kurz vor dem letzten Punkt
+         unfertig hängen (per Test mit echtem `document.body.scrollHeight` gefunden: bei
+         "cover" blieb der Fortschritt bei maximal möglichem Scroll auf ca. 73% stehen
+         statt 100% zu erreichen). "contain" braucht dagegen nur, dass die Linie den
+         Viewport einmal komplett ausfüllt/erreicht - Linie ist exakt fertig gezeichnet,
+         sobald die letzte Karte voll sichtbar wird, unabhängig vom verfügbaren
+         Rest-Scrollweg danach.
+         EIN Versuch, den Start früher zu ziehen ("cover 0% contain 100%" statt reinem
+         "contain", um das "geht zu schnell ans ende"-Gefühl zu mildern) wurde WIEDER
+         VERWORFEN: bei UNTERSCHIEDLICHEN Viewport-Höhen/-Breiten landete der Fortschritt
+         bei Seitenaufruf (scrollY 0) schon zwischen 17% und 65% "vorgezeichnet" (statt
+         konstant 0%, je nach Verhältnis von Roadmap- zu Viewport-Höhe stark schwankend) -
+         das mischen zweier VERSCHIEDENER benannter Bereiche ("cover" und "contain" haben
+         unterschiedliche Referenz-Rahmen) ist nicht robust über unterschiedliche
+         Geometrien hinweg. User-Report danach: "in beiden browsern nur eine
+         durchgezogene linie" (kein sichtbarer Fortschritt mehr) - reines "contain" (VOR
+         diesem Versuch bereits bestätigt funktionierend, nur mit spürbarem Rausch-Gefühl
+         am Ende) ist deshalb wieder die Baseline. Ein Pacing-Fix müsste stattdessen
+         INNERHALB desselben benannten Bereichs bleiben (z.B. `contain -X% contain 100%`),
+         nicht zwei verschiedene Bereiche kombinieren - noch nicht umgesetzt. */
+      animation-range: contain;
+    }
+
+    .ncss-roadmap-card {
+      animation: ncss-roadmap-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 100%;
+    }
+  }
+}
+
+@keyframes ncss-roadmap-draw {
+  to {
+    scale: 1 1;
+  }
+}
+
+@keyframes ncss-roadmap-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

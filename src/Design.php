@@ -221,7 +221,8 @@ final class Design
     /** Öffentliche CSS-Datei der Werte → URL (null = Standardwerte des Kits, keine Datei nötig) */
     public function fileUrl(): ?string
     {
-        if ($this->values() == $this->defaults()) {
+        // Standardwerte des Kits fluid stehen schon in dessen Grund-CSS; abgeleitete Kits haben eigene und brauchen die Datei immer
+        if (Kit::DEFAULT === $this->kit->key() && $this->values() == $this->defaults()) {
             return null;
         }
         $css = $this->css();

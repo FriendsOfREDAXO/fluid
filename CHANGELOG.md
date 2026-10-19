@@ -83,6 +83,14 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Design-Werte je Kit; ein abgeleitetes Kit ohne eigene übernimmt die des Eltern-Kits.
   - Assets nach `assets/fluid-kits/{kit}/` (bei `migrate` und bei Bedarf je Datei).
   - `bin/console fluid:kit:create name --view=hero,cards --template` legt ein Kit im Projekt an.
+- Kit „NativeCSS“ (`kits/native/`) auf Basis von [NativeCSS](https://github.com/skerbis/nativecss) (MIT):
+  - Seitenrahmen mit Topbar, Navigation als Off-Canvas (`dialog`, Untermenüs mit `details`) und Footer im Raster.
+  - Eigene Views für Einstieg (split, centered, compact, type, fullbleed), Karten, Text + Bild, Handlungsaufruf (band, box)
+    und FAQ; alle übrigen Blöcke und Varianten von fluid.
+  - Cascade Layers: NativeCSS-Basis, darüber das Grund-CSS von fluid, darüber Komponenten und Brücke – Design-Leiste und
+    Vorlagen gelten für beides. Eigene Vorlagen „NativeCSS“ und „NativeCSS · Graphit“ (WCAG AA hell und dunkel).
+- Design: abgeleitete Kits geben ihre Design-Werte immer aus (auch Standardwerte), weil das Grund-CSS die von fluid enthält.
+- `fluid:demo --design=… --kit=…`; mit vorhandenen Seiten setzt `--design` nur die Vorlage.
 - Eigenes Routing ohne yrewrite: gespeicherte Adressen, automatische 301-Weiterleitungen, Multidomain mit Landing-Domains,
   sitemap.xml, robots.txt, Canonical, hreflang, schema.org-@graph.
 - Rechte des Cores (Struktur, Module, Optionen der Rolle) auf der Website.
