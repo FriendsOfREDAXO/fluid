@@ -34,6 +34,12 @@ use function Redaxo\Core\View\escape;
  */
 final class Live
 {
+    /** Endpunkt der Live-Aktualisierung (SSE) beim Routing anmelden – erst nach allen AddOns, vor der Domain-Umleitung */
+    public static function boot(): void
+    {
+        \FriendsOfRedaxo\Fluid\Routing\Router::endpoint('/' . self::PATH, static fn () => self::stream(), afterPackages: true, early: true);
+    }
+
     public const string PATH = 'fluid-live';
     public const string BLOCK = 'fluid_block';
     private const int MAX_STREAMS = 16;

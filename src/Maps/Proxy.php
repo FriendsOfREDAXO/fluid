@@ -28,6 +28,16 @@ use function strlen;
  */
 final class Proxy
 {
+    /** Eigener Proxy für Karten (Kacheln, Stile, Schriften) unter /proxy/{dienst}/… – Besucher verbinden sich nie mit Dritten */
+    public static function boot(): void
+    {
+        Router::endpoint('/proxy/*', static function (string $path, string $rest): void {
+            if (preg_match('~^([a-z][a-z0-9_-]{1,30})(/.*)?$~', $rest, $m)) {
+                self::handle($m[1], (string) ($m[2] ?? ''));
+            }
+        });
+    }
+
     private const array DEFAULT_TYPES = ['image/', 'application/json', 'application/x-protobuf', 'application/vnd.mapbox-vector-tile',
         'application/octet-stream', 'font/', 'application/font', 'text/css', 'application/geo+json'];
     private const array COMPRESS = ['application/json', 'application/x-protobuf', 'application/vnd.mapbox-vector-tile', 'application/octet-stream', 'text/', 'application/geo+json'];

@@ -193,6 +193,28 @@ final class FluidAddon extends Addon
             $mime['vtt'] = array_values(array_unique([...($mime['vtt'] ?? []), 'text/vtt', 'text/plain']));
         }
         unset($mime);
+
+        // Bausteine melden sich beim Routing (Endpunkte, Adressen, Sitemap) und bei SEO an – das Routing kennt sie nicht.
+        // So lassen sie sich später einzeln als eigene AddOns herauslösen (siehe docs/entwickler.md → Bausteine).
+        Live::boot();
+        PresenceApi::boot();
+        Mcp\Server::boot();
+        Maps\Proxy::boot();
+        Maps\Maps::boot();
+        Media\Tracks::boot();
+        Data\Detail::boot();
+        Blog\Blog::boot();
+        Search\Search::boot();
+        Welcome::boot();
+        // Kern von fluid: Editor-Parameter, „nicht indexieren“, eigener robots.txt-Text
+        Routing\Router::keep(Api::PARAM, Editing::PARAM);
+        Routing\Sitemap::exclude(static fn (int $id, int $lang): bool => PageSettings::noindex($id, $lang));
+        Extension::register('FLUID_ROBOTS_RULES', static function (ExtensionPoint $ep): string {
+            $own = trim((string) Settings::get('robots', ''));
+
+            return '' !== $own ? $own : (string) $ep->subject . "\nDisallow: /*?" . Editing::PARAM . '=';
+        });
+        // Schöne Adressen (URL_REWRITE, Strukturänderungen; im Frontend: Adresse → Seite)
         Routing\Router::boot();
 
         // Suchindex: jede Inhaltsänderung des Cores (Blöcke hinzufügen, löschen, verschieben, online/offline, Inhalte kopieren –

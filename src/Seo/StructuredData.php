@@ -1,10 +1,11 @@
 <?php
 
-namespace FriendsOfRedaxo\Fluid\Routing;
+namespace FriendsOfRedaxo\Fluid\Seo;
 
 use FriendsOfRedaxo\Fluid\Block;
 use FriendsOfRedaxo\Fluid\Editing;
 use FriendsOfRedaxo\Fluid\PageSettings;
+use FriendsOfRedaxo\Fluid\Routing\Router;
 use FriendsOfRedaxo\Fluid\Settings;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\Category;
@@ -15,10 +16,11 @@ use function is_callable;
 
 /**
  * Strukturierte Daten (schema.org, JSON-LD) als verknüpfter @graph je Seite (Modell aus KLXM Studio – Core\StructuredData):
- *  - Organisation: vollständig auf der Startseite, sonst als Verweis (Website-Einstellungen, Seo::organizationNode).
+ *  - Organisation: vollständig auf der Startseite, sonst als Verweis (Website-Einstellungen, Head::organizationNode).
  *  - WebSite, WebPage, BreadcrumbList: automatisch.
  *  - Blöcke erklären ihre Daten im Kit: 'jsonld' => ['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']
  *    oder eine Funktion fn(Block $b): ?array. Gesammelt beim Rendern (nicht im Bearbeiten-Modus).
+ *  - Weitere Knoten (Blog, Geo-Koordinaten …) ergänzen die Bausteine über den Extension Point FLUID_STRUCTURED_DATA.
  */
 final class StructuredData
 {
@@ -60,7 +62,7 @@ final class StructuredData
         $url = Router::canonical($article->id, $article->languageId);
         $home = Router::canonical(Article::getSiteStartArticleId(), $article->languageId);
         $lang = Language::get($article->languageId)->code ?? 'de';
-        $org = Seo::organizationNode();
+        $org = Head::organizationNode();
         $isHome = $article->id === Article::getSiteStartArticleId();
         $graph = [];
         $graph[] = $isHome ? $org : ['@type' => $org['@type'], '@id' => $org['@id'], 'name' => $org['name'], 'url' => $org['url']];
@@ -93,20 +95,6 @@ final class StructuredData
             $graph[] = ['@type' => 'BreadcrumbList', '@id' => $url . '#breadcrumb', 'itemListElement' => $items];
         }
         $graph[] = $page;
-        // Blog: Übersicht = Blog, Beitrag = BlogPosting (Datum, Autor, Bild)
-        if (\FriendsOfRedaxo\Fluid\Blog\Blog::isBlog($article->id) && $article->isStartArticle()) {
-            $graph[] = ['@type' => 'Blog', '@id' => $url . '#blog', 'url' => $url, 'name' => $article->name, 'mainEntityOfPage' => ['@id' => $url . '#webpage'], 'publisher' => ['@id' => $org['@id']]];
-        } elseif (null !== ($blog = \FriendsOfRedaxo\Fluid\Blog\Blog::blogOf($article)) && ($p = \FriendsOfRedaxo\Fluid\Blog\Post::get($article->id, $article->languageId))) {
-            $graph[] = array_filter([
-                '@type' => 'BlogPosting', '@id' => $url . '#post', 'headline' => mb_substr($article->name, 0, 110), 'url' => $url,
-                'datePublished' => $p->date->format('Y-m-d'), 'dateModified' => $article->updateDate ? date('c', $article->updateDate) : null,
-                'author' => '' !== $p->author ? ['@type' => 'Person', 'name' => $p->author] : ['@id' => $org['@id']],
-                'publisher' => ['@id' => $org['@id']], 'description' => '' !== $p->excerpt ? $p->excerpt : null,
-                'image' => '' !== $p->image ? Router::absolute(\Redaxo\Core\MediaManager\MediaManager::getUrl('rex_media_large', $p->image)) : null,
-                'keywords' => $p->tags ? implode(', ', $p->tags) : null, 'inLanguage' => $lang,
-                'mainEntityOfPage' => ['@id' => $url . '#webpage'], 'isPartOf' => ['@id' => Router::canonical($blog, $article->languageId) . '#blog'],
-            ]);
-        }
         foreach (self::$nodes as $n) {
             if (isset($n['@id']) && str_starts_with((string) $n['@id'], '#')) {
                 $n['@id'] = $url . $n['@id'];
@@ -115,6 +103,6 @@ final class StructuredData
         }
 
         return (array) \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_STRUCTURED_DATA',
-            ['@context' => 'https://schema.org', '@graph' => $graph], ['article' => $article]));
+            ['@context' => 'https://schema.org', '@graph' => $graph], ['article' => $article, 'url' => $url, 'org' => $org['@id'], 'lang' => $lang]));
     }
 }

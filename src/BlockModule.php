@@ -155,7 +155,7 @@ abstract class BlockModule extends Module
     /** Inhalt des Blocks (View des Kits) – ohne Abschnitts-Hülle */
     protected function renderInner(Block $b): string
     {
-        Routing\StructuredData::collect($b);   // schema.org der Blöcke (FAQ …) für den Seitenkopf
+        Seo\StructuredData::collect($b);   // schema.org der Blöcke (FAQ …) für den Seitenkopf
         $this->kit()->definition();   // lädt auch die Hilfsfunktionen des Kits (functions.php) – auch für eigene Blöcke
         return (static function (string $__file, Block $b, array $d): string {
             ob_start();

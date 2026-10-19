@@ -12,7 +12,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
 - [Versionen](#versionen) · [MCP-Server](#mcp-server)
 - [Suche](#suche) · [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
-- [Konsole](#konsole) · [Rechte](#rechte) · [Gastzugang](#gastzugang-für-addons) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
+- [Konsole](#konsole) · [Rechte](#rechte) · [Gastzugang](#gastzugang-für-addons) · [Bausteine](#bausteine-später-eigene-addons) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
 
 ## Ein eigener Block
@@ -153,11 +153,15 @@ Extension::register('FLUID_KIT', static fn (ExtensionPoint $ep) => 'shop.example
 | `FLUID_BLOCK_VIEW` | Pfad der View | `type`, `variant`, `block` | Ausgabe eines Blocks überschreiben |
 | `FLUID_SETTINGS_SCHEMA` | Reiter der Website-Einstellungen | – | eigene Einstellungen (lesen mit `setting('name')`) |
 | `FLUID_SEARCH_DOCUMENT` | Dokument (array) oder null | `article` | Suchindex ergänzen, Seiten ausschließen |
-| `FLUID_STRUCTURED_DATA` | JSON-LD (`@graph`) | `article` | schema.org ergänzen |
+| `FLUID_STRUCTURED_DATA` | JSON-LD (`@graph`) | `article`, `url`, `org`, `lang` | schema.org ergänzen |
 | `FLUID_ROBOTS` | Text der robots.txt | – | Regeln ergänzen |
 | `FLUID_SITE_TRANSLATIONS` | Übersetzungen (array) | `code` | feste Texte des Kits für eine Sprache ergänzen/ändern |
 | `FLUID_EDITOR_CONFIG` | Einstellungen des Editors | `article`, `user` | Blöcke/Menüpunkte für Rollen ausblenden |
 | `FLUID_KIT` | Schlüssel des Kits | – | Kit je Anfrage wählen, z. B. je Domain |
+| `FLUID_SITEMAP` | Einträge (`loc`, `lastmod`, `alternates`) | `landing` | Adressen der sitemap.xml ergänzen, ändern, entfernen |
+| `FLUID_ROBOTS_RULES` | Regeln der robots.txt | – | Regeln ersetzen (fluid setzt hier den eigenen Text der Website) |
+| `FLUID_ROUTES_REBUILT` | – | – | Adressen wurden neu berechnet (Struktur geändert) |
+| `FLUID_SEO_HEAD` | HTML (string) | `article` | eigene Angaben im Seitenkopf (z. B. RSS-Feed) |
 
 Dazu nutzt fluid die Extension Points des Cores, z. B. `URL_REWRITE` für die Adressen.
 
@@ -227,8 +231,20 @@ Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `ProjectTable`, `Anfrag
 - Adresse = Slugs der Elternseiten + eigener Slug (Tabelle `rex_fluid_route`); der Slug bleibt beim Umbenennen gleich.
 - Domains (Website → Domains): **Hauptadresse**, **weitere Domains** (301 auf die Hauptadresse), **Landing-Domains**
   (eigene Domain für eine Seite, optional mit Unterseiten, Canonical „eigene Domain“ oder „Spiegel“).
-- `sitemap.xml` und `robots.txt` je Domain, Canonical, hreflang, schema.org-@graph (Organisation, WebSite, WebPage,
-  Brotkrumen, Blöcke).
+- `sitemap.xml` je Domain (Hauptadresse bzw. Landing-Domain): Seiten, die online sind (samt Eltern), nicht auf „nicht
+  indexieren“ stehen und deren Canonical auf diese Domain zeigt – mit `lastmod` (Änderungsdatum), hreflang samt
+  `x-default` (Startsprache) und den Detailseiten von Datenlisten. Ab 45 000 Adressen ein Sitemap-Index mit
+  `/sitemap-1.xml`, `/sitemap-2.xml` … Eigene Adressen ergänzen AddOns über `Sitemap::children()` oder `FLUID_SITEMAP`:
+
+  ```php
+  // weitere Adressen unter einer Seite (z. B. Produkte einer Übersichtsseite)
+  Sitemap::children(static fn (int $id, int $lang, string $loc): iterable => $id === 42 ? [['loc' => $loc . '/produkt-1', 'lastmod' => time()]] : []);
+  // ganze Liste ändern
+  Extension::register('FLUID_SITEMAP', static fn (ExtensionPoint $ep) => [...$ep->subject, ['loc' => 'https://example.org/extra', 'lastmod' => null, 'alternates' => []]]);
+  ```
+- `robots.txt` je Domain mit Zeile „Sitemap:“; eigener Text unter Website → Recht & Suchmaschinen.
+- Canonical, hreflang und schema.org-@graph (Organisation, WebSite, WebPage, Brotkrumen, Blöcke) im Seitenkopf
+  (`Seo\Head`, `Seo\StructuredData`).
 - Weitere Sprachen bekommen ein Präfix (`/en/…`); Sprachwahl im Kopf und im mobilen Menü zeigt nur Sprachen, in denen
   die Seite online ist (`Router::alternates($article)`).
 
@@ -479,6 +495,53 @@ zum Beispiel [`fluid_demo`](https://github.com/FriendsOfREDAXO/fluid_demo), die 
   - `window.fluidPickerOff` (Text): Statt Medienpool oder Linkmap erscheint nur dieser Hinweis.
 - Interne Felder, die Gäste nicht sehen sollen, nennt `Search::NO_FIELDS` bzw. `'search' => false` am Feld. Die Demo
   leert sie, bevor Gäste etwas zu sehen bekommen.
+
+## Bausteine (später eigene AddOns)
+
+fluid ist aus Bausteinen gebaut, die sich später einzeln als eigene AddOns herauslösen lassen – so wie der Bildeditor,
+der schon ein eigenes AddOn ist ([image_editor](https://github.com/FriendsOfREDAXO/image_editor)). Damit das ohne
+Umbau geht, gelten feste Regeln:
+
+1. **Abhängigkeiten zeigen nur in eine Richtung:** Bausteine nutzen den Kern von fluid und das Routing, aber das
+   Routing kennt keinen Baustein, und der Kern kennt Bausteine nur über ihren `boot()`-Aufruf in `FluidAddon::boot()`.
+2. **Anmelden statt Einbauen:** Ein Baustein meldet seine Adressen, Sitemap-Einträge und Kopf-Angaben in `boot()` an
+   (Haken unten bzw. Extension Points). Nichts davon steht fest im Router oder im Template.
+3. **Eigene Tabellen, eigener Namespace:** Jeder Baustein hat seinen Ordner unter `src/`, eigene Tabellen (`rex_fluid_…`)
+   und keine Abfragen auf Tabellen anderer Bausteine.
+
+| Baustein | Ordner | Meldet an | Braucht | Stand |
+|---|---|---|---|---|
+| **Routing** (schöne Adressen, Domains, Weiterleitungen, 404-Protokoll, sitemap.xml, robots.txt) | `src/Routing/` | URL_REWRITE, eigene Endpunkte | nur den Core | herauslösbar – kennt nichts von fluid |
+| SEO im Seitenkopf (Canonical, hreflang, schema.org) | `src/Seo/` | – | Routing, Einstellungen von fluid | bleibt im Kern |
+| Suche (Loupe) | `src/Search/` | `FLUID_ROUTES_REBUILT` | Routing, Block-Inhalte | herauslösbar nach dem Routing |
+| Karten (MapLibre, eigener Proxy) | `src/Maps/` | Endpunkt `/proxy/*`, Geo in schema.org | Routing, Einstellungen | herauslösbar |
+| Videos und Untertitel | `src/Media/` | Endpunkt `/fluid-track/*` | Routing | herauslösbar |
+| Datenlisten, Formulare, Postfach (YForm) | `src/Data/` | Resolver Detailseiten, Sitemap-Einträge | Routing, Blöcke, YForm | bleibt vorerst im Kern |
+| Blog | `src/Blog/` | Resolver `feed.xml`, RSS im Kopf, schema.org | Routing, Seiteneinstellungen | herauslösbar |
+| MCP-Server | `src/Mcp/` | Endpunkt `/fluid-mcp` | Kern (Blöcke, Rechte) | herauslösbar |
+| Live, Präsenz | `src/Live.php`, `src/PresenceApi.php` | Endpunkte | Kern | bleibt im Kern |
+| Demo | eigenes AddOn [fluid_demo](https://github.com/FriendsOfREDAXO/fluid_demo) | Gastzugang | Kern | eigenständig |
+| Bildeditor | eigenes AddOn [image_editor](https://github.com/FriendsOfREDAXO/image_editor) | – | Core | eigenständig |
+
+**Haken des Routings** (`FriendsOfRedaxo\Fluid\Routing\Router`, vor `Router::boot()` anmelden):
+
+```php
+Router::endpoint('/mein-dienst', fn () => MeinDienst::handle(), afterPackages: true);   // eigene Adresse
+Router::endpoint('/dateien/*', fn (string $path, string $rest) => Dateien::send($rest)); // Präfix
+Router::resolver(fn (string $path, int $lang, array $query): ?int => …);   // Pfad → anzuzeigende Seite (oder null)
+Router::onPage(fn (int $id, int $lang, array $query) => …);               // Seite gefunden (z. B. alte Parameter umleiten)
+Router::gate(fn (string $path) => …);                                       // vor der Seitensuche
+Router::keep('mein_param');                                                 // ?article_id=… mit diesem Parameter nicht umleiten
+Sitemap::exclude(fn (int $id, int $lang): bool => …);                       // Seite nicht in die Sitemap
+Sitemap::children(fn (int $id, int $lang, string $loc): iterable => …);     // Adressen unter einer Seite
+```
+
+Antworten schicken Bausteine mit `Router::respond($body, $contentType)`, Weiterleitungen mit `Router::redirectTo($url, 301)`.
+
+**Herauslösen eines Bausteins** (Ablauf): Ordner in ein eigenes Paket verschieben (Namespace bleibt oder bekommt einen
+eigenen), `boot()` aus `FluidAddon::boot()` in die Addon-Klasse des neuen Pakets, Tabellen über `getOwnedSchema()` des
+neuen AddOns melden, Abhängigkeit in `composer.json` eintragen. Beim Routing zusätzlich: Auflösen der Adresse erst bei
+`PACKAGES_INCLUDED`, damit AddOns, die nach ihm starten, ihre Haken noch anmelden können.
 
 ## Aufbau des AddOns
 

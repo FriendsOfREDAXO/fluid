@@ -2,6 +2,8 @@
 
 namespace FriendsOfRedaxo\Fluid\Data;
 
+use FriendsOfRedaxo\Fluid\Routing\Sitemap;
+use FriendsOfRedaxo\Fluid\Routing\Router;
 use FriendsOfRedaxo\Fluid\BlockModule;
 use FriendsOfRedaxo\Fluid\Routing\Routes;
 use Redaxo\Core\Content\Article;
@@ -16,6 +18,47 @@ use Redaxo\Core\Database\Sql;
  */
 final class Detail
 {
+    /**
+     * Beim Routing anmelden: Detailansicht /seite/titel-ID (falscher Titel-Teil → 301), alter Link ?eintrag=ID → 301,
+     * Detailseiten in der sitemap.xml.
+     */
+    public static function boot(): void
+    {
+        Router::resolver(static function (string $full, int $lang, array $query): ?int {
+            if (null === ($dm = self::match($full, $lang))) {
+                return null;
+            }
+            [$pid, $eid] = $dm;
+            $title = self::title((array) self::config($pid, $lang), $eid);
+            if (null === $title) {
+                return null;
+            }
+            $want = self::url(Router::url($pid, $lang), $title, $eid);
+            $r = \Redaxo\Core\Core::getRequest();
+            if (substr(rawurldecode((string) parse_url($want, PHP_URL_PATH)), \strlen(Router::base())) !== rawurldecode($r->getPathInfo())) {
+                Router::redirectTo(self::url(Router::url($pid, $lang, $query), $title, $eid), 301);
+            }
+            $r->query->set(self::PARAM, (string) $eid);
+            $_GET[self::PARAM] = (string) $eid;
+
+            return $pid;
+        });
+        Router::onPage(static function (int $id, int $lang, array $query): void {
+            if (isset($query[self::PARAM]) && ($cfg = self::config($id, $lang)) && null !== ($t = self::title($cfg, (int) $query[self::PARAM]))) {
+                $eid = (int) $query[self::PARAM];
+                unset($query[self::PARAM]);
+                Router::redirectTo(self::url(Router::url($id, $lang, $query), $t, $eid), 301);
+            }
+        });
+        Sitemap::children(static function (int $id, int $lang, string $loc): iterable {
+            if ($cfg = self::config($id, $lang)) {
+                foreach (self::entries($cfg) as [$eid, $etitle]) {
+                    yield ['loc' => self::url($loc, $etitle, $eid)];
+                }
+            }
+        });
+    }
+
     public const string PARAM = 'eintrag';
 
     /** Einstellungen der ersten Datenliste mit Detailansicht auf einer Seite (Live-Fassung) */

@@ -25,6 +25,52 @@ use function Redaxo\Core\View\escape;
  */
 final class Blog
 {
+    /** Beim Routing und SEO anmelden: RSS /{blog}/feed.xml, Feed-Link im Seitenkopf, schema.org Blog/BlogPosting */
+    public static function boot(): void
+    {
+        Router::resolver(static function (string $full, int $lang): ?int {
+            if (preg_match('~^(.+)/feed\.xml$~', $full, $m) && null !== ($bid = \FriendsOfRedaxo\Fluid\Routing\Routes::find($m[1], $lang)) && self::isBlog($bid)) {
+                Language::setCurrentId($lang);
+                Router::respond(self::feed($bid), 'application/rss+xml; charset=utf-8');
+            }
+
+            return null;
+        });
+        Extension::register('FLUID_SEO_HEAD', static function (ExtensionPoint $ep): string {
+            $article = $ep->getParam('article');
+            $blog = self::isBlog($article->id) && $article->isStartArticle() ? $article->id : self::blogOf($article);
+            $h = (string) $ep->subject;
+            if ($blog && ($b = Article::get($blog, $article->languageId))) {
+                $h .= '<link rel="alternate" type="application/rss+xml" title="' . \Redaxo\Core\View\escape($b->name) . '" href="'
+                    . \Redaxo\Core\View\escape(rtrim(Router::canonical($blog, $article->languageId), '/') . '/feed.xml') . '">' . "\n";
+            }
+
+            return $h;
+        });
+        // Übersicht = Blog, Beitrag = BlogPosting (Datum, Autor, Bild)
+        Extension::register('FLUID_STRUCTURED_DATA', static function (ExtensionPoint $ep): array {
+            $data = (array) $ep->subject;
+            $article = $ep->getParam('article');
+            $url = (string) $ep->getParam('url');
+            $org = (string) $ep->getParam('org');
+            if (self::isBlog($article->id) && $article->isStartArticle()) {
+                $data['@graph'][] = ['@type' => 'Blog', '@id' => $url . '#blog', 'url' => $url, 'name' => $article->name, 'mainEntityOfPage' => ['@id' => $url . '#webpage'], 'publisher' => ['@id' => $org]];
+            } elseif (null !== ($blog = self::blogOf($article)) && ($p = Post::get($article->id, $article->languageId))) {
+                $data['@graph'][] = array_filter([
+                    '@type' => 'BlogPosting', '@id' => $url . '#post', 'headline' => mb_substr($article->name, 0, 110), 'url' => $url,
+                    'datePublished' => $p->date->format('Y-m-d'), 'dateModified' => $article->updateDate ? date('c', $article->updateDate) : null,
+                    'author' => '' !== $p->author ? ['@type' => 'Person', 'name' => $p->author] : ['@id' => $org],
+                    'publisher' => ['@id' => $org], 'description' => '' !== $p->excerpt ? $p->excerpt : null,
+                    'image' => '' !== $p->image ? Router::absolute(\Redaxo\Core\MediaManager\MediaManager::getUrl('rex_media_large', $p->image)) : null,
+                    'keywords' => $p->tags ? implode(', ', $p->tags) : null, 'inLanguage' => (string) $ep->getParam('lang'),
+                    'mainEntityOfPage' => ['@id' => $url . '#webpage'], 'isPartOf' => ['@id' => Router::canonical($blog, $article->languageId) . '#blog'],
+                ]);
+            }
+
+            return $data;
+        });
+    }
+
     /** @var array<int, bool>|null */
     private static ?array $blogs = null;
 

@@ -24,6 +24,12 @@ use function Redaxo\Core\View\escape;
  */
 final class PresenceApi
 {
+    /** Endpunkt der Präsenz beim Routing anmelden – erst nach allen AddOns */
+    public static function boot(): void
+    {
+        \FriendsOfRedaxo\Fluid\Routing\Router::endpoint('/' . self::PATH, static fn () => self::handle(), afterPackages: true, early: true);
+    }
+
     public const string PATH = 'fluid-presence';
     public const string SITE = 'default';
     private const array SAVES = ['save', 'publish', 'restore', 'discard', 'block_add', 'block_delete', 'page_settings'];

@@ -22,6 +22,14 @@ use function is_array;
  */
 final class Server
 {
+    /** Endpunkt /fluid-mcp bzw. ?fluid_mcp=1 beim Routing anmelden – erst wenn alle AddOns (YForm) geladen sind */
+    public static function boot(): void
+    {
+        \FriendsOfRedaxo\Fluid\Routing\Router::endpoint(
+            static fn (string $path): bool => '/' . self::PATH === $path || (Core::hasRequest() && Core::getRequest()->query->has(self::PARAM)),
+            static fn () => self::handle(), afterPackages: true, early: true);
+    }
+
     public const string PATH = 'fluid-mcp';
     public const string PARAM = 'fluid_mcp';
 

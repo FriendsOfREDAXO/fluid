@@ -153,7 +153,8 @@ final class Routes
         }
         self::$cache = null;
         Redirects::pathsChanged($changes);
-        \FriendsOfRedaxo\Fluid\Search\Search::markDirty();
+        // Bausteine reagieren (z. B. Suchindex neu)
+        \Redaxo\Core\ExtensionPoint\Extension::dispatch(new \Redaxo\Core\ExtensionPoint\ExtensionPoint('FLUID_ROUTES_REBUILT'));
     }
 
     /** Sprachpräfix ('' für die Startsprache, sonst '/en') */

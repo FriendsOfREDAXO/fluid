@@ -83,6 +83,17 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Design-Werte je Kit; ein abgeleitetes Kit ohne eigene übernimmt die des Eltern-Kits.
   - Assets nach `assets/fluid-kits/{kit}/` (bei `migrate` und bei Bedarf je Datei).
   - `bin/console fluid:kit:create name --view=hero,cards --template` legt ein Kit im Projekt an.
+- Bausteine statt fester Verdrahtung (Vorbereitung für eigene AddOns, wie beim Bildeditor):
+  - Routing kennt keinen anderen Teil von fluid mehr. Bausteine melden sich an: `Router::endpoint()`, `resolver()`,
+    `onPage()`, `gate()`, `keep()`, `Sitemap::exclude()/children()`; Antworten über `Router::respond()`/`redirectTo()`.
+  - MCP, Live, Präsenz, Kartenproxy, Untertitel, „Erste Schritte“, Detailseiten der Datenlisten und Blog-Feed melden
+    sich selbst an (`boot()` je Baustein).
+  - SEO im Seitenkopf aus dem Routing gelöst: `Seo\Head`, `Seo\StructuredData`; Blog (RSS, BlogPosting) und Karten (Geo)
+    ergänzen über `FLUID_SEO_HEAD` bzw. `FLUID_STRUCTURED_DATA`.
+  - Neue Extension Points: `FLUID_SITEMAP`, `FLUID_ROBOTS_RULES`, `FLUID_ROUTES_REBUILT`, `FLUID_SEO_HEAD`.
+  - Entwickler-Referenz: Abschnitt „Bausteine“ mit Regeln, Stand je Baustein und Ablauf zum Herauslösen.
+- sitemap.xml: `lastmod` mit dem echten Änderungsdatum (vorher stand bei jeder Seite das heutige Datum), hreflang
+  `x-default` (Startsprache), Sitemap-Index ab 45 000 Adressen (`/sitemap-1.xml` …).
 - Kit „NativeCSS“ (`kits/native/`) auf Basis von [NativeCSS](https://github.com/skerbis/nativecss) (MIT):
   - Seitenrahmen mit Topbar, Navigation als Off-Canvas (`dialog`, Untermenüs mit `details`) und Footer im Raster.
   - Eigene Views für Einstieg (split, centered, compact, type, fullbleed), Karten, Text + Bild, Handlungsaufruf (band, box)

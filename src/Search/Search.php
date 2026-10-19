@@ -38,6 +38,12 @@ use function Redaxo\Core\View\escape;
  */
 final class Search
 {
+    /** Adressen neu berechnet (Struktur geändert) → Suchindex beim nächsten Suchen neu aufbauen */
+    public static function boot(): void
+    {
+        \Redaxo\Core\ExtensionPoint\Extension::register('FLUID_ROUTES_REBUILT', static fn () => self::markDirty());
+    }
+
     private const string DIRTY = 'search_dirty';
     private const array HL = ["\u{E000}", "\u{E001}"];
     /** Einstellungen von Blöcken, die nicht (oder nur in Sonderfällen) sichtbar auf der Seite stehen – auch für Gäste ausgeblendet (fluid_demo) */

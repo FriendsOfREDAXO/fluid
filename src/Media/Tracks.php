@@ -14,6 +14,12 @@ use Redaxo\Core\MediaPool\Media;
  */
 final class Tracks
 {
+    /** Untertitel aus dem Medienpool unter /fluid-track/{datei} (geprüft als WebVTT) */
+    public static function boot(): void
+    {
+        \FriendsOfRedaxo\Fluid\Routing\Router::endpoint(self::ROUTE . '*', static fn (string $path, string $rest) => self::handle($rest));
+    }
+
     public const string ROUTE = '/fluid-track/';
     public const array EXT = ['vtt', 'srt'];
     public const array KINDS = ['subtitles' => 'Untertitel', 'captions' => 'Untertitel für Gehörlose (mit Geräuschen)', 'chapters' => 'Kapitel'];

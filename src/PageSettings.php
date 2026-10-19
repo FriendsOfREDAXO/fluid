@@ -20,6 +20,22 @@ final class PageSettings
 {
     public const string TABLE = 'rex_fluid_page';
 
+    /** @var array<string, true>|null Seiten auf „nicht indexieren“ (Artikel|Sprache) */
+    private static ?array $noindex = null;
+
+    /** Steht die Seite auf „nicht indexieren“? (Sitemap, eine Abfrage je Anfrage) */
+    public static function noindex(int $articleId, int $languageId): bool
+    {
+        if (null === self::$noindex) {
+            self::$noindex = [];
+            foreach (\Redaxo\Core\Database\Sql::factory()->getArray('SELECT article_id, language_id FROM ' . self::TABLE . ' WHERE noindex = 1') as $r) {
+                self::$noindex[$r['article_id'] . '|' . $r['language_id']] = true;
+            }
+        }
+
+        return isset(self::$noindex[$articleId . '|' . $languageId]);
+    }
+
     /** @return array{description: string, image: string, noindex: bool, title: string} */
     public static function get(int $articleId, int $languageId): array
     {
@@ -109,7 +125,7 @@ final class PageSettings
             $h .= '<meta name="description" content="' . escape($s['description']) . '">' . "\n"
                 . '<meta property="og:description" content="' . escape($s['description']) . '">' . "\n";
         }
-        $h .= Routing\Seo::head($article);
+        $h .= Seo\Head::head($article);
         $h .= '<meta property="og:title" content="' . escape($s['title'] ?: $article->name) . '">' . "\n"
             . '<meta property="og:site_name" content="' . escape($siteName) . '">' . "\n";
         if ('' !== $s['image'] && ($m = Media::get($s['image']))) {

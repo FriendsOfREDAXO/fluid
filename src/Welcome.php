@@ -21,6 +21,16 @@ use function Redaxo\Core\View\escape;
  */
 final class Welcome
 {
+    /** Noch keine Startseite (frische Installation): „Erste Schritte“ statt Fehler – Endpunkte (Sitemap, Proxy …) bleiben erreichbar */
+    public static function boot(): void
+    {
+        \FriendsOfRedaxo\Fluid\Routing\Router::gate(static function (string $path): void {
+            if (self::needed() && !\FriendsOfRedaxo\Fluid\Routing\Router::isEndpoint($path)) {
+                self::handle();
+            }
+        });
+    }
+
     private const string CSRF = 'fluid_welcome';
 
     public static function needed(): bool

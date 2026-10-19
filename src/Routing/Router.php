@@ -2,8 +2,6 @@
 
 namespace FriendsOfRedaxo\Fluid\Routing;
 
-use FriendsOfRedaxo\Fluid\Api;
-use FriendsOfRedaxo\Fluid\Editing;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Core;
 use Redaxo\Core\ExtensionPoint\Extension;
@@ -27,23 +25,131 @@ use function trim;
 
 /**
  * Schöne Adressen für REDAXO 6: /technik statt index.php?article_id=40 (gespeicherte Pfade, Routes), mit Hauptadresse,
- * Alias- und Landing-Domains (Domains), Weiterleitungen und 404-Protokoll (Redirects), sitemap.xml und robots.txt (Seo).
+ * Alias- und Landing-Domains (Domains), Weiterleitungen und 404-Protokoll (Redirects), sitemap.xml (Sitemap) und
+ * robots.txt (Robots).
  *
- * Ablauf einer Anfrage (FluidAddon::boot, vor dem Rendern): Alias-Host → 301 Hauptadresse · sitemap.xml/robots.txt ·
- * alte ?article_id=… → 301 · Sprachpräfix · Pfad → Seite (eine Abfrage) · andere Schreibweise/Schrägstrich → 301 ·
- * Weiterleitung · sonst Seite „nicht gefunden“ mit 404. Offline-Seiten sind nur mit Backend-Anmeldung erreichbar.
+ * Eigenständiger Baustein (später als eigenes AddOn denkbar): kennt keine anderen Teile von fluid. Die melden sich an:
+ *   Router::endpoint('/pfad' | '/präfix/*' | fn (string $path): bool, $handler)   eigene Adressen vor den Seiten
+ *   Router::gate(fn (string $path))                    vor der Seitensuche (z. B. „Erste Schritte“ ohne Startseite)
+ *   Router::resolver(fn (string $path, int $lang, array $query): ?int)   Pfade, die keine Seite sind → anzuzeigende Seite
+ *   Router::onPage(fn (int $id, int $lang, array $query))                 Seite gefunden (z. B. alte Parameter umleiten)
+ *   Router::keep('param', …)                           Parameter, bei denen ?article_id=… nicht umgeleitet wird
+ *   Sitemap::exclude/children, EP FLUID_SITEMAP, FLUID_ROBOTS(_RULES), FLUID_ROUTES_REBUILT
+ *
+ * Ablauf einer Anfrage (vor dem Rendern): frühe Endpunkte · Alias-Host → 301 Hauptadresse · Endpunkte (sitemap.xml,
+ * robots.txt …) · Gates · alte ?article_id=… → 301 · Sprachpräfix · Pfad → Seite (eine Abfrage) · Resolver · andere
+ * Schreibweise/Schrägstrich → 301 · Weiterleitung · sonst Seite „nicht gefunden“ mit 404. Offline-Seiten nur mit
+ * Backend-Anmeldung.
  */
 final class Router
 {
-    /** Parameter, bei denen ein ?article_id-Aufruf bleibt, wie er ist (Editor, API, Arbeitsversion, Media Manager) */
-    private const array KEEP = ['rex-api-call', Api::PARAM, Editing::PARAM, 'rex_version', 'rex_history_date', 'rex_media_type', 'rex_media_file'];
+    /** Parameter, bei denen ein ?article_id-Aufruf bleibt, wie er ist (API, Arbeitsversion, Media Manager; weitere per keep()) */
+    private static array $keep = ['rex-api-call', 'rex_version', 'rex_history_date', 'rex_media_type', 'rex_media_file'];
+
+    /** @var list<array{match: string|callable, handler: callable, afterPackages: bool, early: bool}> */
+    private static array $endpoints = [];
+
+    /** @var list<callable(string): void> */
+    private static array $gates = [];
+
+    /** @var list<callable(string, int, array): ?int> */
+    private static array $resolvers = [];
+
+    /** @var list<callable(int, int, array): void> */
+    private static array $pageHooks = [];
 
     private static ?Domain $landing = null;
     /** Nur GET/HEAD werden umgeleitet – POST des Editors an schöne Adressen nie */
     private static bool $canRedirect = true;
 
+    // ------------------------------------------------------------------ Anmeldung der Bausteine (vor boot())
+
+    /**
+     * Eigene Adresse, die vor den Seiten beantwortet wird. $match: exakter Pfad („/fluid-live“), Präfix mit „*“
+     * („/proxy/*“, der Rest geht an den Handler) oder fn (string $path): bool. $handler(string $path, string $rest)
+     * beendet die Anfrage selbst. afterPackages: erst wenn alle AddOns geladen sind. early: noch vor der Umleitung von
+     * Alias-Domains (Dienste wie SSE, MCP).
+     */
+    public static function endpoint(string|callable $match, callable $handler, bool $afterPackages = false, bool $early = false): void
+    {
+        self::$endpoints[] = ['match' => $match, 'handler' => $handler, 'afterPackages' => $afterPackages, 'early' => $early];
+    }
+
+    public static function gate(callable $gate): void
+    {
+        self::$gates[] = $gate;
+    }
+
+    public static function resolver(callable $resolver): void
+    {
+        self::$resolvers[] = $resolver;
+    }
+
+    public static function onPage(callable $hook): void
+    {
+        self::$pageHooks[] = $hook;
+    }
+
+    public static function keep(string ...$params): void
+    {
+        self::$keep = [...self::$keep, ...$params];
+    }
+
+    /** Pfad eines Endpunkts, falls er passt: Rest nach dem Präfix (bzw. '') – sonst null */
+    private static function matches(string|callable $match, string $path): ?string
+    {
+        if (\is_callable($match) && !\is_string($match)) {
+            return $match($path) ? '' : null;
+        }
+        if (str_ends_with($match, '*')) {
+            $prefix = substr($match, 0, -1);
+
+            return str_starts_with($path . '/', $prefix) || str_starts_with($path, $prefix) ? (string) substr($path, \strlen($prefix)) : null;
+        }
+
+        return $path === $match ? '' : null;
+    }
+
+    private static function dispatchEndpoints(string $path, bool $early): bool
+    {
+        foreach (self::$endpoints as $e) {
+            if ($e['early'] !== $early || null === ($rest = self::matches($e['match'], $path))) {
+                continue;
+            }
+            if ($e['afterPackages']) {
+                Extension::register('PACKAGES_INCLUDED', static fn () => ($e['handler'])($path, $rest));
+
+                return true;
+            }
+            ($e['handler'])($path, $rest);
+        }
+
+        return false;
+    }
+
+    /** Ist der Pfad ein angemeldeter Endpunkt? (z. B. damit ein Gate ihn durchlässt) */
+    public static function isEndpoint(string $path): bool
+    {
+        foreach (self::$endpoints as $e) {
+            if (null !== self::matches($e['match'], $path)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static function boot(): void
     {
+        // eigene Endpunkte des Routings
+        self::endpoint('/sitemap.xml', static fn () => self::respond(Sitemap::xml(self::$landing) ?? '', 'application/xml; charset=utf-8'));
+        self::endpoint(static fn (string $p): bool => (bool) preg_match('~^/sitemap-[1-9][0-9]*\.xml$~', $p), static function (string $p): void {
+            $xml = Sitemap::xml(self::$landing, (int) substr($p, 9, -4));
+            if (null !== $xml) {
+                self::respond($xml, 'application/xml; charset=utf-8');
+            }
+        });
+        self::endpoint('/robots.txt', static fn () => self::respond(Robots::text(), 'text/plain; charset=utf-8'));
         Extension::register('URL_REWRITE', static fn (ExtensionPoint $ep): string => self::url((int) $ep->getParam('id'), (int) $ep->getParam('language'), (array) $ep->getParam('params')));
         // Strukturänderungen → Pfade neu berechnen (automatische Weiterleitungen inklusive)
         foreach (['ART_ADDED', 'ART_UPDATED', 'ART_DELETED', 'ART_MOVED', 'ART_COPIED', 'ART_STATUS', 'ART_TO_CAT', 'ART_TO_STARTARTICLE',
@@ -74,21 +180,8 @@ final class Router
         if ('/index.php' === $path) {
             $path = '/';
         }
-        // MCP-Server: /fluid-mcp bzw. ?fluid_mcp=1 – erst wenn alle AddOns (YForm) geladen sind
-        if ('/' . \FriendsOfRedaxo\Fluid\Mcp\Server::PATH === $path || $r->query->has(\FriendsOfRedaxo\Fluid\Mcp\Server::PARAM)) {
-            Extension::register('PACKAGES_INCLUDED', static fn () => \FriendsOfRedaxo\Fluid\Mcp\Server::handle());
-
-            return;
-        }
-        // Live-Aktualisierung (SSE) und Präsenz der Redaktion – ebenfalls erst nach allen AddOns
-        if ('/' . \FriendsOfRedaxo\Fluid\Live::PATH === $path) {
-            Extension::register('PACKAGES_INCLUDED', static fn () => \FriendsOfRedaxo\Fluid\Live::stream());
-
-            return;
-        }
-        if ('/' . \FriendsOfRedaxo\Fluid\PresenceApi::PATH === $path) {
-            Extension::register('PACKAGES_INCLUDED', static fn () => \FriendsOfRedaxo\Fluid\PresenceApi::handle());
-
+        // frühe Endpunkte (Dienste wie SSE, MCP – oft erst nach allen AddOns)
+        if (self::dispatchEndpoints($path, true)) {
             return;
         }
         $query = $r->query->all();
@@ -101,28 +194,17 @@ final class Router
         }
         self::$landing = DomainRole::Landing === $domain?->role ? $domain : null;
 
-        // Eigener Proxy für Karten (Kacheln, Stile, Schriften) – Besucher verbinden sich nie mit Dritten
-        if (preg_match('~^/proxy/([a-z][a-z0-9_-]{1,30})(/.*)?$~', $path, $m)) {
-            \FriendsOfRedaxo\Fluid\Maps\Proxy::handle($m[1], (string) ($m[2] ?? ''));
+        // Endpunkte (sitemap.xml, robots.txt, Bausteine) und Gates (z. B. „Erste Schritte“ ohne Startseite)
+        if (self::dispatchEndpoints($path, false)) {
+            return;
         }
-        // Noch keine Startseite (frische Installation): Erste Schritte statt Fehler
-        if (\FriendsOfRedaxo\Fluid\Welcome::needed() && !str_starts_with($path, '/proxy/') && !\in_array($path, ['/sitemap.xml', '/robots.txt'], true)) {
-            \FriendsOfRedaxo\Fluid\Welcome::handle();
-        }
-        // Untertitel aus dem Medienpool, geprüft als WebVTT
-        if (str_starts_with($path, \FriendsOfRedaxo\Fluid\Media\Tracks::ROUTE)) {
-            \FriendsOfRedaxo\Fluid\Media\Tracks::handle(substr($path, \strlen(\FriendsOfRedaxo\Fluid\Media\Tracks::ROUTE)));
-        }
-        if ('/sitemap.xml' === $path) {
-            self::send(Seo::sitemap(self::$landing), 'application/xml; charset=utf-8');
-        }
-        if ('/robots.txt' === $path) {
-            self::send(Seo::robots(), 'text/plain; charset=utf-8');
+        foreach (self::$gates as $gate) {
+            $gate($path);
         }
 
         // ?article_id=…: Editor, API, Medien bleiben; einfache Aufrufe → schöne Adresse (301)
         if (isset($query['article_id']) || isset($query['rex_media_type']) || isset($query['rex-api-call'])) {
-            if ('/' === $path && isset($query['article_id']) && 'GET' === $r->getMethod() && !array_intersect(self::KEEP, array_keys($query))) {
+            if ('/' === $path && isset($query['article_id']) && 'GET' === $r->getMethod() && !array_intersect(self::$keep, array_keys($query))) {
                 $id = (int) $query['article_id'];
                 $lang = (int) ($query['language'] ?? Language::getStartId());
                 unset($query['article_id'], $query['language']);
@@ -168,40 +250,23 @@ final class Router
             $full = self::$landing->subtree ? ltrim($base . '/' . $rest, '/') : $rest;
         }
 
-        // RSS eines Blogs: /{blog}/feed.xml
-        if (preg_match('~^(.+)/feed\.xml$~', $full, $fm) && null !== ($bid = Routes::find($fm[1], $lang)) && \FriendsOfRedaxo\Fluid\Blog\Blog::isBlog($bid)) {
-            Language::setCurrentId($lang);
-            self::send(\FriendsOfRedaxo\Fluid\Blog\Blog::feed($bid), 'application/rss+xml; charset=utf-8');
-        }
-
         $id = Routes::find($full, $lang);
         if (null !== $id && (!self::$landing || self::inLanding($id))) {
             // Schrägstrich am Ende → ohne
             if ('' !== $rest && str_ends_with($raw, '/')) {
                 self::redirect(self::absolute(self::url($id, $lang, $query)), 301);
             }
-            // Datenliste: alter Link ?eintrag=ID → schöne Adresse /seite/titel-ID
-            $dp = \FriendsOfRedaxo\Fluid\Data\Detail::PARAM;
-            if (isset($query[$dp]) && ($cfg = \FriendsOfRedaxo\Fluid\Data\Detail::config($id, $lang)) && null !== ($t = \FriendsOfRedaxo\Fluid\Data\Detail::title($cfg, (int) $query[$dp]))) {
-                $eid = (int) $query[$dp];
-                unset($query[$dp]);
-                self::redirect(self::absolute(\FriendsOfRedaxo\Fluid\Data\Detail::url(self::url($id, $lang, $query), $t, $eid)), 301);
+            foreach (self::$pageHooks as $hook) {
+                $hook($id, $lang, $query);
             }
             self::select($id, $lang);
 
             return;
         }
-        // Detailansicht einer Datenliste: /seite/titel-ID (falscher Titel-Teil → 301 auf die richtige Adresse)
-        if (null !== ($dm = \FriendsOfRedaxo\Fluid\Data\Detail::match($full, $lang)) && (!self::$landing || self::inLanding($dm[0]))) {
-            [$pid, $eid] = $dm;
-            $title = \FriendsOfRedaxo\Fluid\Data\Detail::title((array) \FriendsOfRedaxo\Fluid\Data\Detail::config($pid, $lang), $eid);
-            if (null !== $title) {
-                $want = \FriendsOfRedaxo\Fluid\Data\Detail::url(self::url($pid, $lang), $title, $eid);
-                if (substr(rawurldecode((string) parse_url($want, PHP_URL_PATH)), \strlen(self::base())) !== $raw) {
-                    self::redirect(self::absolute(\FriendsOfRedaxo\Fluid\Data\Detail::url(self::url($pid, $lang, $query), $title, $eid)), 301);
-                }
-                $r->query->set(\FriendsOfRedaxo\Fluid\Data\Detail::PARAM, (string) $eid);
-                $_GET[\FriendsOfRedaxo\Fluid\Data\Detail::PARAM] = (string) $eid;
+        // Pfade, die keine Seite sind (Bausteine: Detailseiten, Feeds …) – Ergebnis ist die anzuzeigende Seite
+        foreach (self::$resolvers as $resolver) {
+            $pid = $resolver($full, $lang, $query);
+            if (null !== $pid && (!self::$landing || self::inLanding($pid))) {
                 self::select($pid, $lang);
 
                 return;
@@ -389,6 +454,12 @@ final class Router
         return preg_match('~^https?://~i', $url) ? $url : self::currentOrigin() . (str_starts_with($url, self::base() . '/') ? substr($url, strlen(self::base())) : $url);
     }
 
+    /** Weiterleitung (nur bei GET/HEAD) – für Bausteine; relative Adressen werden absolut */
+    public static function redirectTo(string $url, int $code = 301): void
+    {
+        self::redirect(self::absolute($url), $code);
+    }
+
     private static function redirect(string $url, int $code): void
     {
         if (!self::$canRedirect) {
@@ -400,7 +471,8 @@ final class Router
         exit;
     }
 
-    private static function send(string $body, string $type): never
+    /** Antwort senden und beenden (für Endpunkte und Resolver der Bausteine) */
+    public static function respond(string $body, string $type): never
     {
         header('Content-Type: ' . $type);
         echo $body;

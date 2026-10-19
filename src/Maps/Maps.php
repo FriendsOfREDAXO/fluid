@@ -22,6 +22,22 @@ use function Redaxo\Core\View\escape;
  */
 final class Maps
 {
+    /** Geo-Koordinaten der Website in den schema.org-Knoten der Organisation (Startseite) */
+    public static function boot(): void
+    {
+        \Redaxo\Core\ExtensionPoint\Extension::register('FLUID_STRUCTURED_DATA', static function (\Redaxo\Core\ExtensionPoint\ExtensionPoint $ep): array {
+            $data = (array) $ep->subject;
+            $geo = self::siteLocation();
+            foreach ((array) ($data['@graph'] ?? []) as $i => $node) {
+                if ($geo && ($node['@id'] ?? null) === $ep->getParam('org') && isset($node['address'])) {
+                    $data['@graph'][$i]['geo'] = ['@type' => 'GeoCoordinates', 'latitude' => $geo[0], 'longitude' => $geo[1]];
+                }
+            }
+
+            return $data;
+        });
+    }
+
     public const array STYLES = ['liberty' => 'Liberty (farbig, detailreich)', 'bright' => 'Bright (hell, klassisch)', 'positron' => 'Positron (dezent, grau)', 'dark' => 'Dark (dunkel)', 'fiord' => 'Fiord (dunkelblau)'];
     public const array HEIGHTS = ['s' => 'Niedrig', 'm' => 'Mittel', 'l' => 'Hoch'];
     private const int FREE_ZOOM = 8;
