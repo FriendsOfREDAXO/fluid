@@ -2,6 +2,7 @@
 
 namespace FriendsOfRedaxo\Fluid\Data;
 
+use FriendsOfRedaxo\Fluid\Mail\Mail;
 use FriendsOfRedaxo\Fluid\Routing\Routes;
 use Redaxo\Core\Content\Article;
 use Yakamara\YForm\Attribute\AsForm;
@@ -14,6 +15,8 @@ use Yakamara\YForm\Form\Action\Submission;
 use Yakamara\YForm\Form\Definition\FormDefinition;
 use Yakamara\YForm\Form\Layout\Layout;
 use Yakamara\YForm\Form\Layout\Tab;
+
+use function Redaxo\Core\View\escape;
 
 if (!class_exists(FormDefinition::class)) {
     return;
@@ -175,13 +178,18 @@ final class BuiltForm extends FormDefinition
         $email = $this->emailField();
         if (\in_array($mode, ['mail', 'save_mail'], true) && '' !== ($to = trim((string) ($this->cfg['mail_to'] ?? '')))) {
             $subject = trim((string) ($this->cfg['mail_subject'] ?? '')) ?: 'Neue Nachricht: ' . ($this->definition->label ?? 'Formular');
-            yield new SafeMail(new SendMail(to: array_map('trim', explode(',', $to)), subject: $subject, body: fn (Submission $s) => $this->summary($s) . "\n\n– " . $page, replyTo: $email ? '{' . $email . '}' : null),
+            $pageUrl = $this->article ? \FriendsOfRedaxo\Fluid\Routing\Router::absolute($this->article->getUrl()) : '';
+            yield new SafeMail(new SendMail(to: array_map('trim', explode(',', $to)), subject: $subject, html: true, replyTo: $email ? '{' . $email . '}' : null,
+                body: fn (Submission $s) => Mail::layout($s->interpolate($subject), $this->summaryHtml($s)
+                    . ('' !== $pageUrl ? '<p style="margin:20px 0 0;font-size:14px;color:#6b7280">Gesendet über <a href="' . escape($pageUrl) . '">' . escape((string) $this->article?->name) . '</a></p>' : ''))),
                 SafeMail::TEAM, $saved);
         }
         if (!empty($this->cfg['confirm']) && $email) {
             $text = trim((string) ($this->cfg['confirm_text'] ?? '')) ?: 'Vielen Dank für Ihre Nachricht. Wir melden uns bald.';
-            yield new SafeMail(new SendMail(to: '{' . $email . '}', subject: trim((string) ($this->cfg['confirm_subject'] ?? '')) ?: 'Ihre Nachricht ist angekommen',
-                body: fn (Submission $s) => $s->interpolate($text) . "\n\n" . ($this->cfg['confirm_copy'] ?? false ? "Ihre Angaben:\n" . $this->summary($s) : '')),
+            $confirmSubject = trim((string) ($this->cfg['confirm_subject'] ?? '')) ?: 'Ihre Nachricht ist angekommen';
+            yield new SafeMail(new SendMail(to: '{' . $email . '}', subject: $confirmSubject, html: true,
+                body: fn (Submission $s) => Mail::layout($s->interpolate($confirmSubject), '<p>' . nl2br(escape($s->interpolate($text)), false) . '</p>'
+                    . ($this->cfg['confirm_copy'] ?? false ? '<h2 style="margin:24px 0 8px;font-size:17px">Ihre Angaben</h2>' . $this->summaryHtml($s) : ''))),
                 SafeMail::CONFIRM, $saved);
         }
         $redirect = (string) ($this->cfg['redirect'] ?? '');
@@ -221,6 +229,22 @@ final class BuiltForm extends FormDefinition
     }
 
     /** „Bezeichnung: Wert“ je Zeile – für Mail und Postfach */
+    /** Angaben als Tabelle für HTML-Mails */
+    private function summaryHtml(Submission $s): string
+    {
+        $rows = '';
+        foreach ($this->items() as $it) {
+            if (\in_array($it['type'], ['step', 'info'], true) || '' === ($v = $s->text($it['name']))) {
+                continue;
+            }
+            // „Label: “ und Wert in <div>: so ergibt der Textteil (YForm SendMail::plainText) je Zeile „Label: Wert“
+            $rows .= '<tr><th align="left" valign="top" width="36%" style="width:36%;padding:8px 12px 8px 0;border-bottom:1px solid #e5e7eb;font-weight:600">'
+                . escape(rtrim((string) ($it['label'] ?: $it['name']), '.:?! ')) . ': </th><td style="padding:8px 0;border-bottom:1px solid #e5e7eb"><div>' . nl2br(escape($v), false) . '</div></td></tr>';
+        }
+
+        return '' !== $rows ? '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;font-size:15px">' . $rows . '</table>' : '';
+    }
+
     private function summary(Submission $s): string
     {
         $lines = [];

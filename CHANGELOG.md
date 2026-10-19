@@ -83,6 +83,11 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Design-Werte je Kit; ein abgeleitetes Kit ohne eigene übernimmt die des Eltern-Kits.
   - Assets nach `assets/fluid-kits/{kit}/` (bei `migrate` und bei Bedarf je Datei).
   - `bin/console fluid:kit:create name --view=hero,cards --template` legt ein Kit im Projekt an.
+- E-Mail (Baustein `src/Mail/`):
+  - Statusseite → „E-Mail“: Versand, Absender, Umleitung, Protokoll, Archiv, Testmail, letzte Fehler, nicht gesendete
+    Mails mit „Erneut senden“ (Bcc-Kopfzeile wird entfernt).
+  - Formular-Mails als HTML im Stil der Website (Logo, Akzentfarbe, Anschrift) mit sauberem Textteil.
+  - Cronjob `fluid_mail_archive_purge` und Einstellung „Gesendete Mails aufbewahren (Tage)“ (Standard 90).
 - Formulare: Ein Mailfehler verwirft die Eingabe nicht mehr. Ist der Eintrag gespeichert, wird der Fehler protokolliert
   (Systemprotokoll, Aktivität „Formular-Mail nicht gesendet“), die Bestätigung wird trotzdem versucht, und Besucher sehen
   die Erfolgsmeldung – mit Hinweis, falls die Bestätigung nicht rausging. Vorher: „Fehler – bitte noch einmal“ trotz

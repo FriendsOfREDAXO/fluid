@@ -97,6 +97,8 @@ final class Settings
                 ['name' => 'imprint_page', 'label' => 'Impressum', 'type' => 'link', 'width' => 'half'],
                 ['name' => 'privacy_page', 'label' => 'Datenschutz', 'type' => 'link', 'width' => 'half'],
                 ['name' => 'accessibility_page', 'label' => 'Erklärung zur Barrierefreiheit (optional)', 'type' => 'link', 'width' => 'half'],
+                ['name' => 'mail_keep_days', 'label' => 'Gesendete Mails aufbewahren (Tage)', 'type' => 'number', 'max' => 5, 'width' => 'half', 'placeholder' => (string) Mail\Mail::KEEP_DAYS,
+                    'help' => 'Nur wenn das Mail-Archiv eingeschaltet ist (REX_MAILER_ARCHIVE). Ältere Mails löscht der Cronjob „fluid_mail_archive_purge“ täglich. 0 = nie löschen.'],
                 ['name' => 'robots', 'label' => 'robots.txt (optional)', 'type' => 'textarea', 'rows' => 4, 'max' => 2000,
                     'help' => 'Leer = Standard (alles erlaubt außer Backend und Bearbeiten-Ansichten). Die Zeile „Sitemap:“ kommt automatisch dazu.'],
             ]],

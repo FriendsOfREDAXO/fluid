@@ -64,7 +64,8 @@ fluid läuft auch ohne.
   umschaltbar unter Website → Kit; die Inhalte bleiben. Eigene Kits erben von „Fluid“ (Entwickler-Referenz).
 - **Mehrsprachig:** Sprachwahl in der Leiste, Inhalte einer Sprache übernehmen und übersetzen, Sprachwahl für Besucher
 - **Blog / News** mit Schlagworten, RSS und „Neuer Beitrag“ direkt in der Übersicht
-- **Formulare** zum Zusammenklicken – auch mehrstufig, speichern und/oder per E-Mail, mit Bestätigung (YForm)
+- **Formulare** zum Zusammenklicken – auch mehrstufig, speichern und/oder per E-Mail (im Stil der Website), mit Bestätigung (YForm);
+  ein Mailfehler verwirft keine Eingabe
 - **Daten aus YForm** als Karten oder Liste mit eigener Adresse je Eintrag – und Blöcke auch in Datensätzen
 - **Demo zum Ausprobieren** (eigenes AddOn [`fluid_demo`](https://github.com/FriendsOfREDAXO/fluid_demo), getrennt zu installieren): Besucher starten per Knopf eine
   Demo und bearbeiten die Website – gespeichert wird nichts

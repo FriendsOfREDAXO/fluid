@@ -10,7 +10,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [Blöcke in YForm-Tabellen](#blöcke-in-yform-tabellen-feld-fluid-blöcke)
 - [Adressen, Domains, SEO](#adressen-domains-seo)
 - [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
-- [Versionen](#versionen) · [MCP-Server](#mcp-server)
+- [Versionen](#versionen) · [MCP-Server](#mcp-server) · [E-Mail](#e-mail)
 - [Suche](#suche) · [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Gastzugang](#gastzugang-für-addons) · [Bausteine](#bausteine-später-eigene-addons) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
 
@@ -338,6 +338,35 @@ curl -s https://example.org/fluid-mcp -H "Authorization: Bearer $TOKEN" -H "Cont
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"site_overview","arguments":{}}}'
 ```
 
+## E-Mail
+
+fluid nutzt den Mailer des Cores (`Core::getMailer()`, Symfony Mailer). Eingerichtet wird er in `.env.local`:
+
+```dotenv
+MAILER_DSN="smtp://benutzer:passwort@smtp.example.org:587"   # null://null = Mails verwerfen (Demo, Test)
+REX_MAILER_FROM="Website <noreply@example.org>"             # Absender, wenn eine Mail keinen eigenen hat
+REX_MAILER_RECIPIENTS="test@example.org"                    # Staging: alle Mails nur hierhin
+REX_MAILER_LOG=errors                                       # none | errors | all → var/log/mail.log
+REX_MAILER_ARCHIVE=1                                        # Mails als .eml aufbewahren (auch nicht gesendete)
+```
+
+- **Statusseite** (AddOns → fluid → Status → „E-Mail“): Versand, Absender, Umleitung, Protokoll, Archiv, Testmail,
+  die letzten Fehler und nicht gesendete Mails mit „Erneut senden“ (Empfänger aus An und Kopie; Bcc steht nicht im Archiv).
+- **Formulare** (Block „Formular“) senden HTML-Mails im Stil der Website – Logo (kein SVG, das zeigen Gmail und
+  Outlook nicht), Akzentfarbe des Kits, Anschrift im Fuß – mit Textteil für Mailprogramme ohne HTML.
+- **Mailfehler bei Formularen** verwerfen die Eingabe nicht: Ist der Eintrag gespeichert, landet der Fehler im
+  Systemprotokoll und in der Aktivität („Formular-Mail nicht gesendet“), die Bestätigung wird trotzdem versucht und
+  Besucher sehen die Erfolgsmeldung – mit Hinweis, falls die Bestätigung nicht rausging (`Data\SafeMail`).
+- **Aufbewahrung:** Der Cronjob `fluid_mail_archive_purge` (täglich, `#[AsCronjob]`) löscht archivierte Mails nach
+  „Gesendete Mails aufbewahren (Tage)“ (Website → Recht & Suchmaschinen; Standard 90, 0 = nie).
+  Dazu muss der System-Cron jede Minute `php bin/console cronjob:run` aufrufen.
+- Eigene Mails im Stil der Website: `Mail::layout($titel, $html)` liefert die HTML-Hülle.
+
+```php
+Core::getMailer()->send(new Email()->to('info@example.org')->subject('Neue Bestellung')
+    ->html(\FriendsOfRedaxo\Fluid\Mail\Mail::layout('Neue Bestellung', '<p>…</p>')));
+```
+
 ## Suche
 
 `src/Search/Search.php` – Loupe (SQLite) je Sprache, aus den Blockdaten der veröffentlichten Fassung. In den Index kommt
@@ -519,6 +548,7 @@ Umbau geht, gelten feste Regeln:
 | Datenlisten, Formulare, Postfach (YForm) | `src/Data/` | Resolver Detailseiten, Sitemap-Einträge | Routing, Blöcke, YForm | bleibt vorerst im Kern |
 | Blog | `src/Blog/` | Resolver `feed.xml`, RSS im Kopf, schema.org | Routing, Seiteneinstellungen | herauslösbar |
 | MCP-Server | `src/Mcp/` | Endpunkt `/fluid-mcp` | Kern (Blöcke, Rechte) | herauslösbar |
+| E-Mail (Status, erneut senden, Layout, Aufbewahrung) | `src/Mail/` | Cronjob `fluid_mail_archive_purge` | Core-Mailer, Einstellungen, Kit (Farben) | herauslösbar |
 | Live, Präsenz | `src/Live.php`, `src/PresenceApi.php` | Endpunkte | Kern | bleibt im Kern |
 | Demo | eigenes AddOn [fluid_demo](https://github.com/FriendsOfREDAXO/fluid_demo) | Gastzugang | Kern | eigenständig |
 | Bildeditor | eigenes AddOn [image_editor](https://github.com/FriendsOfREDAXO/image_editor) | – | Core | eigenständig |
