@@ -3,7 +3,7 @@
 namespace FriendsOfRedaxo\Fluid\Console;
 
 use FriendsOfRedaxo\Fluid\Kit;
-use Redaxo\Core\Console\Command\AbstractCommand;
+use Redaxo\Core\Console\AbstractCommand;
 use Redaxo\Core\Filesystem\File;
 use Redaxo\Core\Filesystem\Path;
 use Symfony\Component\Console\Attribute\Argument;

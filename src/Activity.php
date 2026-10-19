@@ -18,6 +18,7 @@ final class Activity
         'save' => 'gespeichert', 'publish' => 'veröffentlicht', 'discard' => 'Entwurf verworfen', 'restore' => 'Version wiederhergestellt',
         'page_add' => 'Seite angelegt', 'page_settings' => 'Seiteneinstellungen geändert', 'tree' => 'Seitenstruktur geändert',
         'design' => 'Design geändert', 'site' => 'Website-Einstellungen geändert', 'block_add' => 'Block eingefügt', 'block_delete' => 'Block gelöscht',
+        'form_mail_failed' => 'Formular-Mail nicht gesendet',
     ];
 
     public static function log(string $action, ?int $articleId = null, string $detail = ''): void

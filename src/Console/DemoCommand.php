@@ -7,7 +7,7 @@ use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use FriendsOfRedaxo\Fluid\FluidAddon;
 use FriendsOfRedaxo\Fluid\Kit;
 use Redaxo\Core\Cache;
-use Redaxo\Core\Console\Command\AbstractCommand;
+use Redaxo\Core\Console\AbstractCommand;
 use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleHandler;
 use Redaxo\Core\Content\ArticleRevision;

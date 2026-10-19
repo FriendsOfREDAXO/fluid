@@ -3,7 +3,7 @@
 namespace FriendsOfRedaxo\Fluid\Console;
 
 use FriendsOfRedaxo\Fluid\Search\Search;
-use Redaxo\Core\Console\Command\AbstractCommand;
+use Redaxo\Core\Console\AbstractCommand;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;

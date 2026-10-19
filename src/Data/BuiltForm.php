@@ -159,7 +159,9 @@ final class BuiltForm extends FormDefinition
     {
         $mode = (string) ($this->cfg['mode'] ?? 'save_mail');
         $page = $this->article ? $this->article->name . ' (' . $this->article->getUrl() . ')' : '';
-        if (\in_array($mode, ['save', 'save_mail'], true)) {
+        // Gespeichert? Dann verwirft ein Mailfehler die Eingabe nicht (SafeMail) – sonst doppelte Einträge beim erneuten Absenden
+        $saved = \in_array($mode, ['save', 'save_mail'], true);
+        if ($saved) {
             $target = trim((string) ($this->cfg['target'] ?? ''));
             yield '' !== $target && YFormBridge::table($target)
                 ? new SaveRecord($target)
@@ -173,12 +175,14 @@ final class BuiltForm extends FormDefinition
         $email = $this->emailField();
         if (\in_array($mode, ['mail', 'save_mail'], true) && '' !== ($to = trim((string) ($this->cfg['mail_to'] ?? '')))) {
             $subject = trim((string) ($this->cfg['mail_subject'] ?? '')) ?: 'Neue Nachricht: ' . ($this->definition->label ?? 'Formular');
-            yield new SendMail(to: array_map('trim', explode(',', $to)), subject: $subject, body: fn (Submission $s) => $this->summary($s) . "\n\n– " . $page, replyTo: $email ? '{' . $email . '}' : null);
+            yield new SafeMail(new SendMail(to: array_map('trim', explode(',', $to)), subject: $subject, body: fn (Submission $s) => $this->summary($s) . "\n\n– " . $page, replyTo: $email ? '{' . $email . '}' : null),
+                SafeMail::TEAM, $saved);
         }
         if (!empty($this->cfg['confirm']) && $email) {
             $text = trim((string) ($this->cfg['confirm_text'] ?? '')) ?: 'Vielen Dank für Ihre Nachricht. Wir melden uns bald.';
-            yield new SendMail(to: '{' . $email . '}', subject: trim((string) ($this->cfg['confirm_subject'] ?? '')) ?: 'Ihre Nachricht ist angekommen',
-                body: fn (Submission $s) => $s->interpolate($text) . "\n\n" . ($this->cfg['confirm_copy'] ?? false ? "Ihre Angaben:\n" . $this->summary($s) : ''));
+            yield new SafeMail(new SendMail(to: '{' . $email . '}', subject: trim((string) ($this->cfg['confirm_subject'] ?? '')) ?: 'Ihre Nachricht ist angekommen',
+                body: fn (Submission $s) => $s->interpolate($text) . "\n\n" . ($this->cfg['confirm_copy'] ?? false ? "Ihre Angaben:\n" . $this->summary($s) : '')),
+                SafeMail::CONFIRM, $saved);
         }
         $redirect = (string) ($this->cfg['redirect'] ?? '');
         if (preg_match('~^redaxo://(\d+)~', $redirect, $m)) {
@@ -193,7 +197,15 @@ final class BuiltForm extends FormDefinition
 
     public function successMessage(): string
     {
-        return nl2br(htmlspecialchars(trim((string) ($this->cfg['success'] ?? '')) ?: 'Vielen Dank! Ihre Nachricht ist angekommen.'), false);
+        $msg = nl2br(htmlspecialchars(trim((string) ($this->cfg['success'] ?? '')) ?: 'Vielen Dank! Ihre Nachricht ist angekommen.'), false);
+        // Eingabe gespeichert, aber die Bestätigung ging nicht raus: ehrlich sagen, damit niemand erneut absendet
+        if (\in_array(SafeMail::CONFIRM, SafeMail::$failed, true)) {
+            $note = 'Die Bestätigung per E-Mail konnte gerade nicht gesendet werden – Ihre Angaben sind aber angekommen.';
+            // ein Element: Meldungen der Kits sind oft Flex-Container (sonst stünde der Hinweis daneben)
+            $msg = '<span>' . $msg . '<br><small>' . htmlspecialchars(\function_exists('lt') ? lt($note) : $note) . '</small></span>';
+        }
+
+        return $msg;
     }
 
     /** Erstes E-Mail-Feld (Antwortadresse, Bestätigung) */
