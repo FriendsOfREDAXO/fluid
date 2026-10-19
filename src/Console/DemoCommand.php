@@ -5,7 +5,7 @@ namespace FriendsOfRedaxo\Fluid\Console;
 use FriendsOfRedaxo\Fluid\BlockModule;
 use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use FriendsOfRedaxo\Fluid\FluidAddon;
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\Kit;
 use Redaxo\Core\Cache;
 use Redaxo\Core\Console\Command\AbstractCommand;
 use Redaxo\Core\Content\ArticleCache;
@@ -47,7 +47,7 @@ final class DemoCommand extends AbstractCommand
             $io->note(self::media());
         }
         if ($yform) {
-            $demo = require FluidKit::instance()->path('redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php');
+            $demo = require self::demoFile($set);
             if (!isset($demo['yform']) || !YFormBridge::available()) {
                 $io->error('Keine YForm-Tabellen in dieser Demo oder YForm fehlt.');
 
@@ -58,7 +58,7 @@ final class DemoCommand extends AbstractCommand
             return Command::SUCCESS;
         }
         if ($resetDesign) {
-            FluidAddon::instance()->removeConfig('design.' . FluidKit::instance()->key());
+            FluidAddon::instance()->removeConfig('design.' . Kit::active()->key());
             $io->note('Design zurückgesetzt.');
         }
         $sql = Sql::factory();
@@ -84,10 +84,10 @@ final class DemoCommand extends AbstractCommand
         // Bearbeiten auf der Website arbeitet in der Arbeitsversion (Entwurf → Veröffentlichen)
         Core::setConfig('article_work_version', true);
 
-        $kit = FluidKit::instance();
+        $kit = Kit::active();
         $kit->definition();
         /** @var array{pages: list<array<string, mixed>>} $demo */
-        $demo = require $kit->path('redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php');
+        $demo = require self::demoFile($set);
         $lang = Language::getStartId();
         $ids = [];
         // Seiten, die ein AddOn brauchen (z. B. YForm), nur anlegen, wenn es da ist
@@ -205,10 +205,30 @@ final class DemoCommand extends AbstractCommand
         'fluid-design.jpg' => ['Design-Leiste', 'Startseite im Bearbeiten-Modus, rechts die Design-Leiste mit den Vorlagen zum Wechseln'],
     ];
 
-    /** Demo-Bilder (kits/fluid/demo/media) in den Medienpool – nur fehlende */
+    /** Demo-Inhalte des gewählten Kits (oder seines Eltern-Kits): demo.php bzw. demo-redaxo6.php */
+    private static function demoFile(string $set): string
+    {
+        $name = 'redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php';
+
+        return Kit::active()->file($name) ?? Kit::get(Kit::DEFAULT)?->path($name) ?? $name;
+    }
+
+    /** Ordner mit Demo-Bildern: demo/media des gewählten Kits oder seines Eltern-Kits */
+    private static function demoMediaDir(): string
+    {
+        foreach (Kit::active()->lineage() as $kit) {
+            if (is_dir($kit->path('demo/media'))) {
+                return $kit->path('demo/media');
+            }
+        }
+
+        return '';
+    }
+
+    /** Demo-Bilder (demo/media des Kits) in den Medienpool – nur fehlende */
     private static function media(): string
     {
-        $dir = FluidKit::instance()->path('demo/media');
+        $dir = self::demoMediaDir();
         $added = [];
         foreach (glob($dir . '/*') ?: [] as $file) {
             $name = basename($file);
@@ -238,7 +258,7 @@ final class DemoCommand extends AbstractCommand
     /** Design-Vorlage setzen; „redaxo“ zusätzlich mit dem REDAXO-Logo aus dem Core (grau und weiß), wenn noch kein Logo gesetzt ist */
     private static function design(string $preset): string
     {
-        $kit = FluidKit::instance();
+        $kit = Kit::active();
         $presets = (array) ($kit->design()->def()['presets'] ?? []);
         if (!isset($presets[$preset])) {
             return 'Design-Vorlage „' . $preset . '“ gibt es nicht (' . implode(', ', array_keys($presets)) . ').';

@@ -69,10 +69,28 @@ final class Design
         return $fonts;
     }
 
-    /** @return array<string, mixed> gespeicherte Werte, ergänzt um Standardwerte */
+    /**
+     * Gespeicherte Werte, ergänzt um Standardwerte. Ein Kit ohne eigene Werte übernimmt die seines Eltern-Kits
+     * (Farben, Schriften …) – so sieht die Website nach dem Wechsel auf ein abgeleitetes Kit nicht plötzlich anders aus.
+     *
+     * @return array<string, mixed>
+     */
     public function values(): array
     {
-        return self::$values[$this->kit->key()] ??= $this->normalize((array) FluidAddon::instance()->getConfig('design.' . $this->kit->key(), []));
+        return self::$values[$this->kit->key()] ??= $this->normalize($this->stored());
+    }
+
+    /** @return array<string, mixed> */
+    private function stored(): array
+    {
+        foreach ($this->kit->lineage() as $kit) {
+            $v = FluidAddon::instance()->getConfig('design.' . $kit->key());
+            if (\is_array($v) && [] !== $v) {
+                return $v;
+            }
+        }
+
+        return [];
     }
 
     public function get(string $name): mixed

@@ -338,6 +338,8 @@ IP-Adresse und ist harmlos. Mit `http://localhost:8000/` verschwindet die Meldun
 Alles Technische steht in der **[Entwickler-Referenz](docs/entwickler.md)**:
 
 - eigene Blöcke als Modulklasse + View, alle Feldtypen und Block-Optionen
+- eigene Kits: erben vom Kit fluid und ersetzen nur CSS, Views oder Template (`fluid:kit:create`), Auswahl unter
+  Website → Kit, Inhalte bleiben beim Wechsel
 - Extension Points (`FLUID_BLOCK_DEFINITION`, `FLUID_BLOCK_VIEW`, `FLUID_SETTINGS_SCHEMA` …)
 - YForm: Formular-Baukasten, Datenliste, YForm-Feld „Fluid-Blöcke“, Postfach
 - Routing, Domains, SEO, Sprachen, Videos, Blog, Karten, Rechte, Konsole

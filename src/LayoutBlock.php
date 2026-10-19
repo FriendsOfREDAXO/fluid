@@ -11,7 +11,7 @@ use function Redaxo\Core\View\escape;
  * Modul „Layout (Spalten)“ – je Kit eine kleine Klasse, z. B.:
  *
  *     #[AsModule('fluid.layout', 'Layout (Spalten)')]
- *     final class Layout extends LayoutBlock { public function kit(): Kit { return FluidKit::instance(); } }
+ *     final class Layout extends LayoutBlock { public function kit(): Kit { return Kit::active(); } }
  *
  * Felder und Ausgabe: Layout. CSS: css/layout.css des Kits (Abbildung 'layout' in kit.php → assets).
  */

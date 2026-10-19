@@ -2,7 +2,6 @@
 
 namespace FriendsOfRedaxo\Fluid;
 
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleHandler;
 use Redaxo\Core\Core;
@@ -86,8 +85,8 @@ final class Welcome
     private static function blank(): void
     {
         Core::setConfig('article_work_version', true);
-        $kit = FluidKit::instance();
-        ArticleHandler::addArticle(['category_id' => null, 'priority' => 1, 'name' => 'Startseite', 'template' => $kit->key()]);
+        // Template „fluid“ (FluidTemplate) – gestaltet vom gewählten Kit
+        ArticleHandler::addArticle(['category_id' => null, 'priority' => 1, 'name' => 'Startseite', 'template' => 'fluid']);
         $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
         foreach (Language::getAll() as $l) {
             ArticleHandler::articleStatus($id, $l->id, 1);

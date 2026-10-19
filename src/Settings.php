@@ -33,6 +33,13 @@ final class Settings
     /** @return array<string, array{label: string, fields: list<array<string, mixed>>}> */
     private static function baseSchema(): array
     {
+        // Reiter „Kit“ nur, wenn es mehr als eins gibt (Projekt oder Composer-Pakete mit #[AsKit])
+        $kits = Kit::options();
+        $kitTab = \count($kits) > 1 ? ['kit' => ['label' => 'Kit', 'fields' => [
+            ['name' => 'kit', 'label' => 'Kit der Website', 'type' => 'select', 'required' => true, 'default' => Kit::DEFAULT, 'options' => $kits,
+                'help' => 'Das Kit bestimmt die Gestaltung der ganzen Website. Inhalte und Blöcke bleiben beim Wechsel erhalten; jedes Kit hat eigene Design-Einstellungen.'],
+        ]]] : [];
+
         $days = ['1' => 'Montag', '2' => 'Dienstag', '3' => 'Mittwoch', '4' => 'Donnerstag', '5' => 'Freitag', '6' => 'Samstag', '0' => 'Sonntag'];
 
         return [
@@ -85,6 +92,7 @@ final class Settings
                 ['name' => 'notice_active', 'label' => 'Hinweisleiste zeigen', 'type' => 'bool', 'default' => false],
                 ['name' => 'notice_text', 'translate' => true, 'label' => 'Hinweis', 'type' => 'text', 'max' => 200, 'placeholder' => 'z. B. Vom 22.12. bis 6.1. geschlossen.'],
             ]],
+            ...$kitTab,
             'legal' => ['label' => 'Recht & Suchmaschinen', 'fields' => [
                 ['name' => 'imprint_page', 'label' => 'Impressum', 'type' => 'link', 'width' => 'half'],
                 ['name' => 'privacy_page', 'label' => 'Datenschutz', 'type' => 'link', 'width' => 'half'],
@@ -164,9 +172,13 @@ final class Settings
             if (!empty($f['required']) && '' === $all[$f['name']]) {
                 throw new ApiError('Bitte „' . $f['label'] . '“ ausfüllen.');
             }
+            if ('kit' === $f['name'] && !isset(Kit::all()[$all['kit']])) {
+                throw new ApiError('Unbekanntes Kit.');
+            }
         }
         FluidAddon::instance()->setConfig(self::CONFIG, $all);
         self::$values = $all;
+        Kit::reset();
     }
 
     /** Name der Website: Einstellung oder REDAXO-Instanzname */

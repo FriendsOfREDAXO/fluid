@@ -2,7 +2,7 @@
 
 namespace FriendsOfRedaxo\Fluid\Backend;
 
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\Kit;
 use FriendsOfRedaxo\Fluid\Media\Ffmpeg;
 use FriendsOfRedaxo\Fluid\Routing\Domains;
 use FriendsOfRedaxo\Fluid\Routing\Redirects;
@@ -35,7 +35,7 @@ final class StatusPage
     {
         $out = self::action();
         $start = Article::getSiteStartArticle();
-        $kitKey = FluidKit::instance()->key();
+        $kit = Kit::active();
         $routes = (int) (Sql::factory()->getArray('SELECT COUNT(*) AS n FROM ' . Routes::TABLE)[0]['n'] ?? 0);
         $n404 = (int) (Sql::factory()->getArray('SELECT COUNT(*) AS n FROM ' . Redirects::TABLE_404 . ' WHERE last_seen > NOW() - INTERVAL 30 DAY')[0]['n'] ?? 0);
         $primary = Domains::primary();
@@ -45,7 +45,9 @@ final class StatusPage
 
         // [Status, Bereich, Text]; Status: ok | warn | info
         $rows = [
-            [$start ? 'ok' : 'warn', 'Startseite', $start ? escape($start->name) . ' – Template ' . escape((string) $start->templateKey) . ($start->templateKey === $kitKey ? '' : ' (nicht das Kit fluid)') : 'Noch keine Seiten – die Website zeigt „Erste Schritte“.'],
+            [$start ? 'ok' : 'warn', 'Startseite', $start ? escape($start->name) . ' – Template ' . escape((string) $start->templateKey) . ('fluid' === $start->templateKey ? '' : ' (nicht das Template von fluid)') : 'Noch keine Seiten – die Website zeigt „Erste Schritte“.'],
+            ['ok', 'Kit', escape($kit->label()) . ' (' . escape($kit->key()) . ')' . (null !== ($parent = $kit->parent()) ? ' – erbt von ' . escape($parent->label()) : '')
+                . (\count(Kit::all()) > 1 ? ' · ' . \count(Kit::all()) . ' Kits verfügbar, Auswahl unter Website-Einstellungen → Kit' : '')],
             [Core::getConfig('article_work_version') ? 'ok' : 'warn', 'Arbeitsversion', Core::getConfig('article_work_version') ? 'an – Änderungen erst als Entwurf, dann „Veröffentlichen“' : 'aus – Änderungen gehen sofort live (System → Einstellungen → Arbeitsversion)'],
             [$routes > 0 ? 'ok' : 'warn', 'Schöne Adressen', $routes . ' Adressen. Der Webserver muss Anfragen ohne Datei an index.php geben (README → Webserver). Test: <a href="' . escape(\Redaxo\Core\Filesystem\Url::frontend() . 'sitemap.xml') . '" target="_blank" rel="noopener">sitemap.xml</a>'],
             [$primary ? 'ok' : 'info', 'Hauptadresse', $primary ? escape($primary->host) : 'nicht festgelegt – Adressen folgen dem Aufruf (Website → Domains)'],

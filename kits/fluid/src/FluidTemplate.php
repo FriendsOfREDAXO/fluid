@@ -3,6 +3,7 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid;
 
 use FriendsOfRedaxo\Fluid\BlockModule;
+use FriendsOfRedaxo\Fluid\Kit;
 use Override;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\AsTemplate;
@@ -11,10 +12,12 @@ use Redaxo\Core\Content\ContentSection;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Content\Template;
 use Redaxo\Core\View\HasView;
+use Redaxo\Core\View\Renderer;
 
 /**
- * Seitenrahmen des Kits „fluid“: Kopf mit Menü aus der Struktur, Inhalt (Blöcke), Fuß.
- * Markup und Klassen wie im Studio-Kit, damit dessen CSS unverändert greift.
+ * Seitenrahmen von fluid: Kopf mit Menü aus der Struktur, Inhalt (Blöcke), Fuß – gestaltet vom gewählten Kit.
+ * Markup und Klassen wie im Studio-Kit, damit dessen CSS unverändert greift. Ein Kit kann den Rahmen mit eigener
+ * `template.view.php` ersetzen (gleiche Signatur wie FluidTemplate.view.php).
  */
 #[AsTemplate('fluid', 'Fluid')]
 final class FluidTemplate extends Template
@@ -24,7 +27,11 @@ final class FluidTemplate extends Template
     #[Override]
     public function render(ArticleContent $content): string
     {
-        FluidKit::instance()->definition();   // lädt functions.php des Kits
+        $kit = Kit::active();
+        $kit->definition();   // lädt functions.php des Kits (und seiner Vorfahren)
+        if (null !== $own = $kit->file('template.view.php')) {
+            return Renderer::render($own, [$content]);
+        }
 
         return $this->renderView($content);
     }
@@ -32,7 +39,7 @@ final class FluidTemplate extends Template
     #[Override]
     public function isModuleAllowed(ContentSection $section, Module $module): bool
     {
-        return $module instanceof BlockModule && $module->kit() instanceof FluidKit;
+        return $module instanceof BlockModule && $module->kit() === Kit::active();
     }
 
     /**

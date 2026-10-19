@@ -1,7 +1,7 @@
 <?php
 
 use FriendsOfRedaxo\Fluid\Editing;
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidKit;
+use FriendsOfRedaxo\Fluid\Kit;
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidTemplate;
 use FriendsOfRedaxo\Fluid\PageSettings;
 use Redaxo\Core\Content\Article;
@@ -10,7 +10,7 @@ use Redaxo\Core\Core;
 use Redaxo\Core\Language\Language;
 
 return static function (ArticleContent $content): void {
-    $kit = FluidKit::instance();
+    $kit = Kit::active();
     // Inhalt zuerst: so ist bekannt, welche Blöcke (und damit welches CSS) die Seite braucht
     $main = $content->renderContent();
     $article = $content->article;
@@ -35,7 +35,8 @@ return static function (ArticleContent $content): void {
     if ($isPost) {
         $kit->markUsed('@post');
     }
-    $css = [$kit->assetUrl('css/site.css'), ...$kit->designCss(), ...$kit->blockCss(Editing::active())];
+    // CSS eines abgeleiteten Kits (kit.php → 'css') zuletzt, damit es Grund- und Block-CSS des Eltern-Kits überschreiben kann
+    $css = [$kit->assetUrl('css/site.css'), ...$kit->designCss(), ...$kit->blockCss(Editing::active()), ...$kit->kitCss()];
     $designClasses = $design->classes();
     // dunkler Grundton bzw. Serifen-Überschriften (wie fluid_html_class in Studio)
     $bg = (string) $design->get('background');

@@ -4,7 +4,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 
 ## Inhalt
 
-- [Ein eigener Block](#ein-eigener-block)
+- [Ein eigener Block](#ein-eigener-block) · [Eigene Kits](#eigene-kits)
 - [Extension Points](#extension-points)
 - [YForm: Formulare und Datenlisten](#yform-formulare-und-datenlisten)
 - [Blöcke in YForm-Tabellen](#blöcke-in-yform-tabellen-feld-fluid-blöcke)
@@ -66,6 +66,78 @@ final class Teaser extends FluidBlock
 (strukturierte Daten, z. B. `['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']`),
 `drags` (Greifer auf der Seite: `['field' => 'measure', 'target' => '.prose', 'class' => 'prose--m-{v}', 'label' => 'Textbreite']`).
 
+## Eigene Kits
+
+Ein Kit bestimmt die Gestaltung der ganzen Website: Seitenrahmen, CSS, Ausgabe der Blöcke, Design-Optionen. fluid bringt
+das Kit `fluid` mit. Weitere Kits liegen im Projekt oder kommen als Composer-Paket; welches gilt, wählen Admins unter
+**Website → Kit** (der Reiter erscheint, sobald es mehr als ein Kit gibt).
+
+**Inhalte bleiben beim Wechsel.** Die Block-Module (`fluid.hero`, `fluid.cards` …) gehören zu keinem Kit, sie zeigen
+sich im gewählten. Jedes Kit erbt von einem Eltern-Kit (Standard `fluid`) und bringt nur mit, was es ändert – alle
+Blöcke sind also immer da, und Updates von fluid kommen beim abgeleiteten Kit mit an.
+
+### Anlegen
+
+```bash
+php bin/console fluid:kit:create nature --label="Nature" --view=hero,cards --template
+```
+
+Legt `src/Kit/Nature/` im Projekt an:
+
+| Datei | |
+|---|---|
+| `NatureKit.php` | Anmeldung: `#[AsKit('nature', 'Nature', parent: 'fluid')] final class NatureKit extends Kit {}` |
+| `kit.php` | Definition – nur, was vom Eltern-Kit abweicht (`$parent` steht bereit) |
+| `assets/css/kit.css` | eigenes CSS, geladen nach Grund- und Block-CSS des Eltern-Kits |
+| `views/hero.php` … | mit `--view` kopierte Views zum Anpassen |
+| `template.view.php` | mit `--template` kopierter Seitenrahmen |
+
+### Was ein Kit ersetzen kann
+
+Jede Datei im Kit-Ordner ersetzt die gleichnamige des Eltern-Kits, alles andere gilt von dort:
+
+- `views/{typ}.php` – Ausgabe eines Blocktyps (`$b` = Block, `$d` = Daten, wie beim eigenen Block)
+- `template.view.php` – Seitenrahmen (Kopf, Menü, Fuß); Vorlage ist `kits/fluid/src/FluidTemplate.view.php`
+- `assets/…` – einzelne Dateien, z. B. `assets/css/b-cards.css` statt der des Eltern-Kits
+- `functions.php` – zusätzliche Hilfsfunktionen (die des Eltern-Kits sind schon geladen)
+- `kit.php` – Definition, über die des Eltern-Kits gelegt:
+
+```php
+<?php // src/Kit/Nature/kit.php
+return [
+    'label' => 'Nature',
+    'css' => ['css/kit.css'],                                   // Stylesheets für jede Seite (angehängt)
+    'backgrounds' => ['sand' => 'Sand'],                          // ergänzt die Hintergründe
+    'assets' => ['css/b-gallery.css' => ['gallery']],             // CSS je Blocktyp (ergänzt)
+    'blocks' => [                                                // je Typ ersetzt oder neu
+        'hero' => ['variants' => ['leaf' => 'Mit Blatt'] + $parent['blocks']['hero']['variants']] + $parent['blocks']['hero'],
+    ],
+    'design' => $parent['design'],                              // Style-Editor; eigene Vorlagen unter ['presets']
+];
+```
+
+`blocks`, `backgrounds` und `assets` werden je Schlüssel ergänzt, `css` wird angehängt, alle anderen Einträge ersetzt.
+
+**Design-Werte** speichert jedes Kit für sich. Solange ein abgeleitetes Kit keine eigenen hat, übernimmt es die seines
+Eltern-Kits – nach dem Wechsel sieht die Website also zunächst aus wie vorher.
+
+**Assets** veröffentlicht fluid nach `assets/fluid-kits/{kit}/`: bei `console migrate` komplett, im Betrieb je Datei,
+sobald sie fehlt oder sich geändert hat. Relative Pfade im CSS zeigen auf `assets/` des eigenen Kits.
+
+### Als Composer-Paket
+
+Ein Kit für mehrere Projekte ist ein eigenes Paket mit der Kit-Klasse im Autoload (PSR-4), z. B.
+`friendsofredaxo/fluid-kit-nature`. Nach `composer require` und `console migrate` steht es in der Auswahl. Ein Kit
+kann auch von einem anderen Kit als `fluid` erben (`parent: 'nature'`).
+
+### Kit je Domain
+
+Standard ist ein Kit für die ganze Instanz. Per Extension Point `FLUID_KIT` lässt es sich je Anfrage wählen:
+
+```php
+Extension::register('FLUID_KIT', static fn (ExtensionPoint $ep) => 'shop.example.org' === Request::server('HTTP_HOST', 'string', '') ? 'nature' : $ep->subject);
+```
+
 ## Extension Points
 
 | Name | Subject | Params | Zweck |
@@ -78,6 +150,7 @@ final class Teaser extends FluidBlock
 | `FLUID_ROBOTS` | Text der robots.txt | – | Regeln ergänzen |
 | `FLUID_SITE_TRANSLATIONS` | Übersetzungen (array) | `code` | feste Texte des Kits für eine Sprache ergänzen/ändern |
 | `FLUID_EDITOR_CONFIG` | Einstellungen des Editors | `article`, `user` | Blöcke/Menüpunkte für Rollen ausblenden |
+| `FLUID_KIT` | Schlüssel des Kits | – | Kit je Anfrage wählen, z. B. je Domain |
 
 Dazu nutzt fluid die Extension Points des Cores, z. B. `URL_REWRITE` für die Adressen.
 
@@ -356,6 +429,7 @@ Ohne Live-Kanal funktioniert es auch, dann mit 15 Sekunden Verzögerung.
 | `… --replace` | vorher **alle** Seiten löschen – nur Testinstallationen |
 | `… --page=slug` | nur eine Demo-Seite anhängen, z. B. `--page=projekte` |
 | `… --yform` | nur die Beispielzeilen der YForm-Tabellen schreiben |
+| `fluid:kit:create name` | eigenes Kit im Projekt anlegen (`--label`, `--parent`, `--view=hero,cards`, `--template`) |
 | `fluid:search-index` | Suchindex neu aufbauen (sonst automatisch nach dem Veröffentlichen) |
 | `fluid:selftest` | Live-Aktualisierung und Präsenz prüfen |
 
@@ -404,7 +478,8 @@ zum Beispiel [`fluid_demo`](https://github.com/FriendsOfREDAXO/fluid_demo), die 
 |---|---|
 | `src/` | Namespace `FriendsOfRedaxo\Fluid`: Editor-API (`Api`), Blöcke (`BlockModule`, `Block`, `BlockData`), Routing, Blog, Daten (YForm), Medien, Suche |
 | `src/Data/` | YForm-Anbindung: `YFormBridge`, Formular-Baukasten `BuiltForm`, Feld `FluidBlocks`, `RecordBlocks`, `Detail`, Postfach |
-| `kits/fluid/` | das Kit: `kit.php` (Blöcke), `design.php` (Design-Tokens, Vorlagen), `views/` (Ausgaben), `functions.php`, `lang/` |
+| `kits/fluid/` | das Grund-Kit: `kit.php` (Blöcke), `design.php` (Design-Tokens, Vorlagen), `views/` (Ausgaben), `functions.php`, `lang/` |
+| `src/Kit.php`, `src/AsKit.php` | Kits: Anmeldung, Auswahl (`Kit::active()`), Vererbung, Assets |
 | `assets/` | Editor (`editor/`), Formulare (`form.js`, `rte.js`), Kit-CSS/JS (`kits/fluid/`), Schriften, MapLibre |
 | `examples/` | Vorlagen für eigene Blöcke und YForm-Tabellen |
 | `pages/` | Backend-Seite AddOns → fluid |

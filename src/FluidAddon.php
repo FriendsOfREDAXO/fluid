@@ -121,6 +121,8 @@ final class FluidAddon extends Addon
             ->ensure();
         \Redaxo\Core\Content\ArticleSliceHistory::checkTables();
         Routing\Routes::rebuild();
+        // Assets der Kits aus Projekt und Composer-Paketen nach assets/fluid-kits/ (das Kit fluid bringt der Core mit)
+        Kit::publishAll();
     }
 
     /**
