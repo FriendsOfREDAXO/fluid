@@ -70,7 +70,7 @@
   /* Off-Canvas (schmale Fenster): Sprachen unten im Panel statt in der Leiste */
   @media (max-width: 63.99rem) {
     .nv-topbar .ncss-topbar-actions { margin-inline-start: auto; }
-    .nv-nav { order: 3; margin-inline-start: 0; }
+    .nv-nav { order: 3; flex: 0 0 auto; margin-inline-start: 0; }
     .nv-langs { display: none; }
     .nv-nav__langs { display: flex; margin-block-start: var(--f-s-l); }
     .nv-cta { display: none; }

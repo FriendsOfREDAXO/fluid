@@ -77,6 +77,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
   .kind, .chip { display: none; }
   .modes a { padding: 6px 8px; }
 }
+/* Handy quer (bis 700 px): „Design“ ins Menü ⋯, „Veröffentlichen“ kurz – sonst passt ⋯ nicht mehr in die Leiste */
+@media (max-width: 700px) {
+  [data-design-open] { display: none; }
+  [data-publish] .lg { display: none; }
+  [data-publish] .sm { display: inline !important; }
+  .menu-sm { display: block !important; }
+}
 /* Handy: nur das Nötigste in der Leiste, „Design“ im Menü ⋯ */
 @media (max-width: 560px) {
   .bar { gap: 6px; padding: 0 8px; }
@@ -362,6 +369,9 @@ textarea[data-blocks-rte] { display: none !important; }
 .gnote__btn { flex: none; border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; background: var(--bg); color: inherit; font: inherit; cursor: pointer; }
 .gnote__btn[hidden] { display: none; }
 @media (max-width: 900px) { .gnote__text { display: none; } }
+/* Knöpfe der Hinweis-Leiste stehen auch im Menü ⋯ – in schmalen Leisten (Tablet, Handy quer) nur dort */
+@media (max-width: 1100px) { .gnote__btn { display: none; } }
+@media (max-width: 760px) { .title { display: none; } }
 
 /* Seitenleiste auf Touch-Geräten und schmalen Bildschirmen: 16 px Schrift (sonst zoomt iOS beim Antippen), 44 px Ziele,
    mehr Luft zwischen den Feldern */
