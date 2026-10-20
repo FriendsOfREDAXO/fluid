@@ -3,7 +3,7 @@
 namespace FriendsOfRedaxo\Fluid\Media;
 
 use Redaxo\Core\Filesystem\Path;
-use Redaxo\Core\MediaManager\Attribute\AsMediaType;
+use Redaxo\Core\MediaManager\AsMediaType;
 use Redaxo\Core\MediaManager\Exception\MediaNotFoundException;
 use Redaxo\Core\MediaManager\MediaContext;
 use Redaxo\Core\MediaManager\MediaType;
