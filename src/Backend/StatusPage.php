@@ -163,7 +163,7 @@ final class StatusPage
 
         $failed = Mail::failed();
         if ($failed) {
-            $body .= '<h4>Nicht gesendet (Archiv)</h4><p class="help-block">„Erneut senden“ geht an die Empfänger aus An und Kopie. Bcc-Empfänger stehen nicht im Archiv und bekommen die Mail nicht erneut.</p><table class="table table-condensed"><tbody>';
+            $body .= '<h4>Nicht gesendet (Archiv)</h4><p class="help-block">„Erneut senden“ geht an die ursprünglichen Empfänger, auch Bcc, sofern der Core sie im Archiv vermerkt (X-Envelope-To); bei älteren Mails an An und Kopie.</p><table class="table table-condensed"><tbody>';
             foreach ($failed as $m) {
                 $body .= '<tr><td style="white-space:nowrap">' . escape(date('d.m.Y H:i', $m['time'])) . '</td><td>' . escape($m['to']) . '</td><td>' . escape($m['subject']) . '</td><td style="text-align:right">'
                     . '<form method="post" style="margin:0">' . $csrf . '<input type="hidden" name="mail_file" value="' . escape($m['file']) . '">'

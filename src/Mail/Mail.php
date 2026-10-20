@@ -29,7 +29,8 @@ use function Redaxo\Core\View\escape;
  *
  *  - status()   Einrichtung auf einen Blick (Statusseite): Versand, Absender, Umleitung, Protokoll, Archiv, letzte Fehler
  *  - test()     Testmail an eine Adresse
- *  - failed()/resend()   nicht gesendete Mails aus dem Archiv (not_sent_*.eml) erneut senden
+ *  - failed()/resend()   nicht gesendete Mails aus dem Archiv (not_sent_*.eml) erneut senden – an X-Envelope-To
+ *                        (inklusive Bcc, ab redaxo/core#6755), sonst An und Kopie
  *  - layout()   HTML-Mail im Stil der Website (Logo, Akzentfarbe des Kits, Kontakt im Fuß) – für Formular-Mails
  *  - purgeArchive()   Cronjob: archivierte Mails nach „Mails aufbewahren (Tage)“ löschen (Datenschutz)
  *
@@ -131,8 +132,9 @@ final class Mail
         $raw = (string) File::get($file);
         [$head, $body] = array_pad(preg_split("~\r?\n\r?\n~", $raw, 2) ?: [], 2, '');
         $headers = self::unfold($head);
+        // Empfänger: X-Envelope-To (vermerkt der Core seit redaxo/core#6755, inklusive Bcc), sonst An, Kopie, Bcc
         $recipients = [];
-        foreach (['to', 'cc', 'bcc'] as $name) {
+        foreach (isset($headers['x-envelope-to']) ? ['x-envelope-to'] : ['to', 'cc', 'bcc'] as $name) {
             foreach (self::addresses($headers[$name] ?? '') as $a) {
                 $recipients[$a] = new Address($a);
             }
@@ -141,8 +143,8 @@ final class Mail
         if (!$recipients || null === $from) {
             return 'Empfänger oder Absender fehlen in der Mail.';
         }
-        // Bcc-Zeile (samt Folgezeilen) aus dem Kopf entfernen
-        $cleanHead = (string) preg_replace('~^Bcc:.*(?:\r?\n[ \t].*)*\r?\n?~mi', '', $head);
+        // Bcc und X-Envelope-To (samt Folgezeilen) aus dem Kopf entfernen – sonst sähen alle die Bcc-Adressen
+        $cleanHead = (string) preg_replace('~^(?:Bcc|X-Envelope-To):.*(?:\r?\n[ \t].*)*\r?\n?~mi', '', $head);
         try {
             Core::getMailer()->send(new RawMessage($cleanHead . "\r\n\r\n" . $body), new Envelope(new Address($from), array_values($recipients)), archive: false);
         } catch (Throwable $e) {
@@ -159,7 +161,7 @@ final class Mail
         $h = self::unfold((string) (preg_split("~\r?\n\r?\n~", $raw, 2)[0] ?? ''));
         $subject = (string) (iconv_mime_decode((string) ($h['subject'] ?? ''), ICONV_MIME_DECODE_CONTINUE_ON_ERROR, 'UTF-8') ?: ($h['subject'] ?? ''));
 
-        return ['to' => implode(', ', self::addresses(($h['to'] ?? '') . ',' . ($h['cc'] ?? ''))), 'subject' => $subject];
+        return ['to' => implode(', ', self::addresses($h['x-envelope-to'] ?? (($h['to'] ?? '') . ',' . ($h['cc'] ?? '')))), 'subject' => $subject];
     }
 
     /** @return array<string, string> Kopfzeilen (Kleinbuchstaben), Folgezeilen zusammengefügt */

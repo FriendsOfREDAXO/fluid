@@ -350,8 +350,13 @@ REX_MAILER_LOG=errors                                       # none | errors | al
 REX_MAILER_ARCHIVE=1                                        # Mails als .eml aufbewahren (auch nicht gesendete)
 ```
 
+Antwortet der Mailserver nicht, wartet PHP bis `default_socket_timeout` (Standard 60 s) – in der php.ini kürzer stellen.
+Ab Symfony 8.2 geht das auch in der DSN: `smtp://…?timeout=10`.
+
 - **Statusseite** (AddOns → fluid → Status → „E-Mail“): Versand, Absender, Umleitung, Protokoll, Archiv, Testmail,
-  die letzten Fehler und nicht gesendete Mails mit „Erneut senden“ (Empfänger aus An und Kopie; Bcc steht nicht im Archiv).
+  die letzten Fehler und nicht gesendete Mails mit „Erneut senden“ – an die ursprünglichen Empfänger samt Bcc, sofern der
+  Core sie als `X-Envelope-To` im Archiv vermerkt (redaxo/core#6755), sonst an An und Kopie. `Bcc` und `X-Envelope-To`
+  werden vor dem Senden aus dem Kopf entfernt.
 - **Formulare** (Block „Formular“) senden HTML-Mails im Stil der Website – Logo (kein SVG, das zeigen Gmail und
   Outlook nicht), Akzentfarbe des Kits, Anschrift im Fuß – mit Textteil für Mailprogramme ohne HTML.
 - **Mailfehler bei Formularen** verwerfen die Eingabe nicht: Ist der Eintrag gespeichert, landet der Fehler im
