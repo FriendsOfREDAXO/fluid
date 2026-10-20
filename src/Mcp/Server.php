@@ -190,7 +190,7 @@ final class Server
         }
         try {
             $result = ($tools[$name]['run'])(is_array($p['arguments'] ?? null) ? $p['arguments'] : []);
-        } catch (ApiError $e) {
+        } catch (ApiError|\Redaxo\Core\Exception\UserMessageException $e) {
             return ['content' => [['type' => 'text', 'text' => $e->getMessage()]], 'isError' => true];
         }
 

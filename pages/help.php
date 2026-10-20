@@ -1,6 +1,6 @@
 <?php
 
-use Redaxo\Core\Util\Markdown;
+use Redaxo\Core\Util\Markdown\Markdown;
 use Redaxo\Core\View\Fragment;
 
 // README (Einstieg) und Entwickler-Referenz; Bilder (relative Pfade fürs Repository) im Backend weglassen

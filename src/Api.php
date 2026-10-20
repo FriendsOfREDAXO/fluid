@@ -71,6 +71,9 @@ final class Api
             self::send(['ok' => true, 'state' => self::state($article)] + $result);
         } catch (ApiError $e) {
             self::send(['ok' => false, 'error' => $e->getMessage()], $e->getCode() ?: 400);
+        } catch (\Redaxo\Core\Exception\UserMessageException $e) {
+            // Fehler der Handler des Cores (Seite nicht gefunden, Regel verletzt …) mit übersetzter Meldung
+            self::send(['ok' => false, 'error' => $e->getMessage()], 400);
         } catch (Throwable $e) {
             self::send(['ok' => false, 'error' => 'Fehler: ' . $e->getMessage()], 500);
         }

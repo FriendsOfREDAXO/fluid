@@ -87,10 +87,10 @@ final class Structure
                         if (count(Category::get($a->id)->getChildren()) || count(array_filter(Category::get($a->id)->getArticles(), static fn (Article $x) => !$x->isStartArticle()))) {
                             throw new ApiError('„' . $a->name . '“ hat Unterseiten – erst diese verschieben, dann aus dem Menü nehmen.');
                         }
-                        ArticleHandler::category2article($a->id) || throw new ApiError('Konnte nicht aus dem Menü genommen werden.');
+                        ArticleHandler::category2article($a->id);   // wirft bei Fehlern (UserMessageException → Meldung)
                         $msg = '„' . $a->name . '“ steht nicht mehr im Menü.';
                     } else {
-                        ArticleHandler::article2category($a->id) || throw new ApiError('Konnte nicht ins Menü aufgenommen werden.');
+                        ArticleHandler::article2category($a->id);
                         $msg = '„' . $a->name . '“ steht jetzt im Menü.';
                     }
                     break;
@@ -121,12 +121,12 @@ final class Structure
                 throw new ApiError('Eine Seite kann nicht unter sich selbst stehen.');
             }
             if ($parent !== $cat->parentId) {
-                CategoryHandler::moveCategory($a->id, $parent) || throw new ApiError('Verschieben ist nicht möglich.');
+                CategoryHandler::moveCategory($a->id, $parent);   // wirft bei Fehlern
             }
             CategoryHandler::editCategory($a->id, $languageId, ['catpriority' => $index + 1]);
         } else {
             if ($parent !== $a->categoryId) {
-                ArticleHandler::moveArticle($a->id, $a->categoryId, $parent) || throw new ApiError('Verschieben ist nicht möglich.');
+                ArticleHandler::moveArticle($a->id, $a->categoryId, $parent);
             }
             $fresh = Article::get($a->id, $languageId) ?? $a;
             ArticleHandler::editArticle($a->id, $languageId, ['name' => $fresh->name, 'priority' => $index + 1, 'template' => $fresh->templateKey]);

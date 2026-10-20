@@ -92,7 +92,9 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   (Systemprotokoll, Aktivität „Formular-Mail nicht gesendet“), die Bestätigung wird trotzdem versucht, und Besucher sehen
   die Erfolgsmeldung – mit Hinweis, falls die Bestätigung nicht rausging. Vorher: „Fehler – bitte noch einmal“ trotz
   gespeichertem Eintrag (doppelte Einträge beim erneuten Absenden).
-- Angepasst an REDAXO-Core `3173c0d`: `Redaxo\Core\Console\AbstractCommand`.
+- Angepasst an REDAXO-Core bis `c9b0bf1`: `Redaxo\Core\Console\AbstractCommand`, `Redaxo\Core\MediaManager\AsMediaType`,
+  `Redaxo\Core\Util\Markdown\Markdown`; Handler des Cores werfen statt `false` zu liefern (Seitenbaum: Menü und Verschieben),
+  ihre `UserMessageException` erscheint im Editor und per MCP als Meldung statt als interner Fehler.
 - Bausteine statt fester Verdrahtung (Vorbereitung für eigene AddOns, wie beim Bildeditor):
   - Routing kennt keinen anderen Teil von fluid mehr. Bausteine melden sich an: `Router::endpoint()`, `resolver()`,
     `onPage()`, `gate()`, `keep()`, `Sitemap::exclude()/children()`; Antworten über `Router::respond()`/`redirectTo()`.
