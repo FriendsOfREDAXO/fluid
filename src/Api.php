@@ -374,7 +374,7 @@ final class Api
     private static function status(Article $article): array
     {
         [$slice, $module] = self::slice($article);
-        ContentHandler::sliceStatus($slice->id, 1 === $slice->status ? 0 : 1);
+        ContentHandler::changeSliceStatus($slice->id, 1 === $slice->status ? 0 : 1);
 
         return ['online' => 1 !== $slice->status] + self::render($article, $slice->id, false);
     }
@@ -503,13 +503,12 @@ final class Api
         }
         $template = (string) $article->templateKey;
         if ('menu' === Request::post('kind', 'string', 'menu')) {
-            CategoryHandler::addCategory($parent, ['catpriority' => 999, 'catname' => $name, 'status' => 0]);
+            $id = CategoryHandler::add($parent, ['catpriority' => 999, 'catname' => $name, 'status' => 0])->id;
         } else {
-            ArticleHandler::addArticle(['category_id' => $parent, 'priority' => 999, 'name' => $name, 'template' => $template]);
+            $id = ArticleHandler::add(['category_id' => $parent, 'priority' => 999, 'name' => $name, 'template' => $template])->id;
         }
-        $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
         // Template des Kits übernehmen (neue Kategorien auf oberster Ebene erben keines)
-        ArticleHandler::editArticle($id, $article->languageId, ['name' => $name, 'template' => $template]);
+        ArticleHandler::edit($id, $article->languageId, ['name' => $name, 'template' => $template]);
         // Beitrag in einem Blog: Datum heute, Autor = Name der Redakteurin
         if (null !== $parent && 'menu' !== Request::post('kind', 'string', 'menu') && Blog\Blog::isBlog($parent) && ($new = Article::get($id, $article->languageId))) {
             Blog\Blog::saveMeta($new, date('Y-m-d'), $user->name ?: $user->login, '');

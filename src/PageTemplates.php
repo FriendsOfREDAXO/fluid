@@ -31,8 +31,7 @@ final class PageTemplates
         if (!$create) {
             return null;
         }
-        CategoryHandler::addCategory(null, ['catpriority' => 9999, 'catname' => 'Seitenvorlagen', 'status' => 0]);
-        $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_category')[0]['id'];
+        $id = CategoryHandler::add(null, ['catpriority' => 9999, 'catname' => 'Seitenvorlagen', 'status' => 0])->id;
         FluidAddon::instance()->setConfig(self::CONFIG, $id);
 
         return $id;
@@ -54,8 +53,7 @@ final class PageTemplates
     public static function saveFrom(Article $article, string $name): int
     {
         $cat = (int) self::categoryId(true);
-        ArticleHandler::addArticle(['category_id' => $cat, 'priority' => 999, 'name' => trim($name) ?: $article->name, 'template' => (string) $article->templateKey, 'status' => 0]);
-        $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
+        $id = ArticleHandler::add(['category_id' => $cat, 'priority' => 999, 'name' => trim($name) ?: $article->name, 'template' => (string) $article->templateKey])->id;   // neu angelegte Seiten sind offline
         self::copy($article->id, $id, $article->languageId);
 
         return $id;

@@ -3,6 +3,7 @@
 namespace FriendsOfRedaxo\Fluid\Routing;
 
 use Redaxo\Core\Content\Article;
+use Redaxo\Core\Content\ExtensionPoint as ContentEp;
 use Redaxo\Core\Core;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\ExtensionPoint\ExtensionPoint;
@@ -152,13 +153,23 @@ final class Router
         self::endpoint('/robots.txt', static fn () => self::respond(Robots::text(), 'text/plain; charset=utf-8'));
         Extension::register('URL_REWRITE', static fn (ExtensionPoint $ep): string => self::url((int) $ep->getParam('id'), (int) $ep->getParam('language'), (array) $ep->getParam('params')));
         // Strukturänderungen → Pfade neu berechnen (automatische Weiterleitungen inklusive)
-        foreach (['ART_ADDED', 'ART_UPDATED', 'ART_DELETED', 'ART_MOVED', 'ART_COPIED', 'ART_STATUS', 'ART_TO_CAT', 'ART_TO_STARTARTICLE',
-            'CAT_ADDED', 'CAT_UPDATED', 'CAT_DELETED', 'CAT_MOVED', 'CAT_STATUS', 'CAT_TO_ART'] as $ep) {
-            Extension::register($ep, static function (ExtensionPoint $ep) {
-                Routes::rebuild();
-
-                return $ep->subject;
-            });
+        foreach ([
+            ContentEp\ArticleAdded::class,
+            ContentEp\ArticleUpdated::class,
+            ContentEp\ArticleDeleted::class,
+            ContentEp\ArticleMoved::class,
+            ContentEp\ArticleCopied::class,
+            ContentEp\ArticleStatusChanged::class,
+            ContentEp\ArticleConvertedToCategory::class,
+            ContentEp\ArticleConvertedToStartArticle::class,
+            ContentEp\CategoryAdded::class,
+            ContentEp\CategoryUpdated::class,
+            ContentEp\CategoryDeleted::class,
+            ContentEp\CategoryMoved::class,
+            ContentEp\CategoryStatusChanged::class,
+            ContentEp\CategoryConvertedToArticle::class,
+        ] as $ep) {
+            Extension::register($ep, static fn () => Routes::rebuild());
         }
         // Sprachen angelegt, geändert, gelöscht → Adressen neu
         foreach ([\Redaxo\Core\Language\ExtensionPoint\LanguageAdded::class, \Redaxo\Core\Language\ExtensionPoint\LanguageUpdated::class, \Redaxo\Core\Language\ExtensionPoint\LanguageDeleted::class] as $ep) {

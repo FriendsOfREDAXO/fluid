@@ -370,7 +370,7 @@ final class Content
             throw new ApiError('Dieser Zugang darf Blöcke nicht ein- und ausschalten.');
         }
         $this->slice($a, $id);
-        ContentHandler::sliceStatus($id, $online ? 1 : 0);
+        ContentHandler::changeSliceStatus($id, $online ? 1 : 0);
 
         return ['block' => $id, 'online' => $online];
     }
@@ -410,12 +410,11 @@ final class Content
         $start = Article::get(Article::getSiteStartArticleId(), $lang);
         $tpl = null !== $start ? (string) $start->templateKey : '';
         if ($menu) {
-            CategoryHandler::addCategory($parentId, ['catpriority' => 999, 'catname' => $name, 'status' => 0]);
+            $id = CategoryHandler::add($parentId, ['catpriority' => 999, 'catname' => $name, 'status' => 0])->id;
         } else {
-            ArticleHandler::addArticle(['category_id' => $parentId, 'priority' => 999, 'name' => $name, 'template' => $tpl]);
+            $id = ArticleHandler::add(['category_id' => $parentId, 'priority' => 999, 'name' => $name, 'template' => $tpl])->id;
         }
-        $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
-        ArticleHandler::editArticle($id, $lang, ['name' => $name, 'template' => $tpl]);
+        ArticleHandler::edit($id, $lang, ['name' => $name, 'template' => $tpl]);
         if (null !== $parentId && !$menu && Blog::isBlog($parentId) && ($new = Article::get($id, $lang))) {
             Blog::saveMeta($new, date('Y-m-d'), $this->access->user->name ?: $this->access->user->login, '');
         }

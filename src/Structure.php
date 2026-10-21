@@ -79,7 +79,7 @@ final class Structure
                     break;
                 case 'tree_status':
                     $on = !$a->isOnline();
-                    $isCat ? CategoryHandler::categoryStatus($a->id, $languageId, $on ? 1 : 0) : ArticleHandler::articleStatus($a->id, $languageId, $on ? 1 : 0);
+                    $isCat ? CategoryHandler::changeStatus($a->id, $languageId, $on ? 1 : 0) : ArticleHandler::changeStatus($a->id, $languageId, $on ? 1 : 0);
                     $msg = '„' . $a->name . '“ ist jetzt ' . ($on ? 'online.' : 'offline.');
                     break;
                 case 'tree_menu':
@@ -87,10 +87,10 @@ final class Structure
                         if (count(Category::get($a->id)->getChildren()) || count(array_filter(Category::get($a->id)->getArticles(), static fn (Article $x) => !$x->isStartArticle()))) {
                             throw new ApiError('„' . $a->name . '“ hat Unterseiten – erst diese verschieben, dann aus dem Menü nehmen.');
                         }
-                        ArticleHandler::category2article($a->id);   // wirft bei Fehlern (UserMessageException → Meldung)
+                        CategoryHandler::convertToArticle($a->id);   // wirft bei Fehlern (UserMessageException → Meldung)
                         $msg = '„' . $a->name . '“ steht nicht mehr im Menü.';
                     } else {
-                        ArticleHandler::article2category($a->id);
+                        ArticleHandler::convertToCategory($a->id);
                         $msg = '„' . $a->name . '“ steht jetzt im Menü.';
                     }
                     break;
@@ -98,7 +98,7 @@ final class Structure
                     if ($a->id === Article::getSiteStartArticleId() || $a->id === Article::getNotfoundArticleId()) {
                         throw new ApiError('Startseite und Seite „nicht gefunden“ lassen sich nicht löschen.');
                     }
-                    $isCat ? CategoryHandler::deleteCategory($a->id) : ArticleHandler::deleteArticle($a->id);
+                    $isCat ? CategoryHandler::delete($a->id) : ArticleHandler::delete($a->id);
                     $msg = '„' . $a->name . '“ gelöscht.';
                     break;
             }
@@ -121,15 +121,15 @@ final class Structure
                 throw new ApiError('Eine Seite kann nicht unter sich selbst stehen.');
             }
             if ($parent !== $cat->parentId) {
-                CategoryHandler::moveCategory($a->id, $parent);   // wirft bei Fehlern
+                CategoryHandler::move($a->id, $parent);   // wirft bei Fehlern
             }
-            CategoryHandler::editCategory($a->id, $languageId, ['catpriority' => $index + 1]);
+            CategoryHandler::edit($a->id, $languageId, ['catpriority' => $index + 1]);
         } else {
             if ($parent !== $a->categoryId) {
-                ArticleHandler::moveArticle($a->id, $a->categoryId, $parent);
+                ArticleHandler::move($a->id, $a->categoryId, $parent);
             }
             $fresh = Article::get($a->id, $languageId) ?? $a;
-            ArticleHandler::editArticle($a->id, $languageId, ['name' => $fresh->name, 'priority' => $index + 1, 'template' => $fresh->templateKey]);
+            ArticleHandler::edit($a->id, $languageId, ['name' => $fresh->name, 'priority' => $index + 1, 'template' => $fresh->templateKey]);
         }
 
         return '„' . $a->name . '“ verschoben.';

@@ -85,16 +85,16 @@ final class PageSettings
             throw new ApiError('Bitte einen Titel angeben.');
         }
         if ($name !== $article->name) {
-            ArticleHandler::editArticle($article->id, $article->languageId, ['name' => $name, 'template' => $article->templateKey]);
+            ArticleHandler::edit($article->id, $article->languageId, ['name' => $name, 'template' => $article->templateKey]);
             if ($article->isStartArticle() && $article->categoryId) {
-                CategoryHandler::editCategory($article->categoryId, $article->languageId, ['catname' => $name]);
+                CategoryHandler::edit($article->categoryId, $article->languageId, ['catname' => $name]);
             }
         }
         if ($online !== $article->isOnline()) {
             if ($article->isStartArticle() && $article->categoryId) {
-                CategoryHandler::categoryStatus($article->categoryId, $article->languageId, $online ? 1 : 0);
+                CategoryHandler::changeStatus($article->categoryId, $article->languageId, $online ? 1 : 0);
             } else {
-                ArticleHandler::articleStatus($article->id, $article->languageId, $online ? 1 : 0);
+                ArticleHandler::changeStatus($article->id, $article->languageId, $online ? 1 : 0);
             }
         }
         Sql::factory()->setQuery(

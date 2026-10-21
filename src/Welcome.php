@@ -96,10 +96,9 @@ final class Welcome
     {
         Core::setConfig('article_work_version', true);
         // Template „fluid“ (FluidTemplate) – gestaltet vom gewählten Kit
-        ArticleHandler::addArticle(['category_id' => null, 'priority' => 1, 'name' => 'Startseite', 'template' => 'fluid']);
-        $id = (int) Sql::factory()->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
+        $id = ArticleHandler::add(['category_id' => null, 'priority' => 1, 'name' => 'Startseite', 'template' => 'fluid'])->id;
         foreach (Language::getAll() as $l) {
-            ArticleHandler::articleStatus($id, $l->id, 1);
+            ArticleHandler::changeStatus($id, $l->id, 1);
         }
         Core::setConfig('start_article_id', $id);
         Core::setConfig('notfound_article_id', $id);

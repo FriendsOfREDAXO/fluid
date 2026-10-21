@@ -119,9 +119,9 @@ final class DemoCommand extends AbstractCommand
             // 'parent' => 'slug': Seite in einer Menüseite (z. B. Beiträge eines Blogs, Angaben unter 'post')
             if (!empty($def['is_home']) || empty($def['menu'])) {
                 $parent = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? null) : null;
-                ArticleHandler::addArticle(['category_id' => $parent, 'priority' => !empty($def['is_home']) ? 1 : 99, 'name' => (string) $def['title'], 'template' => $kit->key()]);
-                $ids[$slug] = (int) $sql->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
-                ArticleHandler::articleStatus($ids[$slug], $lang, 1);
+                // Template „fluid“ (FluidTemplate) – gestaltet vom gewählten Kit
+                $ids[$slug] = ArticleHandler::add(['category_id' => $parent, 'priority' => !empty($def['is_home']) ? 1 : 99, 'name' => (string) $def['title'], 'template' => 'fluid'])->id;
+                ArticleHandler::changeStatus($ids[$slug], $lang, 1);
                 if (isset($def['post']) && ($art = \Redaxo\Core\Content\Article::get($ids[$slug], $lang))) {
                     $post = (array) $def['post'];
                     \FriendsOfRedaxo\Fluid\PageSettings::save($art, $art->name, true, (string) ($post['excerpt'] ?? ''), (string) ($post['image'] ?? ''), false);
@@ -133,9 +133,8 @@ final class DemoCommand extends AbstractCommand
                 }
                 continue;
             }
-            CategoryHandler::addCategory(null, ['catpriority' => $prio++, 'catname' => (string) $def['title'], 'status' => 1]);
-            $id = (int) $sql->getArray('SELECT MAX(id) AS id FROM rex_article')[0]['id'];
-            $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', [$kit->key(), $id]);
+            $id = CategoryHandler::add(null, ['catpriority' => $prio++, 'catname' => (string) $def['title'], 'status' => 1])->id;
+            $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', ['fluid', $id]);
             $ids[$slug] = $id;
             if (!empty($def['blog'])) {
                 \FriendsOfRedaxo\Fluid\Blog\Blog::setBlog($id, true);
@@ -245,12 +244,12 @@ final class DemoCommand extends AbstractCommand
             $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
             copy($file, $tmp);
             [$title, $alt] = self::MEDIA_TEXTS[$name] ?? [pathinfo($name, PATHINFO_FILENAME), ''];
-            $res = \Redaxo\Core\MediaPool\MediaHandler::addMedia(['category_id' => null, 'title' => $title, 'file' => ['name' => $name, 'path' => $tmp]], false);
+            $res = \Redaxo\Core\MediaPool\MediaHandler::add(['category_id' => null, 'title' => $title, 'file' => ['name' => $name, 'path' => $tmp]], false);
             @unlink($tmp);
             // Alt-Text (Spalte meta_alt des Cores, je Sprache) – für Screenreader und für img()/picture()
             if ('' !== $alt) {
                 try {
-                    \Redaxo\Core\Database\Sql::factory()->setQuery('UPDATE rex_media_translation t JOIN rex_media m ON m.id = t.media_id SET t.meta_alt = ? WHERE m.filename = ?', [$alt, (string) ($res['filename'] ?? $name)]);
+                    \Redaxo\Core\Database\Sql::factory()->setQuery('UPDATE rex_media_translation t JOIN rex_media m ON m.id = t.media_id SET t.meta_alt = ? WHERE m.filename = ?', [$alt, $res->fileName]);
                 } catch (\Throwable) {
                     // ohne Spalte meta_alt: nur Titel
                 }
@@ -284,7 +283,7 @@ final class DemoCommand extends AbstractCommand
                 if (!\Redaxo\Core\MediaPool\Media::get($name)) {
                     $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
                     file_put_contents($tmp, $content);
-                    \Redaxo\Core\MediaPool\MediaHandler::addMedia(['category_id' => null, 'title' => 'REDAXO-Logo', 'file' => ['name' => $name, 'path' => $tmp]], false);
+                    \Redaxo\Core\MediaPool\MediaHandler::add(['category_id' => null, 'title' => 'REDAXO-Logo', 'file' => ['name' => $name, 'path' => $tmp]], false);
                     @unlink($tmp);
                     \Redaxo\Core\MediaPool\Media::clearInstances($name);
                 }

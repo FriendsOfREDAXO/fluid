@@ -92,6 +92,10 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   (Systemprotokoll, Aktivität „Formular-Mail nicht gesendet“), die Bestätigung wird trotzdem versucht, und Besucher sehen
   die Erfolgsmeldung – mit Hinweis, falls die Bestätigung nicht rausging. Vorher: „Fehler – bitte noch einmal“ trotz
   gespeichertem Eintrag (doppelte Einträge beim erneuten Absenden).
+- Angepasst an REDAXO-Core bis `fb11e8a`: Handler-Methoden umbenannt (`ArticleHandler::add()`, `changeStatus()`,
+  `convertToCategory()`, `CategoryHandler::convertToArticle()` …) und deren Rückgabewerte genutzt (neue IDs ohne
+  `MAX(id)`), Struktur-Extension-Points als Klassen (`ArticleAdded`, `CategoryMoved` …); Demo legt Seiten mit dem
+  Template „fluid“ an (nicht mit dem Schlüssel des Kits).
 - Angepasst an REDAXO-Core bis `c9b0bf1`: `Redaxo\Core\Console\AbstractCommand`, `Redaxo\Core\MediaManager\AsMediaType`,
   `Redaxo\Core\Util\Markdown\Markdown`; Handler des Cores werfen statt `false` zu liefern (Seitenbaum: Menü und Verschieben),
   ihre `UserMessageException` erscheint im Editor und per MCP als Meldung statt als interner Fehler.
