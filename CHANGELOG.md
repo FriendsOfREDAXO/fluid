@@ -11,6 +11,12 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   LinkedIn & Co. trotzdem eine Vorschau.
 - Sitemap: Bilder je Seite, Änderungszeit mit Uhrzeit, im Browser als Tabelle lesbar (`/sitemap.xml`).
 - Schnellerer Seitenaufbau: Das erste Bild im ersten Block lädt sofort und mit Vorrang.
+- Blockauswahl wie in KLXM Studio: oben „Häufig verwendet“ (die meistgenutzten Blöcke der Website), darunter alle
+  nach Bereich in fester Reihenfolge; beim Suchen verschwinden leere Bereiche.
+- Seitenleiste: Schalter „Auf der Website sichtbar“ ganz oben, mit deutlichem Hinweis, wenn der Block ausgeblendet ist –
+  schaltet sofort, ungespeicherte Eingaben im Formular bleiben.
+- Redaktionsnotizen `[# … #]`: Klick im Bearbeiten-Modus → „Als Text übernehmen“ oder „Notiz löschen“.
+- Umschalt+Enter im Rich-Text: Zeilenumbruch statt neuem Absatz (auch in Safari).
 - Bearbeiten auf der Website: Texte direkt auf der Seite, Seitenleiste je Block, Blöcke einfügen, verschieben (Ziehen
   oder Pfeile), verdoppeln, kopieren und einfügen, online/offline; Greifer für Spalten, Abstände, Textbreite und Aufteilung.
 - Arbeitsversion: Entwurf speichern, veröffentlichen, verwerfen; Versionen wiederherstellen; Entwürfe-Übersicht und Aktivität.

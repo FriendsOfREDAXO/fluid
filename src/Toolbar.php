@@ -53,6 +53,8 @@ final class Toolbar
 
         $config = [
             'editing' => $editing,
+            // Blockauswahl „Häufig verwendet“: Vorkommen je Blocktyp auf der Website (veröffentlichte Fassung)
+            'usage' => self::usage(),
             'article' => ['id' => $article->id, 'name' => $article->name, 'language' => $article->languageId, 'online' => $article->isOnline(), 'category' => $article->getCategory()->name ?? '', 'menu' => $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id)],
             'api' => Url::article($article->id, $article->languageId, [Api::PARAM => '__action__']),
             'csrf' => CsrfToken::factory(Api::CSRF)->getValue(),
@@ -111,6 +113,17 @@ final class Toolbar
         $pos = strripos($html, '</body>');
 
         return false === $pos ? $html : substr($html, 0, $pos) . $body . substr($html, $pos);
+    }
+
+    /** @return array<string, int> Modulschlüssel → Anzahl der Blöcke, absteigend */
+    private static function usage(): array
+    {
+        $out = [];
+        foreach (\Redaxo\Core\Database\Sql::factory()->getArray('SELECT module, COUNT(*) AS n FROM rex_article_slice WHERE revision = ? GROUP BY module ORDER BY n DESC', [ArticleRevision::LIVE]) as $r) {
+            $out[(string) $r['module']] = (int) $r['n'];
+        }
+
+        return $out;
     }
 
     /** Style-Editor: Schema des Kits der Seite (nur Administration) */

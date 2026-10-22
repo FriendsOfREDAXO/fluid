@@ -139,6 +139,10 @@
   const panel = h(`
     <aside class="panel" hidden aria-labelledby="blocks-panel-title">
       <header class="panel__head"><h2 id="blocks-panel-title" data-panel-title>Block</h2><button type="button" class="btn btn--icon" data-panel-close aria-label="Schließen">✕</button></header>
+      <div class="panel__vis" data-panel-vis hidden>
+        <label class="vis-switch"><input type="checkbox" role="switch" data-panel-visible><span class="vis-switch__track" aria-hidden="true"></span><span>Auf der Website sichtbar</span></label>
+        <p class="panel__vis-note" data-panel-vis-note hidden>Ausgeblendet – Besucher sehen diesen Block nicht. Sie sehen ihn nur hier im Bearbeiten-Modus.</p>
+      </div>
       <form class="panel__body" data-panel-form novalidate></form>
       <footer class="panel__foot"><button type="button" class="btn" data-panel-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-panel-apply>Übernehmen</button></footer>
     </aside>`);
@@ -1410,9 +1414,19 @@
     const groups = {};
     // Datensatz-Blöcke (Feld „Fluid-Blöcke“): nur die im Feld erlaubten Blöcke
     const allowed = after?.closest?.('[data-record-blocks]')?.dataset.allowed?.split(',');
-    cfg.modules.filter((m) => (!col || m.nestable) && (!allowed || allowed.includes(m.key))).forEach((m) => (groups[m.group] ||= []).push(m));
-    list.innerHTML = Object.entries(groups).map(([g, ms]) => `<p class="picker__group">${esc(g)}</p>`
-      + ms.map((m) => `<button type="button" role="option" class="picker__item" data-key="${esc(m.key)}" data-q="${esc((m.label + ' ' + m.help).toLowerCase())}"><strong>${esc(m.label)}</strong>${m.help ? `<span>${esc(m.help)}</span>` : ''}</button>`).join('')).join('');
+    const mods = cfg.modules.filter((m) => (!col || m.nestable) && (!allowed || allowed.includes(m.key)));
+    mods.forEach((m) => (groups[m.group] ||= []).push(m));
+    // Reihenfolge wie in KLXM Studio: „Häufig verwendet“ (meiste Vorkommen auf der Website, sonst übliche Grundblöcke), dann
+    // die Gruppen in fester Folge. Beim Suchen bleiben die Favoriten weg (sie stehen auch in ihrer Gruppe).
+    const keys = new Set(mods.map((m) => m.key));
+    const used = Object.keys(cfg.usage || {}).filter((k) => keys.has(k));
+    const basics = ['richtext', 'media_text', 'cards', 'hero', 'cta', 'features'].map((t) => mods.find((m) => m.key.endsWith('.' + t))?.key).filter(Boolean);
+    const favs = mods.length > 8 ? (used.length >= 3 ? used : [...used, ...basics.filter((k) => !used.includes(k))]).slice(0, 6) : [];
+    const ORDER = ['Kopf', 'Inhalt', 'Medien', 'Layout', 'Daten', 'Navigation', 'Website'];
+    const rank = (g) => (ORDER.indexOf(g) + 1) || 99;
+    const item = (m, fav = false) => `<button type="button" role="option" class="picker__item${fav ? ' picker__item--fav' : ''}" data-key="${esc(m.key)}" data-q="${esc((m.label + ' ' + m.help).toLowerCase())}"><strong>${esc(m.label)}</strong>${m.help ? `<span>${esc(m.help)}</span>` : ''}</button>`;
+    list.innerHTML = (favs.length ? '<p class="picker__group picker__group--fav">Häufig verwendet</p>' + favs.map((k) => item(mods.find((m) => m.key === k), true)).join('') : '')
+      + Object.entries(groups).sort(([a], [b]) => rank(a) - rank(b)).map(([g, ms]) => `<p class="picker__group">${esc(g)}</p>` + ms.map((m) => item(m)).join('')).join('');
     picker.hidden = false;
     const q = $('[data-picker-q]');
     q.value = '';
@@ -1430,7 +1444,13 @@
   picker.addEventListener('click', (e) => e.target === picker && closePicker());
   $('[data-picker-q]').addEventListener('input', (e) => {
     const q = e.target.value.trim().toLowerCase();
-    root.querySelectorAll('.picker__item').forEach((b) => (b.hidden = q !== '' && !b.dataset.q.includes(q)));
+    root.querySelectorAll('.picker__item').forEach((b) => (b.hidden = q !== '' && (b.classList.contains('picker__item--fav') || !b.dataset.q.includes(q))));
+    // Gruppenüberschriften nur mit sichtbaren Blöcken darunter
+    root.querySelectorAll('.picker__group').forEach((g) => {
+      let n = g.nextElementSibling, any = false;
+      while (n && !n.matches('.picker__group')) { if (!n.hidden) any = true; n = n.nextElementSibling; }
+      g.hidden = !any;
+    });
   });
   $('[data-picker-list]').addEventListener('click', async (e) => {
     const item = e.target.closest('.picker__item');
@@ -1521,6 +1541,7 @@
       panelBlock = sec;
       original = sec.outerHTML;
       $('[data-panel-title]').textContent = res.label;
+      showVisibility(sec);
       form.innerHTML = res.html;
       window.BlocksForm?.init(form, schedulePreview);
       Rich?.initFields(form);
@@ -1535,6 +1556,34 @@
       say(err.message, true);
     }
   }
+
+  // Sichtbarkeit oben in der Seitenleiste (wie KLXM Studio): schaltet sofort, ohne die Eingaben im Formular zu verwerfen
+  function showVisibility(sec) {
+    const box = $('[data-panel-vis]');
+    box.hidden = sec.hasAttribute('data-record') || !may('publishSlice');
+    const off = sec.hasAttribute('data-offline');
+    $('[data-panel-visible]').checked = !off;
+    $('[data-panel-vis-note]').hidden = !off;
+    box.classList.toggle('is-off', off);
+  }
+  $('[data-panel-visible]').addEventListener('change', async (e) => {
+    const sec = panelBlock;
+    if (!sec) return;
+    try {
+      const res = await api('status', { slice: sec.dataset.block });
+      // Vorschau im Block behalten, nur die Kennzeichnung umschalten – auch im Stand für „Abbrechen“
+      sec.toggleAttribute('data-offline', !res.online);
+      const o = h(original);
+      o.toggleAttribute('data-offline', !res.online);
+      original = o.outerHTML;
+      showVisibility(sec);
+      place();
+      say(res.online ? 'Block ist online.' : 'Block ist offline – auf der Website nicht sichtbar.');
+    } catch (err) {
+      e.target.checked = !e.target.checked;
+      say(err.message, true);
+    }
+  });
 
   function closePanel() {
     panel.hidden = true;
@@ -2116,6 +2165,34 @@
   }
   let noteTimer = 0;
   main.addEventListener('input', () => { clearTimeout(noteTimer); noteTimer = setTimeout(highlightNotes, 300); });
+
+  // Klick auf eine Notiz in einem Textfeld (wie KLXM Studio): „Als Text übernehmen“ (sichtbarer Text) oder „Notiz löschen“
+  const caretAt = (x, y) => {
+    if (document.caretPositionFromPoint) {
+      const p = document.caretPositionFromPoint(x, y);
+      return p && { node: p.offsetNode, offset: p.offset };
+    }
+    const r = document.caretRangeFromPoint?.(x, y);
+    return r && { node: r.startContainer, offset: r.startOffset };
+  };
+  main.addEventListener('click', async (e) => {
+    const field = e.target.closest?.('[data-edit]');
+    const at = field && field.textContent.includes('[#') ? caretAt(e.clientX, e.clientY) : null;
+    if (!at || at.node.nodeType !== Node.TEXT_NODE || !field.contains(at.node)) return;
+    const node = at.node;
+    const m = [...node.nodeValue.matchAll(/\[#([\s\S]*?)#\]/g)].find((x) => at.offset > x.index && at.offset < x.index + x[0].length);
+    if (!m) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const text = m[1].trim();
+    const r = await ask({ title: 'Redaktionsnotiz', body: `${text}\n\nNotizen sieht nur die Redaktion. „Als Text übernehmen“ macht daraus normalen, sichtbaren Text.`, ok: 'Als Text übernehmen', alt: 'Notiz löschen' });
+    if (!r || !node.isConnected) return;
+    const before = node.nodeValue.slice(0, m.index);
+    const after = node.nodeValue.slice(m.index + m[0].length);
+    node.nodeValue = r === true ? before + text + after : (after === '' || after.startsWith(' ') ? before.replace(/ $/, '') : before) + after;
+    field.dispatchEvent(new Event('input', { bubbles: true }));
+    highlightNotes();
+  }, true);
   document.addEventListener('fluid:rendered', () => setTimeout(highlightNotes, 50));
   highlightNotes();
 

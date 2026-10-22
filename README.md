@@ -156,14 +156,19 @@ Host auf den Ordner `public` zeigen lassen (siehe [Webserver](#webserver-schöne
    angemeldet bist, siehst du oben die **Leiste von fluid**.
 3. **Bearbeiten:** In der Leiste auf **„Bearbeiten“**. Jetzt kannst du in jeden Text klicken und tippen. Über einem Block
    erscheint seine Leiste: **Bearbeiten** öffnet alle Felder in der Seitenleiste, ↑ ↓ verschiebt, ⋯ verdoppelt oder kopiert.
+   Ganz oben in der Seitenleiste blendet **„Auf der Website sichtbar“** den Block aus oder ein. Umschalt+Enter macht im
+   Text einen Zeilenumbruch ohne neuen Absatz.
 4. **Block einfügen:** Mit der Maus über einen Block fahren, unten auf das runde **+** klicken und einen Block wählen.
-5. **Speichern und veröffentlichen:** **„Speichern“** legt die Änderungen im Entwurf ab – Besucher sehen noch die alte
+   Oben stehen die auf deiner Website **häufig verwendeten** Blöcke, darunter alle nach Bereich; die Suche filtert über alle.
+5. **Notizen für die Redaktion:** `[# Text #]` im Text ist nur für die Redaktion sichtbar. Ein Klick darauf im
+   Bearbeiten-Modus fragt: **„Als Text übernehmen“** (wird normaler Text) oder **„Notiz löschen“**.
+6. **Speichern und veröffentlichen:** **„Speichern“** legt die Änderungen im Entwurf ab – Besucher sehen noch die alte
    Fassung. **„Veröffentlichen“** bringt alles live.
-6. **Design:** **„Design“** öffnet die Vorlagen und alle Einstellungen. Ein Klick auf eine Vorlage zeigt sie sofort;
+7. **Design:** **„Design“** öffnet die Vorlagen und alle Einstellungen. Ein Klick auf eine Vorlage zeigt sie sofort;
    „Speichern“ übernimmt sie für die ganze Website.
-7. **Mehr im Menü ⋯:** Seiten (Seitenbaum), Neue Seite, Seiteneinstellungen, Website (Name, Logo, Kontakt, Sprachen,
+8. **Mehr im Menü ⋯:** Seiten (Seitenbaum), Neue Seite, Seiteneinstellungen, Website (Name, Logo, Kontakt, Sprachen,
    Domains), Verlauf, Anfragen.
-8. **Versionen:** Menü ⋯ → **Verlauf & Entwürfe** → **„Zeitleiste mit Vorschau öffnen“**. Die Ansicht zeigt dir:
+9. **Versionen:** Menü ⋯ → **Verlauf & Entwürfe** → **„Zeitleiste mit Vorschau öffnen“**. Die Ansicht zeigt dir:
    - links jeden gespeicherten Stand der Seite, nach Tagen sortiert,
    - rechts die Seite so, wie sie damals aussah, am Desktop oder am Handy.
    - **„Änderungen hervorheben“** markiert neue und geänderte Blöcke.
