@@ -20,8 +20,9 @@ use function Redaxo\Core\View\escape;
  * Optionen je Feld: name, label, type, help, required, default, max, rows, placeholder, options, width (half),
  * variants (nur bei diesen Varianten sichtbar), fields/item_label/title_field/max_items (repeater).
  *
- * Feldnamen: `{prefix}[1][feld]` für die Felder, `{prefix}[2][option]` für die Abschnitts-Optionen. Im Backend ist der
- * Präfix `REX_INPUT_VALUE` – REDAXO speichert die Arrays dann als JSON in value1/value2.
+ * Feldnamen: `{prefix}[1][feld]` für die Felder, `{prefix}[2][option]` für die Abschnitts-Optionen. Im Backend
+ * (BlockModule::input()) `slice[values][feld]` und `slice[tunes][option]` – das Formular des Cores schreibt sie in die
+ * Eigenschaften des Moduls (Feldtyp BlockValues).
  */
 final class FieldForm
 {
@@ -31,40 +32,42 @@ final class FieldForm
      * @param array<string, mixed> $data
      * @param array<string, mixed> $tunes
      */
-    public static function render(BlockModule $module, array $data, array $tunes, string $prefix, bool $backend = true): string
+    public static function render(string $module, array $data, array $tunes, string $prefix, bool $backend = true, string $dataKey = '1', string $tunesKey = '2'): string
     {
-        $variants = $module->variants();
-        $data = self::withDefaults($module->fields(), $data, $variants);
+        $p1 = $prefix . '[' . $dataKey . ']';
+        $p2 = $prefix . '[' . $tunesKey . ']';
+        $variants = $module::variants();
+        $data = self::withDefaults($module::fields(), $data, $variants);
         $variant = (string) ($data['variant'] ?? '');
 
         $h = '<div class="blocks-form" data-blocks-form data-variant="' . escape($variant) . '">';
-        $help = (string) ($module->definition()['help'] ?? '');
+        $help = (string) ($module::definition()['help'] ?? '');
         if ('' !== $help) {
             $h .= '<p class="blocks-form__intro">' . escape($help) . '</p>';
         }
         if ($variants) {
-            $h .= self::row('Darstellung', self::select($prefix . '[1][variant]', $variants, $variant, ['data-blocks-variant' => '']), '', false);
+            $h .= self::row('Darstellung', self::select($p1 . '[variant]', $variants, $variant, ['data-blocks-variant' => '']), '', false);
         }
-        $h .= self::fields($module->fields(), $data, $prefix . '[1]', $backend);
+        $h .= self::fields($module::fields(), $data, $p1, $backend);
         // Layout: gezogene Spaltenbreiten (Griff auf der Website) beim Speichern des Formulars behalten
         if (is_array($data['widths'] ?? null) && is_array($data['widths']['w'] ?? null)) {
-            $h .= '<input type="hidden" name="' . escape($prefix . '[1][widths][preset]') . '" value="' . escape((string) ($data['widths']['preset'] ?? '')) . '">';
+            $h .= '<input type="hidden" name="' . escape($p1 . '[widths][preset]') . '" value="' . escape((string) ($data['widths']['preset'] ?? '')) . '">';
             foreach (array_values($data['widths']['w']) as $i => $w) {
-                $h .= '<input type="hidden" name="' . escape($prefix . '[1][widths][w][' . $i . ']') . '" value="' . (int) $w . '">';
+                $h .= '<input type="hidden" name="' . escape($p1 . '[widths][w][' . $i . ']') . '" value="' . (int) $w . '">';
             }
         }
 
         // Abschnitts-Optionen
-        $bgs = $module->kit()->backgrounds();
+        $bgs = $module::kit()->backgrounds();
         $h .= '<details class="blocks-form__tunes"><summary>Abschnitt</summary><div class="blocks-form__grid">';
-        $h .= self::row('Hintergrund', self::select($prefix . '[2][background]', ['' => 'Standard'] + $bgs, (string) ($tunes['background'] ?? '')), 'In einer Layout-Spalte: ein anderer Hintergrund als das Layout macht den Block zur Karte.', true);
-        $h .= self::row('Sprungmarke (Anker)', '<input class="form-control" type="text" name="' . escape($prefix . '[2][anchor]') . '" value="' . escape((string) ($tunes['anchor'] ?? '')) . '" pattern="[a-z0-9\-]*" placeholder="z. B. kontakt">', 'Nur Kleinbuchstaben, Ziffern und Bindestriche.', true);
+        $h .= self::row('Hintergrund', self::select($p2 . '[background]', ['' => 'Standard'] + $bgs, (string) ($tunes['background'] ?? '')), 'In einer Layout-Spalte: ein anderer Hintergrund als das Layout macht den Block zur Karte.', true);
+        $h .= self::row('Sprungmarke (Anker)', '<input class="form-control" type="text" name="' . escape($p2 . '[anchor]') . '" value="' . escape((string) ($tunes['anchor'] ?? '')) . '" pattern="[a-z0-9\-]*" placeholder="z. B. kontakt">', 'Nur Kleinbuchstaben, Ziffern und Bindestriche.', true);
         $space = ['none' => 'Kein', 'small' => 'Klein', 'normal' => 'Normal', 'large' => 'Groß'];
-        $h .= self::row('Abstand oben', self::select($prefix . '[2][spaceTop]', $space, (string) ($tunes['spaceTop'] ?? 'normal')), '', true);
-        $h .= self::row('Abstand unten', self::select($prefix . '[2][spaceBottom]', $space, (string) ($tunes['spaceBottom'] ?? 'normal')), '', true);
-        if ($module->nestable()) {
+        $h .= self::row('Abstand oben', self::select($p2 . '[spaceTop]', $space, (string) ($tunes['spaceTop'] ?? 'normal')), '', true);
+        $h .= self::row('Abstand unten', self::select($p2 . '[spaceBottom]', $space, (string) ($tunes['spaceBottom'] ?? 'normal')), '', true);
+        if ($module::nestable()) {
             $cols = ['' => 'Nicht in einem Layout', '1' => 'Spalte 1', '2' => 'Spalte 2', '3' => 'Spalte 3', '4' => 'Spalte 4'];
-            $h .= self::row('Spalte im Layout', self::select($prefix . '[2][col]', $cols, (string) ($tunes['col'] ?? '')),
+            $h .= self::row('Spalte im Layout', self::select($p2 . '[col]', $cols, (string) ($tunes['col'] ?? '')),
                 'Wirkt, wenn der Block direkt hinter einem Block „Layout (Spalten)“ steht (oder hinter weiteren Blöcken dieses Layouts).', false);
         }
         $h .= '</div></details>';

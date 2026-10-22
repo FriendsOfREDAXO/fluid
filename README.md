@@ -239,7 +239,8 @@ einzelne Demo-Seiten anhängen.
 `.env.local` (das Installationsskript setzt `null://null`: Mails werden dann nicht verschickt).
 
 **Nach Updates** (`composer update`): immer `php bin/console migrate` – das aktualisiert Tabellen und kopiert die
-Assets neu.
+Assets neu. Bei Datenbanken von REDAXO 6 vor Oktober 2026 (Spalten `value1` … im Slice) einmal
+`php bin/console fluid:upgrade:slices` – das übernimmt die Blöcke in die Spalte `data` des Cores.
 
 ---
 
@@ -356,7 +357,7 @@ Ein eigener Block in Kürze:
 #[AsModule('fluid.teaser', 'Teaser')]
 final class Teaser extends FluidBlock
 {
-    protected function define(): array
+    protected static function define(): array
     {
         return ['label' => 'Teaser', 'group' => 'Inhalt', 'fields' => [
             ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true],

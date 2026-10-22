@@ -37,9 +37,9 @@ final class FluidTemplate extends Template
     }
 
     #[Override]
-    public function isModuleAllowed(ContentSection $section, Module $module): bool
+    public function isModuleAllowed(ContentSection $section, string $module): bool
     {
-        return $module instanceof BlockModule && $module->kit() === Kit::active();
+        return is_a($module, BlockModule::class, true) && $module::kit() === Kit::active();
     }
 
     /**

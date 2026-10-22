@@ -92,6 +92,21 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   (Systemprotokoll, Aktivität „Formular-Mail nicht gesendet“), die Bestätigung wird trotzdem versucht, und Besucher sehen
   die Erfolgsmeldung – mit Hinweis, falls die Bestätigung nicht rausging. Vorher: „Fehler – bitte noch einmal“ trotz
   gespeichertem Eintrag (doppelte Einträge beim erneuten Absenden).
+- Angepasst an REDAXO-Core bis `af70a14` (Module je Slice, Felder als JSON in `data`):
+  - Blöcke speichern ihre Felder unter `values`, die Abschnitts-Optionen unter `tunes` in der Spalte `data` des Slices
+    (statt `value1`/`value2`); im Backend über das Formular des Cores (Feldtyp `Form\BlockValues`).
+  - Was den Blocktyp betrifft, ist statisch: `define()`, `kit()`, `fields()`, `definition()`, neu `label()`;
+    `BlockModule::of($slice)` liefert das Modul eines Slices, `BlockModule::classFor($key)` und `all()` die Klassen.
+    **Eigene Blöcke im Projekt:** `protected static function define()` bzw. `public static function kit()`.
+  - Bestehende Datenbanken: `php bin/console fluid:upgrade:slices` (vor oder nach `migrate`) übernimmt die Blöcke und
+    benennt `ctype_id` in `content_section_id` um; `--drop-old` entfernt danach die alten Spalten.
+  - Löschschutz: Medien und Seiten, die in Blöcken stehen, meldet fluid an den Core (`MediaUsageCheck`,
+    `ArticleUsageCheck`) – der Core kennt nur Verweise aus Feldtypen.
+  - Extension Points als Klassen: `ArticleContentRendering`, `ArticleSlicesQuery`, `SliceOutput`, `SliceDeleting`,
+    `ArticleUrl`, `ContentPageBeforeSlices`; Handler mit einheitlichem `$data` (Kategorien, Sprachen, Medien als `File`).
+  - Neue Blöcke stehen sicher an ihrer Stelle, auch wenn mehrere in derselben Sekunde entstehen (vorher konnte ein
+    Spalten-Block hinter einem fremden Block landen). Die Zwischenablage nutzt `values`/`tunes`; ältere Einträge
+    lassen sich weiter einfügen.
 - Angepasst an REDAXO-Core bis `fb11e8a`: Handler-Methoden umbenannt (`ArticleHandler::add()`, `changeStatus()`,
   `convertToCategory()`, `CategoryHandler::convertToArticle()` …) und deren Rückgabewerte genutzt (neue IDs ohne
   `MAX(id)`), Struktur-Extension-Points als Klassen (`ArticleAdded`, `CategoryMoved` …); Demo legt Seiten mit dem

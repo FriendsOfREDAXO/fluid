@@ -33,20 +33,20 @@ final class Toolbar
         $addon = FluidAddon::instance();
         $perm = $user->getComplexPerm('modules');
         $modules = [];
-        foreach (Module::getAll() as $module) {
-            if (!$module instanceof BlockModule || !$module->available() || !Template::checkModuleAllowed((string) $article->templateKey, 1, $module->key)) {
+        foreach (BlockModule::all() as $key => $module) {
+            if (!$module::available() || !Template::checkModuleAllowed((string) $article->templateKey, 1, $key)) {
                 continue;
             }
-            if (!$perm instanceof ModulePermission || !$perm->hasPerm($module->key)) {
+            if (!$perm instanceof ModulePermission || !$perm->hasPerm($key)) {
                 continue;
             }
-            $def = $module->definition();
+            $def = $module::definition();
             $modules[] = [
-                'key' => $module->key,
-                'label' => (string) ($def['label'] ?? $module->name),
+                'key' => $key,
+                'label' => $module::label(),
                 'group' => (string) ($def['group'] ?? 'Inhalt'),
                 'help' => (string) ($def['help'] ?? ''),
-                'nestable' => $module->nestable(),
+                'nestable' => $module::nestable(),
                 'drags' => self::drags($module, $def),
             ];
         }
@@ -116,9 +116,9 @@ final class Toolbar
     /** Style-Editor: Schema des Kits der Seite (nur Administration) */
     private static function designSchema(Article $article): ?array
     {
-        foreach (Module::getAll() as $m) {
-            if ($m instanceof BlockModule && Template::checkModuleAllowed((string) $article->templateKey, 1, $m->key)) {
-                return $m->kit()->design()->schema();
+        foreach (BlockModule::all() as $key => $m) {
+            if (Template::checkModuleAllowed((string) $article->templateKey, 1, $key)) {
+                return $m::kit()->design()->schema();
             }
         }
 
@@ -138,12 +138,13 @@ final class Toolbar
      *
      * @return list<array<string, mixed>>
      */
-    private static function drags(BlockModule $module, array $def): array
+    /** @param class-string<BlockModule> $module */
+    private static function drags(string $module, array $def): array
     {
         $out = [];
         foreach ((array) ($def['drags'] ?? []) as $g) {
             $field = null;
-            foreach ($module->fields() as $f) {
+            foreach ($module::fields() as $f) {
                 if (($f['name'] ?? '') === ($g['field'] ?? null)) {
                     $field = $f;
                 }

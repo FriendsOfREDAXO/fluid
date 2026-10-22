@@ -13,7 +13,7 @@ use Override;
 abstract class FluidBlock extends BlockModule
 {
     #[Override]
-    public function kit(): Kit
+    public static function kit(): Kit
     {
         return Kit::active();
     }

@@ -9,7 +9,12 @@ use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\ArticleSlice;
-use Redaxo\Core\Content\Module;
+use Redaxo\Core\Content\ExtensionPoint\ArticleContentRendering;
+use Redaxo\Core\Content\ExtensionPoint\ArticleContentUpdated;
+use Redaxo\Core\Content\ExtensionPoint\ArticleSlicesQuery;
+use Redaxo\Core\Content\ExtensionPoint\ContentPageBeforeSlices;
+use Redaxo\Core\Content\ExtensionPoint\SliceDeleting;
+use Redaxo\Core\Content\ExtensionPoint\SliceOutput;
 use Redaxo\Core\Content\Template;
 use Redaxo\Core\Core;
 use Redaxo\Core\Database\Column;
@@ -171,11 +176,11 @@ final class FluidAddon extends Addon
             Asset::addJsFile($this->getAssetsUrl('form.js'));
             Asset::addJsFile($this->getAssetsUrl('rte.js'));
             // Absprung „Auf der Website bearbeiten“ über den Slices – nur bei Artikeln mit Block-Template
-            Extension::register('STRUCTURE_CONTENT_BEFORE_SLICES', static function (ExtensionPoint $ep): string {
-                $article = Article::get((int) $ep->getParam('article_id'), (int) $ep->getParam('language'));
-                $template = $article?->templateKey ? Template::get($article->templateKey) : null;
-                $blocks = array_filter(Module::getAll(), static fn (Module $m) => $m instanceof BlockModule && $template && Template::checkModuleAllowed($template->key, 1, $m->key));
-                if (!$article || !$blocks) {
+            Extension::register(ContentPageBeforeSlices::class, static function (ContentPageBeforeSlices $ep): string {
+                $article = $ep->article;
+                $template = $article->templateKey ? Template::get($article->templateKey) : null;
+                $blocks = array_filter(array_keys(BlockModule::all()), static fn (string $key) => $template && Template::checkModuleAllowed($template->key, 1, $key));
+                if (!$blocks) {
                     return (string) $ep->subject;
                 }
                 $url = Url::article($article->id, $article->languageId, [Editing::PARAM => 1]);
@@ -185,7 +190,7 @@ final class FluidAddon extends Addon
             });
         }
 
-        // Schöne Adressen (URL_REWRITE, Strukturänderungen; im Frontend: Adresse → Seite)
+        // Schöne Adressen (ArticleUrl, Strukturänderungen; im Frontend: Adresse → Seite)
         // Untertitel: PHP erkennt .srt als application/x-subrip, die Liste des Cores erwartet nur text/plain
         $mime = &\Redaxo\Core\MediaPool\MediaPool::$allowedMimeTypes;
         if ($mime) {
@@ -205,6 +210,7 @@ final class FluidAddon extends Addon
         Data\Detail::boot();
         Blog\Blog::boot();
         Search\Search::boot();
+        Usage::boot();
         Welcome::boot();
         // Kern von fluid: Editor-Parameter, „nicht indexieren“, eigener robots.txt-Text
         Routing\Router::keep(Api::PARAM, Editing::PARAM);
@@ -214,24 +220,24 @@ final class FluidAddon extends Addon
 
             return '' !== $own ? $own : (string) $ep->subject . "\nDisallow: /*?" . Editing::PARAM . '=';
         });
-        // Schöne Adressen (URL_REWRITE, Strukturänderungen; im Frontend: Adresse → Seite)
+        // Schöne Adressen (ArticleUrl, Strukturänderungen; im Frontend: Adresse → Seite)
         Routing\Router::boot();
 
         // Suchindex: jede Inhaltsänderung des Cores (Blöcke hinzufügen, löschen, verschieben, online/offline, Inhalte kopieren –
         // Backend und Website) markiert ihn; die nächste Suche baut ihn neu
-        Extension::register('ART_CONTENT_UPDATED', static fn () => Editing::isGuest() ? null : Search\Search::markDirty());   // Gäste ändern nie dauerhaft
+        Extension::register(ArticleContentUpdated::NAME, static fn () => Editing::isGuest() ? null : Search\Search::markDirty());   // Gäste ändern nie dauerhaft
 
         // Layout gelöscht (Backend oder Website): seine Spalten-Blöcke werden wieder normale Abschnitte
-        Extension::register('SLICE_DELETE', static function (ExtensionPoint $ep): void {
-            $slice = ArticleSlice::getArticleSliceById((int) $ep->getParam('slice_id'), (int) $ep->getParam('language_id'), (int) $ep->getParam('slice_revision'));
-            if (!$slice || !Layout::isLayout($slice)) {
+        Extension::register(SliceDeleting::class, static function (SliceDeleting $ep): void {
+            $slice = $ep->slice;
+            if (!Layout::isLayout($slice)) {
                 return;
             }
             $sql = Sql::factory();
             foreach (Layout::children($slice) as $child) {
-                $tunes = BlockModule::decode($child->getValue(2));
+                $tunes = BlockModule::tunesOf($child);
                 unset($tunes['col']);
-                $sql->setQuery('UPDATE rex_article_slice SET value2 = ? WHERE id = ?', [json_encode((object) $tunes, JSON_UNESCAPED_UNICODE), $child->id]);
+                $sql->setQuery('UPDATE rex_article_slice SET data = ? WHERE id = ?', [BlockModule::encodeStore(BlockModule::valuesOf($child), $tunes), $child->id]);
             }
         });
 
@@ -250,23 +256,23 @@ final class FluidAddon extends Addon
         }
 
         // Bearbeiten-Modus: Artikel live aus der Datenbank (Arbeitsversion, sofern eingeschaltet) statt aus dem Cache
-        Extension::register('ART_INIT', static function (ExtensionPoint $ep): void {
+        Extension::register(ArticleContentRendering::class, static function (ArticleContentRendering $ep): void {
             if (!Editing::requested()) {
                 return;
             }
             Editing::start();
-            $article = Type::instanceOf($ep->subject, ArticleContent::class);
+            $article = $ep->content;
             $article->eval = true;
             $article->sliceRevision = self::revision();
         });
 
         // Versionen: Vorschau eines Stands (?fluid_version=…) – nur mit Recht auf die Seite, ohne Leiste, nie aus dem Cache
-        Extension::register('ART_INIT', static function (ExtensionPoint $ep): void {
+        Extension::register(ArticleContentRendering::class, static function (ArticleContentRendering $ep): void {
             $key = Request::get(Versions::PARAM, 'string', '');
             if ('' === $key || null === Editing::user() || Editing::isGuest() || null === $state = Versions::parseKey($key)) {
                 return;
             }
-            $article = Type::instanceOf($ep->subject, ArticleContent::class);
+            $article = $ep->content;
             $article->eval = true;
             $article->sliceRevision = $state['revision'];
             Versions::$preview = $state;
@@ -275,11 +281,11 @@ final class FluidAddon extends Addon
             }
             header('Cache-Control: no-store');
         });
-        Extension::register('ART_SLICES_QUERY', static fn (ExtensionPoint $ep): string => Versions::sliceQuery((string) $ep->subject));
-        Extension::register('SLICE_SHOW', static fn (ExtensionPoint $ep): string => Versions::markSlice((string) $ep->subject, (int) $ep->getParam('slice_id')));
+        Extension::register(ArticleSlicesQuery::class, static fn (ArticleSlicesQuery $ep): string => Versions::sliceQuery((string) $ep->subject));
+        Extension::register(SliceOutput::class, static fn (SliceOutput $ep): string => Versions::markSlice((string) $ep->subject, $ep->slice->id));
 
         // Im Bearbeiten-Modus auch Offline-Blöcke zeigen (gekennzeichnet), damit sie sich wieder einschalten lassen
-        Extension::register('ART_SLICES_QUERY', static function (ExtensionPoint $ep): ?string {
+        Extension::register(ArticleSlicesQuery::class, static function (ArticleSlicesQuery $ep): ?string {
             if (!Editing::active()) {
                 return null;
             }

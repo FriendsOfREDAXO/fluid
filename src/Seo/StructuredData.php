@@ -33,7 +33,7 @@ final class StructuredData
         if (Editing::active()) {
             return;
         }
-        $spec = $b->module->definition()['jsonld'] ?? null;
+        $spec = $b->module::definition()['jsonld'] ?? null;
         if (is_callable($spec)) {
             if ($n = $spec($b)) {
                 self::$nodes[] = $n;

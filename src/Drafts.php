@@ -21,7 +21,7 @@ final class Drafts
         $sql = Sql::factory();
         $sql->setQuery('SET SESSION group_concat_max_len = 16777216');   // Prüfsumme über den ganzen Inhalt
         $rows = $sql->getArray(
-            'SELECT article_id, revision, MD5(GROUP_CONCAT(CONCAT_WS("|", module, priority, status, value1, value2, ctype_id) ORDER BY priority SEPARATOR "#")) AS sig,
+            'SELECT article_id, revision, MD5(GROUP_CONCAT(CONCAT_WS("|", module, priority, status, data, content_section_id) ORDER BY priority SEPARATOR "#")) AS sig,
                 MAX(updatedate) AS changed, SUBSTRING_INDEX(GROUP_CONCAT(updateuser ORDER BY updatedate DESC), ",", 1) AS user
              FROM rex_article_slice WHERE language_id = ? GROUP BY article_id, revision',
             [$languageId],

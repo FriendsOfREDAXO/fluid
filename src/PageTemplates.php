@@ -31,7 +31,7 @@ final class PageTemplates
         if (!$create) {
             return null;
         }
-        $id = CategoryHandler::add(null, ['catpriority' => 9999, 'catname' => 'Seitenvorlagen', 'status' => 0])->id;
+        $id = CategoryHandler::add(['parent_id' => null, 'priority' => 9999, 'name' => 'Seitenvorlagen', 'status' => 0])->id;
         FluidAddon::instance()->setConfig(self::CONFIG, $id);
 
         return $id;

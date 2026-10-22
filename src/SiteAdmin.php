@@ -151,13 +151,13 @@ final class SiteAdmin
         }
         $online = Request::post('online', 'bool', false);
         if ($id) {
-            $l = Language::get($id) ?? throw new ApiError('Sprache nicht gefunden.');
+            Language::get($id) ?? throw new ApiError('Sprache nicht gefunden.');
             if (!$online && $id === Language::getStartId()) {
                 throw new ApiError('Die Startsprache bleibt online.');
             }
-            LanguageHandler::edit($id, $code, $name, $l->priority, $online);
+            LanguageHandler::edit($id, ['code' => $code, 'name' => $name, 'status' => $online]);
         } else {
-            LanguageHandler::add($code, $name, \count(Language::getAll()) + 1, $online);
+            LanguageHandler::add(['code' => $code, 'name' => $name, 'status' => $online]);
         }
         Routing\Routes::rebuild();
 

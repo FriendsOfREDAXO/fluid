@@ -109,25 +109,26 @@ final class Search
             $headings = [];
             $text = [];
             // alle Blöcke der Live-Fassung (auch offline), um Spalten eines Offline-Layouts zu erkennen
-            $slices = Sql::factory()->getArray('SELECT module, value1, value2, status, ctype_id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY ctype_id, priority',
+            $slices = Sql::factory()->getArray('SELECT module, data, status, content_section_id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY content_section_id, priority',
                 [$id, $languageId, ArticleRevision::LIVE]);
             $layoutOn = false;   // letzter Abschnitt ist ein Layout, das Besucher sehen
-            $ctype = null;
+            $section = null;
             foreach ($slices as $s) {
-                if ($ctype !== $s['ctype_id']) {
-                    [$ctype, $layoutOn] = [$s['ctype_id'], false];   // Layouts reichen nicht über ihren Inhaltsbereich hinaus
+                if ($section !== $s['content_section_id']) {
+                    [$section, $layoutOn] = [$s['content_section_id'], false];   // Layouts reichen nicht über ihren Inhaltsbereich hinaus
                 }
-                $m = Module::get((string) $s['module']);
+                $m = BlockModule::classFor((string) $s['module']);
                 $on = 1 === (int) $s['status'];
-                if (0 === (int) (BlockModule::decode((string) $s['value2'])['col'] ?? 0)) {
-                    $layoutOn = $on && $m instanceof \FriendsOfRedaxo\Fluid\LayoutBlock;
+                $stored = BlockModule::stored($s['data']);
+                if (0 === (int) ($stored['tunes']['col'] ?? 0)) {
+                    $layoutOn = $on && null !== $m && is_a($m, \FriendsOfRedaxo\Fluid\LayoutBlock::class, true);
                 } elseif (!$layoutOn) {
                     continue;   // Spalten-Block eines Offline-Layouts (oder ohne Layout): nicht sichtbar
                 }
-                if (!$on || !$m instanceof BlockModule || false === ($m->definition()['search'] ?? true)) {
+                if (!$on || null === $m || false === ($m::definition()['search'] ?? true)) {
                     continue;
                 }
-                self::collect($m->fields(), BlockModule::decode((string) $s['value1']), $headings, $text);
+                self::collect($m::fields(), $stored['values'], $headings, $text);
             }
             $s = PageSettings::get($id, $languageId);
             // FLUID_SEARCH_DOCUMENT: Dokument ergänzen (z. B. Texte eigener Daten) oder mit null überspringen

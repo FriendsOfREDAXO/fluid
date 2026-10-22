@@ -23,7 +23,8 @@ final class Block
      */
     public function __construct(
         public readonly ?ArticleSlice $slice,
-        public readonly BlockModule $module,
+        /** @var class-string<BlockModule> */
+        public readonly string $module,
         /** @var array<string, mixed> */
         public readonly array $data,
         /** @var array<string, mixed> */
@@ -35,7 +36,7 @@ final class Block
         if ('' === (string) ($tunes['background'] ?? '')) {
             unset($tunes['background']);   // leer = Standard des Blocks
         }
-        $this->tunes = $tunes + ['background' => $module->definition()['background'] ?? 'white', 'anchor' => '', 'spaceTop' => 'normal', 'spaceBottom' => 'normal'];
+        $this->tunes = $tunes + ['background' => $module::definition()['background'] ?? 'white', 'anchor' => '', 'spaceTop' => 'normal', 'spaceBottom' => 'normal'];
     }
 
     public string $id {
@@ -55,7 +56,7 @@ final class Block
 
     /** Blocktyp ohne Kit-Präfix (`cta`, `media_text` …) */
     public string $type {
-        get => $this->module->type();
+        get => $this->module::type();
     }
 
     public function variant(): string
@@ -105,7 +106,7 @@ final class Block
 
     public function dark(): bool
     {
-        return in_array($this->tunes['background'], $this->module->kit()->darkBackgrounds(), true);
+        return in_array($this->tunes['background'], $this->module::kit()->darkBackgrounds(), true);
     }
 
     public function sectionClass(): string

@@ -151,7 +151,8 @@ final class Router
             }
         });
         self::endpoint('/robots.txt', static fn () => self::respond(Robots::text(), 'text/plain; charset=utf-8'));
-        Extension::register('URL_REWRITE', static fn (ExtensionPoint $ep): string => self::url((int) $ep->getParam('id'), (int) $ep->getParam('language'), (array) $ep->getParam('params')));
+        // Adresse einer Seite; ohne Pfad (null) bleibt die Adresse des Cores
+        Extension::register(ContentEp\ArticleUrl::class, static fn (ContentEp\ArticleUrl $ep): ?string => '' !== ($url = self::url($ep->articleId, $ep->languageId, $ep->params)) ? $url : null);
         // Strukturänderungen → Pfade neu berechnen (automatische Weiterleitungen inklusive)
         foreach ([
             ContentEp\ArticleAdded::class,

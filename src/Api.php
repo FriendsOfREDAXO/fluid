@@ -201,7 +201,7 @@ final class Api
         }
         $hash = static function (int $rev) use ($article): string {
             $rows = Sql::factory()->getArray(
-                'SELECT module, ctype_id, status, value1, value2 FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY ctype_id, priority',
+                'SELECT module, content_section_id, status, data FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY content_section_id, priority',
                 [$article->id, $article->languageId, $rev],
             );
 
@@ -217,8 +217,8 @@ final class Api
         [$slice, $module] = self::slice($article);
 
         return [
-            'html' => Form\FieldForm::render($module, BlockModule::decode($slice->getValue(1)), BlockModule::decode($slice->getValue(2)), 'f', false),
-            'label' => (string) ($module->definition()['label'] ?? $module->name),
+            'html' => Form\FieldForm::render($module::class, $module->values, $module->tunes, 'f', false),
+            'label' => $module::label(),
         ];
     }
 
@@ -226,35 +226,31 @@ final class Api
     private static function preview(Article $article): array
     {
         [$slice, $module] = self::slice($article);
-        [$data, $tunes] = self::input($slice);
+        [$data, $tunes] = self::input($module);
         $parent = Layout::parentOf($slice);
         if ($parent && Layout::col($slice) === (int) ($tunes['col'] ?? 0)) {
-            $pm = Module::get($parent->moduleKey);
-            $bg = $pm instanceof BlockModule ? (string) $pm->block($parent)->tunes['background'] : '';
-
-            return ['html' => $module->renderChild($slice, $bg, $data, $tunes), 'target' => $slice->id];
+            return ['html' => $module->renderChild(self::parentBackground($parent), $data, $tunes), 'target' => $slice->id];
         }
 
-        return ['html' => $module->renderBlock($slice, $data, $tunes), 'target' => $slice->id];
+        return ['html' => $module->renderBlock($data, $tunes), 'target' => $slice->id];
     }
 
     /** Speichern: ganzes Formular (`f[1]`, `f[2]`) oder einzelne Felder direkt auf der Seite (`patch[pfad] = wert`) */
     private static function save(Article $article, User $user): array
     {
         [$slice, $module] = self::slice($article);
-        self::requireModulePerm($user, $module);
-        [$data, $tunes] = self::input($slice);
+        self::requireModulePerm($user, $module::key());
+        [$data, $tunes] = self::input($module);
 
         $sql = Sql::factory();
         $sql->setTable('rex_article_slice');
         $sql->setWhere(['id' => $slice->id, 'article_id' => $article->id, 'revision' => FluidAddon::revision()]);
-        $sql->setValue('value1', json_encode($data, JSON_UNESCAPED_UNICODE));
-        $sql->setValue('value2', json_encode($tunes, JSON_UNESCAPED_UNICODE));
+        $sql->setValue('data', BlockModule::encodeStore($data, $tunes));
         $sql->addGlobalUpdateFields($user->login);
         $sql->update();
         self::changed($article, $slice->id, 'slice_updated');
         Versions::snapshot($article->id, $article->languageId, FluidAddon::revision(), 'fluid_save');
-        Activity::log('save', $article->id, $module->name);
+        Activity::log('save', $article->id, $module::name());
 
         return self::render($article, $slice->id, true);
     }
@@ -262,17 +258,17 @@ final class Api
     private static function add(Article $article, User $user): array
     {
         $key = Request::post('module', 'string');
-        $module = Module::get($key);
-        if (!$module instanceof BlockModule) {
+        $module = BlockModule::classFor($key);
+        if (null === $module) {
             self::fail('Unbekannter Blocktyp.');
         }
-        self::requireModulePerm($user, $module);
-        if (!Template::checkModuleAllowed((string) $article->templateKey, 1, $module->key)) {
+        self::requireModulePerm($user, $key);
+        if (!Template::checkModuleAllowed((string) $article->templateKey, 1, $key)) {
             self::fail('Dieser Block ist im Template der Seite nicht erlaubt.', 403);
         }
         $after = Request::post('after', 'int', 0);
         $col = max(0, min(4, Request::post('col', 'int', 0)));
-        if ($col > 0 && !$module->nestable()) {
+        if ($col > 0 && !$module::nestable()) {
             self::fail('Dieser Block kann nicht in einer Spalte stehen.');
         }
         $priority = 1;
@@ -287,21 +283,15 @@ final class Api
             $priority = $prev ? $prev->priority + 1 : 1;
         }
         // Standardwerte der Felder (Variante, Auswahlfelder …) gleich mit speichern
-        $data = Form\FieldForm::withDefaults($module->fields(), [], $module->variants());
-        $tunes = isset($module->definition()['background']) && 0 === $col ? ['background' => $module->definition()['background']] : [];
+        $data = Form\FieldForm::withDefaults($module::fields(), [], $module::variants());
+        $tunes = isset($module::definition()['background']) && 0 === $col ? ['background' => $module::definition()['background']] : [];
         if ($col > 0) {
             $tunes['col'] = $col;
         }
-        ContentHandler::addSlice($article->id, $article->languageId, 1, $module->key, [
-            'revision' => FluidAddon::revision(),
-            'priority' => $priority,
-            'value1' => json_encode($data, JSON_UNESCAPED_UNICODE),
-            'value2' => json_encode((object) $tunes),
-        ]);
-        $id = (int) Sql::factory()->getArray(
-            'SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? AND module = ? ORDER BY createdate DESC, id DESC LIMIT 1',
-            [$article->id, $article->languageId, FluidAddon::revision(), $module->key],
-        )[0]['id'];
+        $new = ContentHandler::addSlice($article->id, $article->languageId, 1, $key, BlockModule::store($data, $tunes), $priority, FluidAddon::revision());
+        BlockOps::place($new, $priority);
+        $id = $new->id;
+
         return ['slice' => $id] + self::render($article, $id, false);
     }
 
@@ -314,11 +304,11 @@ final class Api
         [$slice] = self::slice($article);
         $up = 'up' === Request::post('dir', 'string');
         $rows = Sql::factory()->getArray(
-            'SELECT id, value2 FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND ctype_id = ? AND revision = ? ORDER BY priority',
+            'SELECT id, data FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND content_section_id = ? AND revision = ? ORDER BY priority',
             [$article->id, $article->languageId, $slice->contentSectionId, FluidAddon::revision()],
         );
         $ids = array_map(static fn (array $r) => (int) $r['id'], $rows);
-        $cols = array_map(static fn (array $r) => max(0, (int) (BlockModule::decode((string) $r['value2'])['col'] ?? 0)), $rows);
+        $cols = array_map(static fn (array $r) => max(0, (int) (BlockModule::stored($r['data'])['tunes']['col'] ?? 0)), $rows);
         $layouts = array_map(static fn (int $id) => Layout::isLayout(ArticleSlice::getArticleSliceById($id, $article->languageId, FluidAddon::revision())), $ids);
 
         // Einheiten: Slice auf oberster Ebene + folgende Spalten-Blöcke, wenn er ein Layout ist
@@ -383,7 +373,7 @@ final class Api
     {
         [$slice] = self::slice($article);
         $layout = Layout::isLayout($slice);
-        ContentHandler::deleteSlice($slice->id);   // Spalten-Blöcke eines Layouts: FluidAddon (SLICE_DELETE)
+        ContentHandler::deleteSlice($slice->id);   // Spalten-Blöcke eines Layouts: FluidAddon (SliceDeleting)
 
         return $layout ? ['reload' => true] : [];
     }
@@ -503,7 +493,7 @@ final class Api
         }
         $template = (string) $article->templateKey;
         if ('menu' === Request::post('kind', 'string', 'menu')) {
-            $id = CategoryHandler::add($parent, ['catpriority' => 999, 'catname' => $name, 'status' => 0])->id;
+            $id = CategoryHandler::add(['parent_id' => $parent, 'priority' => 999, 'name' => $name, 'status' => 0])->id;
         } else {
             $id = ArticleHandler::add(['category_id' => $parent, 'priority' => 999, 'name' => $name, 'template' => $template])->id;
         }
@@ -543,9 +533,9 @@ final class Api
         }
         $template = $article->templateKey ? Template::get($article->templateKey) : null;
         $kit = null;
-        foreach (Module::getAll() as $m) {
-            if ($m instanceof BlockModule && $template && Template::checkModuleAllowed($template->key, 1, $m->key)) {
-                $kit = $m->kit();
+        foreach (BlockModule::all() as $key => $m) {
+            if ($template && Template::checkModuleAllowed($template->key, 1, $key)) {
+                $kit = $m::kit();
                 break;
             }
         }
@@ -580,36 +570,36 @@ final class Api
     private static function render(Article $article, int $id, bool $wholeLayout): array
     {
         $slice = self::reload($article, $id);
-        $module = Module::get($slice->moduleKey);
-        if (!$module instanceof BlockModule) {
+        if (null === BlockModule::classFor($slice->moduleKey)) {
             return ['html' => '', 'target' => $id];
         }
+        $module = BlockModule::of($slice);
         $parent = Layout::parentOf($slice);
         if ($parent && !$wholeLayout) {
-            $pm = Module::get($parent->moduleKey);
-            $bg = $pm instanceof BlockModule ? (string) $pm->block($parent)->tunes['background'] : '';
-
-            return ['html' => $module->renderChild($slice, $bg), 'target' => $id];
+            return ['html' => $module->renderChild(self::parentBackground($parent)), 'target' => $id];
         }
         if ($parent) {
-            $pm = Module::get($parent->moduleKey);
-
-            return ['html' => $pm instanceof BlockModule ? $pm->renderBlock($parent) : '', 'target' => $parent->id];
+            return ['html' => null !== BlockModule::classFor($parent->moduleKey) ? BlockModule::of($parent)->renderBlock() : '', 'target' => $parent->id];
         }
 
-        return ['html' => $module->renderBlock($slice), 'target' => $id];
+        return ['html' => $module->renderBlock(), 'target' => $id];
+    }
+
+    /** Hintergrund des Layouts über einem Spalten-Block */
+    private static function parentBackground(ArticleSlice $parent): string
+    {
+        return null !== BlockModule::classFor($parent->moduleKey) ? (string) BlockModule::of($parent)->block()->tunes['background'] : '';
     }
 
     /** @return array{ArticleSlice, BlockModule} */
     private static function slice(Article $article): array
     {
         $slice = self::reload($article, Request::post('slice', 'int', 0));
-        $module = Module::get($slice->moduleKey);
-        if (!$module instanceof BlockModule) {
+        if (null === BlockModule::classFor($slice->moduleKey)) {
             self::fail('Dieser Block hat kein Feldschema und lässt sich nur im Backend bearbeiten.');
         }
 
-        return [$slice, $module];
+        return [$slice, BlockModule::of($slice)];
     }
 
     private static function reload(Article $article, int $id): ArticleSlice
@@ -627,9 +617,9 @@ final class Api
      *
      * @return array{array<string, mixed>, array<string, mixed>}
      */
-    private static function input(ArticleSlice $slice): array
+    private static function input(BlockModule $module): array
     {
-        return self::applyInput(BlockModule::decode($slice->getValue(1)), BlockModule::decode($slice->getValue(2)));
+        return self::applyInput($module->values, $module->tunes);
     }
 
     /**
@@ -644,10 +634,10 @@ final class Api
         $f = Request::post('f', 'array', []);
         if (isset($f[1]) && is_array($f[1])) {
             // gezogene Spaltenbreiten stehen nicht im Formular: behalten (ein anderes Raster verwirft sie beim Ausgeben)
-            $data = self::clean($f[1]) + (isset($data['widths']) ? ['widths' => $data['widths']] : []);
+            $data = Form\BlockValues::clean($f[1]) + (isset($data['widths']) ? ['widths' => $data['widths']] : []);
         }
         if (isset($f[2]) && is_array($f[2])) {
-            $tunes = self::clean($f[2]);
+            $tunes = Form\BlockValues::clean($f[2]);
         }
         foreach (Request::post('patch', 'array', []) as $path => $value) {
             $path = (string) $path;
@@ -672,19 +662,6 @@ final class Api
         }
 
         return [$data, $tunes];
-    }
-
-    /** Wiederholgruppen neu nummerieren (Reihenfolge im Formular = Reihenfolge der Einträge) */
-    private static function clean(array $a): array
-    {
-        foreach ($a as $k => $v) {
-            if (is_array($v)) {
-                $v = self::clean($v);
-                $a[$k] = [] !== $v && array_filter(array_keys($v), is_int(...)) === array_keys($v) ? array_values($v) : $v;
-            }
-        }
-
-        return $a;
     }
 
     /** `items.0.title` → $data['items'][0]['title'] */
@@ -714,10 +691,10 @@ final class Api
         Extension::dispatch(new ArticleContentUpdated($article, $type, $slice, 'Block gespeichert.'));
     }
 
-    private static function requireModulePerm(User $user, BlockModule $module): void
+    private static function requireModulePerm(User $user, string $moduleKey): void
     {
         $perm = $user->getComplexPerm('modules');
-        if (!$perm instanceof ModulePermission || !$perm->hasPerm($module->key)) {
+        if (!$perm instanceof ModulePermission || !$perm->hasPerm($moduleKey)) {
             self::fail('Keine Berechtigung für diesen Blocktyp.', 403);
         }
     }

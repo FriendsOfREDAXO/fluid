@@ -48,7 +48,7 @@ final class Versions
             $ins = Sql::factory()->setTable($table);
             if (isset($row['__empty'])) {
                 // leere Seite: Markierungszeile, damit der Stand sichtbar und wiederherstellbar ist
-                $ins->setValues(array_intersect_key(['article_id' => $articleId, 'language_id' => $languageId, 'revision' => $revision, 'slice_id' => 0, 'module' => '', 'ctype_id' => 1, 'priority' => 0, 'status' => 0,
+                $ins->setValues(array_intersect_key(['article_id' => $articleId, 'language_id' => $languageId, 'revision' => $revision, 'slice_id' => 0, 'module' => '', 'content_section_id' => 1, 'priority' => 0, 'status' => 0,
                     'createdate' => $date, 'updatedate' => $date, 'createuser' => $user, 'updateuser' => $user], array_flip($cols)));
             } else {
                 foreach ($row as $k => $v) {
@@ -170,7 +170,7 @@ final class Versions
         };
 
         $revision = FluidAddon::revision();
-        $rows = $sql->getArray('SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY ctype_id, priority', [$articleId, $languageId, $revision]);
+        $rows = $sql->getArray('SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY content_section_id, priority', [$articleId, $languageId, $revision]);
         [$blocks, $modules] = $sig($rows);
         $changed = array_filter(array_column($rows, 'updatedate'));
         // Wiederherstellen kopiert alte Zeilen (alte updatedate) – „Jetzt“ ist mindestens so neu wie der neueste gesicherte Stand
@@ -183,7 +183,7 @@ final class Versions
         $groups = $sql->getArray('SELECT history_date, revision, MAX(history_type) AS history_type, MAX(history_user) AS history_user FROM ' . $table
             . ' WHERE article_id = ? AND language_id = ? GROUP BY history_date, revision ORDER BY history_date DESC LIMIT 60', [$articleId, $languageId]);
         foreach ($groups as $g) {
-            $rows = $sql->getArray('SELECT * FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ? AND history_date = ? ORDER BY ctype_id, priority',
+            $rows = $sql->getArray('SELECT * FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ? AND history_date = ? ORDER BY content_section_id, priority',
                 [$articleId, $languageId, (int) $g['revision'], $g['history_date']]);
             [$blocks, $modules] = $sig($rows);
             $hash = md5((string) json_encode(array_values($blocks)));
@@ -256,12 +256,12 @@ final class Versions
 
     private static function moduleLabel(string $key): string
     {
-        $m = Module::get($key);
-        if ($m instanceof BlockModule) {
-            return (string) ($m->definition()['label'] ?? $m->name);
+        $m = Module::getClass($key);
+        if (null === $m) {
+            return $key;
         }
 
-        return $m->name ?? $key;
+        return is_a($m, BlockModule::class, true) ? $m::label() : $m::name();
     }
 
     /** Daten für die Versionen-Ansicht im Editor (assets/editor/versions.js) */
@@ -297,7 +297,7 @@ final class Versions
     {
         $sig = static fn (int $rev): string => md5((string) json_encode(array_map(
             static fn (array $r) => array_diff_key($r, array_flip(self::META)),
-            Sql::factory()->getArray('SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY ctype_id, priority', [$article->id, $article->languageId, $rev]),
+            Sql::factory()->getArray('SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY content_section_id, priority', [$article->id, $article->languageId, $rev]),
         )));
 
         return $sig(ArticleRevision::WORK) !== $sig(ArticleRevision::LIVE);

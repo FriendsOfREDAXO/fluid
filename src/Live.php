@@ -289,19 +289,19 @@ final class Live
         $article = Article::getCurrent();
         $id = Request::get(self::BLOCK, 'int', 0);
         $slice = $article && $article->isOnline() ? ArticleSlice::getArticleSliceById($id, $article->languageId, ArticleRevision::LIVE) : null;
-        $module = $slice && $slice->articleId === $article->id && 1 === $slice->status ? Module::get($slice->moduleKey) : null;
-        $def = $module instanceof BlockModule ? $module->definition() : [];
-        $parent = $module instanceof BlockModule ? Layout::parentOf($slice) : null;
+        $module = $slice && $slice->articleId === $article->id && 1 === $slice->status ? BlockModule::classFor($slice->moduleKey) : null;
+        $def = null !== $module ? $module::definition() : [];
+        $parent = null !== $module ? Layout::parentOf($slice) : null;
         // nur, was Besucher auf der Seite sehen: Block online, Layout darüber (Spalten-Block) ebenfalls
-        if (!$module instanceof BlockModule || (empty($def['reload']) && empty($def['live'])) || ($parent && 1 !== $parent->status)) {
+        if (null === $module || (empty($def['reload']) && empty($def['live'])) || ($parent && 1 !== $parent->status)) {
             self::json(['error' => 'Nicht gefunden.'], 404);
         }
-        $html = Editing::without(static function () use ($module, $slice, $parent): string {
-            if ($parent && ($pm = Module::get($parent->moduleKey)) instanceof BlockModule) {
-                return $module->renderChild($slice, (string) $pm->block($parent)->tunes['background']);
+        $html = Editing::without(static function () use ($slice, $parent): string {
+            if ($parent && null !== BlockModule::classFor($parent->moduleKey)) {
+                return BlockModule::of($slice)->renderChild((string) BlockModule::of($parent)->block()->tunes['background']);
             }
 
-            return $module->renderBlock($slice);
+            return BlockModule::of($slice)->renderBlock();
         });
         header('Cache-Control: public, max-age=2');
         header('X-Robots-Tag: noindex');

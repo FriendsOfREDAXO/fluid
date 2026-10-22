@@ -2,8 +2,7 @@
 
 namespace FriendsOfRedaxo\Fluid;
 
-use Redaxo\Core\Content\Module;
-
+use function is_a;
 use function Redaxo\Core\View\escape;
 
 /**
@@ -70,31 +69,32 @@ final class BlockData
      * Blöcke, die in Daten stehen dürfen: alle verfügbaren Blöcke außer Layout-Spalten.
      *
      * @param list<string>|null $allowed nur diese Typen (z. B. ['richtext', 'media_text']) bzw. Modul-Schlüssel
-     * @return array<string, BlockModule> Modul-Schlüssel => Modul
+     * @return array<string, class-string<BlockModule>> Modul-Schlüssel => Modul
      */
     public static function modules(?array $allowed = null): array
     {
         $out = [];
-        foreach (Module::getAll() as $m) {
-            if (!$m instanceof BlockModule || $m instanceof LayoutBlock || !$m->available()) {
+        foreach (BlockModule::all() as $m) {
+            if (is_a($m, LayoutBlock::class, true) || !$m::available()) {
                 continue;
             }
-            if (null !== $allowed && [] !== $allowed && !\in_array($m->type(), $allowed, true) && !\in_array($m->key, $allowed, true)) {
+            if (null !== $allowed && [] !== $allowed && !\in_array($m::type(), $allowed, true) && !\in_array($m::key(), $allowed, true)) {
                 continue;
             }
-            $out[$m->key] = $m;
+            $out[$m::key()] = $m;
         }
-        uasort($out, static fn (BlockModule $a, BlockModule $b) => [(string) ($a->definition()['group'] ?? ''), (string) ($a->definition()['label'] ?? '')]
-            <=> [(string) ($b->definition()['group'] ?? ''), (string) ($b->definition()['label'] ?? '')]);
+        uasort($out, static fn (string $a, string $b) => [(string) ($a::definition()['group'] ?? ''), (string) ($a::definition()['label'] ?? '')]
+            <=> [(string) ($b::definition()['group'] ?? ''), (string) ($b::definition()['label'] ?? '')]);
 
         return $out;
     }
 
-    public static function module(string $key): ?BlockModule
+    /** @return class-string<BlockModule>|null */
+    public static function module(string $key): ?string
     {
-        $m = Module::get($key);
+        $m = BlockModule::classFor($key);
 
-        return $m instanceof BlockModule && !$m instanceof LayoutBlock ? $m : null;
+        return null !== $m && !is_a($m, LayoutBlock::class, true) ? $m : null;
     }
 
     /** Alle Blöcke als Abschnitte – ohne Bearbeiten-Markup der Seite (die Blöcke gehören zu einem Datensatz) */
@@ -113,8 +113,8 @@ final class BlockData
                 if (!$m) {
                     continue;
                 }
-                $b = $m->blockFromData($idPrefix . '-' . ($i + 1), $item['data'], $item['tunes'], $prev, $articleId);
-                $html .= $m->renderData($b);
+                $b = $m::blockFromData($idPrefix . '-' . ($i + 1), $item['data'], $item['tunes'], $prev, $articleId);
+                $html .= $m::renderData($b);
                 $prev = $b;
             }
 
@@ -129,7 +129,7 @@ final class BlockData
         $text = [];
         foreach (self::decode($value) as $item) {
             if ($m = self::module($item['module'])) {
-                Search\Search::collect($m->fields(), $item['data'], $headings, $text);
+                Search\Search::collect($m::fields(), $item['data'], $headings, $text);
             }
         }
 
@@ -145,10 +145,10 @@ final class BlockData
         }
         $headings = [];
         $text = [];
-        Search\Search::collect($m->fields(), (array) ($item['data'] ?? []), $headings, $text);
+        Search\Search::collect($m::fields(), (array) ($item['data'] ?? []), $headings, $text);
         $first = $headings[0] ?? $text[0] ?? '';
 
-        return (string) ($m->definition()['label'] ?? $m->name) . ('' !== $first ? ' – ' . mb_strimwidth($first, 0, 60, '…') : '');
+        return $m::label() . ('' !== $first ? ' – ' . mb_strimwidth($first, 0, 60, '…') : '');
     }
 
     /** @internal Auswahl für die Oberfläche: [Schlüssel => [Bezeichnung, Gruppe, Hilfe]] */
@@ -156,8 +156,8 @@ final class BlockData
     {
         $out = [];
         foreach (self::modules($allowed) as $key => $m) {
-            $d = $m->definition();
-            $out[$key] = ['label' => (string) ($d['label'] ?? $m->name), 'group' => (string) ($d['group'] ?? ''), 'help' => (string) ($d['help'] ?? '')];
+            $d = $m::definition();
+            $out[$key] = ['label' => (string) ($d['label'] ?? $m::name()), 'group' => (string) ($d['group'] ?? ''), 'help' => (string) ($d['help'] ?? '')];
         }
 
         return $out;

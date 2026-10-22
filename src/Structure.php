@@ -123,7 +123,7 @@ final class Structure
             if ($parent !== $cat->parentId) {
                 CategoryHandler::move($a->id, $parent);   // wirft bei Fehlern
             }
-            CategoryHandler::edit($a->id, $languageId, ['catpriority' => $index + 1]);
+            CategoryHandler::edit($a->id, $languageId, ['priority' => $index + 1]);
         } else {
             if ($parent !== $a->categoryId) {
                 ArticleHandler::move($a->id, $a->categoryId, $parent);

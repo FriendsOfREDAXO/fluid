@@ -27,8 +27,8 @@ final class Inbox
             return [];
         }
         $names = [];
-        foreach (Sql::factory()->getArray('SELECT value1 FROM rex_article_slice WHERE module IN ("fluid.form", "fluid.contact")') as $r) {
-            $d = BlockModule::decode((string) $r['value1']);
+        foreach (Sql::factory()->getArray('SELECT data FROM rex_article_slice WHERE module IN ("fluid.form", "fluid.contact")') as $r) {
+            $d = BlockModule::stored($r['data'])['values'];
             $form = YFormBridge::formDefinition((string) ($d['form'] ?? ''));
             foreach ($form ? YFormBridge::formTables($form) : [] as $t) {
                 $names[$t] = true;

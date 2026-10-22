@@ -7,6 +7,7 @@ use FriendsOfRedaxo\Fluid\Api;
 use FriendsOfRedaxo\Fluid\ApiError;
 use FriendsOfRedaxo\Fluid\BlockData;
 use FriendsOfRedaxo\Fluid\BlockModule;
+use FriendsOfRedaxo\Fluid\BlockOps;
 use FriendsOfRedaxo\Fluid\Editing;
 use FriendsOfRedaxo\Fluid\Form\FieldForm;
 use Redaxo\Core\Content\ModulePermission;
@@ -93,9 +94,9 @@ final class RecordBlocks
     {
         $m = BlockData::module($item['module']) ?? throw new ApiError('Unbekannter Block.');
         $uid = (string) ($item['uid'] ?? '');
-        $b = $m->blockFromData('r-' . $uid, $item['data'], $item['tunes'], $prev instanceof \FriendsOfRedaxo\Fluid\Block ? $prev : null, $articleId);
+        $b = $m::blockFromData('r-' . $uid, $item['data'], $item['tunes'], $prev instanceof \FriendsOfRedaxo\Fluid\Block ? $prev : null, $articleId);
 
-        return [$b, $m->renderData($b, self::id($table, $rid, $field, $uid))];
+        return [$b, $m::renderData($b, self::id($table, $rid, $field, $uid))];
     }
 
     // ------------------------------------------------------------------ API (vom Editor über Api::handle)
@@ -123,7 +124,8 @@ final class RecordBlocks
             }
             throw new ApiError('Block nicht gefunden – bitte Seite neu laden.');
         };
-        $module = static function (string $key) use ($user, $field): BlockModule {
+        /** @return class-string<BlockModule> */
+        $module = static function (string $key) use ($user, $field): string {
             $m = BlockData::module($key);
             if (!$m || !isset(BlockData::modules($field->allowed)[$key])) {
                 throw new ApiError('Dieser Block ist in diesem Feld nicht vorgesehen.');
@@ -151,7 +153,7 @@ final class RecordBlocks
                 $i = $index($uid);
                 $m = $module($blocks[$i]['module']);
 
-                return ['html' => FieldForm::render($m, $blocks[$i]['data'], $blocks[$i]['tunes'], 'f', false), 'label' => (string) ($m->definition()['label'] ?? $m->name)];
+                return ['html' => FieldForm::render($m, $blocks[$i]['data'], $blocks[$i]['tunes'], 'f', false), 'label' => $m::label()];
             case 'preview':
                 $i = $index($uid);
                 [$blocks[$i]['data'], $blocks[$i]['tunes']] = Api::applyInput($blocks[$i]['data'], $blocks[$i]['tunes']);
@@ -161,7 +163,7 @@ final class RecordBlocks
                 $i = $index($uid);
                 $m = $module($blocks[$i]['module']);
                 [$data, $tunes] = Api::applyInput($blocks[$i]['data'], $blocks[$i]['tunes']);
-                $blocks[$i]['data'] = FieldForm::withDefaults($m->fields(), $data, $m->variants());
+                $blocks[$i]['data'] = FieldForm::withDefaults($m::fields(), $data, $m::variants());
                 $blocks[$i]['tunes'] = $tunes;
                 $store();
 
@@ -173,7 +175,7 @@ final class RecordBlocks
             case 'paste':
                 if ('add' === $action) {
                     $m = $module(Request::post('module', 'string', ''));
-                    $new = ['module' => $m->key, 'data' => FieldForm::withDefaults($m->fields(), [], $m->variants()), 'tunes' => []];
+                    $new = ['module' => $m::key(), 'data' => FieldForm::withDefaults($m::fields(), [], $m::variants()), 'tunes' => []];
                 } elseif ('duplicate' === $action) {
                     $new = $blocks[$index($uid)];
                 } else {
@@ -182,7 +184,8 @@ final class RecordBlocks
                         throw new ApiError('Dieser Block lässt sich hier nicht einfügen.');
                     }
                     $m = $module((string) ($clip['module'] ?? ''));
-                    $new = ['module' => $m->key, 'data' => BlockModule::decode((string) ($clip['value1'] ?? '')), 'tunes' => array_diff_key(BlockModule::decode((string) ($clip['value2'] ?? '')), ['col' => 1])];
+                    [$values, $tunes] = BlockOps::clipValues($clip);
+                    $new = ['module' => $m::key(), 'data' => $values, 'tunes' => array_diff_key($tunes, ['col' => 1])];
                 }
                 $new['uid'] = BlockData::uid();
                 $at = '' === $uid ? 0 : $index($uid) + 1;
@@ -219,7 +222,7 @@ final class RecordBlocks
                 $b = $blocks[$index($uid)];
                 $m = BlockData::module($b['module']);
 
-                return ['clip' => ['module' => $b['module'], 'value1' => json_encode($b['data'], JSON_UNESCAPED_UNICODE), 'value2' => json_encode($b['tunes'], JSON_UNESCAPED_UNICODE)], 'label' => $m->name ?? $b['module']];
+                return ['clip' => ['module' => $b['module'], 'values' => (object) $b['data'], 'tunes' => (object) $b['tunes']], 'label' => $m ? $m::label() : $b['module']];
             default:
                 throw new ApiError('Blöcke eines Eintrags haben keinen Online-Schalter und keine Spalten.');
         }

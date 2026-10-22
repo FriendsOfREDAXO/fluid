@@ -129,21 +129,21 @@ final class Content
         $public = $this->access->isPublic();
         $revision = $public || $live ? ArticleRevision::LIVE : FluidAddon::revision();
         $rows = Sql::factory()->getArray(
-            'SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ?' . ($public ? ' AND status = 1' : '') . ' ORDER BY ctype_id, priority',
+            'SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ?' . ($public ? ' AND status = 1' : '') . ' ORDER BY content_section_id, priority',
             [$a->id, $a->languageId, $revision],
         );
         $out = [];
         foreach ($rows as $r) {
-            $m = Module::get((string) $r['module']);
-            $tunes = BlockModule::decode((string) $r['value2']);
-            $b = ['id' => (int) $r['id'], 'type' => (string) $r['module'], 'label' => $m instanceof BlockModule ? (string) ($m->definition()['label'] ?? $m->name) : ($m->name ?? (string) $r['module'])];
+            $m = Module::getClass((string) $r['module']);
+            ['values' => $values, 'tunes' => $tunes] = BlockModule::stored($r['data']);
+            $b = ['id' => (int) $r['id'], 'type' => (string) $r['module'], 'label' => null === $m ? (string) $r['module'] : (is_a($m, BlockModule::class, true) ? $m::label() : $m::name())];
             if (($tunes['col'] ?? 0) > 0) {
                 $b['column'] = (int) $tunes['col'];
             }
             if (!$public) {
                 $b['online'] = 1 === (int) $r['status'];
             }
-            $b['data'] = BlockModule::decode((string) $r['value1']);
+            $b['data'] = $values;
             if (!$public && [] !== $tunes) {
                 $b['options'] = $tunes;
             }
@@ -157,18 +157,18 @@ final class Content
     public function blockTypes(?string $only = null): array
     {
         $out = [];
-        foreach (Module::getAll() as $m) {
-            if (!$m instanceof BlockModule || !$m->available() || (null !== $only && $only !== $m->key && $only !== $m->type())) {
+        foreach (BlockModule::all() as $m) {
+            if (!$m::available() || (null !== $only && $only !== $m::key() && $only !== $m::type())) {
                 continue;
             }
-            $d = $m->definition();
-            $out[$m->key] = array_filter([
-                'label' => (string) ($d['label'] ?? $m->name),
+            $d = $m::definition();
+            $out[$m::key()] = array_filter([
+                'label' => $m::label(),
                 'group' => (string) ($d['group'] ?? ''),
                 'help' => (string) ($d['help'] ?? ''),
-                'layout' => $m instanceof \FriendsOfRedaxo\Fluid\LayoutBlock ? true : null,
-                'variants' => $m->variants() ?: null,
-                'fields' => self::fieldSchema($m->fields()),
+                'layout' => is_a($m, \FriendsOfRedaxo\Fluid\LayoutBlock::class, true) ? true : null,
+                'variants' => $m::variants() ?: null,
+                'fields' => self::fieldSchema($m::fields()),
             ], static fn ($v) => null !== $v && '' !== $v);
         }
 
@@ -232,14 +232,15 @@ final class Content
         return $s;
     }
 
-    private function module(string $key): BlockModule
+    /** @return class-string<BlockModule> */
+    private function module(string $key): string
     {
-        $m = Module::get($key);
-        if (!$m instanceof BlockModule) {
+        $m = BlockModule::classFor($key);
+        if (null === $m) {
             throw new ApiError('Unbekannter Blocktyp „' . $key . '“ (siehe list_block_types).');
         }
         if (!$this->access->canModule($key)) {
-            throw new ApiError('Dieser Zugang darf den Block „' . $m->name . '“ nicht bearbeiten.');
+            throw new ApiError('Dieser Zugang darf den Block „' . $m::name() . '“ nicht bearbeiten.');
         }
 
         return $m;
@@ -288,29 +289,26 @@ final class Content
         $this->writable($a);
         $s = $this->slice($a, $id);
         $m = $this->module($s->moduleKey);
-        $old = BlockModule::decode($s->getValue(1));
-        $new = self::clean($m->fields(), $data);
+        $old = BlockModule::valuesOf($s);
+        $new = self::clean($m::fields(), $data);
         if ([] === $new) {
             throw new ApiError('Keine bekannten Felder in „data“ (Felder des Blocktyps mit list_block_types).');
         }
-        $merged = $replace ? FieldForm::withDefaults($m->fields(), $new, $m->variants()) + (isset($old['widths']) ? ['widths' => $old['widths']] : []) : array_replace($old, $new);
-        $this->store($a, $s->id, $merged, null, $m->name);
+        $merged = $replace ? FieldForm::withDefaults($m::fields(), $new, $m::variants()) + (isset($old['widths']) ? ['widths' => $old['widths']] : []) : array_replace($old, $new);
+        $this->store($a, $s->id, $merged, BlockModule::tunesOf($s), $m::name());
 
         return ['block' => $id, 'changed' => array_keys($new)];
     }
 
     /**
      * @param array<string, mixed> $data
-     * @param array<string, mixed>|null $tunes
+     * @param array<string, mixed> $tunes
      */
-    private function store(Article $a, int $id, array $data, ?array $tunes, string $label): void
+    private function store(Article $a, int $id, array $data, array $tunes, string $label): void
     {
         $sql = Sql::factory()->setTable('rex_article_slice')
             ->setWhere(['id' => $id, 'article_id' => $a->id, 'revision' => FluidAddon::revision()])
-            ->setValue('value1', json_encode($data, JSON_UNESCAPED_UNICODE));
-        if (null !== $tunes) {
-            $sql->setValue('value2', json_encode((object) $tunes, JSON_UNESCAPED_UNICODE));
-        }
+            ->setValue('data', BlockModule::encodeStore($data, $tunes));
         $sql->addGlobalUpdateFields($this->access->user->login ?? 'mcp');
         $sql->update();
         ArticleCache::delete($a->id, $a->languageId);
@@ -328,11 +326,11 @@ final class Content
             $after = (int) (Sql::factory()->getArray('SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY priority DESC LIMIT 1',
                 [$a->id, $a->languageId, FluidAddon::revision()])[0]['id'] ?? 0);
         }
-        $values = FieldForm::withDefaults($m->fields(), self::clean($m->fields(), $data), $m->variants());
-        $tunes = isset($m->definition()['background']) ? ['background' => $m->definition()['background']] : [];
-        $id = BlockOps::insert($a, $this->access->user, $after, ['module' => $m->key, 'value1' => json_encode($values, JSON_UNESCAPED_UNICODE), 'value2' => json_encode((object) $tunes)]);
+        $values = FieldForm::withDefaults($m::fields(), self::clean($m::fields(), $data), $m::variants());
+        $tunes = isset($m::definition()['background']) ? ['background' => $m::definition()['background']] : [];
+        $id = BlockOps::insert($a, $this->access->user, $after, ['module' => $m::key(), 'values' => $values, 'tunes' => $tunes]);
         Versions::snapshot($a->id, $a->languageId, FluidAddon::revision(), 'fluid_save');
-        Activity::log('add', $a->id, $m->name . ' (MCP)');
+        Activity::log('add', $a->id, $m::name() . ' (MCP)');
 
         return ['block' => $id];
     }
@@ -343,9 +341,9 @@ final class Content
         $s = $this->slice($a, $id);
         $this->module($s->moduleKey);
         Versions::snapshot($a->id, $a->languageId, FluidAddon::revision(), 'fluid_save');
-        ContentHandler::deleteSlice($s->id);   // Spalten-Blöcke eines Layouts räumt FluidAddon (SLICE_DELETE) mit ab
+        ContentHandler::deleteSlice($s->id);   // Spalten-Blöcke eines Layouts räumt FluidAddon (SliceDeleting) mit ab
         ArticleCache::delete($a->id, $a->languageId);
-        Activity::log('delete', $a->id, (Module::get($s->moduleKey)->name ?? $s->moduleKey) . ' (MCP)');
+        Activity::log('delete', $a->id, BlockModule::classFor($s->moduleKey)::label() . ' (MCP)');
 
         return ['deleted' => $id, 'layout' => Layout::isLayout($s)];
     }
@@ -410,7 +408,7 @@ final class Content
         $start = Article::get(Article::getSiteStartArticleId(), $lang);
         $tpl = null !== $start ? (string) $start->templateKey : '';
         if ($menu) {
-            $id = CategoryHandler::add($parentId, ['catpriority' => 999, 'catname' => $name, 'status' => 0])->id;
+            $id = CategoryHandler::add(['parent_id' => $parentId, 'priority' => 999, 'name' => $name, 'status' => 0])->id;
         } else {
             $id = ArticleHandler::add(['category_id' => $parentId, 'priority' => 999, 'name' => $name, 'template' => $tpl])->id;
         }
@@ -429,7 +427,7 @@ final class Content
     private function hasDraft(Article $a): bool
     {
         $sig = static fn (int $rev): string => md5((string) json_encode(Sql::factory()->getArray(
-            'SELECT module, value1, value2, status FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY ctype_id, priority',
+            'SELECT module, data, status FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY content_section_id, priority',
             [$a->id, $a->languageId, $rev],
         )));
 

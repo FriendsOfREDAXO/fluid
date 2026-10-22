@@ -36,12 +36,12 @@ final class BlocksApi extends ApiFunction
                 $f = Request::post('fb', 'array', []);
                 $data = self::clean(\is_array($f[1] ?? null) ? $f[1] : []);
                 $tunes = self::clean(\is_array($f[2] ?? null) ? $f[2] : []);
-                $item = ['module' => $key, 'data' => FieldForm::withDefaults($module->fields(), $data, $module->variants()), 'tunes' => $tunes];
+                $item = ['module' => $key, 'data' => FieldForm::withDefaults($module::fields(), $data, $module::variants()), 'tunes' => $tunes];
                 self::send(['ok' => true, 'item' => $item, 'label' => BlockData::label($item)]);
             }
             $data = json_decode(Request::post('data', 'string', ''), true);
             $tunes = json_decode(Request::post('tunes', 'string', ''), true);
-            self::send(['ok' => true, 'label' => (string) ($module->definition()['label'] ?? $module->name),
+            self::send(['ok' => true, 'label' => $module::label(),
                 'html' => FieldForm::render($module, \is_array($data) ? $data : [], \is_array($tunes) ? $tunes : [], 'fb', true)]);
         } catch (Throwable $e) {
             $code = (int) $e->getCode();

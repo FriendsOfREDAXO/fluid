@@ -216,7 +216,7 @@ return [
                         . '<p><strong>fluid</strong> setzt eine Ebene tiefer an – beim Modul selbst:</p>'
                         . '<ul><li><strong>Ein Schema für alles:</strong> Die Felder eines Blocks stehen einmal im Kit. Daraus entstehen das Formular im Backend, das Bearbeiten auf der Website, die Vorschau und die Daten der Ausgabe.</li>'
                         . '<li><strong>Echte Slices:</strong> Jeder Block ist ein Slice – auch die Blöcke in Layout-Spalten. Modulrechte, Arbeitsversion, Historie, Online/Offline und das Backend gelten wie immer.</li>'
-                        . '<li><strong>Native Werte:</strong> Gespeichert wird über REX_INPUT_VALUE in value1 (Felder als JSON) und value2 (Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
+                        . '<li><strong>Native Werte:</strong> Gespeichert wird wie bei jedem Modul des Cores in der JSON-Spalte data des Slices (Felder und Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
                         . '<li><strong>Wiederholgruppen eingebaut:</strong> Einträge hinzufügen, sortieren, entfernen – im Backend und in der Seitenleiste gleich.</li>'
                         . '<li><strong>Medienpool und Linkmap:</strong> Die Auswahl öffnet die echten REDAXO-Popups; Links auf Artikel bleiben als redaxo://ID gültig, auch wenn der Artikel umzieht.</li>'
                         . '<li><strong>Kit mit Design-System:</strong> Blöcke, Template und CSS gehören zusammen – mit Style-Editor und Vorlagen.</li></ul>',

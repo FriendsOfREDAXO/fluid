@@ -87,7 +87,7 @@ final class PageSettings
         if ($name !== $article->name) {
             ArticleHandler::edit($article->id, $article->languageId, ['name' => $name, 'template' => $article->templateKey]);
             if ($article->isStartArticle() && $article->categoryId) {
-                CategoryHandler::edit($article->categoryId, $article->languageId, ['catname' => $name]);
+                CategoryHandler::edit($article->categoryId, $article->languageId, ['name' => $name]);
             }
         }
         if ($online !== $article->isOnline()) {

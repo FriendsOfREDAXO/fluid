@@ -68,10 +68,10 @@ final class Detail
         $key = $articleId . '/' . $languageId;
         if (!\array_key_exists($key, $cache)) {
             $cache[$key] = null;
-            $rows = Sql::factory()->getArray("SELECT value1 FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? AND status = 1 AND module LIKE '%.datalist' ORDER BY priority",
+            $rows = Sql::factory()->getArray("SELECT data FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? AND status = 1 AND module LIKE '%.datalist' ORDER BY priority",
                 [$articleId, $languageId, ArticleRevision::LIVE]);
             foreach ($rows as $r) {
-                $d = BlockModule::decode((string) $r['value1']);
+                $d = BlockModule::stored($r['data'])['values'];
                 if (!empty($d['detail']) && '' !== (string) ($d['table'] ?? '')) {
                     $cache[$key] = $d;
                     break;

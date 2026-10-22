@@ -11,7 +11,7 @@ use Redaxo\Core\Content\AsModule;
 final class Teaser extends FluidBlock
 {
     #[Override]
-    protected function define(): array
+    protected static function define(): array
     {
         return [
             'label' => 'Teaser (Projekt)', 'icon' => 'star', 'group' => 'Inhalt', 'nestable' => true,

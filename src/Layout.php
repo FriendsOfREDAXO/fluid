@@ -111,12 +111,12 @@ final class Layout
     /** Spalte eines Slices (1–4) bzw. 0, wenn er nicht für ein Layout markiert ist */
     public static function col(ArticleSlice $slice): int
     {
-        return max(0, (int) (BlockModule::decode($slice->getValue(2))['col'] ?? 0));
+        return max(0, (int) (BlockModule::tunesOf($slice)['col'] ?? 0));
     }
 
     public static function isLayout(ArticleSlice $slice): bool
     {
-        return Module::get($slice->moduleKey) instanceof LayoutBlock;
+        return is_a((string) Module::getClass($slice->moduleKey), LayoutBlock::class, true);
     }
 
     /**
@@ -180,11 +180,10 @@ final class Layout
             if (1 !== $child->status && !$editing) {
                 continue;
             }
-            $module = Module::get($child->moduleKey);
-            if (!$module instanceof BlockModule) {
+            if (null === BlockModule::classFor($child->moduleKey)) {
                 continue;
             }
-            $cols[min($n, self::col($child))] .= $module->renderChild($child, $parentBg);
+            $cols[min($n, self::col($child))] .= BlockModule::of($child)->renderChild($parentBg);
         }
 
         $weights = self::weights($d);

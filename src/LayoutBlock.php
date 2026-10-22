@@ -11,32 +11,32 @@ use function Redaxo\Core\View\escape;
  * Modul „Layout (Spalten)“ – je Kit eine kleine Klasse, z. B.:
  *
  *     #[AsModule('fluid.layout', 'Layout (Spalten)')]
- *     final class Layout extends LayoutBlock { public function kit(): Kit { return Kit::active(); } }
+ *     final class Layout extends LayoutBlock { public static function kit(): Kit { return Kit::active(); } }
  *
  * Felder und Ausgabe: Layout. CSS: css/layout.css des Kits (Abbildung 'layout' in kit.php → assets).
  */
 abstract class LayoutBlock extends BlockModule
 {
     #[Override]
-    public function type(): string
+    public static function type(): string
     {
         return Layout::TYPE;
     }
 
     #[Override]
-    public function definition(): array
+    public static function definition(): array
     {
         return Layout::definition();
     }
 
     #[Override]
-    public function nestable(string $variant = ''): bool
+    public static function nestable(string $variant = ''): bool
     {
         return false;
     }
 
     #[Override]
-    protected function renderInner(Block $b): string
+    protected static function renderInner(Block $b): string
     {
         // Backend: Kurzinfo statt Raster – die Spalten-Blöcke folgen als eigene Slices
         if (self::backendPreview()) {

@@ -29,7 +29,7 @@ use Redaxo\Core\Content\AsModule;
 #[AsModule('fluid.teaser', 'Teaser')]
 final class Teaser extends FluidBlock
 {
-    protected function define(): array
+    protected static function define(): array
     {
         return [
             'label' => 'Teaser', 'icon' => 'star', 'group' => 'Inhalt',
@@ -53,8 +53,11 @@ final class Teaser extends FluidBlock
 ```
 
 - `$b->edit('feld')` macht ein Feld direkt auf der Seite bearbeitbar (`'lines'` mehrzeilig, `'rich'` mit Formatierung).
-- Daten liegen als JSON in `value1`, Abschnitts-Optionen (Hintergrund, Abstände, Spalte) in `value2` – echte Slices
-  mit Rechten, Arbeitsversion und Historie des Cores.
+- Daten liegen in der JSON-Spalte `data` des Slices: Felder unter `values`, Abschnitts-Optionen (Hintergrund, Abstände,
+  Spalte) unter `tunes` – echte Slices mit Rechten, Arbeitsversion und Historie des Cores. Im Code:
+  `BlockModule::of($slice)->values` bzw. `->data()` (mit Standardwerten), `->tunes`.
+- Was den Blocktyp betrifft, ist statisch: `define()`, `kit()`, `fields()`, `definition()`, `label()`.
+  `BlockModule::classFor($key)` liefert die Klasse eines Block-Moduls, `BlockModule::all()` alle.
 - Vorlage: `examples/block/`.
 
 **Feldtypen:** `text`, `textarea`, `richtext`, `select` (`options`), `bool`, `number`, `url`, `time`, `media`, `file`,
@@ -163,7 +166,7 @@ Extension::register('FLUID_KIT', static fn (ExtensionPoint $ep) => 'shop.example
 | `FLUID_ROUTES_REBUILT` | – | – | Adressen wurden neu berechnet (Struktur geändert) |
 | `FLUID_SEO_HEAD` | HTML (string) | `article` | eigene Angaben im Seitenkopf (z. B. RSS-Feed) |
 
-Dazu nutzt fluid die Extension Points des Cores, z. B. `URL_REWRITE` für die Adressen.
+Dazu nutzt fluid die Extension Points des Cores, z. B. `ArticleUrl` für die Adressen.
 
 ```php
 // Eigene Website-Einstellung
@@ -301,9 +304,9 @@ vor dem Veröffentlichen, vor dem Verwerfen und vor dem Wiederherstellen. Sie li
 
 - Ansicht: `assets/editor/versions.js` + `versions.css` (aus KLXM Studio übernommen), Daten von `?fluid_api=version_view`.
 - Vorschau eines Stands: `?fluid_version=now|live|<revision>-<YmdHis>` rendert die Seite aus der Historie. Dafür
-  tauscht `ART_SLICES_QUERY` die Tabelle gegen die Zeilen des Stands. Die Vorschau gibt es nur mit Recht auf die Seite,
+  tauscht `ArticleSlicesQuery` die Tabelle gegen die Zeilen des Stands. Die Vorschau gibt es nur mit Recht auf die Seite,
   ohne Leiste und nie aus dem Cache. `&fluid_mark=1` setzt `data-vdiff="new|changed"` am äußersten Element geänderter
-  Blöcke (`SLICE_SHOW`).
+  Blöcke (`SliceOutput`).
 - Vergleich je Block: erst über die Slice-ID, dann über gleichen Inhalt, dann über Blocktyp in Reihenfolge.
   Veröffentlichen und Wiederherstellen legen Slices mit neuen IDs an.
 - Ältere Stände mit demselben Inhalt wie ein neuerer erscheinen nicht.
@@ -490,6 +493,7 @@ Ohne Live-Kanal funktioniert es auch, dann mit 15 Sekunden Verzögerung.
 | `fluid:kit:create name` | eigenes Kit im Projekt anlegen (`--label`, `--parent`, `--view=hero,cards`, `--template`) |
 | `fluid:search-index` | Suchindex neu aufbauen (sonst automatisch nach dem Veröffentlichen) |
 | `fluid:selftest` | Live-Aktualisierung und Präsenz prüfen |
+| `fluid:upgrade:slices` | Blöcke älterer REDAXO-6-Datenbanken in die Spalte `data` übernehmen (`--drop-old` entfernt die alten Spalten) |
 
 ## Rechte
 
@@ -545,7 +549,7 @@ Umbau geht, gelten feste Regeln:
 
 | Baustein | Ordner | Meldet an | Braucht | Stand |
 |---|---|---|---|---|
-| **Routing** (schöne Adressen, Domains, Weiterleitungen, 404-Protokoll, sitemap.xml, robots.txt) | `src/Routing/` | URL_REWRITE, eigene Endpunkte | nur den Core | herauslösbar – kennt nichts von fluid |
+| **Routing** (schöne Adressen, Domains, Weiterleitungen, 404-Protokoll, sitemap.xml, robots.txt) | `src/Routing/` | ArticleUrl, eigene Endpunkte | nur den Core | herauslösbar – kennt nichts von fluid |
 | SEO im Seitenkopf (Canonical, hreflang, schema.org) | `src/Seo/` | – | Routing, Einstellungen von fluid | bleibt im Kern |
 | Suche (Loupe) | `src/Search/` | `FLUID_ROUTES_REBUILT` | Routing, Block-Inhalte | herauslösbar nach dem Routing |
 | Karten (MapLibre, eigener Proxy) | `src/Maps/` | Endpunkt `/proxy/*`, Geo in schema.org | Routing, Einstellungen | herauslösbar |

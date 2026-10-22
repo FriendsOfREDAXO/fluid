@@ -133,7 +133,7 @@ final class DemoCommand extends AbstractCommand
                 }
                 continue;
             }
-            $id = CategoryHandler::add(null, ['catpriority' => $prio++, 'catname' => (string) $def['title'], 'status' => 1])->id;
+            $id = CategoryHandler::add(['parent_id' => null, 'priority' => $prio++, 'name' => (string) $def['title'], 'status' => 1])->id;
             $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', ['fluid', $id]);
             $ids[$slug] = $id;
             if (!empty($def['blog'])) {
@@ -152,28 +152,26 @@ final class DemoCommand extends AbstractCommand
 
             return $v;
         };
+        // Modul zum Blocktyp: eigenes Modul des Kits ({kit}.{typ}), sonst das von fluid (die Module gehören zu keinem Kit)
+        $moduleKey = static fn (string $type): ?string => array_find([$kit->key() . '.' . $type, 'fluid.' . $type], static fn (string $k) => null !== BlockModule::classFor($k));
         $count = 0;
         $skipped = [];
         foreach ($demo['pages'] as $def) {
             $articleId = $ids[(string) $def['slug']];
             foreach ($def['blocks'] ?? [] as $block) {
-                $key = $kit->key() . '.' . $block['type'];
-                if (!Module::get($key) instanceof BlockModule) {
+                $key = $moduleKey((string) $block['type']);
+                if (null === $key) {
                     $skipped[$block['type']] = true;
                     continue;
                 }
                 // Layout: danach seine Spalten-Blöcke ('children' => [[Spalte, Block], …]) als eigene Slices mit tunes.col
                 $slices = [[$key, $block['data'] ?? [], $block['tunes'] ?? []]];
                 foreach ($block['children'] ?? [] as [$col, $child]) {
-                    $slices[] = [$kit->key() . '.' . $child['type'], $child['data'] ?? [], ['col' => $col] + ($child['tunes'] ?? [])];
+                    $slices[] = [$moduleKey((string) $child['type']) ?? 'fluid.' . $child['type'], $child['data'] ?? [], ['col' => $col] + ($child['tunes'] ?? [])];
                 }
                 foreach ($slices as [$k, $data, $tunes]) {
                     foreach (array_unique([ArticleRevision::LIVE, FluidAddon::revision()]) as $rev) {
-                        ContentHandler::addSlice($articleId, $lang, 1, $k, [
-                            'revision' => $rev,
-                            'value1' => json_encode($mapLinks($data), JSON_UNESCAPED_UNICODE),
-                            'value2' => json_encode((object) $tunes, JSON_UNESCAPED_UNICODE),
-                        ]);
+                        ContentHandler::addSlice($articleId, $lang, 1, $k, BlockModule::store($mapLinks($data), $tunes), revision: $rev);
                     }
                     ++$count;
                 }
@@ -241,10 +239,10 @@ final class DemoCommand extends AbstractCommand
             if (\Redaxo\Core\MediaPool\Media::get($name)) {
                 continue;
             }
-            $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
+            $tmp = self::tmpFile($name);
             copy($file, $tmp);
             [$title, $alt] = self::MEDIA_TEXTS[$name] ?? [pathinfo($name, PATHINFO_FILENAME), ''];
-            $res = \Redaxo\Core\MediaPool\MediaHandler::add(['category_id' => null, 'title' => $title, 'file' => ['name' => $name, 'path' => $tmp]], false);
+            $res = \Redaxo\Core\MediaPool\MediaHandler::add(['category_id' => null, 'title' => $title, 'file' => new \Symfony\Component\HttpFoundation\File\File($tmp)], subindexing: false);
             @unlink($tmp);
             // Alt-Text (Spalte meta_alt des Cores, je Sprache) – für Screenreader und für img()/picture()
             if ('' !== $alt) {
@@ -281,9 +279,9 @@ final class DemoCommand extends AbstractCommand
             $svg = (string) file_get_contents($logo);
             foreach (['redaxo-logo.svg' => $svg, 'redaxo-logo-weiss.svg' => preg_replace('~fill="#[0-9A-Fa-f]{6}"~', 'fill="#FFFFFF"', $svg)] as $name => $content) {
                 if (!\Redaxo\Core\MediaPool\Media::get($name)) {
-                    $tmp = \Redaxo\Core\Filesystem\Path::cache('fluid-demo-' . $name);
+                    $tmp = self::tmpFile($name);
                     file_put_contents($tmp, $content);
-                    \Redaxo\Core\MediaPool\MediaHandler::add(['category_id' => null, 'title' => 'REDAXO-Logo', 'file' => ['name' => $name, 'path' => $tmp]], false);
+                    \Redaxo\Core\MediaPool\MediaHandler::add(['category_id' => null, 'title' => 'REDAXO-Logo', 'file' => new \Symfony\Component\HttpFoundation\File\File($tmp)], subindexing: false);
                     @unlink($tmp);
                     \Redaxo\Core\MediaPool\Media::clearInstances($name);
                 }
@@ -327,5 +325,15 @@ final class DemoCommand extends AbstractCommand
 
         return $out ? 'YForm: ' . implode(', ', $out) : 'YForm: Beispieldaten schon vorhanden.';
     }
-}
 
+    /** Zwischendatei mit dem Namen der Datei im Medienpool (der Medienpool übernimmt den Dateinamen) */
+    private static function tmpFile(string $name): string
+    {
+        $dir = \Redaxo\Core\Filesystem\Path::cache('fluid-demo');
+        if (!is_dir($dir)) {
+            mkdir($dir, 0o775, true);
+        }
+
+        return $dir . '/' . $name;
+    }
+}
