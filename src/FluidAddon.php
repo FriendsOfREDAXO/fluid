@@ -215,6 +215,7 @@ final class FluidAddon extends Addon
         Routing\Router::keep(Api::PARAM, Editing::PARAM);
         Routing\Sitemap::exclude(static fn (int $id, int $lang): bool => PageSettings::noindex($id, $lang));
         Routing\Sitemap::images(PageSettings::sitemapImages(...));
+        Routing\Robots::allowPreviews((bool) Settings::get('robots_previews', false));
         Extension::register('FLUID_ROBOTS_RULES', static function (ExtensionPoint $ep): string {
             $own = trim((string) Settings::get('robots', ''));
 

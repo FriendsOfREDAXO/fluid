@@ -250,9 +250,10 @@ Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `ProjectTable`, `Anfrag
   // ganze Liste ändern
   Extension::register('FLUID_SITEMAP', static fn (ExtensionPoint $ep) => [...$ep->subject, ['loc' => 'https://example.org/extra', 'lastmod' => null, 'alternates' => []]]);
   ```
-- `robots.txt` je Domain mit Zeile „Sitemap:“; eigener Text unter Website → Recht & Suchmaschinen. Sperrt der Text die
-  ganze Website (`User-agent: *` + `Disallow: /`), dürfen Linkvorschauen beim Teilen trotzdem lesen (`Robots::PREVIEW_BOTS`:
-  Facebook, LinkedIn, WhatsApp …) – Suchmaschinen bleiben draußen. Eigene Regeln für diese Bots haben Vorrang.
+- `robots.txt` je Domain mit Zeile „Sitemap:“; eigener Text unter Website → Recht & Suchmaschinen. Optional (Haken
+  „Linkvorschau beim Teilen erlauben …“, Standard aus; im Code `Robots::allowPreviews()`): Sperrt der Text die ganze
+  Website (`User-agent: *` + `Disallow: /`), dürfen Linkvorschauen trotzdem lesen (`Robots::PREVIEW_BOTS`: Facebook,
+  LinkedIn, WhatsApp …) – Suchmaschinen bleiben draußen. Eigene Regeln für diese Bots haben Vorrang.
 - Vorschaubild für soziale Netzwerke (`og:image`, Seiteneinstellungen): mit image_editor 1200 × 630 als JPEG um den
   Fokuspunkt (`ImageEditor::shareUrl()`), mit Breite, Höhe und Alt-Text.
 - Erstes Bild im ersten Block der Seite: ohne Angabe im Kit sofort und mit `fetchpriority="high"` (Einstieg, LCP);

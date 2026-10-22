@@ -101,6 +101,8 @@ final class Settings
                     'help' => 'Nur wenn das Mail-Archiv eingeschaltet ist (REX_MAILER_ARCHIVE). Ältere Mails löscht der Cronjob „fluid_mail_archive_purge“ täglich. 0 = nie löschen.'],
                 ['name' => 'robots', 'label' => 'robots.txt (optional)', 'type' => 'textarea', 'rows' => 4, 'max' => 2000,
                     'help' => 'Leer = Standard (alles erlaubt außer Backend und Bearbeiten-Ansichten). Die Zeile „Sitemap:“ kommt automatisch dazu.'],
+                ['name' => 'robots_previews', 'label' => 'Linkvorschau beim Teilen erlauben, auch wenn Suchmaschinen gesperrt sind', 'type' => 'bool', 'default' => false,
+                    'help' => 'Nur wirksam, wenn der Text oben alles sperrt („User-agent: *“ mit „Disallow: /“) – etwa vor dem Start einer Live-Website. Facebook, LinkedIn, WhatsApp & Co. dürfen dann Titel, Text und Bild geteilter Seiten lesen, Suchmaschinen nicht. Für Test- und Vorschau-Websites aus lassen.'],
             ]],
         ];
     }
