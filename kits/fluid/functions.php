@@ -266,7 +266,8 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
         return '';
     }
     $alt = $opt['alt'] ?? (trim((string) $m->getValue('meta_alt')) ?: $m->title);
-    $eager = !empty($opt['eager']);
+    // ohne Angabe: erstes Bild im ersten Block der Seite sofort und mit Vorrang (Einstieg), sonst lazy
+    $eager = \array_key_exists('eager', $opt) ? !empty($opt['eager']) : \FriendsOfRedaxo\Fluid\Block::firstImage();
     $editor = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::class : null;
     $editable = $editor && null === $editor::editable($m);
     // Bildformat (16:9 …): Ausschnitt je Format aus image_editor – eigener Ausschnitt oder automatisch um den Fokuspunkt.

@@ -48,6 +48,35 @@ final class Block
         get => $this->slice->articleId ?? ($this->ownArticleId ?: (int) \Redaxo\Core\Content\Article::getCurrentId());
     }
 
+    /** Block, dessen View gerade ausgegeben wird (BlockModule::renderInner) */
+    public static ?self $rendering = null;
+
+    private static bool $firstImageUsed = false;
+
+    /** Erster sichtbarer Block der Seite – oder eine Spalte des ersten Layouts? */
+    public function isFirst(): bool
+    {
+        if (null === $this->slice) {
+            return false;
+        }
+        $slice = Layout::parentOf($this->slice) ?? $this->slice;
+
+        return null === $slice->getPreviousSlice(!Editing::active());
+    }
+
+    /**
+     * Soll dieses Bild ohne Angabe im Kit sofort und mit Vorrang laden? Ja für das erste Bild im ersten Block der Seite
+     * (meist der Einstieg, wichtig für LCP) – nur einmal je Seite.
+     */
+    public static function firstImage(): bool
+    {
+        if (self::$firstImageUsed || null === self::$rendering || !self::$rendering->isFirst()) {
+            return false;
+        }
+
+        return self::$firstImageUsed = true;
+    }
+
     /** Block aus einem Slice (Seite) oder aus Daten (YForm-Feld)? */
     public function fromSlice(): bool
     {

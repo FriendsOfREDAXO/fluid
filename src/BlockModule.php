@@ -247,16 +247,22 @@ abstract class BlockModule extends Module
     {
         Seo\StructuredData::collect($b);   // schema.org der Blöcke (FAQ …) für den Seitenkopf
         static::kit()->definition();   // lädt auch die Hilfsfunktionen des Kits (functions.php) – auch für eigene Blöcke
-        return (static function (string $__file, Block $b, array $d): string {
-            ob_start();
-            try {
-                require $__file;
-            } finally {
-                $html = (string) ob_get_clean();
-            }
+        $outer = Block::$rendering;   // Layout: Spalten-Blöcke werden innerhalb seiner View ausgegeben
+        Block::$rendering = $b;
+        try {
+            return (static function (string $__file, Block $b, array $d): string {
+                ob_start();
+                try {
+                    require $__file;
+                } finally {
+                    $html = (string) ob_get_clean();
+                }
 
-            return $html;
-        })(static::viewFile($b), $b, $b->data);
+                return $html;
+            })(static::viewFile($b), $b, $b->data);
+        } finally {
+            Block::$rendering = $outer;
+        }
     }
 
     /** Attribute für den Editor (nur im Bearbeiten-Modus) */

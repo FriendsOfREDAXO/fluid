@@ -214,6 +214,7 @@ final class FluidAddon extends Addon
         // Kern von fluid: Editor-Parameter, „nicht indexieren“, eigener robots.txt-Text
         Routing\Router::keep(Api::PARAM, Editing::PARAM);
         Routing\Sitemap::exclude(static fn (int $id, int $lang): bool => PageSettings::noindex($id, $lang));
+        Routing\Sitemap::images(PageSettings::sitemapImages(...));
         Extension::register('FLUID_ROBOTS_RULES', static function (ExtensionPoint $ep): string {
             $own = trim((string) Settings::get('robots', ''));
 

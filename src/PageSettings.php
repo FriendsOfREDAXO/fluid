@@ -5,6 +5,7 @@ namespace FriendsOfRedaxo\Fluid;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleHandler;
+use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\CategoryHandler;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\Filesystem\Url;
@@ -129,15 +130,54 @@ final class PageSettings
         $h .= '<meta property="og:title" content="' . escape($s['title'] ?: $article->name) . '">' . "\n"
             . '<meta property="og:site_name" content="' . escape($siteName) . '">' . "\n";
         if ('' !== $s['image'] && ($m = Media::get($s['image']))) {
-            $url = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::url($m->fileName, 1280) : $m->getUrl();
+            // Mit image_editor: 1200 × 630 als JPEG um den Fokuspunkt (Format der Netzwerke, LinkedIn kann kein WebP)
+            $share = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::shareUrl($m->fileName) : null;
+            $url = $share ?? $m->getUrl();
             // Netzwerke brauchen eine absolute Adresse
             $url = preg_match('~^https?://~', $url) ? $url : Url::absoluteBase(ltrim(preg_replace('~^\./~', '', $url), '/'));
             $h .= '<meta property="og:image" content="' . escape($url) . '">' . "\n";
+            if (null !== $share) {
+                $h .= '<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' . "\n";
+            }
+            if ('' !== $alt = trim((string) ($m->getValue('meta_alt') ?? ''))) {
+                $h .= '<meta property="og:image:alt" content="' . escape($alt) . '">' . "\n";
+            }
         }
         if ($s['noindex'] || !$article->isOnline()) {
             $h .= '<meta name="robots" content="noindex, nofollow">' . "\n";
         }
 
         return $h;
+    }
+
+    /**
+     * Bilder einer Seite für die Sitemap: Vorschaubild, dann Bilder der veröffentlichten, sichtbaren Blöcke (Verweise des
+     * Cores, rex_article_slice_reference).
+     *
+     * @return list<string>
+     */
+    public static function sitemapImages(int $articleId, int $languageId): array
+    {
+        $files = [];
+        $own = (string) (self::get($articleId, $languageId)['image'] ?? '');
+        if ('' !== $own) {
+            $files[] = $own;
+        }
+        $rows = Sql::factory()->getArray(
+            'SELECT r.target FROM rex_article_slice_reference r JOIN rex_article_slice s ON s.id = r.slice_id
+             WHERE r.type = ? AND s.article_id = ? AND s.language_id = ? AND s.revision = ? AND s.status = 1 ORDER BY s.content_section_id, s.priority',
+            ['media', $articleId, $languageId, ArticleRevision::LIVE],
+        );
+        foreach ($rows as $r) {
+            $files[] = (string) $r['target'];
+        }
+        $out = [];
+        foreach (array_unique($files) as $file) {
+            if (1 === preg_match('~\.(jpe?g|png|webp|avif|gif|svg)$~i', $file) && ($m = Media::get($file))) {
+                $out[] = $m->getUrl();
+            }
+        }
+
+        return $out;
     }
 }

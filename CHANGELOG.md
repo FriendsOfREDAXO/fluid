@@ -6,6 +6,11 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Für Redakteure
 
+- Teilen in sozialen Netzwerken: Das Vorschaubild hat jetzt das Format der Netzwerke (1200 × 630, um den Fokuspunkt,
+  JPEG – LinkedIn zeigt mit WebP nichts), mit Alt-Text. Ist die Website für Suchmaschinen gesperrt, zeigen Facebook,
+  LinkedIn & Co. trotzdem eine Vorschau.
+- Sitemap: Bilder je Seite, Änderungszeit mit Uhrzeit, im Browser als Tabelle lesbar (`/sitemap.xml`).
+- Schnellerer Seitenaufbau: Das erste Bild im ersten Block lädt sofort und mit Vorrang.
 - Bearbeiten auf der Website: Texte direkt auf der Seite, Seitenleiste je Block, Blöcke einfügen, verschieben (Ziehen
   oder Pfeile), verdoppeln, kopieren und einfügen, online/offline; Greifer für Spalten, Abstände, Textbreite und Aufteilung.
 - Arbeitsversion: Entwurf speichern, veröffentlichen, verwerfen; Versionen wiederherstellen; Entwürfe-Übersicht und Aktivität.

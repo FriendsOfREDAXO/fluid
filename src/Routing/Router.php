@@ -143,14 +143,17 @@ final class Router
     public static function boot(): void
     {
         // eigene Endpunkte des Routings
-        self::endpoint('/sitemap.xml', static fn () => self::respond(Sitemap::xml(self::$landing) ?? '', 'application/xml; charset=utf-8'));
-        self::endpoint(static fn (string $p): bool => (bool) preg_match('~^/sitemap-[1-9][0-9]*\.xml$~', $p), static function (string $p): void {
+        // Sitemap und robots.txt nicht in Proxy-Caches festhalten (sonst gilt nach einer Änderung noch lange die alte)
+        $fresh = ['Cache-Control: no-cache'];
+        self::endpoint('/sitemap.xml', static fn () => self::respond(Sitemap::xml(self::$landing) ?? '', 'application/xml; charset=utf-8', $fresh));
+        self::endpoint('/sitemap.xsl', static fn () => self::respond(Sitemap::xsl(), 'text/xsl; charset=utf-8'));
+        self::endpoint(static fn (string $p): bool => (bool) preg_match('~^/sitemap-[1-9][0-9]*\.xml$~', $p), static function (string $p) use ($fresh): void {
             $xml = Sitemap::xml(self::$landing, (int) substr($p, 9, -4));
             if (null !== $xml) {
-                self::respond($xml, 'application/xml; charset=utf-8');
+                self::respond($xml, 'application/xml; charset=utf-8', $fresh);
             }
         });
-        self::endpoint('/robots.txt', static fn () => self::respond(Robots::text(), 'text/plain; charset=utf-8'));
+        self::endpoint('/robots.txt', static fn () => self::respond(Robots::text(), 'text/plain; charset=utf-8', $fresh));
         // Adresse einer Seite; ohne Pfad (null) bleibt die Adresse des Cores
         Extension::register(ContentEp\ArticleUrl::class, static fn (ContentEp\ArticleUrl $ep): ?string => '' !== ($url = self::url($ep->articleId, $ep->languageId, $ep->params)) ? $url : null);
         // Strukturänderungen → Pfade neu berechnen (automatische Weiterleitungen inklusive)
@@ -484,9 +487,13 @@ final class Router
     }
 
     /** Antwort senden und beenden (für Endpunkte und Resolver der Bausteine) */
-    public static function respond(string $body, string $type): never
+    /** @param list<string> $headers weitere Kopfzeilen */
+    public static function respond(string $body, string $type, array $headers = []): never
     {
         header('Content-Type: ' . $type);
+        foreach ($headers as $h) {
+            header($h);
+        }
         echo $body;
         exit;
     }

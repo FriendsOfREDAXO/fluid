@@ -235,17 +235,28 @@ Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `ProjectTable`, `Anfrag
 - Domains (Website → Domains): **Hauptadresse**, **weitere Domains** (301 auf die Hauptadresse), **Landing-Domains**
   (eigene Domain für eine Seite, optional mit Unterseiten, Canonical „eigene Domain“ oder „Spiegel“).
 - `sitemap.xml` je Domain (Hauptadresse bzw. Landing-Domain): Seiten, die online sind (samt Eltern), nicht auf „nicht
-  indexieren“ stehen und deren Canonical auf diese Domain zeigt – mit `lastmod` (Änderungsdatum), hreflang samt
-  `x-default` (Startsprache) und den Detailseiten von Datenlisten. Ab 45 000 Adressen ein Sitemap-Index mit
-  `/sitemap-1.xml`, `/sitemap-2.xml` … Eigene Adressen ergänzen AddOns über `Sitemap::children()` oder `FLUID_SITEMAP`:
+  indexieren“ stehen und deren Canonical auf diese Domain zeigt – mit `lastmod` (Änderungsdatum mit Uhrzeit), hreflang samt
+  `x-default` (Startsprache), bis zu fünf Bildern je Adresse (Vorschaubild der Seite, Bilder der veröffentlichten Blöcke)
+  und den Detailseiten von Datenlisten. Ab 45 000 Adressen ein Sitemap-Index mit `/sitemap-1.xml`, `/sitemap-2.xml` …
+  Im Browser zeigt `/sitemap.xsl` die Adressen als Tabelle; Sitemap und robots.txt kommen mit `Cache-Control: no-cache`
+  (Proxy-Caches halten keine alte Fassung fest). Bilder ergänzen AddOns über `Sitemap::images()`, eigene Adressen über
+  `Sitemap::children()` oder `FLUID_SITEMAP`:
 
   ```php
   // weitere Adressen unter einer Seite (z. B. Produkte einer Übersichtsseite)
   Sitemap::children(static fn (int $id, int $lang, string $loc): iterable => $id === 42 ? [['loc' => $loc . '/produkt-1', 'lastmod' => time()]] : []);
+  // Bilder einer Seite (Adressen, relativ oder absolut)
+  Sitemap::images(static fn (int $id, int $lang): iterable => $id === 42 ? ['/media/produkt.jpg'] : []);
   // ganze Liste ändern
   Extension::register('FLUID_SITEMAP', static fn (ExtensionPoint $ep) => [...$ep->subject, ['loc' => 'https://example.org/extra', 'lastmod' => null, 'alternates' => []]]);
   ```
-- `robots.txt` je Domain mit Zeile „Sitemap:“; eigener Text unter Website → Recht & Suchmaschinen.
+- `robots.txt` je Domain mit Zeile „Sitemap:“; eigener Text unter Website → Recht & Suchmaschinen. Sperrt der Text die
+  ganze Website (`User-agent: *` + `Disallow: /`), dürfen Linkvorschauen beim Teilen trotzdem lesen (`Robots::PREVIEW_BOTS`:
+  Facebook, LinkedIn, WhatsApp …) – Suchmaschinen bleiben draußen. Eigene Regeln für diese Bots haben Vorrang.
+- Vorschaubild für soziale Netzwerke (`og:image`, Seiteneinstellungen): mit image_editor 1200 × 630 als JPEG um den
+  Fokuspunkt (`ImageEditor::shareUrl()`), mit Breite, Höhe und Alt-Text.
+- Erstes Bild im ersten Block der Seite: ohne Angabe im Kit sofort und mit `fetchpriority="high"` (Einstieg, LCP);
+  `img(…, ['eager' => false])` im Kit hat Vorrang.
 - Canonical, hreflang und schema.org-@graph (Organisation, WebSite, WebPage, Brotkrumen, Blöcke) im Seitenkopf
   (`Seo\Head`, `Seo\StructuredData`).
 - Weitere Sprachen bekommen ein Präfix (`/en/…`); Sprachwahl im Kopf und im mobilen Menü zeigt nur Sprachen, in denen
