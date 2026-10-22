@@ -7,16 +7,23 @@ use Override;
 use Redaxo\Core\Exception\LogicException;
 use Redaxo\Core\Form\BoundField;
 use Redaxo\Core\Form\Field\Field;
+use Redaxo\Core\Form\Field\ReferencesItems;
 use Redaxo\Core\Form\InvalidValueException;
+use Redaxo\Core\Form\Reference;
 use Redaxo\Core\Form\ValueType;
 use Redaxo\Core\Form\Widget\Widget;
+use Redaxo\Core\MediaPool\Media;
 use Redaxo\Core\Translation\Translatable;
 
 use function array_filter;
 use function array_keys;
 use function array_values;
+use function array_walk_recursive;
+use function explode;
 use function is_array;
 use function is_int;
+use function preg_match;
+use function preg_match_all;
 
 /**
  * Feldtyp der Block-Module: speichert die Werte eines Blocks (Felder laut Kit-Definition oder Abschnitts-Optionen) als
@@ -24,9 +31,12 @@ use function is_int;
  *
  * Die Felder eines Blocks stehen nicht als Eigenschaften im Modul, sondern in der Kit-Definition – deshalb ein Feld für
  * alle Werte statt eines Felds je Wert. Das Formular zeichnet BlockModule::input() (FieldForm), nicht das Feld selbst.
+ *
+ * Verweise (Tabelle rex_article_slice_reference des Cores, Löschschutz, „Verwendet in“): Seiten als `redaxo://ID` in
+ * jedem Text (Linkfelder, Rich-Text), Medien als Dateiname bzw. Liste von Dateinamen, die es im Medienpool gibt.
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-final class BlockValues extends Field
+final class BlockValues extends Field implements ReferencesItems
 {
     public function __construct(?string $key = null)
     {
@@ -82,6 +92,35 @@ final class BlockValues extends Field
         }
 
         return $stored;
+    }
+
+    /** @return list<Reference> */
+    #[Override]
+    public function references(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+        $out = [];
+        array_walk_recursive($value, static function (mixed $v) use (&$out): void {
+            if (!\is_string($v) || '' === $v) {
+                return;
+            }
+            if (preg_match_all('~redaxo://(\d+)~', $v, $m)) {
+                foreach ($m[1] as $id) {
+                    $out['article:' . $id] = Reference::article((int) $id);
+                }
+            }
+            if (preg_match('~^[\w.@-]+\.[a-z0-9]{2,5}(,[\w.@-]+\.[a-z0-9]{2,5})*$~i', $v)) {
+                foreach (explode(',', $v) as $file) {
+                    if (null !== Media::get($file)) {
+                        $out['media:' . $file] = Reference::media($file);
+                    }
+                }
+            }
+        });
+
+        return array_values($out);
     }
 
     /**

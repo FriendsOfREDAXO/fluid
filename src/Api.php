@@ -10,6 +10,7 @@ use Redaxo\Core\Content\StructurePermission;
 use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\ArticleSlice;
+use Redaxo\Core\Content\ArticleSliceReference;
 use Redaxo\Core\Content\ContentHandler;
 use Redaxo\Core\Content\ExtensionPoint\ArticleContentUpdated;
 use Redaxo\Core\Content\Module;
@@ -248,6 +249,7 @@ final class Api
         $sql->setValue('data', BlockModule::encodeStore($data, $tunes));
         $sql->addGlobalUpdateFields($user->login);
         $sql->update();
+        ArticleSliceReference::update(self::reload($article, $slice->id));
         self::changed($article, $slice->id, 'slice_updated');
         Versions::snapshot($article->id, $article->languageId, FluidAddon::revision(), 'fluid_save');
         Activity::log('save', $article->id, $module::name());

@@ -210,7 +210,6 @@ final class FluidAddon extends Addon
         Data\Detail::boot();
         Blog\Blog::boot();
         Search\Search::boot();
-        Usage::boot();
         Welcome::boot();
         // Kern von fluid: Editor-Parameter, „nicht indexieren“, eigener robots.txt-Text
         Routing\Router::keep(Api::PARAM, Editing::PARAM);

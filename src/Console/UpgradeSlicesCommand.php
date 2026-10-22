@@ -6,6 +6,7 @@ use FriendsOfRedaxo\Fluid\BlockModule;
 use Redaxo\Core\Console\AbstractCommand;
 use Redaxo\Core\Cache;
 use Redaxo\Core\Content\ArticleSlice;
+use Redaxo\Core\Content\ArticleSliceReference;
 use Redaxo\Core\Database\Column;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\Database\Table;
@@ -80,6 +81,9 @@ final class UpgradeSlicesCommand extends AbstractCommand
             }
         }
         Cache::delete();   // Inhalte und Klassen neu aufbauen
+        if (Table::get('rex_article_slice_reference')->exists()) {
+            $io->text(ArticleSliceReference::rebuild() . ' Verweise (Medien, Seiten) neu aufgebaut');
+        }
         $io->success('Fertig. Danach (falls noch nicht geschehen) `bin/console migrate`.');
 
         return Command::SUCCESS;

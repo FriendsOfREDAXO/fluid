@@ -100,8 +100,9 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
     **Eigene Blöcke im Projekt:** `protected static function define()` bzw. `public static function kit()`.
   - Bestehende Datenbanken: `php bin/console fluid:upgrade:slices` (vor oder nach `migrate`) übernimmt die Blöcke und
     benennt `ctype_id` in `content_section_id` um; `--drop-old` entfernt danach die alten Spalten.
-  - Löschschutz: Medien und Seiten, die in Blöcken stehen, meldet fluid an den Core (`MediaUsageCheck`,
-    `ArticleUsageCheck`) – der Core kennt nur Verweise aus Feldtypen.
+  - Löschschutz über die Verweistabelle des Cores (`rex_article_slice_reference`): Der Feldtyp der Blöcke meldet Seiten
+    (`redaxo://ID`, auch im Rich-Text) und Medien aus dem Medienpool; „Verwendet in“ im Medienpool und in der Struktur.
+    `fluid:upgrade:slices` baut die Verweise mit auf (sonst `bin/console content:rebuild-references`).
   - Extension Points als Klassen: `ArticleContentRendering`, `ArticleSlicesQuery`, `SliceOutput`, `SliceDeleting`,
     `ArticleUrl`, `ContentPageBeforeSlices`; Handler mit einheitlichem `$data` (Kategorien, Sprachen, Medien als `File`).
   - Neue Blöcke stehen sicher an ihrer Stelle, auch wenn mehrere in derselben Sekunde entstehen (vorher konnte ein

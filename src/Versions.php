@@ -4,6 +4,8 @@ namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleRevision;
+use Redaxo\Core\Content\ArticleSlice;
+use Redaxo\Core\Content\ArticleSliceReference;
 use Redaxo\Core\Content\ArticleSliceHistory;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\Module;
@@ -109,6 +111,9 @@ final class Versions
                 }
             }
             $ins->setValue('revision', $target)->insert();
+            if ($slice = ArticleSlice::getArticleSliceById((int) $ins->getLastId(), $languageId, $target)) {
+                ArticleSliceReference::update($slice);   // Verweise des Cores (Löschschutz)
+            }
         }
         ArticleCache::delete($articleId, $languageId);
     }
