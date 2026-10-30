@@ -4,10 +4,7 @@ namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\Category;
-use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\Language\Language;
-
-use function Redaxo\Core\View\escape;
 
 /**
  * Artikel der Struktur für die Linkauswahl der Formatierungsleiste (`<script type="application/json" id="blocks-links">`).
@@ -43,9 +40,7 @@ final class Links
 
     public static function json(?int $languageId = null): string
     {
-        $linkmap = Url::backendPage('linkmap', ['opener_input_field' => 'blocks_pick', 'language' => $languageId ?? Language::getCurrentId()]);
-
-        return '<script type="application/json" id="blocks-links" data-linkmap="' . escape($linkmap) . '">'
+        return '<script type="application/json" id="blocks-links" data-language="' . ($languageId ?? Language::getCurrentId()) . '">'
             . json_encode(self::all($languageId), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>';
     }
 }

@@ -52,7 +52,7 @@ function build() {
       <div class="adm-dialog__head"><h2 data-lp-title>${esc(t('Link einfügen'))}</h2></div>
       <div class="f"><label for="blocks-lp-q">${esc(t('Seite suchen oder Adresse eingeben'))}</label>
         <input type="text" id="blocks-lp-q" autocomplete="off" placeholder="${esc(t('Seitenname, https://…, E-Mail, Telefon, #anker'))}"></div>
-      <div class="adm-row lp__map"><button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-lp-linkmap>${esc(t('Linkmap öffnen …'))}</button></div>
+      <div class="adm-row lp__map" ${typeof window.rex?.pick === 'function' || window.FrontendPicker ? '' : 'hidden'}><button type="button" class="adm-btn adm-btn--small adm-btn--ghost" data-lp-linkmap>${esc(t('Linkmap öffnen …'))}</button></div>
       <div class="lp__list" role="listbox" data-lp-list></div>
       <label class="f-check"><input type="checkbox" data-lp-tab> ${esc(t('In neuem Tab öffnen'))}</label>
       <p class="f-help" data-lp-error hidden></p>
@@ -105,10 +105,9 @@ export function openLinkPicker(opts = {}) {
       } else if (e.target.closest('[data-lp-cancel]')) done(null);
       else if (e.target.closest('[data-lp-remove]')) done({ remove: true });
       else if (e.target.closest('[data-lp-linkmap]')) {
-        // REDAXO-Linkmap im Popup (assets/form.js: BlocksPick) – Ergebnis redaxo://ID
-        const url = document.getElementById('blocks-links')?.dataset.linkmap;
-        if (!url || !window.BlocksPick) return;
-        window.BlocksPick.pick(url).then((res) => {
+        // Linkmap: im Backend die des Cores (Overlay), auf der Website der FrontendPicker (assets/form.js: BlocksPick) – Ergebnis redaxo://ID
+        if (!window.BlocksPick) return;
+        window.BlocksPick.pick('link', { language: Number(document.getElementById('blocks-links')?.dataset.language) || 0 }).then((res) => {
           if (!res) return;
           const id = String(res.value).replace('redaxo://', '');
           const a = list().find((x) => String(x.id) === id);

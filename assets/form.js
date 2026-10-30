@@ -36,6 +36,12 @@
       const item = toEl(tpl.innerHTML.replaceAll('__i__', String(1000 + n++)));
       list.append(item);
       item.open = true;
+      // Backend: aufklappbare Einträge (Collapse des Cores) brauchen je Eintrag eigene IDs (auch verschachtelte)
+      item.querySelectorAll('.collapse[id]').forEach((el) => {
+        const id = `${el.id}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+        item.querySelectorAll(`[data-target="#${CSS.escape(el.id)}"]`).forEach((t) => { t.dataset.target = '#' + id; t.setAttribute('aria-controls', id); });
+        el.id = id;
+      });
       item.querySelectorAll('[data-blocks-repeater]').forEach((r) => initRepeater(r, changed));
       initPickers(item, changed);
       item.querySelector('input:not([type=hidden]),textarea,select')?.focus();
@@ -56,63 +62,40 @@
     list.addEventListener('change', (e) => { if (e.target.matches('select')) e.target.dispatchEvent(new Event('input', { bubbles: true })); });
     list.addEventListener('input', (e) => {
       const item = e.target.closest('[data-blocks-item]');
-      const title = item?.querySelector(':scope > summary [data-blocks-item-title]');
+      // Titel im Kopf: <summary> (Website) bzw. Kopf des Eintrags (Backend) – nicht die verschachtelter Einträge
+      const title = item?.querySelector(':scope > summary [data-blocks-item-title], :scope > .fluid-rep-item__head [data-blocks-item-title]');
       // Auswahlfeld als Titel: Text der Option („Montag“ statt „1“)
       if (title && e.target.name?.endsWith(`[${title.dataset.field}]`) && e.target.value) title.textContent = e.target.selectedOptions?.[0]?.text || e.target.value;
     });
     sync();
   }
 
-  // ------------------------------------------------------------------ Medienpool und Linkmap (REDAXO-Popups)
-  // Die Popups lösen am öffnenden Fenster „rex:selectMedia“ (Datei, Titel) bzw. „rex:selectLink“ (redaxo://ID, Name) aus.
-  // Auf der Website gibt es kein jQuery: dafür genügt ein kleiner Ersatz mit on/trigger/Event.
-  // Die Popups lösen das Event an IHREM Fenster aus (opener.jQuery(window).trigger …) und binden die Handler bei jedem Laden
-  // neu aus opener.rex.popupEvents[Fenstername] (rex_retain_popup_event_handlers in standard.js) – dort hängt unser Handler.
-  if (!window.jQuery) {
-    const handlers = {};
-    const jq = () => ({
-      on(name, fn) { name.split(' ').forEach((n) => { (handlers[n] ||= []).includes(fn) || handlers[n].push(fn); }); return this; },
-      trigger(ev, args = []) { (handlers[ev.type] || []).forEach((fn) => fn(ev, ...args)); return this; },
-    });
-    jq.Event = (type) => ({ type, prevented: false, preventDefault() { this.prevented = true; }, isDefaultPrevented() { return this.prevented; } });
-    jq._data = () => ({});
-    window.jQuery = jq;
-  }
-  window.rex = window.rex || {};
+  // ------------------------------------------------------------------ Medien- und Seitenauswahl (ohne Popup-Fenster)
+  // Backend: Medienpool und Linkmap des Cores als Overlay (rex.pick). Website: FrontendPicker (assets/picker, für jedes
+  // AddOn nutzbar) mit derselben Antwort [{ value, label }].
 
-  const POPUP = 'blocks_pick';
-  let pending = null;   // { resolve, win }
-  const onSelect = (ev, value, name) => {
-    if (!pending) return;
-    ev.preventDefault();
-    const p = pending;
-    pending = null;
-    try { p.win?.close(); } catch {}
-    p.resolve({ value: String(value), name: name || '' });
-  };
-
-  /** Popup öffnen; Ergebnis: { value, name } oder null (Fenster ohne Auswahl geschlossen) */
-  function pick(url) {
-    // Gastzugang ohne Backend (z. B. AddOn fluid_demo setzt window.fluidPickerOff): Hinweis statt Medienpool/Linkmap
+  /**
+   * Auswahl öffnen; Ergebnis: { value, name } oder null (ohne Auswahl geschlossen)
+   * @param {'media'|'link'} kind
+   * @param {{types?: string[], category?: number, language?: number, value?: string}} opts
+   */
+  async function pick(kind, opts = {}) {
+    // Gastzugang ohne Backend (z. B. AddOn fluid_demo setzt window.fluidPickerOff): Hinweis statt Auswahl
     if (window.fluidPickerOff) {
       document.dispatchEvent(new CustomEvent('fluid:notice', { detail: String(window.fluidPickerOff) }));
-      return Promise.resolve(null);
+      return null;
     }
-    if (pending) pending.resolve(null);
-    // erst beim Öffnen setzen: das Backend legt window.rex ggf. später neu an
-    window.rex = window.rex || {};
-    window.rex.popupEvents = window.rex.popupEvents || {};
-    window.rex.popupEvents[POPUP] = { 'rex:selectMedia': [onSelect], 'rex:selectLink': [onSelect] };
-    return new Promise((resolve) => {
-      const win = window.open(String(url).replace(/&amp;/g, '&'), POPUP, 'width=1100,height=760,resizable=yes,scrollbars=yes');
-      pending = { resolve, win };
-      const timer = setInterval(() => {
-        if (!win || win.closed) {
-          clearInterval(timer);
-          if (pending?.win === win) { pending = null; resolve(null); }
-        }
-      }, 500);
-    });
+    const open = typeof window.rex?.pick === 'function' ? window.rex.pick : window.FrontendPicker?.pick;
+    if (!open) return null;
+    const [item] = kind === 'media'
+      ? await open('media', { types: opts.types?.length ? opts.types : undefined })
+      : await open('article', {
+        category: opts.category || undefined,
+        language: opts.language || undefined,
+        value: /^redaxo:\/\/\d+/.test(opts.value || '') ? opts.value : undefined,
+      });
+    if (!item) return null;
+    return kind === 'media' ? { value: item.value, name: item.label } : { value: 'redaxo://' + item.value, name: item.label };
   }
 
   // ------------------------------------------------------------------ Bildeditor (Addon image_editor, optional)
@@ -148,7 +131,11 @@
       const thumb = box.querySelector('[data-blocks-pick-thumb]');
       const label = box.querySelector('[data-blocks-pick-name]');
       // Bearbeiten/Anpassen/Entfernen nur mit gewählter Datei
-      const tools = () => box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust],[data-blocks-pick-clear]').forEach((b) => { b.hidden = !input.value; });
+      // hidden für die Website; im Backend setzt .rex-button display, dort blendet die Hilfsklasse des Cores aus
+      const tools = () => box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust],[data-blocks-pick-clear]').forEach((b) => {
+        b.hidden = !input.value;
+        b.classList.toggle('rex-u-hidden', !input.value);
+      });
       tools();
       input.addEventListener('input', tools);
       const set = (value, name = '') => {
@@ -164,7 +151,12 @@
         changed();
       };
       box.querySelector('[data-blocks-pick-open]')?.addEventListener('click', async () => {
-        const res = await pick(box.dataset.url);
+        const res = await pick(box.dataset.blocksPick === 'media' ? 'media' : 'link', {
+          types: (box.dataset.types || '').split(',').filter(Boolean),
+          category: Number(box.dataset.category) || 0,
+          language: Number(box.dataset.language) || 0,
+          value: input.value,
+        });
         if (res) set(res.value, res.name);
       });
       box.querySelector('[data-blocks-pick-clear]')?.addEventListener('click', () => set(''));
@@ -221,10 +213,8 @@
   window.BlocksForm = { init };
   window.BlocksPick = { pick, imageEditor };
 
-  // Backend: REDAXO lädt Seiten per PJAX nach und meldet das mit „rex:ready“
-  if (window.jQuery) {
-    window.jQuery(document).on('rex:ready', (e, container) => init(container?.[0] || document));
-  }
+  // Backend: neu eingefügtes Markup (Overlays, Wiederholgruppen …) meldet der Core mit „rex:ready“ am neuen Element
+  document.addEventListener('rex:ready', (e) => init(e.target instanceof Element ? e.target : document));
   if (document.readyState !== 'loading') init(document);
   else document.addEventListener('DOMContentLoaded', () => init(document));
 })();

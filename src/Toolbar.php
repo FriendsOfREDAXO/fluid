@@ -64,7 +64,6 @@ final class Toolbar
             'draftUrl' => Url::article($article->id, $article->languageId, ['rex_version' => ArticleRevision::WORK]),
             'viewingDraft' => !$editing && ArticleRevision::WORK === Request::get('rex_version', 'int', ArticleRevision::LIVE),
             'backendUrl' => Url::backendPage('content/edit', ['article_id' => $article->id, 'language' => $article->languageId, 'mode' => 'edit']),
-            'mediapoolUrl' => $guest ? null : Url::backendPage('mediapool/media', ['opener_input_field' => 'blocks_media']),
             'user' => $user->name ?: $user->login,
             'modules' => $modules,
             'state' => Api::state($article),
@@ -104,6 +103,8 @@ final class Toolbar
         $body = '<script type="application/json" id="blocks-editor-config">' . json_encode($config, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP) . '</script>'
             . ($editing ? Links::json($article->languageId) : '')
             . implode('', array_map(static fn ($src) => '<script src="' . escape((string) $src) . '" defer></script>', (array) ($config['scripts'] ?? [])))
+            // Medien- und Seitenauswahl (Picker\FrontendPicker, auch für andere AddOns); Gäste haben keine Backend-Sitzung
+            . ($guest ? '' : Picker\FrontendPicker::head($article->languageId))
             . '<script src="' . escape($addon->getAssetsUrl('form.js') . '?v=' . self::version('form.js')) . '" defer></script>'
             . '<script src="' . escape($addon->getAssetsUrl('rte.js') . '?v=' . self::version('rte.js')) . '" defer></script>'
             . '<script src="' . escape($addon->getAssetsUrl('editor/editor.js') . '?v=' . self::version('editor/editor.js')) . '" defer></script>'
