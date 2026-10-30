@@ -18,7 +18,8 @@ use Redaxo\Core\Filesystem\Path;
 use Redaxo\Core\Http\Request;
 use Redaxo\Core\Language\Language;
 use Redaxo\Core\Security\CsrfToken;
-use Redaxo\Core\View\Fragment;
+use Redaxo\Core\View\Component\Section;
+use Redaxo\Core\View\Html;
 use Redaxo\Core\View\Message;
 
 use function Redaxo\Core\View\escape;
@@ -62,31 +63,44 @@ final class StatusPage
             [class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? 'ok' : 'info', 'Bildbearbeitung', class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? 'image_editor vorhanden' : 'optional: friendsofredaxo/image_editor'],
             [$n404 > 0 ? 'info' : 'ok', '404-Protokoll', $n404 . ' nicht gefundene Adressen in 30 Tagen – auf der Website unter Website → Weiterleitungen'],
         ];
-        $icon = ['ok' => '<i class="rex-icon fa-check text-success"></i>', 'warn' => '<i class="rex-icon fa-triangle-exclamation text-warning"></i>', 'info' => '<i class="rex-icon fa-circle-info text-muted"></i>'];
-        $table = '<table class="table table-hover"><tbody>';
-        foreach ($rows as [$st, $label, $text]) {
-            $table .= '<tr><td class="rex-table-icon">' . $icon[$st] . '</td><th scope="row" style="width:12rem">' . escape($label) . '</th><td>' . $text . '</td></tr>';
-        }
-        $table .= '</tbody></table>';
+        // Kopf: Zusammenfassung (Ampel) und Absprung auf die Website
+        $count = array_count_values(array_column($rows, 0)) + ['ok' => 0, 'warn' => 0, 'info' => 0];
+        $state = $count['warn'] > 0 ? 'warn' : 'ok';
+        $out .= '<div class="fluid-status-hero" data-state="' . $state . '">'
+            . '<div class="fluid-status-hero__icon" aria-hidden="true">' . self::icon($state) . '</div>'
+            . '<div class="fluid-status-hero__text"><h2>' . ('warn' === $state ? $count['warn'] . ' ' . (1 === $count['warn'] ? 'Punkt braucht' : 'Punkte brauchen') . ' Aufmerksamkeit' : 'Alles bereit') . '</h2>'
+            . '<p>' . $count['ok'] . ' in Ordnung · ' . $count['info'] . ' ' . (1 === $count['info'] ? 'Hinweis' : 'Hinweise') . ($count['warn'] ? ' · ' . $count['warn'] . ' zu prüfen' : '') . '</p></div>'
+            . '<a class="rex-button" data-variant="primary" href="' . escape($site) . '"><i class="rex-icon fa-solid fa-pen-to-square" aria-hidden="true"></i> Auf der Website bearbeiten</a>'
+            . '</div>';
 
-        $f = new Fragment();
-        $f->setVar('title', 'Status', false);
-        $f->setVar('options', '<a class="btn btn-xs btn-primary" href="' . escape($site) . '">Auf der Website bearbeiten</a>', false);
-        $f->setVar('content', $table, false);
-        $out .= $f->parse('core/page/section.php');
+        // Prüfungen als Kacheln, Warnungen zuerst
+        $order = ['warn' => 0, 'info' => 1, 'ok' => 2];
+        usort($rows, static fn (array $a, array $b) => $order[$a[0]] <=> $order[$b[0]]);
+        $label = ['ok' => 'in Ordnung', 'warn' => 'prüfen', 'info' => 'Hinweis'];
+        $tiles = '<ul class="fluid-status-checks">';
+        foreach ($rows as [$st, $name, $text]) {
+            $tiles .= '<li class="fluid-status-check" data-state="' . $st . '">'
+                . '<span class="fluid-status-check__icon">' . self::icon($st) . '<span class="rex-u-visually-hidden">' . $label[$st] . ': </span></span>'
+                . '<div><h3>' . escape($name) . '</h3><p>' . $text . '</p></div></li>';
+        }
+        $tiles .= '</ul>';
+        $out .= new Section(title: 'Umgebung', body: Html::raw($tiles))->render();
 
         $csrf = CsrfToken::factory(self::CSRF)->getHiddenField();
-        $btn = static fn (string $do, string $label, string $help) => '<form method="post" style="display:inline-block;margin:0 .5rem .5rem 0">' . $csrf
-            . '<button class="btn btn-default" name="fluid_do" value="' . $do . '" title="' . escape($help) . '">' . escape($label) . '</button></form>';
         $out .= self::mailSection($mail, $csrf);
 
-        $f = new Fragment();
-        $f->setVar('title', 'Wartung', false);
-        $f->setVar('body', '<p>Normalerweise nicht nötig – fluid hält das selbst aktuell.</p>'
-            . $btn('routes', 'Adressen neu aufbauen', 'nach Import oder Datenbank-Kopie')
-            . $btn('search', 'Suchindex neu aufbauen', 'auch per Konsole: fluid:search-index')
-            . $btn('proxy', 'Karten-Cache leeren (' . self::size(Path::addonCache('fluid', 'proxy')) . ')', 'Kacheln und Stile werden neu geladen'), false);
-        $out .= $f->parse('core/page/section.php');
+        // Wartung: je Aufgabe eine Kachel mit Erklärung
+        $task = static fn (string $do, string $icon, string $title, string $help, string $button) => '<form method="post" class="fluid-status-task">' . $csrf
+            . '<span class="fluid-status-task__icon" aria-hidden="true"><i class="rex-icon fa-solid ' . $icon . '"></i></span><h3>' . escape($title) . '</h3><p>' . escape($help) . '</p>'
+            . '<p class="fluid-status-task__action"><button class="rex-button" data-size="sm" name="fluid_do" value="' . $do . '">' . escape($button) . '</button></p></form>';
+        $out .= new Section(
+            title: 'Wartung',
+            body: Html::raw('<p class="rex-u-text-muted">Normalerweise nicht nötig – fluid hält das selbst aktuell.</p><div class="fluid-status-tasks">'
+                . $task('routes', 'fa-route', 'Adressen', 'Nach einem Import oder einer kopierten Datenbank.', 'Neu aufbauen')
+                . $task('search', 'fa-magnifying-glass', 'Suchindex', 'Auch per Konsole: fluid:search-index', 'Neu aufbauen')
+                . $task('proxy', 'fa-map-location-dot', 'Karten-Cache', 'Kacheln und Stile der Karten (' . self::size(Path::addonCache('fluid', 'proxy')) . '), werden neu geladen.', 'Leeren')
+                . '</div>'),
+        )->render();
 
         return $out;
     }
@@ -138,45 +152,53 @@ final class StatusPage
      */
     private static function mailSection(array $mail, string $csrf): string
     {
-        $row = static fn (string $label, string $html) => '<tr><th scope="row" style="width:12rem">' . escape($label) . '</th><td>' . $html . '</td></tr>';
         $keep = trim((string) \FriendsOfRedaxo\Fluid\Settings::get('mail_keep_days', ''));
-        $body = '<table class="table"><tbody>'
-            . $row('Versand', '' !== $mail['error'] ? '<span class="text-danger">' . escape($mail['error']) . '</span>' : escape($mail['transport']))
-            . $row('Absender', '' !== $mail['from'] ? escape($mail['from']) : '<span class="text-warning">REX_MAILER_FROM fehlt – Mails ohne eigenen Absender scheitern</span>')
-            . $row('Umleitung', $mail['detour'] ? 'alle Mails an <strong>' . escape(implode(', ', $mail['detour'])) . '</strong>' : 'aus – Mails gehen an die echten Empfänger')
-            . $row('Protokoll', escape($mail['log']) . ' (REX_MAILER_LOG: none, errors, all)')
-            . $row('Archiv', $mail['archive'] ? 'an – Aufbewahrung ' . ('' === $keep ? Mail::KEEP_DAYS . ' Tage (Standard)' : ('0' === $keep ? 'unbegrenzt' : (int) $keep . ' Tage')) . ', Cronjob „fluid_mail_archive_purge“' : 'aus (REX_MAILER_ARCHIVE=1 bewahrt Mails als .eml auf, nicht gesendete lassen sich dann erneut senden)')
-            . '</tbody></table>';
+        $facts = [
+            'Versand' => '' !== $mail['error'] ? '<span class="rex-u-text-danger">' . escape($mail['error']) . '</span>' : '<code>' . escape($mail['transport']) . '</code>',
+            'Absender' => '' !== $mail['from'] ? escape($mail['from']) : '<span class="rex-u-text-warning">REX_MAILER_FROM fehlt – Mails ohne eigenen Absender scheitern</span>',
+            'Umleitung' => $mail['detour'] ? 'alle Mails an <strong>' . escape(implode(', ', $mail['detour'])) . '</strong>' : 'aus – Mails gehen an die echten Empfänger',
+            'Protokoll' => escape($mail['log']) . ' <span class="rex-u-text-muted">(REX_MAILER_LOG: none, errors, all)</span>',
+            'Archiv' => $mail['archive'] ? 'an – Aufbewahrung ' . ('' === $keep ? Mail::KEEP_DAYS . ' Tage (Standard)' : ('0' === $keep ? 'unbegrenzt' : (int) $keep . ' Tage')) . ', Cronjob „fluid_mail_archive_purge“' : 'aus <span class="rex-u-text-muted">(REX_MAILER_ARCHIVE=1 bewahrt Mails als .eml auf, nicht gesendete lassen sich dann erneut senden)</span>',
+        ];
+        $body = '<dl class="fluid-status-facts">';
+        foreach ($facts as $k => $v) {
+            $body .= '<dt>' . escape($k) . '</dt><dd>' . $v . '</dd>';
+        }
+        $body .= '</dl>';
 
         $me = (string) (Core::getUser()->email ?? '');
-        $body .= '<form method="post" class="form-inline" style="margin:0 0 1rem">' . $csrf
-            . '<label for="fluid-mail-to" style="margin-right:.5rem">Testmail an</label><input id="fluid-mail-to" class="form-control" type="email" name="mail_to" required value="' . escape($me) . '" style="width:18rem;margin-right:.5rem">'
-            . '<button class="btn btn-default" name="fluid_do" value="mailtest">Testmail senden</button></form>';
+        $body .= '<form method="post" class="fluid-status-mailtest">' . $csrf
+            . '<label class="rex-field-label" for="fluid-mail-to">Testmail senden an</label>'
+            . '<div class="rex-input-group"><input id="fluid-mail-to" class="rex-input" type="email" name="mail_to" required value="' . escape($me) . '" placeholder="name@example.org">'
+            . '<span class="rex-input-group-actions"><button class="rex-button" data-variant="field" name="fluid_do" value="mailtest"><i class="rex-icon fa-solid fa-paper-plane" aria-hidden="true"></i> Senden</button></span></div></form>';
 
-        if ($mail['errors']) {
-            $body .= '<h4>Letzte Fehler</h4><table class="table table-condensed"><tbody>';
-            foreach ($mail['errors'] as $e) {
-                $body .= '<tr><td style="white-space:nowrap">' . escape(date('d.m.Y H:i', $e['time'])) . '</td><td>' . escape($e['to']) . '</td><td>' . escape($e['subject']) . '</td><td class="text-danger">' . escape($e['error']) . '</td></tr>';
+        $table = static function (array $items, string $last, ?\Closure $action = null): string {
+            $h = '<table class="rex-table" data-density="compact" data-hover><thead><tr><th class="rex-table-date">Zeit</th><th>An</th><th>Betreff</th><th>' . $last . '</th></tr></thead><tbody>';
+            foreach ($items as $m) {
+                $h .= '<tr><td class="rex-table-date rex-u-nowrap" data-title="Zeit">' . escape(date('d.m.Y H:i', $m['time'])) . '</td>'
+                    . '<td data-title="An">' . escape($m['to']) . '</td><td data-title="Betreff">' . escape($m['subject']) . '</td>'
+                    . '<td data-title="' . $last . '">' . ($action ? $action($m) : '<span class="rex-u-text-danger rex-u-small">' . escape($m['error']) . '</span>') . '</td></tr>';
             }
-            $body .= '</tbody></table>';
-        }
 
+            return $h . '</tbody></table>';
+        };
+        if ($mail['errors']) {
+            $body .= '<h3 class="fluid-status-sub">Letzte Fehler</h3>' . $table($mail['errors'], 'Fehler');
+        }
         $failed = Mail::failed();
         if ($failed) {
-            $body .= '<h4>Nicht gesendet (Archiv)</h4><p class="help-block">„Erneut senden“ geht an die ursprünglichen Empfänger, auch Bcc, sofern der Core sie im Archiv vermerkt (X-Envelope-To); bei älteren Mails an An und Kopie.</p><table class="table table-condensed"><tbody>';
-            foreach ($failed as $m) {
-                $body .= '<tr><td style="white-space:nowrap">' . escape(date('d.m.Y H:i', $m['time'])) . '</td><td>' . escape($m['to']) . '</td><td>' . escape($m['subject']) . '</td><td style="text-align:right">'
-                    . '<form method="post" style="margin:0">' . $csrf . '<input type="hidden" name="mail_file" value="' . escape($m['file']) . '">'
-                    . '<button class="btn btn-xs btn-default" name="fluid_do" value="resend">Erneut senden</button></form></td></tr>';
-            }
-            $body .= '</tbody></table>';
+            $body .= '<h3 class="fluid-status-sub">Nicht gesendet (Archiv)</h3><p class="rex-field-note">„Erneut senden“ geht an die ursprünglichen Empfänger, auch Bcc, sofern der Core sie im Archiv vermerkt (X-Envelope-To); bei älteren Mails an An und Kopie.</p>'
+                . $table($failed, 'Aktion', static fn (array $m) => '<form method="post">' . $csrf . '<input type="hidden" name="mail_file" value="' . escape($m['file']) . '">'
+                    . '<button class="rex-button" data-size="xs" name="fluid_do" value="resend">Erneut senden</button></form>');
         }
 
-        $f = new Fragment();
-        $f->setVar('title', 'E-Mail', false);
-        $f->setVar('body', $body, false);
+        return (string) new Section(title: 'E-Mail', body: Html::raw($body))->render();
+    }
 
-        return $f->parse('core/page/section.php');
+    /** Symbol je Zustand (ok, warn, info) */
+    private static function icon(string $state): string
+    {
+        return '<i class="rex-icon fa-solid ' . ['ok' => 'fa-circle-check', 'warn' => 'fa-triangle-exclamation', 'info' => 'fa-circle-info'][$state] . '" aria-hidden="true"></i>';
     }
 
     private static function size(string $dir): string

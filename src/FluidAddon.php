@@ -161,6 +161,10 @@ final class FluidAddon extends Addon
     #[Override]
     public function boot(): void
     {
+        // Seiten des AddOns (Status, MCP …)
+        if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'fluid')) {
+            Asset::addCssFile($this->getAssetsUrl('backend.css'));
+        }
         // YForm-Maske: Feld „Fluid-Blöcke“ (Data\FluidBlocks) braucht dieselben Formular-Skripte wie die Slices
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'yform')) {
             Asset::addCssFile($this->getAssetsUrl('form.css'));
@@ -185,8 +189,8 @@ final class FluidAddon extends Addon
                 }
                 $url = Url::article($article->id, $article->languageId, [Editing::PARAM => 1]);
 
-                return (string) $ep->subject . Links::json($article->languageId) . '<p class="blocks-frontend-link"><a class="btn btn-primary" href="' . $url . '" target="_blank" rel="noopener">'
-                    . '<i class="rex-icon fa-pen-to-square"></i> Auf der Website bearbeiten</a></p>';
+                return (string) $ep->subject . Links::json($article->languageId) . '<p class="blocks-frontend-link"><a class="rex-button" data-variant="primary" href="' . $url . '" target="_blank" rel="noopener">'
+                    . '<i class="rex-icon fa-solid fa-pen-to-square" aria-hidden="true"></i> Auf der Website bearbeiten</a></p>';
             });
         }
 

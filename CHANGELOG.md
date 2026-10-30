@@ -6,6 +6,12 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Für Redakteure
 
+- Block-Formulare im Backend im Stil von REDAXO 6: Felder, Auswahllisten, Checkboxen und Knöpfe des Cores,
+  Wiederholgruppen wie die Sammelfelder des Cores (Kopfzeile mit Titel und Knopfgruppe, aufklappbar), Farben passend
+  zum hellen und dunklen Theme.
+- Medien und Seiten auswählen ohne Popup-Fenster: im Backend Medienpool und Linkmap des Cores als Overlay, auf der
+  Website eine eigene Auswahl im gleichen Aufbau – Medien mit Kategorien, Suche und Hochladen, Seiten als Linkmap
+  (Kategorien links, Artikel rechts). Es gelten die Rechte von Medienpool und Struktur.
 - Teilen in sozialen Netzwerken: Das Vorschaubild hat jetzt das Format der Netzwerke (1200 × 630, um den Fokuspunkt,
   JPEG – LinkedIn zeigt mit WebP nichts), mit Alt-Text. Neue Option (Standard aus): Linkvorschau beim Teilen erlauben,
   auch wenn der robots.txt-Text Suchmaschinen aussperrt – etwa vor dem Start einer Live-Website.
@@ -85,6 +91,9 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Für Entwickler
 
+- FrontendPicker (`Picker\FrontendPicker`, `assets/picker`): Medien- und Seitenauswahl für die Website, für jedes AddOn
+  nutzbar – `FrontendPicker::head()` einbinden, im Browser `FrontendPicker.pick('media' | 'article', {…})` mit derselben
+  Antwort wie `rex.pick()` im Backend. Eigenständig angelegt, damit daraus später ein eigenes AddOn werden kann.
 - Blöcke als Modulklassen (`FluidBlock`) mit Feldschema und View; Kit fluid mit Template, Blöcken und Design-Editor.
 - Eigene Kits (Projekt oder Composer-Paket) mit `#[AsKit]`:
   - Jedes Kit erbt vom Kit fluid (oder einem anderen) und ersetzt nur, was es mitbringt: `kit.php`-Einträge, Views,

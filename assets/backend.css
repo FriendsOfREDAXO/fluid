@@ -1,0 +1,74 @@
+/* friendsofredaxo/fluid – Seiten des AddOns im Backend (Status …). Nur Tokens des Cores, hell und dunkel. */
+
+/* Kopf der Statusseite: Zusammenfassung mit Ampel */
+.fluid-status-hero {
+    --fluid-state: var(--rex-color-success);
+    --fluid-state-bg: var(--rex-color-success-subtle);
+
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 16px 20px;
+    margin: 0 0 22px;
+    padding: 20px 24px;
+    border: 1px solid var(--rex-color-border);
+    border-left: 6px solid var(--fluid-state);
+   
+    background: linear-gradient(100deg, var(--fluid-state-bg), var(--rex-color-surface) 60%);
+    box-shadow: var(--rex-shadow-sm);
+}
+.fluid-status-hero[data-state="warn"] { --fluid-state: var(--rex-color-warning); --fluid-state-bg: color-mix(in srgb, var(--rex-color-warning) 14%, var(--rex-color-surface)); }
+.fluid-status-hero__icon { color: var(--fluid-state); font-size: 2.4rem; line-height: 1; }
+.fluid-status-hero__text { flex: 1 1 260px; min-width: 0; }
+.fluid-status-hero__text h2 { margin: 0 0 4px; font-size: var(--rex-font-size-large); font-weight: 700; }
+.fluid-status-hero__text p { margin: 0; color: var(--rex-color-text-muted); }
+
+/* Prüfungen als Kacheln */
+.fluid-status-checks {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.fluid-status-check {
+    --fluid-state: var(--rex-color-success);
+
+    display: flex;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--rex-color-border);
+    border-left: 4px solid var(--fluid-state);
+   
+    background: var(--rex-color-surface);
+}
+.fluid-status-check[data-state="warn"] { --fluid-state: var(--rex-color-warning); background: color-mix(in srgb, var(--rex-color-warning) 8%, var(--rex-color-surface)); }
+.fluid-status-check[data-state="info"] { --fluid-state: var(--rex-color-accent); }
+.fluid-status-check__icon { flex: none; color: var(--fluid-state); font-size: 1.15rem; line-height: 1.3; }
+.fluid-status-check h3 { margin: 0 0 2px; font-size: var(--rex-font-size); font-weight: 700; }
+.fluid-status-check p { margin: 0; color: var(--rex-color-text-muted); font-size: var(--rex-font-size-small); overflow-wrap: anywhere; }
+
+/* E-Mail: Angaben, Testmail, Tabellen */
+.fluid-status-facts { display: grid; grid-template-columns: max-content 1fr; gap: 6px 20px; margin: 0 0 20px; }
+.fluid-status-facts dt { font-weight: 700; }
+.fluid-status-facts dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 767px) { .fluid-status-facts { grid-template-columns: 1fr; gap: 0; } .fluid-status-facts dd { margin-bottom: 8px; } }
+.fluid-status-mailtest { max-width: 520px; margin: 0 0 20px; }
+.fluid-status-sub { margin: 20px 0 8px; font-size: var(--rex-font-size); font-weight: 700; }
+
+/* Wartung: je Aufgabe eine Kachel */
+.fluid-status-tasks { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.fluid-status-task {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 14px;
+    border: 1px solid var(--rex-color-border);
+   
+    background: var(--rex-color-surface-subtle);
+}
+.fluid-status-task__icon { color: var(--rex-color-accent); font-size: 1.3rem; }
+.fluid-status-task h3 { margin: 0; font-size: var(--rex-font-size); font-weight: 700; }
+.fluid-status-task > p:not(.fluid-status-task__action) { flex: 1; margin: 0; color: var(--rex-color-text-muted); font-size: var(--rex-font-size-small); }
+.fluid-status-task__action { margin: 0; }
