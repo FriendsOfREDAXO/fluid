@@ -98,7 +98,7 @@ final class FluidBlocks extends Field
         return '<div class="fluid-blocks-field" data-fluid-blocks="' . BlockData::attr($config) . '">'
             . '<input type="hidden" ' . $this->controlAttributes($context, ['value' => json_encode($blocks, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)], false) . '>'
             . '<ol class="fbf-list" data-fbf-list></ol>'
-            . '<div class="fbf-add"><select class="form-control" data-fbf-type aria-label="Blocktyp"></select> <button type="button" class="btn btn-default" data-fbf-add>Block hinzufügen</button></div>'
+            . '<div class="fbf-add"><div class="rex-input-group"><select class="rex-input" data-fbf-type aria-label="Blocktyp"></select><span class="rex-input-group-actions"><button type="button" class="rex-button" data-variant="field" data-fbf-add>Block hinzufügen</button></span></div></div>'
             . '</div>';
     }
 }

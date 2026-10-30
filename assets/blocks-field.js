@@ -34,10 +34,10 @@
           <div class="fbf-row">
             <span class="fbf-label">${esc(labels[i] || cfg.catalog[b.module]?.label || b.module)}</span>
             <span class="fbf-tools">
-              <button type="button" class="btn btn-xs btn-default" data-act="up" ${i === 0 ? 'disabled' : ''} title="Nach oben" aria-label="Nach oben">↑</button>
-              <button type="button" class="btn btn-xs btn-default" data-act="down" ${i === blocks.length - 1 ? 'disabled' : ''} title="Nach unten" aria-label="Nach unten">↓</button>
-              <button type="button" class="btn btn-xs btn-primary" data-act="edit">Bearbeiten</button>
-              <button type="button" class="btn btn-xs btn-delete" data-act="del" title="Entfernen" aria-label="Entfernen">✕</button>
+              <button type="button" class="rex-button" data-size="xs" data-act="up" ${i === 0 ? 'disabled' : ''} title="Nach oben" aria-label="Nach oben">↑</button>
+              <button type="button" class="rex-button" data-size="xs" data-act="down" ${i === blocks.length - 1 ? 'disabled' : ''} title="Nach unten" aria-label="Nach unten">↓</button>
+              <button type="button" class="rex-button" data-variant="primary" data-size="xs" data-act="edit">Bearbeiten</button>
+              <button type="button" class="rex-button" data-variant="danger" data-size="xs" data-act="del" title="Entfernen" aria-label="Entfernen">✕</button>
             </span>
           </div>
         </li>`).join('') || '<li class="fbf-empty">Noch keine Blöcke.</li>';
@@ -57,12 +57,13 @@
         const box = document.createElement('div');
         box.className = 'fbf-editor';
         box.innerHTML = `<div class="fbf-editor__head">${esc(res.label)}</div><div class="fbf-editor__body">${res.html}</div>
-          <div class="fbf-editor__foot"><button type="button" class="btn btn-default" data-fbf-cancel>Abbrechen</button> <button type="button" class="btn btn-save" data-fbf-apply>Übernehmen</button></div>`;
+          <div class="fbf-editor__foot"><button type="button" class="rex-button" data-fbf-cancel>Abbrechen</button> <button type="button" class="rex-button" data-variant="primary" data-fbf-apply>Übernehmen</button></div>`;
         li.append(box);
         open = { index: i, box, isNew };
         window.BlocksForm?.init(box, () => {});
         window.BlocksRich?.initFields(box);
-        window.jQuery?.(box).trigger('rex:ready', [window.jQuery(box)]);
+        // Skripte des Cores (Widgets, Auswahllisten …) kennen das neue Markup erst durch „rex:ready“
+        window.rex?.ready?.(box);
         box.querySelector('input, select, textarea, [contenteditable]')?.focus();
       } catch (err) {
         alert(err.message);
@@ -144,5 +145,5 @@
   };
   const scan = (scope = document) => scope.querySelectorAll('[data-fluid-blocks]').forEach(init);
   if (document.readyState !== 'loading') scan(); else document.addEventListener('DOMContentLoaded', () => scan());
-  window.jQuery?.(document).on('rex:ready', (e, c) => scan(c?.[0] || document));
+  document.addEventListener('rex:ready', (e) => scan(e.target instanceof Element ? e.target : document));
 })();

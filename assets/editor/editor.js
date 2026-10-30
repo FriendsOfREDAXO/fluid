@@ -1546,7 +1546,7 @@
       window.BlocksForm?.init(form, schedulePreview);
       Rich?.initFields(form);
       panel.hidden = false;
-      form.querySelectorAll('textarea.form-control').forEach(grow);   // erst sichtbar hat das Feld eine Höhe
+      form.querySelectorAll('textarea.rex-input, textarea.form-control').forEach(grow);   // erst sichtbar hat das Feld eine Höhe
       document.documentElement.classList.add('blocks-panel-open');
       sec.setAttribute('data-blocks-panel', '');
       sec.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
@@ -1643,7 +1643,7 @@
     }, 350);
   }
 
-  form.addEventListener('input', (e) => { if (e.target.matches?.('textarea.form-control')) grow(e.target); schedulePreview(); });
+  form.addEventListener('input', (e) => { if (e.target.matches?.('textarea.rex-input, textarea.form-control')) grow(e.target); schedulePreview(); });
   form.addEventListener('change', () => schedulePreview());
   form.addEventListener('click', (e) => e.target.closest('[data-blocks-add]') && setTimeout(() => Rich?.initFields(form)));
 

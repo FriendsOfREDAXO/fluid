@@ -1,45 +1,48 @@
-/* friendsofredaxo/fluid – Block-Formulare im Backend (Slice bearbeiten) */
+/* friendsofredaxo/fluid – Block-Formulare im Backend (Slice bearbeiten, YForm-Maske).
+   Felder, Knöpfe, Checkboxen, Eingabegruppen und die Einträge von Wiederholgruppen (Section, aufklappbar) kommen
+   unverändert vom Core. Hier nur eigene Bausteine (Raster der Blöcke, Medienvorschau, Hinweise) – nie Klassen des Cores
+   überschreiben, Farben nur über die Tokens des Cores (hell/dunkel). */
+
+/* Raster der Felder eines Blocks: halbe und ganze Breite, schmal immer ganze */
 .blocks-form { container-type: inline-size; }
-.blocks-form__intro { margin: 0 0 12px; color: #6c7a89; }
-.blocks-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
-.blocks-form__field { grid-column: 1 / -1; min-width: 0; margin-bottom: 10px; align-self: start; }
+.blocks-form__intro { margin: 0 0 12px; color: var(--rex-color-text-muted); }
+.blocks-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; min-width: 0; max-width: 100%; }
+.blocks-form__field { grid-column: 1 / -1; min-width: 0; max-width: 100%; margin-bottom: 12px; align-self: start; }
 .blocks-form__field.is-half { grid-column: span 1; }
 .blocks-form__field[hidden] { display: none; }
 @container (max-width: 520px) { .blocks-form__field.is-half { grid-column: 1 / -1; } }
-.blocks-form__field > .control-label { display: block; margin-bottom: 4px; }
-.blocks-form__check { font-weight: 600; display: flex; gap: 8px; align-items: center; }
-.blocks-form__tunes { margin-top: 12px; padding-top: 10px; border-top: 1px solid #dfe3e9; }
-.blocks-form__tunes > summary { cursor: pointer; font-weight: 700; margin-bottom: 10px; }
-.blocks-form__repeater { border: 1px solid #dfe3e9; border-radius: 6px; padding: 10px 12px; }
-.blocks-form__repeater > legend { width: auto; border: 0; margin: 0; padding: 0 4px; font-size: inherit; font-weight: 700; }
-.blocks-rep__list { display: grid; gap: 8px; margin-bottom: 8px; }
-.blocks-rep__item { border: 1px solid #dfe3e9; border-radius: 6px; background: #f7f9fb; }
-.blocks-rep__item > summary { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; list-style: none; }
-.blocks-rep__item > summary::-webkit-details-marker { display: none; }
-.blocks-rep__item > .blocks-form__grid { padding: 8px 10px 4px; }
-.blocks-rep__title { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.blocks-rep__tools { display: flex; gap: 2px; }
-.blocks-btn { min-height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid #c9d1db; border-radius: 4px; background: #fff; cursor: pointer; }
-.blocks-btn--danger:hover { color: #fff; background: #d9534f; border-color: #d9534f; }
-.blocks-btn--add { font-weight: 600; }
-.blocks-media { display: flex; gap: 6px; }
-.blocks-frontend-link { margin: 0 0 12px; text-align: right; }
-.blocks-pick__row { display: flex; align-items: center; gap: 8px; }
-.blocks-pick__row > .input-group { flex: 1; min-width: 0; }
-.blocks-pick__thumb img { display: block; width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
-.blocks-pick__name { display: block; margin-top: 4px; color: #6c7a89; font-size: 12px; }
-.blocks-pick__name:empty { display: none; }
-textarea[data-blocks-rte] { display: none !important; }
-.blocks-be-col, .blocks-be-layout { margin: 0 0 8px; padding: 6px 10px; border-radius: 4px; background: #eef3fb; color: #2a5a8a; font-size: 13px; font-weight: 600; }
-
 /* Bildfelder (Medienpool, Bearbeiten) immer volle Breite */
 .blocks-form__field.is-half:has(.blocks-pick--media) { grid-column: 1 / -1; }
 
-.blocks-btn[hidden] { display: none; }
+/* „Abschnitt“ (Sprungmarke, Abstände …) aufklappbar unter den Feldern */
+.blocks-form__tunes { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rex-color-border); }
+.blocks-form__tunes > summary { margin-bottom: 10px; font-weight: 700; cursor: pointer; }
 
-/* Wiederholgruppen in schmalen Leisten: fieldset nicht breiter als die Leiste (Standard min-width: min-content),
-   lange Titel kürzen, Werkzeuge bleiben sichtbar */
-.blocks-form__repeater, .blocks-rep, .blocks-rep__list, .blocks-rep__item, .blocks-form__grid, .blocks-form__field { min-width: 0; max-width: 100%; }
-.blocks-rep__item > summary { min-width: 0; }
-.blocks-rep__title { min-width: 0; }
-.blocks-rep__tools { flex: none; }
+/* Wiederholgruppen: eigene Komponente fluid-rep-item – einzeiliger Kopf (Titel, Knopfgruppe des Cores), aufklappbar
+   über die Collapse-Hilfsklassen des Cores; bleibt auch in schmalen Spalten eine Zeile hoch */
+.blocks-rep, .blocks-rep__list { min-width: 0; max-width: 100%; }
+.blocks-rep__list { display: grid; gap: 8px; margin-bottom: 10px; }
+.fluid-rep-item { min-width: 0; border: 1px solid var(--rex-color-border); background: var(--rex-color-surface); box-shadow: var(--rex-shadow-xs); }
+.fluid-rep-item__head { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 4px 6px 4px 0; background: var(--rex-color-surface-muted); }
+.fluid-rep-item:has(> .collapse.in) > .fluid-rep-item__head { border-bottom: 1px solid var(--rex-color-border); }
+.fluid-rep-item__toggle { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; padding: 6px 10px; border: 0; background: none; color: var(--rex-color-text); font: inherit; font-weight: 700; text-align: start; cursor: pointer; }
+.fluid-rep-item__toggle::before { content: "▸"; flex: none; color: var(--rex-color-text-muted); font-size: .8em; transition: transform var(--rex-duration) var(--rex-ease-in-out); }
+.fluid-rep-item__toggle[aria-expanded="true"]::before { transform: rotate(90deg); }
+.fluid-rep-item__toggle:focus-visible { outline: 2px solid var(--rex-color-focus); outline-offset: -2px; }
+.fluid-rep-item__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fluid-rep-item__tools { flex: none; }
+.fluid-rep-item__body { padding: 12px 14px 0; }
+
+/* Medien- und Linkfelder: Vorschaubild neben der Eingabegruppe des Cores */
+.blocks-pick__row { display: flex; align-items: center; gap: 8px; }
+.blocks-pick__field { flex: 1; min-width: 0; }
+.blocks-pick__thumb img { display: block; width: 36px; height: 36px; object-fit: cover; }
+.blocks-pick__name { display: block; margin-top: 4px; color: var(--rex-color-text-muted); font-size: var(--rex-font-size-small); }
+.blocks-pick__name:empty { display: none; }
+
+/* Rich-Text: das Textfeld ersetzt der Editor */
+textarea[data-blocks-rte] { display: none !important; }
+
+/* Absprung „Auf der Website bearbeiten“ über den Slices, Hinweise zu Layout-Spalten */
+.blocks-frontend-link { margin: 0 0 12px; text-align: right; }
+.blocks-be-col, .blocks-be-layout { margin: 0 0 8px; padding: 6px 10px; background: var(--rex-color-accent-subtle); color: var(--rex-color-link); font-size: var(--rex-font-size-small); font-weight: 700; }

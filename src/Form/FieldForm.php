@@ -61,7 +61,7 @@ final class FieldForm
         $bgs = $module::kit()->backgrounds();
         $h .= '<details class="blocks-form__tunes"><summary>Abschnitt</summary><div class="blocks-form__grid">';
         $h .= self::row('Hintergrund', self::select($p2 . '[background]', ['' => 'Standard'] + $bgs, (string) ($tunes['background'] ?? '')), 'In einer Layout-Spalte: ein anderer Hintergrund als das Layout macht den Block zur Karte.', true);
-        $h .= self::row('Sprungmarke (Anker)', '<input class="form-control" type="text" name="' . escape($p2 . '[anchor]') . '" value="' . escape((string) ($tunes['anchor'] ?? '')) . '" pattern="[a-z0-9\-]*" placeholder="z. B. kontakt">', 'Nur Kleinbuchstaben, Ziffern und Bindestriche.', true);
+        $h .= self::row('Sprungmarke (Anker)', '<input class="rex-input" type="text" name="' . escape($p2 . '[anchor]') . '" value="' . escape((string) ($tunes['anchor'] ?? '')) . '" pattern="[a-z0-9\-]*" placeholder="z. B. kontakt">', 'Nur Kleinbuchstaben, Ziffern und Bindestriche.', true);
         $space = ['none' => 'Kein', 'small' => 'Klein', 'normal' => 'Normal', 'large' => 'Groß'];
         $h .= self::row('Abstand oben', self::select($p2 . '[spaceTop]', $space, (string) ($tunes['spaceTop'] ?? 'normal')), '', true);
         $h .= self::row('Abstand unten', self::select($p2 . '[spaceBottom]', $space, (string) ($tunes['spaceBottom'] ?? 'normal')), '', true);
@@ -113,11 +113,11 @@ final class FieldForm
         $n = escape($name);
 
         $input = match ($type) {
-            'textarea' => '<textarea class="form-control" id="' . $id . '" name="' . $n . '" rows="' . (int) ($f['rows'] ?? 3) . '"' . $req . $max . $ph . '>' . escape((string) $value) . '</textarea>',
-            'richtext' => '<textarea class="form-control blocks-rich" id="' . $id . '" name="' . $n . '" rows="8" data-blocks-rich' . $req . '>' . escape((string) $value) . '</textarea>',
+            'textarea' => '<textarea class="rex-input" id="' . $id . '" name="' . $n . '" rows="' . (int) ($f['rows'] ?? 3) . '"' . $req . $max . $ph . '>' . escape((string) $value) . '</textarea>',
+            'richtext' => '<textarea class="rex-input blocks-rich" id="' . $id . '" name="' . $n . '" rows="8" data-blocks-rich' . $req . '>' . escape((string) $value) . '</textarea>',
             'select' => self::select($name, (array) ($f['options'] ?? []), (string) $value, ['id' => $id], !$req),
-            'bool' => '<input type="hidden" name="' . $n . '" value="0"><label class="blocks-form__check"><input type="checkbox" id="' . $id . '" name="' . $n . '" value="1"' . ($value ? ' checked' : '') . '> ' . escape($label) . '</label>',
-            'number' => '<input class="form-control" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
+            'bool' => '<input type="hidden" name="' . $n . '" value="0"><div class="rex-check"><label class="blocks-form__check"><input type="checkbox" id="' . $id . '" name="' . $n . '" value="1"' . ($value ? ' checked' : '') . '> ' . escape($label) . '</label></div>',
+            'number' => '<input class="rex-input" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
             // Medienpool und Linkmap (REDAXO-Popups); ID aus dem Feldnamen, damit neue Einträge von Wiederholgruppen eindeutig bleiben
             'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend, isset($f['types']) ? (array) $f['types'] : null),
             // Medienkategorie des Medienpools (z. B. Downloads „alle Dateien einer Kategorie“)
@@ -125,36 +125,36 @@ final class FieldForm
             // Tabelle aus YForm (Table Manager) – Formular-Block, Datenliste
             'yform_table' => [] !== ($t = YFormBridge::tables())
                 ? self::select($name, $t, (string) $value, ['id' => $id, 'data-yform-table' => ''], !$req)
-                : '<p class="help-block">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Projekt eine Klasse mit #[AsTable] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
+                : '<p class="rex-field-note">' . (YFormBridge::available() ? 'Noch keine Tabelle – im Projekt eine Klasse mit #[AsTable] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
             'yform_field' => self::yformField($name, (string) $value, $id),
             // Blog (Kategorie mit „Blog / News“ in den Seiteneinstellungen); leer = alle Blogs
             'blog' => [] !== ($bl = \FriendsOfRedaxo\Fluid\Blog\Blog::all())
                 ? self::select($name, ['' => 'Alle Blogs'] + $bl, (string) $value, ['id' => $id], false)
-                : '<p class="help-block">Noch kein Blog – bei einer Menüseite in den Seiteneinstellungen „Blog / News“ anhaken.</p>',
+                : '<p class="rex-field-note">Noch kein Blog – bei einer Menüseite in den Seiteneinstellungen „Blog / News“ anhaken.</p>',
             // Formular aus YForm (#[AsForm]-Klasse im Projekt)
             'yform_form' => [] !== ($fo = YFormBridge::forms())
                 ? self::select($name, $fo, (string) $value, ['id' => $id], !$req)
-                : '<p class="help-block">' . (YFormBridge::available() ? 'Noch kein Formular – im Projekt eine Klasse mit #[AsForm] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
-            'time' => '<input class="form-control" type="time" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
+                : '<p class="rex-field-note">' . (YFormBridge::available() ? 'Noch kein Formular – im Projekt eine Klasse mit #[AsForm] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
+            'time' => '<input class="rex-input" type="time" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
             // Standort „Breite, Länge“ mit Geokodierung aus den Adressfeldern (Website-Einstellungen)
-            'geo' => '<div class="blocks-geo"><input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="51.4512, 6.6263" pattern="^-?\\d{1,2}(\\.\\d+)?,\\s*-?\\d{1,3}(\\.\\d+)?$" data-geo>'
-                . '<button type="button" class="blocks-btn" data-geocode>Aus Adresse ermitteln</button></div>',
-            'url' => '<input class="form-control" type="url" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $ph . ' placeholder="https://…">',
+            'geo' => '<div class="blocks-geo rex-input-group"><input class="rex-input" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="51.4512, 6.6263" pattern="^-?\\d{1,2}(\\.\\d+)?,\\s*-?\\d{1,3}(\\.\\d+)?$" data-geo>'
+                . '<span class="rex-input-group-actions"><button type="button" class="blocks-btn rex-button" data-variant="field" data-geocode>Aus Adresse ermitteln</button></span></div>',
+            'url' => '<input class="rex-input" type="url" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $ph . ' placeholder="https://…">',
             'link' => Picker::link(self::nameId($name), $name, (string) $value, $backend),
             'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
-            default => '<input class="form-control" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
+            default => '<input class="rex-input" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
         };
 
         if ('bool' === $type) {
-            return $input . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '');
+            return $input . ('' !== $help ? '<p class="rex-field-note">' . escape($help) . '</p>' : '');
         }
         if ('repeater' === $type) {
-            return '<fieldset class="blocks-form__repeater"><legend>' . escape($label) . '</legend>' . $input
-                . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</fieldset>';
+            return '<fieldset class="' . ($backend ? 'rex-field" data-layout="vertical' : 'blocks-form__repeater') . '"><legend class="rex-field-label">' . escape($label) . '</legend>' . $input
+                . ('' !== $help ? '<p class="rex-field-note">' . escape($help) . '</p>' : '') . '</fieldset>';
         }
 
-        return '<label class="control-label" id="' . $id . '-label" for="' . $id . '">' . escape($label) . ('' !== $req ? ' <span aria-hidden="true">*</span>' : '') . '</label>'
-            . $input . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '');
+        return '<label class="rex-field-label" id="' . $id . '-label" for="' . $id . '">' . escape($label) . ('' !== $req ? ' <span class="rex-field-required" aria-hidden="true">*</span>' : '') . '</label>'
+            . $input . ('' !== $help ? '<p class="rex-field-note">' . escape($help) . '</p>' : '');
     }
 
     /**
@@ -178,14 +178,39 @@ final class FieldForm
                 }
             }
 
+            $label = escape('' !== $title ? $title : $itemLabel);
+            $titleAttr = 'data-blocks-item-title data-field="' . escape($titleField) . '"';
+            $fields = self::fields($sub, self::withDefaults($sub, $item), $name . '[' . $key . ']', $backend);
+            // Knöpfe wie die Sammelfelder des Cores (CollectionInput): im Backend Icons, auf der Website Zeichen
+            $tool = static fn (string $attr, string $label, string $icon, string $sign, string $class = 'blocks-btn'): string => '<button type="button" class="' . $class . '" ' . $attr
+                . ' title="' . $label . '" aria-label="' . $label . '">' . ($backend ? '<i class="rex-icon ' . $icon . '" aria-hidden="true"></i>' : $sign) . '</button>';
+
+            if ($backend) {
+                // eigene Komponente (fluid-rep-item, assets/form.css): einzeiliger Kopf mit Titel und Knopfgruppe des Cores;
+                // auf- und zuklappen übernimmt der Core (data-toggle="collapse", Hilfsklasse .collapse/.in)
+                $id = 'blocks-rep-' . self::nameId($name . '[' . $key . ']');
+                $open = '' === $title;
+
+                return '<section class="fluid-rep-item" data-blocks-item><header class="fluid-rep-item__head">'
+                    . '<button type="button" class="fluid-rep-item__toggle' . ($open ? '' : ' collapsed') . '" data-toggle="collapse" data-target="#' . $id . '" aria-controls="' . $id . '" aria-expanded="' . ($open ? 'true' : 'false') . '">'
+                    . '<span class="fluid-rep-item__title" ' . $titleAttr . '>' . $label . '</span></button>'
+                    . '<div class="fluid-rep-item__tools"><div class="rex-button-group" data-size="xs">'
+                    . $tool('data-blocks-up', 'Nach oben', 'rex-icon-up', '↑', 'rex-button')
+                    . $tool('data-blocks-down', 'Nach unten', 'rex-icon-down', '↓', 'rex-button')
+                    . $tool('data-blocks-remove data-variant="danger"', 'Entfernen', 'rex-icon-delete', '✕', 'rex-button')
+                    . '</div></div></header>'
+                    . '<div id="' . $id . '" class="collapse' . ($open ? ' in' : '') . '"><div class="fluid-rep-item__body">' . $fields . '</div></div>'
+                    . '</section>';
+            }
+
             return '<details class="blocks-rep__item" data-blocks-item' . ('' === $title ? ' open' : '') . '>'
-                . '<summary><span class="blocks-rep__title" data-blocks-item-title data-field="' . escape($titleField) . '">' . escape('' !== $title ? $title : $itemLabel) . '</span>'
+                . '<summary><span class="blocks-rep__title" ' . $titleAttr . '>' . $label . '</span>'
                 . '<span class="blocks-rep__tools">'
-                . '<button type="button" class="blocks-btn" data-blocks-up title="Nach oben">↑</button>'
-                . '<button type="button" class="blocks-btn" data-blocks-down title="Nach unten">↓</button>'
-                . '<button type="button" class="blocks-btn blocks-btn--danger" data-blocks-remove title="Entfernen">✕</button>'
+                . $tool('data-blocks-up', 'Nach oben', 'rex-icon-up', '↑')
+                . $tool('data-blocks-down', 'Nach unten', 'rex-icon-down', '↓')
+                . $tool('data-blocks-remove', 'Entfernen', 'rex-icon-delete', '✕', 'blocks-btn blocks-btn--danger')
                 . '</span></summary>'
-                . self::fields($sub, self::withDefaults($sub, $item), $name . '[' . $key . ']', $backend)
+                . '<div class="blocks-rep__body">' . $fields . '</div>'
                 . '</details>';
         };
 
@@ -196,7 +221,8 @@ final class FieldForm
         }
         $h .= '</div>';
         $h .= '<template data-blocks-template>' . $row([], '__i__') . '</template>';
-        $h .= '<button type="button" class="blocks-btn blocks-btn--add" data-blocks-add' . ($maxItems && count($items) >= $maxItems ? ' disabled' : '') . '>+ ' . escape($itemLabel) . '</button>';
+        $h .= '<button type="button" class="' . ($backend ? 'rex-button' : 'blocks-btn blocks-btn--add') . '" data-blocks-add' . ($maxItems && count($items) >= $maxItems ? ' disabled' : '') . '>'
+            . ($backend ? '<i class="rex-icon rex-icon-add" aria-hidden="true"></i> ' : '+ ') . escape($itemLabel) . '</button>';
 
         return $h . '</div>';
     }
@@ -211,7 +237,7 @@ final class FieldForm
         foreach ($attrs as $k => $v) {
             $a .= ' ' . $k . ('' !== $v ? '="' . escape($v) . '"' : '');
         }
-        $h = '<select class="form-control" name="' . escape($name) . '"' . $a . '>';
+        $h = '<select class="rex-input" name="' . escape($name) . '"' . $a . '>';
         if ($empty) {
             $h .= '<option value="">–</option>';
         }
@@ -225,7 +251,7 @@ final class FieldForm
     /** Feld einer YForm-Tabelle („tabelle.feld“), gruppiert nach Tabelle; form.js blendet die Gruppen anderer Tabellen aus */
     private static function yformField(string $name, string $value, string $id): string
     {
-        $h = '<select class="form-control" name="' . escape($name) . '" id="' . $id . '" data-yform-field><option value="">–</option>';
+        $h = '<select class="rex-input" name="' . escape($name) . '" id="' . $id . '" data-yform-field><option value="">–</option>';
         foreach (YFormBridge::fieldOptions() as $table => $fields) {
             $h .= '<optgroup label="' . escape($table) . '" data-table="' . escape($table) . '">';
             foreach ($fields as $k => $label) {
@@ -261,8 +287,8 @@ final class FieldForm
 
     private static function row(string $label, string $control, string $help, bool $half): string
     {
-        return '<div class="blocks-form__field' . ($half ? ' is-half' : '') . '"><label class="control-label">' . escape($label) . '</label>' . $control
-            . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</div>';
+        return '<div class="blocks-form__field' . ($half ? ' is-half' : '') . '"><label class="rex-field-label">' . escape($label) . '</label>' . $control
+            . ('' !== $help ? '<p class="rex-field-note">' . escape($help) . '</p>' : '') . '</div>';
     }
 
     /**

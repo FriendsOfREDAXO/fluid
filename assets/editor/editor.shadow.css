@@ -146,12 +146,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .blocks-form__field { grid-column: 1 / -1; display: grid; gap: 4px; min-width: 0; align-content: start; }
 .blocks-form__field.is-half { grid-column: span 1; }
 @container (max-width: 360px) { .blocks-form__field.is-half { grid-column: 1 / -1; } }
-.control-label { font-weight: 600; font-size: 13px; }
-.help-block { margin: 0; color: var(--muted); font-size: 12px; }
-.form-control {
+.control-label, .rex-field-label { font-weight: 600; font-size: 13px; }
+.help-block, .rex-field-note { margin: 0; color: var(--muted); font-size: 12px; }
+.form-control, .rex-input {
   width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg);
 }
-textarea.form-control { resize: vertical; }
+textarea.form-control, textarea.rex-input { resize: vertical; }
 .blocks-form__check { display: flex; gap: 8px; align-items: center; font-weight: 600; }
 .blocks-form__tunes { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 10px; }
 .blocks-form__tunes summary { cursor: pointer; font-weight: 700; margin-bottom: 10px; }
@@ -161,7 +161,7 @@ textarea.form-control { resize: vertical; }
 .blocks-rep__item { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
 .blocks-rep__item > summary { display: flex; align-items: center; gap: 8px; padding: 6px 8px; cursor: pointer; list-style: none; }
 .blocks-rep__item > summary::-webkit-details-marker { display: none; }
-.blocks-rep__item > .blocks-form__grid { padding: 8px 10px 10px; }
+.blocks-rep__body { padding: 8px 10px 10px; }
 .blocks-rep__title { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .blocks-rep__tools { display: flex; gap: 2px; }
 .blocks-btn { min-height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); cursor: pointer; }
@@ -207,7 +207,7 @@ textarea.form-control { resize: vertical; }
 
 /* Medienpool und Linkmap (Picker) */
 .blocks-pick__row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.blocks-pick__row .form-control { flex: 1 1 180px; min-width: 0; }
+.blocks-pick__row .form-control, .blocks-pick__row .rex-input { flex: 1 1 180px; min-width: 0; }
 .blocks-pick__btns { display: flex; flex-wrap: wrap; gap: 4px; }
 .blocks-pick__thumb img { display: block; width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
 .blocks-pick__name { display: block; margin-top: 4px; color: var(--muted); font-size: 12px; }
@@ -294,7 +294,7 @@ textarea[data-blocks-rte] { display: none !important; }
 .site-list__main { flex: 1; min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; font-size: 13px; }
 .site-list__main small { color: var(--muted); }
 .blocks-geo { display: flex; flex-wrap: wrap; gap: 6px; }
-.blocks-geo .form-control { flex: 1 1 160px; min-width: 0; }
+.blocks-geo .form-control, .blocks-geo .rex-input { flex: 1 1 160px; min-width: 0; }
 
 /* Seitenbaum */
 .tree__intro { margin: 0 0 10px; color: var(--muted); font-size: 13px; line-height: 1.5; }
@@ -390,11 +390,11 @@ textarea[data-blocks-rte] { display: none !important; }
 @media (max-width: 760px), (pointer: coarse) {
   .panel__body { padding: 16px 16px 28px; }
   .blocks-form__grid { gap: 16px; }
-  .control-label { font-size: 15px; }
-  .help-block { font-size: 13px; line-height: 1.45; }
-  .form-control, select, input[type="text"], input[type="url"], input[type="email"], input[type="number"], input[type="search"], textarea { font-size: 16px; }
-  .form-control { min-height: 44px; padding: 10px 12px; }
-  textarea.form-control { min-height: 7.5em; resize: none; }
+  .control-label, .rex-field-label { font-size: 15px; }
+  .help-block, .rex-field-note { font-size: 13px; line-height: 1.45; }
+  .form-control, .rex-input, select, input[type="text"], input[type="url"], input[type="email"], input[type="number"], input[type="search"], textarea { font-size: 16px; }
+  .form-control, .rex-input { min-height: 44px; padding: 10px 12px; }
+  textarea.form-control, textarea.rex-input { min-height: 7.5em; resize: none; }
   .panel__foot { padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
   .panel__foot .btn, .panel__head .btn { min-height: 44px; min-width: 44px; }
   .blocks-form__check { min-height: 44px; }
