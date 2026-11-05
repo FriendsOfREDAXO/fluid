@@ -54,7 +54,9 @@ final class UpgradeSlicesCommand extends AbstractCommand
             if ($table->hasColumn('ctype_id')) {
                 if ($table->hasColumn('content_section_id')) {
                     Sql::factory()->setQuery('UPDATE ' . $name . ' SET content_section_id = ctype_id WHERE content_section_id = 0');
-                    $io->text('content_section_id aus ctype_id übernommen');
+                    // der Core befüllt ctype_id nicht mehr: als Pflichtfeld ohne Standardwert scheitert sonst jedes neue Slice
+                    $table->ensureColumn(Column::smallint('ctype_id', unsigned: true, nullable: true))->alter();
+                    $io->text('content_section_id aus ctype_id übernommen, ctype_id optional');
                 } else {
                     $table->renameColumn('ctype_id', 'content_section_id')->alter();
                     $io->text('ctype_id → content_section_id');
