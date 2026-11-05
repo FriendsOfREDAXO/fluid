@@ -113,6 +113,7 @@
             ${cfg.guest ? '' : `<a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>`}
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
             ${(cfg.notice?.buttons || []).map((b) => `<button type="button" role="menuitem" data-notice-event="${esc(b.event)}">${esc(b.label)} …</button>`).join('')}
+            ${cfg.logoutUrl ? `<hr class="menu-sep" role="separator"><a role="menuitem" href="${esc(unamp(cfg.logoutUrl))}" data-logout>Abmelden <span class="menu-hint">${esc(cfg.user)}</span></a>` : ''}
           </div>
         </div>
       </div>
