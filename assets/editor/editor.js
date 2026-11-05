@@ -346,6 +346,16 @@
     }
   });
 
+  // Hinweis-Leiste von AddOns (cfg.notice): Knöpfe lösen ihr Ereignis am document aus; Meldungen über „fluid:notice“
+  // – auch in der Ansicht, also vor dem Ende für !cfg.editing
+  // (auch im Menü ⋯ – auf schmalen Bildschirmen ist der Titelbereich der Leiste ausgeblendet)
+  root.querySelectorAll('[data-notice-event]').forEach((b) => b.addEventListener('click', () => {
+    menu.hidden = true;
+    moreBtn.setAttribute('aria-expanded', 'false');
+    document.dispatchEvent(new CustomEvent(b.dataset.noticeEvent, { detail: { button: b } }));
+  }));
+  document.addEventListener('fluid:notice', (e) => say(String(e.detail || ''), true));
+
   // Abmelden (Api::logout): vorher ungespeicherte Änderungen klären, danach die Seite als Besucher laden
   $('[data-logout]')?.addEventListener('click', async () => {
     menu.hidden = true;
@@ -1270,15 +1280,6 @@
     await api('discard').catch((err) => say(err.message, true));
     location.reload();
   });
-
-  // Hinweis-Leiste von AddOns (cfg.notice): Knöpfe lösen ihr Ereignis am document aus; Meldungen über „fluid:notice“
-  // (auch im Menü ⋯ – auf schmalen Bildschirmen ist der Titelbereich der Leiste ausgeblendet)
-  root.querySelectorAll('[data-notice-event]').forEach((b) => b.addEventListener('click', () => {
-    menu.hidden = true;
-    moreBtn.setAttribute('aria-expanded', 'false');
-    document.dispatchEvent(new CustomEvent(b.dataset.noticeEvent, { detail: { button: b } }));
-  }));
-  document.addEventListener('fluid:notice', (e) => say(String(e.detail || ''), true));
 
   // ------------------------------------------------------------------ Blockleiste und „+“
 
