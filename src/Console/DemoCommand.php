@@ -8,6 +8,7 @@ use FriendsOfRedaxo\Fluid\FluidAddon;
 use FriendsOfRedaxo\Fluid\Kit;
 use Redaxo\Core\Cache;
 use Redaxo\Core\Console\AbstractCommand;
+use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleHandler;
 use Redaxo\Core\Content\ArticleRevision;
@@ -179,11 +180,13 @@ final class DemoCommand extends AbstractCommand
             ArticleCache::delete($articleId);
         }
 
-        // Website-Einstellungen der Demo (nur leere Felder) – Links auf Demo-Seiten werden zu redaxo://ID
+        // Website-Einstellungen der Demo (nur leere Felder) – Links auf Demo-Seiten werden zu redaxo://ID.
+        // Als leer gilt auch ein Link auf eine gelöschte Seite: ein neuer Import legt die Seiten mit neuen IDs an.
         if (isset($demo['settings']) && '' === $page) {
             $site = \FriendsOfRedaxo\Fluid\Settings::all();
+            $gone = static fn (mixed $v): bool => \is_string($v) && 1 === preg_match('~^redaxo://(\d+)~', $v, $m) && null === Article::get((int) $m[1]);
             foreach ((array) $mapLinks($demo['settings']) as $k => $v) {
-                if (!isset($site[$k]) || '' === $site[$k] || [] === $site[$k]) {
+                if (!isset($site[$k]) || '' === $site[$k] || [] === $site[$k] || $gone($site[$k])) {
                     $site[$k] = $v;
                 }
             }
