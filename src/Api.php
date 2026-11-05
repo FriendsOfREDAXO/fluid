@@ -21,6 +21,8 @@ use Redaxo\Core\Database\Sql;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\ExtensionPoint\ExtensionPoint;
 use Redaxo\Core\Http\Request;
+use Redaxo\Core\Http\Session;
+use Redaxo\Core\Security\BackendLogin;
 use Redaxo\Core\Security\CsrfToken;
 use Redaxo\Core\Security\User;
 use Throwable;
@@ -51,6 +53,9 @@ final class Api
             }
             if ('POST' !== ($_SERVER['REQUEST_METHOD'] ?? '') || !CsrfToken::factory(self::CSRF)->isValid()) {
                 self::send(['ok' => false, 'error' => 'Sitzung abgelaufen – bitte Seite neu laden.'], 419);
+            }
+            if ('logout' === Request::get(self::PARAM, 'string') && !Editing::isGuest()) {
+                self::logout();
             }
             $article = Article::getCurrent() ?? self::fail('Artikel nicht gefunden.', 404);
             // Aktionsrechte des Cores (wie im Backend)
@@ -704,6 +709,23 @@ final class Api
     private static function fail(string $message, int $code = 400): never
     {
         throw new ApiError($message, $code);
+    }
+
+    /**
+     * Backend-Anmeldung beenden, die Seite bleibt offen (danach als Besucher).
+     *
+     * Der Link rex_logout des Backends geht hier nicht: Der Core trennt CSRF-Token nach Umgebung, ein im Frontend
+     * erzeugtes Token gilt im Backend nicht. Abgemeldet wird wie dort über BackendLogin (Sitzung, Cookie
+     * „angemeldet bleiben“, Sitzungsliste).
+     */
+    private static function logout(): never
+    {
+        $login = new BackendLogin();
+        $login->setLogout(true);
+        $login->checkLogin();
+        CsrfToken::removeAll();
+        Session::close();
+        self::send(['ok' => true]);
     }
 
     private static function send(array $data, int $status = 200): never

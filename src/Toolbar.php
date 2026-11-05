@@ -64,8 +64,8 @@ final class Toolbar
             'draftUrl' => Url::article($article->id, $article->languageId, ['rex_version' => ArticleRevision::WORK]),
             'viewingDraft' => !$editing && ArticleRevision::WORK === Request::get('rex_version', 'int', ArticleRevision::LIVE),
             'backendUrl' => Url::backendPage('content/edit', ['article_id' => $article->id, 'language' => $article->languageId, 'mode' => 'edit']),
-            // Abmelden wie im Backend (rex_logout + CSRF-Token), danach zeigt der Core die Login-Seite
-            'logoutUrl' => $guest ? null : Url::backendController(['rex_logout' => 1] + CsrfToken::factory('backend_logout')->getUrlParams()),
+            // Menü ⋯ → Abmelden (Api::logout), die Seite bleibt danach als Besucher offen
+            'logout' => !$guest,
             'user' => $user->name ?: $user->login,
             'modules' => $modules,
             'state' => Api::state($article),

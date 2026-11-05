@@ -113,7 +113,7 @@
             ${cfg.guest ? '' : `<a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>`}
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
             ${(cfg.notice?.buttons || []).map((b) => `<button type="button" role="menuitem" data-notice-event="${esc(b.event)}">${esc(b.label)} …</button>`).join('')}
-            ${cfg.logoutUrl ? `<hr class="menu-sep" role="separator"><a role="menuitem" href="${esc(unamp(cfg.logoutUrl))}" data-logout>Abmelden <span class="menu-hint">${esc(cfg.user)}</span></a>` : ''}
+            ${cfg.logout ? `<hr class="menu-sep" role="separator"><button type="button" role="menuitem" data-logout>Abmelden <span class="menu-hint">${esc(cfg.user)}</span></button>` : ''}
           </div>
         </div>
       </div>
@@ -343,6 +343,24 @@
     if (!e.composedPath().includes(moreBtn.parentElement)) {
       menu.hidden = true;
       moreBtn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Abmelden (Api::logout): vorher ungespeicherte Änderungen klären, danach die Seite als Besucher laden
+  $('[data-logout]')?.addEventListener('click', async () => {
+    menu.hidden = true;
+    moreBtn.setAttribute('aria-expanded', 'false');
+    if (dirty.size) {
+      const r = await ask({ title: 'Ungespeicherte Änderungen', body: 'Vor dem Abmelden speichern?', ok: 'Speichern', cancel: 'Abbrechen', alt: 'Verwerfen' });
+      if (r === 'alt') dirty.clear();
+      else if (r !== true || !(await saveAll())) return;
+    }
+    try {
+      await api('logout');
+      dirty.clear();
+      location.href = unamp(cfg.viewUrl);
+    } catch (err) {
+      say(err.message, true);
     }
   });
 
