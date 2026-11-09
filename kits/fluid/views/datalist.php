@@ -5,6 +5,7 @@
  * Angemeldete Redakteure sehen im Bearbeiten-Modus „Bearbeiten“ je Eintrag und „Neuer Eintrag“ (YForm im Backend).
  * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
+use FriendsOfRedaxo\Fluid\Data\RecordInline;
 use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\Http\Request;
@@ -59,7 +60,7 @@ if ($row):
   <p class="df-back"><a href="<?= e($here) ?>">← <?= e(lt('Zur Übersicht')) ?></a></p>
   <header class="df-head">
     <?php if ($metaF && ($m = YFormBridge::html($row, $metaF)) !== ''): ?><p class="df-meta"><?= $m ?></p><?php endif; ?>
-    <h2 class="h2 df-title"><?= e($title($row)) ?></h2>
+    <h2 class="h2 df-title"<?= $titleF ? RecordInline::attrs($t, $row, $titleF) : '' ?>><?= e($title($row)) ?></h2>
     <?= $editBtn($edit($row->id), 'Eintrag bearbeiten') ?>
     <?php if ($img !== ''): ?><div class="df-img ratio-16-9"><?= $img ?></div><?php endif; ?>
   </header>
@@ -67,8 +68,11 @@ if ($row):
     <?php $blocksHtml = ''; foreach (YFormBridge::detailFields($t) as $f):
         // Feld „Fluid-Blöcke“: als Blöcke unter der Detailansicht (volle Breite), nicht als Text
         if ($f instanceof \FriendsOfRedaxo\Fluid\Data\FluidBlocks) { $blocksHtml .= \FriendsOfRedaxo\Fluid\Data\RecordBlocks::render($t, $row, $f, $b->articleId); continue; }
-        if ($same($f, $titleF) || $same($f, $imageF) || $same($f, $filterF) || ($h = YFormBridge::html($row, $f)) === '') continue; ?>
-    <div><dt><?= e($f->translatedLabel()) ?></dt><dd><?= $h ?></dd></div>
+        if ($same($f, $titleF) || $same($f, $imageF) || $same($f, $filterF)) continue;
+        // Bearbeitungsmodus: Textfelder direkt auf der Seite (Data\RecordInline) – auch leere, damit man sie füllen kann
+        $inline = RecordInline::attrs($t, $row, $f);
+        if (($h = YFormBridge::html($row, $f)) === '' && '' === $inline) continue; ?>
+    <div><dt><?= e($f->translatedLabel()) ?></dt><dd<?= $inline ?>><?= $h ?></dd></div>
     <?php endforeach; ?>
   </dl>
 </div>
@@ -113,7 +117,7 @@ $reload = $pg && $pg['pages'] > 1 ? \FriendsOfRedaxo\Fluid\Live::region($b) : ''
   <?php else: ?>
   <ul class="dl-items<?= $layout === 'cards' ? ' dl-cols-' . $cols : '' ?>" role="list">
     <?php foreach ($rows as $r): $name = $title($r); $url = $detailOn ? $href($r) : null; ?>
-    <li class="dl-item"><?= $editBtn($edit($r->id), 'Bearbeiten') ?>
+    <li class="dl-item"><?= $editBtn($edit($r->id), 'Eintrag bearbeiten') ?>
       <?php if ($imageF): $p = $pic($r, $layout === 'cards' ? '(min-width: 1080px) 400px, 100vw' : '(min-width: 1080px) 320px, 40vw', '16:10'); ?>
       <div class="dl-img ratio-16-10"><?= $p !== '' ? $p : '<span class="dl-ph" aria-hidden="true"></span>' ?></div>
       <?php endif; ?>

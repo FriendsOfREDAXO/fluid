@@ -38,6 +38,7 @@
       }
     }
     fd.append('_csrf_token', cfg.csrf);
+    if (cfg.entry) fd.append('eintrag', cfg.entry);   // Detailansicht eines Datensatzes (Api)
     // AddOns können Felder ergänzen (z. B. fluid_demo: gemerkte Änderungen) und erfahren vom Erfolg (fluid:api-done)
     document.dispatchEvent(new CustomEvent('fluid:api-request', { detail: { action, fd } }));
     let res;
@@ -1174,7 +1175,47 @@
       el.dataset.blocksEditable = '';
       if (el.tagName === 'A' || el.closest('a')) el.closest('a')?.addEventListener('click', (e) => e.preventDefault());
     });
+    // Textfelder eines Datensatzes (Detailansicht der Datenliste, Data\RecordInline)
+    scope.querySelectorAll('[data-rec-field]').forEach((el) => {
+      el.contentEditable = 'plaintext-only';
+      if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
+      el.spellcheck = true;
+      el.dataset.blocksEditable = '';
+      el.title = `${el.dataset.recLabel} – wird beim Verlassen des Feldes gespeichert`;
+    });
   }
+
+  // Datensätze kennen keinen Entwurf: ein Feld wird beim Verlassen sofort gespeichert (API record_field, Prüfung von
+  // YForm); Esc nimmt die Änderung zurück, Enter beendet einzeilige Felder
+  main.addEventListener('focusin', (e) => {
+    const el = e.target.closest?.('[data-rec-field]');
+    if (el && el.dataset.recOrig === undefined) el.dataset.recOrig = el.innerText;
+  });
+  main.addEventListener('keydown', (e) => {
+    const el = e.target.closest?.('[data-rec-field]');
+    if (!el) return;
+    if (e.key === 'Escape') { e.stopPropagation(); el.innerText = el.dataset.recOrig ?? el.innerText; el.blur(); }
+    else if (e.key === 'Enter' && !('recMulti' in el.dataset)) { e.preventDefault(); el.blur(); }
+  });
+  main.addEventListener('focusout', async (e) => {
+    const el = e.target.closest?.('[data-rec-field]');
+    if (!el || el.dataset.recOrig === undefined) return;
+    const orig = el.dataset.recOrig;
+    delete el.dataset.recOrig;
+    const value = el.innerText;
+    if (value.trim() === orig.trim()) return;
+    el.setAttribute('aria-busy', 'true');
+    try {
+      const r = await api('record_field', { field: el.dataset.recField, value });
+      el.innerHTML = r.html;
+      // Titel geändert: Adresse der Detailansicht folgt (/seite/neuer-titel-ID)
+      if (r.url) history.replaceState(history.state, '', r.url + location.search + location.hash);
+      say(`„${el.dataset.recLabel}“ gespeichert.`);
+    } catch (err) {
+      el.innerText = orig;
+      say(err.message, true);
+    } finally { el.removeAttribute('aria-busy'); }
+  });
 
   main.addEventListener('input', (e) => {
     const el = e.target.closest?.('[data-edit]');
@@ -1189,7 +1230,7 @@
   });
 
   main.addEventListener('keydown', (e) => {
-    const el = e.target.closest?.('[data-edit]');
+    const el = e.target.closest?.('[data-edit], [data-rec-field]:not([data-rec-multi])');
     if (el && e.key === 'Enter' && !el.dataset.editMode) e.preventDefault();
     // Einzeilige Felder: Ende/Pos1 an Ende/Anfang des ganzen Feldes – nicht der sichtbaren Zeile (große Überschriften
     // brechen um, mit Silbentrennung sogar mitten im Wort); mit Umschalt wird markiert
@@ -1865,24 +1906,61 @@
 
   // ------------------------------------------------------------------ YForm-Einträge (Datenliste)
 
-  // „Bearbeiten“ / „Neuer Eintrag“: YForm-Maske im Popup (wie Medienpool); nach dem Schließen den Block neu ausgeben
+  // „Bearbeiten“ / „Neuer Eintrag“: YForm-Maske im Overlay (iframe derselben Domain; fluid_frame=1 = Seite ohne
+  // Navigation, FluidAddon). „Speichern“ führt YForm zurück zur Liste – dann schließt das Overlay; „Übernehmen“ bleibt
+  // in der Maske. Beim Schließen wird der Block neu ausgegeben, wenn gespeichert wurde.
+  const yfo = h(`<dialog class="yfo" aria-labelledby="fluid-yfo-t">
+      <div class="yfo__bar"><strong class="yfo__t" id="fluid-yfo-t">Datensatz</strong>
+        <a class="yfo__ext" target="_blank" rel="noopener" title="Im Backend öffnen">Backend ↗</a>
+        <button type="button" class="yfo__x" aria-label="Schließen">✕</button></div>
+      <iframe class="yfo__f" title="Datensatz bearbeiten"></iframe>
+    </dialog>`);
+  root.append(yfo);
+  const yfoFrame = yfo.querySelector('iframe');
+  let yfoSec = null, yfoSaved = false, yfoLoads = 0;
+  const yfoClose = async () => {
+    if (yfo.open) yfo.close();
+    yfoFrame.src = 'about:blank';
+    const sec = yfoSec;
+    yfoSec = null;
+    if (!yfoSaved || !sec?.isConnected) return;
+    try {
+      apply(await api('render', { slice: sec.dataset.block }), sec);
+      say('Eintrag gespeichert.');
+    } catch (err) { say(err.message, true); }
+  };
+  yfo.querySelector('.yfo__x').addEventListener('click', yfoClose);
+  yfo.addEventListener('cancel', (e) => { e.preventDefault(); yfoClose(); });
+  yfoFrame.addEventListener('load', () => {
+    if (!yfo.open) return;
+    let loc, doc;
+    try { loc = new URL(yfoFrame.contentWindow.location.href); doc = yfoFrame.contentDocument; } catch { return; }
+    if (loc.href === 'about:blank') return;
+    yfoLoads++;
+    const func = loc.searchParams.get('func');
+    // nach dem Absenden: Erfolg oder zurück in der Liste
+    if (yfoLoads > 1 && (!['edit', 'add'].includes(func) || loc.searchParams.has('msg') || doc.querySelector('.rex-alert[data-variant="success"]'))) yfoSaved = true;
+    if (!['edit', 'add'].includes(func)) { yfoClose(); return; }
+    // Links und Formulare der Maske bleiben im Rahmen ohne Navigation
+    doc.querySelectorAll('form').forEach((f) => {
+      try { const u = new URL(f.getAttribute('action') || loc.href, loc.href); u.searchParams.set('fluid_frame', '1'); f.action = u.href; } catch { /* fremdes Ziel */ }
+    });
+    const t = doc.querySelector('h1')?.textContent.trim();
+    if (t) yfo.querySelector('.yfo__t').textContent = t;
+  });
   main.addEventListener('click', (e) => {
     const a = e.target.closest?.('a.fdl-edit');
     if (!a) return;
     e.preventDefault();
-    const sec = a.closest('[data-block]');
-    const w = window.open(a.href, 'fluid_yform', 'width=1100,height=820,resizable=yes,scrollbars=yes');
-    if (!w) { location.href = a.href; return; }
-    w.focus();
-    const timer = setInterval(async () => {
-      if (!w.closed) return;
-      clearInterval(timer);
-      if (!sec?.isConnected) return;
-      try {
-        apply(await api('render', { slice: sec.dataset.block }), sec);
-        say('Liste aktualisiert.');
-      } catch (err) { say(err.message, true); }
-    }, 600);
+    const url = new URL(a.href, location.href);
+    yfo.querySelector('.yfo__ext').href = url.href;
+    url.searchParams.set('fluid_frame', '1');
+    yfoSec = a.closest('[data-block]');
+    yfoSaved = false;
+    yfoLoads = 0;
+    yfo.querySelector('.yfo__t').textContent = a.textContent.trim() || 'Datensatz';
+    yfoFrame.src = url.href;
+    yfo.showModal();
   });
 
   // ------------------------------------------------------------------ Greifer: Abstände und Spaltenbreiten (wie KLXM Studio)

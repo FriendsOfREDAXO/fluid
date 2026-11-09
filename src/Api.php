@@ -109,6 +109,11 @@ final class Api
         if (null !== $need && !Perm::can($user, $need)) {
             Perm::require($user, $need);
         }
+        // Detailansicht eines Datensatzes (Data\Detail): Blöcke wie die Datenliste beim neuen Ausgeben mit dem Eintrag
+        if (($entry = Request::post(Data\Detail::PARAM, 'int', 0)) > 0) {
+            Core::getRequest()->query->set(Data\Detail::PARAM, (string) $entry);
+            $_GET[Data\Detail::PARAM] = (string) $entry;
+        }
         $result = Editing::render(fn () => match (Request::get(self::PARAM, 'string')) {
             'form' => self::form($article),
             'preview' => self::preview($article),
@@ -184,6 +189,7 @@ final class Api
             'templates' => ['templates' => PageTemplates::all($article->languageId)],
             'design' => self::design($article, $user, false),
             'design_save' => self::design($article, $user, true),
+            'record_field' => Data\RecordInline::save($user, $article),   // Textfeld eines Datensatzes in der Detailansicht
             default => self::fail('Unbekannte Aktion.', 400),
         });
         // Aktivitätsprotokoll (Speichern, Veröffentlichen, Verwerfen und Wiederherstellen protokollieren die Aktionen selbst)

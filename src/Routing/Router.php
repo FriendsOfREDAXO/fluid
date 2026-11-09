@@ -470,18 +470,19 @@ final class Router
     }
 
     /** Weiterleitung (nur bei GET/HEAD) – für Bausteine; relative Adressen werden absolut */
-    public static function redirectTo(string $url, int $code = 301): void
+    /** @param bool $cache 301 eine Stunde zwischenspeichern – nicht bei Adressen, die sich ändern können (Titel eines Datensatzes) */
+    public static function redirectTo(string $url, int $code = 301, bool $cache = true): void
     {
-        self::redirect(self::absolute($url), $code);
+        self::redirect(self::absolute($url), $code, $cache);
     }
 
-    private static function redirect(string $url, int $code): void
+    private static function redirect(string $url, int $code, bool $cache = true): void
     {
         if (!self::$canRedirect) {
             return;
         }
         header('Location: ' . (string) preg_replace_callback('~[^\x21-\x7E]+~', static fn ($m) => rawurlencode($m[0]), $url), true, $code);
-        header('Cache-Control: ' . (301 === $code ? 'public, max-age=3600' : 'no-cache'));
+        header('Cache-Control: ' . (301 === $code && $cache ? 'public, max-age=3600' : 'no-cache'));
         header('X-Redirect-By: fluid');
         exit;
     }

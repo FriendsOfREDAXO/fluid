@@ -36,7 +36,8 @@ final class Detail
             $want = self::url(Router::url($pid, $lang), $title, $eid);
             $r = \Redaxo\Core\Core::getRequest();
             if (substr(rawurldecode((string) parse_url($want, PHP_URL_PATH)), \strlen(Router::base())) !== rawurldecode($r->getPathInfo())) {
-                Router::redirectTo(self::url(Router::url($pid, $lang, $query), $title, $eid), 301);
+                // Titel lassen sich ändern (auch zurück): Weiterleitung nicht im Browser zwischenspeichern, sonst Schleife
+                Router::redirectTo(self::url(Router::url($pid, $lang, $query), $title, $eid), 301, false);
             }
             $r->query->set(self::PARAM, (string) $eid);
             $_GET[self::PARAM] = (string) $eid;
@@ -47,7 +48,7 @@ final class Detail
             if (isset($query[self::PARAM]) && ($cfg = self::config($id, $lang)) && null !== ($t = self::title($cfg, (int) $query[self::PARAM]))) {
                 $eid = (int) $query[self::PARAM];
                 unset($query[self::PARAM]);
-                Router::redirectTo(self::url(Router::url($id, $lang, $query), $t, $eid), 301);
+                Router::redirectTo(self::url(Router::url($id, $lang, $query), $t, $eid), 301, false);
             }
         });
         Sitemap::children(static function (int $id, int $lang, string $loc): iterable {

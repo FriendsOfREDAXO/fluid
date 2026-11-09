@@ -406,3 +406,17 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Dialogtext: Absätze aus \n (z. B. Redaktionsnotiz) */
 .dlg__box [data-dlg-body] { white-space: pre-line; }
+
+/* YForm-Maske im Overlay (Datenliste: „Bearbeiten“, „Neuer Eintrag“) */
+.yfo { width: min(1100px, calc(100vw - 32px)); height: min(860px, calc(100dvh - 32px)); max-width: none; max-height: none; padding: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--ink); box-shadow: 0 24px 64px rgb(0 0 0 / .35); overflow: hidden; }
+.yfo[open] { display: flex; flex-direction: column; }
+.yfo::backdrop { background: rgb(15 18 26 / .55); }
+.yfo__bar { display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 18px; border-bottom: 1px solid var(--line); }
+.yfo__t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.yfo__ext { color: var(--muted); font-size: 13px; text-decoration: none; }
+.yfo__ext:hover { color: var(--ink); }
+.yfo__x { all: unset; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; }
+.yfo__x:hover { background: var(--surface); }
+.yfo__x:focus-visible { outline: 2px solid var(--accent); }
+.yfo__f { flex: 1; width: 100%; border: 0; background: var(--bg); }
+@media (max-width: 640px) { .yfo { width: 100vw; height: 100dvh; border-radius: 0; border: 0; } }

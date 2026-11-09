@@ -173,6 +173,14 @@ final class FluidAddon extends Addon
         }
         // YForm-Maske: Feld „Fluid-Blöcke“ (Data\FluidBlocks) braucht dieselben Formular-Skripte wie die Slices
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'yform')) {
+            // Maske im Overlay der Website (editor.js, iframe mit fluid_frame=1): Seite ohne Navigation wie ein Popup des Cores.
+            // Nach „Übernehmen“ leitet YForm ohne den Parameter weiter – der Browser meldet den Rahmen aber weiter (Sec-Fetch-Dest).
+            if (Request::get('fluid_frame', 'bool') || 'iframe' === Core::getRequest()->headers->get('Sec-Fetch-Dest')) {
+                Extension::register('PAGE_CHECKED', static function (): void {
+                    \Redaxo\Core\Backend\Controller::getCurrentPageObject()?->setPopup(true);
+                });
+                Asset::addCssFile($this->getAssetsUrl('frame.css'));
+            }
             Asset::addCssFile($this->getAssetsUrl('form.css'));
             Asset::addCssFile($this->getAssetsUrl('rte.css'));
             Asset::addCssFile($this->getAssetsUrl('blocks-field.css'));

@@ -32,6 +32,12 @@ final class Toolbar
         $guest = Editing::isGuest();   // Gastzugang (FLUID_GUEST_USER, z. B. AddOn fluid_demo): nur Blöcke dieser Seite
         $addon = FluidAddon::instance();
         $perm = $user->getComplexPerm('modules');
+        // Detailansicht eines Datensatzes (/seite/titel-ID): Bearbeiten, Ansehen, Arbeitsversion bleiben auf dem Eintrag
+        $entry = Request::get(Data\Detail::PARAM, 'int', 0);
+        $entryTitle = $entry > 0 && ($cfg = Data\Detail::config($article->id, $article->languageId)) ? Data\Detail::title($cfg, $entry) : null;
+        $here = static fn (array $params = []): string => null !== $entryTitle
+            ? Data\Detail::url(Url::article($article->id, $article->languageId, $params), $entryTitle, $entry)
+            : Url::article($article->id, $article->languageId, $params);
         $modules = [];
         foreach (BlockModule::all() as $key => $module) {
             if (!$module::available() || !Template::checkModuleAllowed((string) $article->templateKey, 1, $key)) {
@@ -58,10 +64,11 @@ final class Toolbar
             'article' => ['id' => $article->id, 'name' => $article->name, 'language' => $article->languageId, 'online' => $article->isOnline(), 'category' => $article->getCategory()->name ?? '', 'menu' => $article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id)],
             'api' => Url::article($article->id, $article->languageId, [Api::PARAM => '__action__']),
             'csrf' => CsrfToken::factory(Api::CSRF)->getValue(),
-            'editUrl' => Url::article($article->id, $article->languageId, [Editing::PARAM => 1]),
-            'viewUrl' => Url::article($article->id, $article->languageId),
+            'entry' => null !== $entryTitle ? $entry : 0,   // Detailansicht: an die API, damit Blöcke mit dem Eintrag neu ausgegeben werden
+            'editUrl' => $here([Editing::PARAM => 1]),
+            'viewUrl' => $here(),
             // Ansicht der Arbeitsversion (REDAXO-Core: rex_version=1, nur mit Backend-Anmeldung)
-            'draftUrl' => Url::article($article->id, $article->languageId, ['rex_version' => ArticleRevision::WORK]),
+            'draftUrl' => $here(['rex_version' => ArticleRevision::WORK]),
             'viewingDraft' => !$editing && ArticleRevision::WORK === Request::get('rex_version', 'int', ArticleRevision::LIVE),
             'backendUrl' => Url::backendPage('content/edit', ['article_id' => $article->id, 'language' => $article->languageId, 'mode' => 'edit']),
             // Menü ⋯ → Abmelden (Api::logout), die Seite bleibt danach als Besucher offen

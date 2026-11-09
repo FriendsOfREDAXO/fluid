@@ -1,0 +1,8 @@
+/* YForm-Maske im Overlay der Website (Parameter fluid_frame, editor.js): nur das Formular – Titel und Schließen
+   liefert das Overlay; Suche und „Zurück zur Liste“ haben dort keinen Sinn */
+.rex-is-popup .rex-topbar,
+.rex-is-popup .rex-pageheader,
+.rex-is-popup .rex-alert[data-variant="info"]:has(> a:only-child),
+.rex-is-popup .yform-list-layout > :first-child:not(:only-child) { display: none; }
+.rex-is-popup .yform-list-layout > :last-child { grid-column: 1 / -1; }
+.rex-is-popup .rex-main { padding-top: 16px; }
