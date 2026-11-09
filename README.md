@@ -238,7 +238,8 @@ php bin/console fluid:demo --set=redaxo6 --media --design=redaxo
 ```
 
 `fluid:demo` legt Inhalte nur in einer **leeren** Installation an. In der Konsole kannst du mit `--page=projekte`
-einzelne Demo-Seiten anhängen.
+einzelne Demo-Seiten anhängen, auch mehrere auf einmal (`--page=redaxo-6,backend,projekt`); Unterseiten finden ihre
+Elternseite auch, wenn sie schon existiert.
 
 **Mail:** Formulare und Benachrichtigungen nutzen den Mailer des Cores – `MAILER_DSN` und `REX_MAILER_FROM` in
 `.env.local` (das Installationsskript setzt `null://null`: Mails werden dann nicht verschickt).
@@ -382,6 +383,20 @@ final class Teaser extends FluidBlock
 
 `$b->edit('feld')` macht das Feld direkt auf der Website bearbeitbar – fertig ist der Block, mit Seitenleiste,
 Entwurf, Rechten und Historie.
+
+**Navigation als Array** – wie [navigation_array](https://github.com/FriendsOfREDAXO/navigation_array) für REDAXO 5,
+mit derselben API (`create()`, `setStart()`, `setDepth()`, Filter- und Daten-Callbacks, `walk()`, `getBreadcrumb()`,
+`toJsonLd()`). Eigenständig gebaut, soll später ein eigenes AddOn werden; fluid baut sein Menü selbst damit.
+
+```php
+use FriendsOfRedaxo\Fluid\Navigation\NavigationArray;
+
+$nav = NavigationArray::create()->setDepth(2)->setExcludedCategories([12]);
+foreach ($nav->generate() as $item) {
+    // $item['catName'], $item['url'], $item['active'], $item['current'], $item['children'] …
+}
+echo $nav->toJsonLd('https://example.org');   // Brotkrumen als schema.org BreadcrumbList
+```
 
 **Mitmachen:** Fehler und Ideen gern als [Issue](https://github.com/FriendsOfREDAXO/fluid/issues), Pull Requests
 willkommen. Zum Entwickeln: Repo klonen und `FLUID_SOURCE=$PWD/fluid bash fluid/install-dev.sh fluid-dev`

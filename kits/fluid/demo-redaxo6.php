@@ -68,6 +68,295 @@ $yform = [
     ]],
 ];
 
+// Codebeispiele der Seiten unter „REDAXO 6“ (geprüft gegen redaxo/core 6.x und YForm 6.x)
+$code = [
+    'create' => <<<'CODE'
+composer create-project redaxo/project:6.x-dev mein-projekt
+cd mein-projekt
+CODE,
+    'env' => <<<'CODE'
+# .env.local – nur auf diesem Rechner, nicht im Repository
+DATABASE_URL=mysql://redaxo:geheim@127.0.0.1:3306/redaxo
+REX_MODE=dev
+REX_BASE_URL=https://mein-projekt.test/
+CODE,
+    'setup' => <<<'CODE'
+php bin/console setup     # Einrichtung samt Admin-Konto
+php bin/console migrate   # nach jedem Update: Datenbank auf den Stand bringen
+CODE,
+    'tree' => <<<'CODE'
+bin/console               Konsole
+public/                   Wurzel des Webservers
+public/index.php          Frontend
+public/redaxo/index.php   Backend
+src/                      Dein Code: Project.php, Module, Templates …
+var/                      Cache, Daten, Logs
+CODE,
+    'module' => <<<'CODE'
+<?php
+
+namespace Project\Module;
+
+use Redaxo\Core\Content\Article;
+use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\Content\Module;
+use Redaxo\Core\Form\Field\ArticlePicker;
+use Redaxo\Core\Form\Field\MediaPicker;
+use Redaxo\Core\Form\Field\Text;
+use Redaxo\Core\Form\Field\Textarea;
+use Redaxo\Core\MediaPool\Media;
+
+use function Redaxo\Core\View\escape;
+
+#[AsModule('teaser', 'Teaser')]
+final class TeaserModule extends Module
+{
+    #[Text('Überschrift', required: true, maxLength: 120)]
+    public string $headline = '';
+
+    #[Textarea('Text', rows: 4)]
+    public string $text = '';
+
+    #[MediaPicker('Bild', types: ['jpg', 'png', 'webp'])]
+    public ?Media $image = null;
+
+    #[ArticlePicker('Weiterlesen auf')]
+    public ?Article $link = null;
+
+    public function output(): string
+    {
+        $html = '<article class="teaser">';
+        if ($this->image) {
+            $html .= '<img src="' . escape($this->image->getUrl()) . '" alt="">';
+        }
+        $html .= '<h2>' . escape($this->headline) . '</h2>';
+        $html .= '<p>' . nl2br(escape($this->text)) . '</p>';
+        if ($this->link) {
+            $html .= '<a href="' . escape($this->link->getUrl()) . '">Weiterlesen</a>';
+        }
+
+        return $html . '</article>';
+    }
+}
+CODE,
+    'template' => <<<'CODE'
+<?php
+
+namespace Project\Template;
+
+use Override;
+use Project\Module\TeaserModule;
+use Redaxo\Core\Content\ArticleContent;
+use Redaxo\Core\Content\AsTemplate;
+use Redaxo\Core\Content\ContentSection;
+use Redaxo\Core\Content\Template;
+use Redaxo\Core\View\HasView;
+
+#[AsTemplate('page', 'Seite')]
+final class PageTemplate extends Template
+{
+    use HasView;
+
+    #[Override]
+    public function getContentSections(): array
+    {
+        return [new ContentSection(1, 'Inhalt'), new ContentSection(2, 'Seitenleiste')];
+    }
+
+    #[Override]
+    public function isModuleAllowed(ContentSection $section, string $module): bool
+    {
+        // In der Seitenleiste nur Teaser
+        return 2 !== $section->id || TeaserModule::class === $module;
+    }
+
+    #[Override]
+    public function render(ArticleContent $content): string
+    {
+        return $this->renderView($content);   // PageTemplate.view.php daneben
+    }
+}
+CODE,
+    'view' => <<<'CODE'
+<?php
+
+use Redaxo\Core\Content\ArticleContent;
+
+use function Redaxo\Core\View\escape;
+
+return static function (ArticleContent $content): void { ?>
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+        <meta charset="utf-8">
+        <title><?= escape($content->article->name) ?></title>
+    </head>
+    <body>
+        <main><?= $content->renderContent(1) ?></main>
+        <aside><?= $content->renderContent(2) ?></aside>
+    </body>
+    </html>
+<?php };
+CODE,
+    'project' => <<<'CODE'
+<?php
+
+namespace Project;
+
+use Override;
+use Project\Template\PageTemplate;
+use Redaxo\Core\AbstractProject;
+use Redaxo\Core\Content\Template;
+
+final class Project extends AbstractProject
+{
+    #[Override]
+    public function boot(): void
+    {
+        Template::setDefault(PageTemplate::class);   // Template für neue Artikel
+    }
+}
+CODE,
+    'yrequire' => <<<'CODE'
+composer config repositories.yform '{"type": "vcs", "url": "https://github.com/yakamara/yform", "no-api": true}'
+composer require yakamara/yform:6.x-dev@dev
+php bin/console migrate
+CODE,
+    'ytable' => <<<'CODE'
+<?php
+
+namespace Project\YForm;
+
+use Yakamara\YForm\Attribute\AsTable;
+use Yakamara\YForm\Field\Checkbox;
+use Yakamara\YForm\Field\Date;
+use Yakamara\YForm\Field\Media;
+use Yakamara\YForm\Field\Text;
+use Yakamara\YForm\Field\Textarea;
+use Yakamara\YForm\Table\ListConfig;
+use Yakamara\YForm\Table\Table;
+
+#[AsTable('rex_yf_event', label: 'Termine', icon: 'fa-calendar')]
+final class EventTable extends Table
+{
+    public function fields(): iterable
+    {
+        yield Text::new('title')->label('Titel')->required()->maxLength(191);
+        yield Date::new('date')->label('Datum')->required();
+        yield Textarea::new('text')->label('Beschreibung');
+        yield Media::new('image')->label('Bild')->types('jpg', 'png', 'webp');
+        yield Checkbox::new('online')->label('Online')->default(true);
+    }
+
+    public function list(ListConfig $list): ListConfig
+    {
+        return $list->columns('id', 'title', 'date', 'online')->sortBy('date', 'asc');
+    }
+}
+CODE,
+    'yquery' => <<<'CODE'
+<?php
+
+use Project\YForm\EventTable;
+
+use function Redaxo\Core\View\escape;
+
+$events = EventTable::query()
+    ->where('online', 1)
+    ->where('date', '>=', date('Y-m-d'))
+    ->orderBy('date')
+    ->limit(5)
+    ->find();
+
+foreach ($events as $event) {
+    echo '<h3>' . escape($event->get('title')) . '</h3>';
+    echo '<p>' . $event->get('date')->format('d.m.Y') . '</p>';
+}
+CODE,
+    'nav' => <<<'CODE'
+<?php
+
+use FriendsOfRedaxo\Fluid\Navigation\NavigationArray;
+
+use function Redaxo\Core\View\escape;
+
+$nav = NavigationArray::create()
+    ->setDepth(2)
+    ->setExcludedCategories([12]);
+
+$render = static function (array $items) use (&$render): string {
+    $html = '<ul>';
+    foreach ($items as $item) {
+        $html .= '<li' . ($item['active'] ? ' class="active"' : '') . '>';
+        $html .= '<a href="' . escape($item['url']) . '"' . ($item['current'] ? ' aria-current="page"' : '') . '>' . escape($item['catName']) . '</a>';
+        if ($item['hasChildren']) {
+            $html .= $render($item['children']);
+        }
+        $html .= '</li>';
+    }
+
+    return $html . '</ul>';
+};
+
+echo '<nav>' . $render($nav->generate()) . '</nav>';
+
+// Brotkrumen und strukturierte Daten
+foreach ($nav->getBreadcrumb() as $crumb) {
+    echo '<a href="' . escape($crumb['url']) . '">' . escape($crumb['name']) . '</a>';
+}
+echo $nav->toJsonLd('https://example.org');
+CODE,
+    'frequire' => <<<'CODE'
+composer config repositories.yform '{"type": "vcs", "url": "https://github.com/yakamara/yform", "no-api": true}'
+composer config repositories.fluid '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/fluid", "no-api": true}'
+composer require yakamara/yform:6.x-dev@dev friendsofredaxo/fluid:*@dev
+php bin/console migrate
+CODE,
+    'fdemo' => <<<'CODE'
+# Demo-Inhalte mit Bildern und Design „REDAXO · Blau“ (nur in einer leeren Installation)
+php bin/console fluid:demo --set=redaxo6 --media --design=redaxo
+CODE,
+    'fblock' => <<<'CODE'
+<?php
+
+namespace Project\Block;
+
+use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
+use Override;
+use Redaxo\Core\Content\AsModule;
+
+/** Eigener Block im Projekt: Klasse + Teaser.view.php daneben – das Kit bleibt unverändert. */
+#[AsModule('fluid.teaser', 'Teaser (Projekt)')]
+final class Teaser extends FluidBlock
+{
+    #[Override]
+    protected static function define(): array
+    {
+        return [
+            'label' => 'Teaser (Projekt)', 'icon' => 'star', 'group' => 'Inhalt', 'nestable' => true,
+            'help' => 'Beispiel für einen eigenen Block im Projekt.',
+            'fields' => [
+                ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true, 'max' => 80],
+                ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 3],
+                ['name' => 'link', 'label' => 'Link', 'type' => 'link'],
+            ],
+        ];
+    }
+}
+CODE,
+    'fview' => <<<'CODE'
+<?php /** @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d */ ?>
+<div class="wrap">
+  <div class="card" style="padding:var(--f-s-l)">
+    <h2 class="h3"<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
+    <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
+    <?php if ('' !== trim((string) $d['link'])): ?><a class="btn btn--primary" <?= fluid_link_attrs($d['link']) ?>>Mehr</a><?php endif; ?>
+  </div>
+</div>
+CODE,
+];
+$c = static fn (string $key, string $file, string $lang): array => ['file' => $file, 'lang' => $lang, 'code' => $code[$key]];
+
 return [
     'yform' => $yform,
     // Website-Einstellungen (nur, wo noch nichts eingetragen ist)
@@ -188,9 +477,33 @@ return [
             ],
         ],
 
+        // ------------------------------------------------------------------ REDAXO 6 (Übersicht mit Unterseiten)
+        [
+            'slug' => 'redaxo-6', 'title' => 'REDAXO 6', 'menu' => true,
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Überblick',
+                    'title' => 'REDAXO 6 kennenlernen', 'text' => 'Backend, Projekt, Module, Templates, YForm und Navigation – mit Screenshots und Codebeispielen zum Nachbauen.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Hier steht, wie ein Projekt mit REDAXO 6 entsteht und wie die wichtigsten Bausteine aussehen. Wer von REDAXO 5 kommt, findet unter <a href="/was-sich-aendert">Was sich ändert</a> den Vergleich, unter <a href="/technik">Technik</a> das Fundament.</p>']],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
+                        ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
+                        ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
+                        ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
+                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – wie navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
+                        ['icon' => 'pencil-simple', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
+                    ],
+                ]],
+                $cta,
+            ],
+        ],
+
         // ------------------------------------------------------------------ Backend
         [
-            'slug' => 'backend', 'title' => 'Backend', 'menu' => true,
+            'slug' => 'backend', 'title' => 'Backend', 'menu' => true, 'parent' => 'redaxo-6',
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
                     'title' => 'Das neue Backend von REDAXO 6', 'text' => 'Ein Rundgang mit Screenshots: Struktur, Blöcke, Medienpool, Linkmap, hell und dunkel, auf dem Telefon.']],
@@ -203,8 +516,8 @@ return [
                 ['type' => 'media_text', 'data' => ['variant' => 'left', 'eyebrow' => 'Struktur', 'title' => 'Vertraut, nur aufgeräumter',
                     'text' => '<p>Kategorien und Artikel, Sprachen, Status und Funktionen stehen da, wo REDAXO-Nutzer sie erwarten. Neu sind ruhigere Flächen, klare Linien und die Navigation mit Hauptmenü, AddOns und eigenen Bereichen.</p>',
                     'list' => '', 'image' => 'redaxo6-backend-struktur.jpg', 'ratio' => '16:9', 'split' => 'media']],
-                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Inhalte', 'title' => 'Blöcke statt Slice-Liste von früher',
-                    'text' => '<p>Ein Artikel besteht aus Blöcken (Slices). „Block hinzufügen“ öffnet die Auswahl der erlaubten Module; jeder Block hat seine Leiste zum Bearbeiten, Löschen, Online/Offline und Verschieben.</p>',
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Inhalte', 'title' => 'Vertraute Block-Einpflege',
+                    'text' => '<p>Inhalte werden gepflegt wie bisher: Ein Artikel besteht aus Blöcken (Slices), „Block hinzufügen“ öffnet die Auswahl der erlaubten Module, und jeder Block hat seine Leiste zum Bearbeiten, Löschen, Online/Offline und Verschieben – nur im neuen Erscheinungsbild.</p>',
                     'list' => "Arbeitsversion und Liveversion\nHistorie der Inhalte\nMetadaten in der Seitenleiste", 'image' => 'redaxo6-backend-inhalte.jpg', 'ratio' => '16:9', 'split' => 'media']],
                 ['type' => 'cards', 'tunes' => ['background' => 'muted'], 'data' => [
                     'variant' => 'image', 'eyebrow' => 'Hell und dunkel', 'title' => 'Ein Backend, zwei Farbschemata',
@@ -243,6 +556,124 @@ return [
                         ['q' => 'Wo kann ich mitreden?', 'a' => '<p>Im Repository redaxo/core auf GitHub – mit Issues und Pull Requests gegen den Branch 6.x.</p>'],
                     ],
                 ]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'projekt', 'title' => 'Projekt anlegen', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
+                    'title' => 'Ein Projekt anlegen', 'text' => 'Composer, eine .env-Datei und zwei Konsolenbefehle – dann läuft REDAXO 6.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Voraussetzungen: PHP 8.5, Composer und eine MySQL- oder MariaDB-Datenbank. Der Webserver zeigt auf den Ordner <code>public</code>.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '1. Projekt holen', 'intro' => 'Das Projekt-Skelett redaxo/project holt den Core als Abhängigkeit. Solange es keine stabile Version gibt, ist :6.x-dev nötig.', 'note' => '',
+                    'items' => [
+                        $c('create', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '2. Verbindung und Modus', 'intro' => 'Die Einstellungen kommen aus der Umgebung. Die Vorlage .env beschreibt alle Variablen; eigene Werte gehören in .env.local.', 'note' => 'Modi: dev (Entwicklung), live (öffentlich erreichbar) und hardened (wie live, zusätzlich gehärtet).',
+                    'items' => [
+                        $c('env', '.env.local', 'env'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '3. Einrichten', 'intro' => 'Die Einrichtung geht ganz ohne Browser.', 'note' => '',
+                    'items' => [
+                        $c('setup', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'So sieht das Projekt aus', 'intro' => '', 'note' => '',
+                    'items' => [
+                        $c('tree', 'Ordner', 'text'),
+                    ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'module-templates', 'title' => 'Module und Templates', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
+                    'title' => 'Module und Templates als Klassen', 'text' => 'Kein PHP-Code mehr in der Datenbank: Module und Templates liegen im Projekt, versioniert wie jeder andere Code.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Ein Modul erbt von <code>Module</code> und trägt das Attribut <code>#[AsModule]</code>. Seine Felder sind Eigenschaften mit Feldtypen als Attributen – daraus baut REDAXO das Formular im Backend, speichert die Werte als JSON im Slice und füllt die Eigenschaften für die Ausgabe. REDAXO findet die Klassen von selbst.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein Modul', 'intro' => 'Text, Textarea, Bild aus dem Medienpool und ein Link auf einen Artikel.', 'note' => 'Weitere Feldtypen: Number, Email, Url, Checkbox, Choice, DatePicker, Collection (Wiederholgruppe) …',
+                    'items' => [
+                        $c('module', 'src/Module/TeaserModule.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein Template mit zwei Inhaltsbereichen', 'intro' => 'Das Template legt fest, welche Inhaltsbereiche es gibt und welche Module darin erlaubt sind. Das Markup steht in einer View-Datei daneben.', 'note' => '',
+                    'items' => [
+                        $c('template', 'src/Template/PageTemplate.php', 'php'),
+                        $c('view', 'src/Template/PageTemplate.view.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Standard-Template festlegen', 'intro' => 'Die Klasse Project ist der Einstieg ins eigene Projekt – für Konfiguration, Start und eigene Tabellen.', 'note' => '',
+                    'items' => [
+                        $c('project', 'src/Project.php', 'php'),
+                    ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'yform', 'title' => 'YForm', 'menu' => true, 'parent' => 'redaxo-6', 'requires' => 'yform',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
+                    'title' => 'YForm: Tabellen als Klassen', 'text' => 'Tabellen, Felder und Listen stehen im Projekt – migrate legt die Tabellen an, das Backend zeigt sie unter „Daten“.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>YForm 6 ist noch nicht stabil und kommt bis dahin direkt von GitHub. Eine Tabelle ist eine Klasse mit <code>#[AsTable]</code>; ihre Felder liefert <code>fields()</code>, die Spalten der Liste im Backend <code>list()</code>.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'YForm installieren', 'intro' => '', 'note' => '',
+                    'items' => [
+                        $c('yrequire', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eine Tabelle', 'intro' => '', 'note' => '',
+                    'items' => [
+                        $c('ytable', 'src/YForm/EventTable.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Daten abfragen', 'intro' => 'Abfragen beginnen bei der Tabellenklasse. Datumsfelder liefern DateTimeImmutable.', 'note' => '',
+                    'items' => [
+                        $c('yquery', 'Template oder Modul', 'php'),
+                    ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'navigation', 'title' => 'Navigation', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
+                    'title' => 'Navigation als Array', 'text' => 'Menüs, Brotkrumen und strukturierte Daten – mit der API von navigation_array aus REDAXO 5.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Für REDAXO 5 gibt es das AddOn <a href="https://github.com/FriendsOfREDAXO/navigation_array">navigation_array</a>. fluid bringt die gleiche Idee für REDAXO 6 mit: <code>NavigationArray</code> liefert die Struktur als Array (catId, catName, url, active, current, children …) und lässt die Ausgabe ganz bei dir. Offline-Kategorien und solche ohne Recht fehlen. Die Klasse ist eigenständig gebaut und soll später ein eigenes AddOn werden.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Menü, Brotkrumen und JSON-LD', 'intro' => '', 'note' => 'Weitere Methoden: setStart(), setIgnore(), setCategoryFilterCallback(), setCustomDataCallback(), setIncludeArticles(), walk(), getCategory().',
+                    'items' => [
+                        $c('nav', 'Template', 'php'),
+                    ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'fluid-projekt', 'title' => 'fluid-Projekt', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
+                    'title' => 'Ein Projekt mit fluid', 'text' => 'Bearbeiten direkt auf der Website: fluid einbinden, Demo anlegen, eigene Blöcke bauen.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>fluid ist ein AddOn für REDAXO 6 und noch nicht auf Packagist. Composer holt es – wie YForm 6 – direkt von GitHub. YForm ist optional; ohne fehlen nur Formulare, Datenlisten und das Postfach.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'fluid einbinden', 'intro' => '', 'note' => '',
+                    'items' => [
+                        $c('frequire', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Mit der Demo starten', 'intro' => 'Alternativ auf der Website „Erste Schritte“ nutzen.', 'note' => '',
+                    'items' => [
+                        $c('fdemo', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein eigener Block', 'intro' => 'Felder ins Schema, Ausgabe als View-Datei daneben. Formular im Backend, Bearbeiten auf der Website und Vorschau kommen von fluid.', 'note' => 'Mit $b->edit() wird ein Feld direkt auf der Website bearbeitbar.',
+                    'items' => [
+                        $c('fblock', 'src/Block/Teaser.php', 'php'),
+                        $c('fview', 'src/Block/Teaser.view.php', 'php'),
+                    ]]],
                 $cta,
             ],
         ],

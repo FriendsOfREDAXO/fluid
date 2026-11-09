@@ -39,7 +39,7 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Alle Kategorien, Artikel und Slices vorher löschen (nur Testinstallationen!)')] bool $replace = false,
         #[Option(description: 'Inhalte: fluid (Beispiel-Agentur) oder redaxo6 (Seite über REDAXO 6)')] string $set = 'fluid',
         #[Option(description: 'Design des Kits auf den Standard zurücksetzen')] bool $resetDesign = false,
-        #[Option(description: 'Nur diese Demo-Seite (Slug) anhängen, z. B. daten – vorhandene Inhalte bleiben')] string $page = '',
+        #[Option(description: 'Nur diese Demo-Seiten (Slugs, mit Komma getrennt) anhängen, z. B. daten oder redaxo-6,projekt – vorhandene Inhalte bleiben')] string $page = '',
         #[Option(description: 'Nur Beispielzeilen in die YForm-Tabellen der Demo schreiben (Tabellen sind Klassen im Projekt)')] bool $yform = false,
         #[Option(description: 'Demo-Bilder des Kits in den Medienpool übernehmen (vorhandene bleiben)')] bool $media = false,
         #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …; auf einer Website mit Seiten nur die Vorlage')] string $design = '',
@@ -100,10 +100,13 @@ final class DemoCommand extends AbstractCommand
         $ids = [];
         // Seiten, die ein AddOn brauchen (z. B. YForm), nur anlegen, wenn es da ist
         $demo['pages'] = array_values(array_filter($demo['pages'], static fn (array $p) => 'yform' !== ($p['requires'] ?? null) || YFormBridge::available()));
+        // Alle Seiten der Demo (für Seiten und Links, die schon existieren: über den Titel gefunden)
+        $all = $demo['pages'];
         if ('' !== $page) {
-            $demo['pages'] = array_values(array_filter($demo['pages'], static fn (array $p) => $p['slug'] === $page));
-            if (!$demo['pages']) {
-                $io->error('Keine Demo-Seite „' . $page . '“ (oder benötigtes AddOn fehlt).');
+            $slugs = array_map('trim', explode(',', $page));
+            $demo['pages'] = array_values(array_filter($demo['pages'], static fn (array $p) => in_array($p['slug'], $slugs, true)));
+            if (count($demo['pages']) !== count($slugs)) {
+                $io->error('Nicht alle Demo-Seiten gefunden: ' . $page . ' (oder benötigtes AddOn fehlt).');
 
                 return Command::FAILURE;
             }
@@ -112,6 +115,16 @@ final class DemoCommand extends AbstractCommand
             $io->note(self::yform($demo['yform']));
         }
 
+        // Seite einer früheren Ausführung (z. B. Elternseite beim Anhängen mit --page): über ihren Titel
+        $existing = static function (string $slug) use ($all, $lang): ?int {
+            $title = array_find($all, static fn (array $p) => $p['slug'] === $slug)['title'] ?? null;
+            if (null === $title) {
+                return null;
+            }
+            $row = Sql::factory()->getArray('SELECT article_id FROM rex_article_translation WHERE name = ? AND language_id = ? ORDER BY article_id LIMIT 1', [$title, $lang]);
+
+            return isset($row[0]) ? (int) $row[0]['article_id'] : null;
+        };
         // 1. Seiten: Menüpunkte als Kategorien, alle übrigen als Artikel auf oberster Ebene
         $prio = 1 + (int) ($sql->getArray('SELECT MAX(priority) AS p FROM rex_category')[0]['p'] ?? 0);
         foreach ($demo['pages'] as $def) {
@@ -119,7 +132,7 @@ final class DemoCommand extends AbstractCommand
             // Startseite und Seiten außerhalb des Menüs (Impressum, Datenschutz): Artikel auf oberster Ebene;
             // 'parent' => 'slug': Seite in einer Menüseite (z. B. Beiträge eines Blogs, Angaben unter 'post')
             if (!empty($def['is_home']) || empty($def['menu'])) {
-                $parent = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? null) : null;
+                $parent = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
                 // Template „fluid“ (FluidTemplate) – gestaltet vom gewählten Kit
                 $ids[$slug] = ArticleHandler::add(['category_id' => $parent, 'priority' => !empty($def['is_home']) ? 1 : 99, 'name' => (string) $def['title'], 'template' => 'fluid'])->id;
                 ArticleHandler::changeStatus($ids[$slug], $lang, 1);
@@ -134,7 +147,9 @@ final class DemoCommand extends AbstractCommand
                 }
                 continue;
             }
-            $id = CategoryHandler::add(['parent_id' => null, 'priority' => $prio++, 'name' => (string) $def['title'], 'status' => 1])->id;
+            // 'parent' => 'slug' bei einer Menüseite: Unterseite im Menü (Kategorie in der Kategorie)
+            $parentCat = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
+            $id = CategoryHandler::add(['parent_id' => $parentCat, 'priority' => null !== $parentCat ? 99 : $prio++, 'name' => (string) $def['title'], 'status' => 1])->id;
             $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', ['fluid', $id]);
             $ids[$slug] = $id;
             if (!empty($def['blog'])) {
@@ -143,12 +158,12 @@ final class DemoCommand extends AbstractCommand
         }
 
         // 2. Blöcke – Links auf Demo-Seiten (/kontakt) werden zu redaxo://ID
-        $mapLinks = static function (mixed $v) use (&$mapLinks, $ids): mixed {
+        $mapLinks = static function (mixed $v) use (&$mapLinks, $ids, $existing): mixed {
             if (is_array($v)) {
                 return array_map($mapLinks, $v);
             }
-            if (is_string($v) && preg_match('~^/([a-z0-9-]+)(#[\w-]+)?$~', $v, $m) && isset($ids[$m[1]])) {
-                return 'redaxo://' . $ids[$m[1]] . ($m[2] ?? '');
+            if (is_string($v) && preg_match('~^/([a-z0-9-]+)(#[\w-]+)?$~', $v, $m) && null !== ($target = $ids[$m[1]] ?? $existing($m[1]))) {
+                return 'redaxo://' . $target . ($m[2] ?? '');
             }
 
             return $v;
