@@ -44,6 +44,7 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Demo-Bilder des Kits in den Medienpool übernehmen (vorhandene bleiben)')] bool $media = false,
         #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …; auf einer Website mit Seiten nur die Vorlage')] string $design = '',
         #[Option(name: 'kit', description: 'Kit, für das --design gilt (Standard: das gewählte), z. B. native')] string $designKit = '',
+        #[Option(name: 'lang', description: 'Übersetzung der vorhandenen Demo-Seiten anlegen (Sprachcode, z. B. en; Texte aus demo-{set}.{code}.php)')] string $translate = '',
     ): int {
         if ($media) {
             $io->note(self::media());
@@ -64,7 +65,7 @@ final class DemoCommand extends AbstractCommand
             $io->note('Design zurückgesetzt.');
         }
         $sql = Sql::factory();
-        if ('' !== $page) {
+        if ('' !== $page || '' !== $translate) {
             $force = true;
             $replace = false;
         }
@@ -126,6 +127,10 @@ final class DemoCommand extends AbstractCommand
 
             return isset($row[0]) ? (int) $row[0]['article_id'] : null;
         };
+        if ('' !== $translate) {
+            return self::translate($io, $set, $translate, $demo['pages'], $all, $existing, $kit, (array) ($demo['yform'] ?? []));
+        }
+
         // 1. Seiten: Menüpunkte als Kategorien, alle übrigen als Artikel auf oberster Ebene
         $prio = 1 + (int) ($sql->getArray('SELECT MAX(priority) AS p FROM rex_category')[0]['p'] ?? 0);
         foreach ($demo['pages'] as $def) {
@@ -250,6 +255,140 @@ final class DemoCommand extends AbstractCommand
     ];
 
     /** Demo-Inhalte des gewählten Kits (oder seines Eltern-Kits): demo.php bzw. demo-redaxo6.php */
+    /**
+     * Übersetzung der vorhandenen Demo-Seiten (--lang=en): Sprache anlegen, falls nötig, je Seite Titel setzen und online
+     * schalten (über den Core, damit Adressen entstehen), Blöcke dieser Sprache neu anlegen – Texte aus
+     * demo-{set}.{code}.php (deutsch → Übersetzung). Technische Werte (Varianten, Links, Code, Feldnamen …) bleiben.
+     *
+     * @param list<array<string, mixed>> $pages
+     * @param list<array<string, mixed>> $all
+     * @param callable(string): ?int $existing
+     * @param array<string, array{rows?: list<array<string, mixed>>}> $yform Beispiel-Datensätze: Tabellen mit Feld „Sprache“ (FluidLanguage) bekommen
+     *                                                                    übersetzte Einträge; vorhandene ohne Sprache die Startsprache
+     */
+    private static function translate(SymfonyStyle $io, string $set, string $code, array $pages, array $all, callable $existing, Kit $kit, array $yform = []): int
+    {
+        $file = \dirname(self::demoFile($set)) . '/demo-' . ('redaxo6' === $set ? 'redaxo6' : 'fluid') . '.' . $code . '.php';
+        if (!is_file($file)) {
+            $io->error('Keine Übersetzung: ' . $file);
+
+            return Command::FAILURE;
+        }
+        /** @var array<string, string> $map */
+        $map = require $file;
+        $language = array_find(Language::getAll(), static fn (Language $l) => $l->code === $code)
+            ?? \Redaxo\Core\Language\LanguageHandler::add(['code' => $code, 'name' => 'en' === $code ? 'English' : $code, 'status' => true]);
+        $lang = $language->id;
+        $skip = ['type', 'variant', 'icon', 'image', 'link', 'button_link', 'button2_link', 'more_link', 'ratio', 'split', 'size', 'lang', 'code', 'file', 'name',
+            'title_field', 'image_field', 'text_field', 'sort_field', 'filter_field', 'sort_dir', 'meta_field', 'filter_value', 'mail_to', 'form_name', 'options',
+            'module', 'value', 'client', 'place', 'date', 'year', 'background', 'online'];
+        $tr = static function (mixed $v, string $key = '') use (&$tr, $map, $skip): mixed {
+            if (is_array($v)) {
+                $out = [];
+                foreach ($v as $k => $x) {
+                    $out[$k] = $tr($x, is_string($k) ? $k : $key);
+                }
+
+                return $out;
+            }
+
+            return is_string($v) && !in_array($key, $skip, true) && isset($map[$v]) ? $map[$v] : $v;
+        };
+        $ids = [];
+        foreach ($all as $p) {
+            if (null !== ($id = $existing((string) $p['slug']))) {
+                $ids[(string) $p['slug']] = $id;
+            }
+        }
+        $mapLinks = static function (mixed $v) use (&$mapLinks, $ids): mixed {
+            if (is_array($v)) {
+                return array_map($mapLinks, $v);
+            }
+
+            return is_string($v) && preg_match('~^/([a-z0-9-]+)(#[\w-]+)?$~', $v, $m) && isset($ids[$m[1]]) ? 'redaxo://' . $ids[$m[1]] . ($m[2] ?? '') : $v;
+        };
+        $moduleKey = static fn (string $type): ?string => array_find([$kit->key() . '.' . $type, 'fluid.' . $type], static fn (string $k) => null !== BlockModule::classFor($k));
+        $pagesDone = 0;
+        $count = 0;
+        foreach ($pages as $def) {
+            $id = $ids[(string) $def['slug']] ?? null;
+            if (null === $id) {
+                $io->note('Seite „' . $def['title'] . '“ gibt es nicht – übersprungen.');
+                continue;
+            }
+            $title = $map[(string) $def['title']] ?? (string) $def['title'];
+            if (\Redaxo\Core\Content\Category::get($id, $lang)) {
+                CategoryHandler::edit($id, $lang, ['name' => $title]);
+                CategoryHandler::changeStatus($id, $lang, 1);
+            } else {
+                ArticleHandler::edit($id, $lang, ['name' => $title]);
+                ArticleHandler::changeStatus($id, $lang, 1);
+            }
+            // Adresse aus dem übersetzten Titel (sonst bliebe der deutsche Teil, den die Sprache beim Anlegen übernommen hat)
+            if (empty($def['is_home'])) {
+                \FriendsOfRedaxo\Fluid\Routing\Routes::setSlug($id, $lang, $title);
+            }
+            // vorhandene Blöcke dieser Sprache ersetzen (beide Fassungen)
+            Sql::factory()->setQuery('DELETE FROM rex_article_slice WHERE article_id = ? AND language_id = ?', [$id, $lang]);
+            foreach ($def['blocks'] ?? [] as $block) {
+                $key = $moduleKey((string) $block['type']);
+                if (null === $key) {
+                    continue;
+                }
+                $slices = [[$key, $block['data'] ?? [], $block['tunes'] ?? []]];
+                foreach ($block['children'] ?? [] as [$col, $child]) {
+                    $slices[] = [$moduleKey((string) $child['type']) ?? 'fluid.' . $child['type'], $child['data'] ?? [], ['col' => $col] + ($child['tunes'] ?? [])];
+                }
+                foreach ($slices as [$k, $data, $tunes]) {
+                    foreach (array_unique([ArticleRevision::LIVE, FluidAddon::revision()]) as $rev) {
+                        ContentHandler::addSlice($id, $lang, 1, $k, BlockModule::store($mapLinks($tr($data)), $tunes), revision: $rev);
+                    }
+                    ++$count;
+                }
+            }
+            if (isset($def['post']) && ($art = \Redaxo\Core\Content\Article::get($id, $lang))) {
+                $post = (array) $tr($def['post']);
+                \FriendsOfRedaxo\Fluid\PageSettings::save($art, $title, true, (string) ($post['excerpt'] ?? ''), (string) ($post['image'] ?? ''), false);
+                \FriendsOfRedaxo\Fluid\Blog\Blog::saveMeta($art, (string) ($post['date'] ?? date('Y-m-d')), (string) ($post['author'] ?? ''), (string) ($post['tags'] ?? ''));
+            }
+            ArticleCache::delete($id);
+            ++$pagesDone;
+        }
+        // Beispiel-Datensätze (YForm): Einträge in der Sprache anlegen
+        $notes = [];
+        if ([] !== $yform && YFormBridge::available()) {
+            $startCode = Language::get(Language::getStartId())?->code ?? '';
+            foreach ($yform as $name => $t) {
+                $table = \Yakamara\YForm\Table\Tables::find((string) $name);
+                $langField = $table ? array_find($table->getFields(), static fn ($f) => $f instanceof \FriendsOfRedaxo\Fluid\Data\FluidLanguage) : null;
+                if (!$table || !$langField || [] === ($t['rows'] ?? [])) {
+                    continue;
+                }
+                $col = $langField->name;
+                // vorhandene Einträge ohne Sprache gehören zur Startsprache (sonst stünden sie in jeder Sprache)
+                Sql::factory()->setQuery('UPDATE `' . $table->name . '` SET `' . $col . '` = ? WHERE `' . $col . '` = \'\' OR `' . $col . '` IS NULL', [$startCode]);
+                if ($table::query()->where($col, $code)->exists()) {
+                    continue;
+                }
+                foreach ($t['rows'] as $row) {
+                    $rec = $table->newRecord();
+                    foreach ((array) $tr($row) as $k => $v) {
+                        $rec->set((string) $k, $table->getField((string) $k) instanceof \Yakamara\YForm\Field\Date && \is_string($v) ? new \DateTimeImmutable($v) : $v);
+                    }
+                    $rec->set($col, $code);
+                    $rec->save();
+                }
+                $notes[] = \count($t['rows']) . ' in ' . $name;
+            }
+        }
+
+        \FriendsOfRedaxo\Fluid\Routing\Routes::rebuild();
+        Cache::delete();
+        $io->success(sprintf('%s: %d Seiten mit %d Blöcken übersetzt.%s', $language->name, $pagesDone, $count, $notes ? ' Datensätze: ' . implode(', ', $notes) . '.' : ''));
+
+        return Command::SUCCESS;
+    }
+
     private static function demoFile(string $set): string
     {
         $name = 'redaxo6' === $set ? 'demo-redaxo6.php' : 'demo.php';

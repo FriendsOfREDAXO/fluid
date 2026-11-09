@@ -354,6 +354,149 @@ CODE,
   </div>
 </div>
 CODE,
+    'beModule' => <<<'CODE'
+<?php
+
+namespace Project\Module;
+
+use Override;
+use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\Content\Module;
+use Redaxo\Core\Form\Field\Choice;
+use Redaxo\Core\Form\Field\Text;
+use Redaxo\Core\Form\Form;
+use Redaxo\Core\View\Component\Breakpoint;
+use Redaxo\Core\View\Component\Grid;
+use Redaxo\Core\View\Component\GridColumn;
+use Redaxo\Core\View\Component\GridColumnRule;
+
+use function Redaxo\Core\View\escape;
+
+#[AsModule('hero', 'Einstieg')]
+final class HeroModule extends Module
+{
+    #[Text('Überschrift', required: true)]
+    public string $headline = '';
+
+    #[Text('Unterzeile')]
+    public string $subline = '';
+
+    #[Choice('Hintergrund', ['light' => 'hell', 'dark' => 'dunkel'])]
+    public string $background = 'light';
+
+    // Eigene Anordnung: Überschrift und Unterzeile ab mittlerer Breite nebeneinander, der Rest darunter
+    #[Override]
+    public function input(Form $form): string
+    {
+        $half = [new GridColumnRule(Breakpoint::Md, width: 6)];
+
+        return new Grid([
+            new GridColumn($form->row('headline'), $half),
+            new GridColumn($form->row('subline'), $half),
+        ])->render() . $form->rest();
+    }
+
+    public function output(): string
+    {
+        return '<header class="hero hero--' . escape($this->background) . '"><h1>' . escape($this->headline) . '</h1><p>' . escape($this->subline) . '</p></header>';
+    }
+}
+CODE,
+    'beMarkup' => <<<'CODE'
+<div class="rex-field">
+    <label class="rex-field-label" for="teaser-title">
+        Überschrift <span class="rex-field-required" aria-hidden="true">*</span>
+    </label>
+    <div class="rex-field-control">
+        <input class="rex-input" type="text" id="teaser-title" name="title" required>
+        <p class="rex-field-note">Kurz und knapp.</p>
+    </div>
+</div>
+
+<div class="rex-field">
+    <label class="rex-field-label" for="teaser-url">Link</label>
+    <div class="rex-field-control">
+        <div class="rex-input-group">
+            <span class="rex-input-group-text">https://</span>
+            <input class="rex-input" type="text" id="teaser-url" name="url">
+        </div>
+    </div>
+</div>
+
+<div class="rex-check">
+    <label><input type="checkbox" name="menu" value="1"> Im Menü zeigen</label>
+</div>
+
+<button type="submit" class="rex-button" data-variant="primary">Speichern</button>
+<button type="submit" class="rex-button" data-variant="danger" data-confirm="Wirklich löschen?">Löschen</button>
+CODE,
+    'beSection' => <<<'CODE'
+use Redaxo\Core\View\Component\Section;
+use Redaxo\Core\View\Html;
+
+// Kasten mit Titel, Inhalt mit Abstand (body) oder ohne (content, z. B. eine Tabelle)
+echo new Section(title: 'Einstellungen', body: Html::raw($formHtml))->render();
+echo new Section(title: 'Einträge', content: Html::raw('<table class="rex-table" data-hover>…</table>'))->render();
+CODE,
+    'beCss' => <<<'CODE'
+/* Eigene Komponente mit eigenem Präfix – Farben nur über die Tokens des Cores,
+   dann passt sie automatisch zu hell und dunkel */
+.project-preview {
+    padding: 15px;
+    border: 1px solid var(--rex-color-border);
+    background: var(--rex-color-surface-muted);
+    color: var(--rex-color-text);
+}
+
+.project-preview__hint {
+    color: var(--rex-color-text-muted);
+}
+CODE,
+    'beAssets' => <<<'CODE'
+<?php
+
+namespace Project;
+
+use Override;
+use Redaxo\Core\AbstractProject;
+use Redaxo\Core\Core;
+use Redaxo\Core\View\Asset;
+
+final class Project extends AbstractProject
+{
+    #[Override]
+    public function boot(): void
+    {
+        // Eigene Stile und Skripte fürs Backend – als Dateien, nie inline (Content-Security-Policy)
+        if (Core::isBackend()) {
+            Asset::addCssFile('/assets/project/backend.css');
+            Asset::addJsFile('/assets/project/backend.js');
+        }
+    }
+}
+CODE,
+    'beJs' => <<<'CODE'
+// Läuft für die Seite und für Markup, das später kommt (Overlays, neue Einträge einer Wiederholgruppe)
+const init = (root) => {
+    root.querySelectorAll('textarea[data-count]').forEach((field) => {
+        if (field.dataset.countReady) {
+            return;
+        }
+        field.dataset.countReady = '1';
+        const note = document.createElement('p');
+        note.className = 'rex-field-note';
+        const update = () => {
+            note.textContent = `${field.value.length} / ${field.dataset.count} Zeichen`;
+        };
+        field.after(note);
+        field.addEventListener('input', update);
+        update();
+    });
+};
+
+init(document);
+document.addEventListener('rex:ready', (event) => init(event.target));
+CODE,
 ];
 $c = static fn (string $key, string $file, string $lang): array => ['file' => $file, 'lang' => $lang, 'code' => $code[$key]];
 
@@ -549,6 +692,36 @@ return [
                         ['icon' => 'puzzle-piece', 'title' => 'Übergang für AddOns', 'text' => 'AddOns mit Bootstrap-Markup können übergangsweise eine Kompatibilitätsschicht laden – sie entfällt mit REDAXO 7.', 'link_label' => '', 'link' => ''],
                     ],
                 ]],
+                ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'standard', 'eyebrow' => 'Für Entwickler', 'title' => 'Module und Formulare gestalten', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p>Das Backend bringt fertige Bausteine mit: Feldzeilen, Eingaben, Knöpfe, Kästen, Tabellen und ein Raster. Wer sie nutzt, muss fast nichts selbst gestalten – und bekommt hell, dunkel, Tastaturbedienung und Barrierefreiheit gleich mit.</p>'
+                        . '<ul><li><strong>Am einfachsten:</strong> Felder als Attribute im Modul – das Formular kommt komplett vom Core.</li>'
+                        . '<li><strong>Eigenes Markup:</strong> die Klassen des Cores (<code>rex-field</code>, <code>rex-input</code>, <code>rex-button</code> …) statt eigener.</li>'
+                        . '<li><strong>Eigene Komponenten:</strong> mit eigenem Präfix und den Farb-Variablen des Cores (<code>--rex-color-…</code>).</li>'
+                        . '<li><strong>Nicht:</strong> Klassen des Cores überschreiben, <code>style="…"</code>, Inline-Skripte oder <code>onclick</code> – die Content-Security-Policy blockiert sie.</li></ul>',
+                ]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Felder als Attribute, eigene Anordnung', 'intro' => 'Ohne input() stehen alle Felder untereinander. Mit input() lassen sich einzelne Zeilen ins Raster setzen; $form->rest() gibt die übrigen aus.', 'note' => 'Weitere Bausteine: $form->widget() (nur die Eingabe), $form->label() (nur das Label).',
+                    'items' => [
+                        $c('beModule', 'src/Module/HeroModule.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eigenes Markup mit den Klassen des Cores', 'intro' => 'So sieht das Markup aus, das der Core selbst erzeugt. Ab 992 px steht das Label links, darunter darüber.', 'note' => 'data-confirm fragt vor dem Absenden nach – ohne eigenes JavaScript.',
+                    'items' => [
+                        $c('beMarkup', 'Modul-Eingabe oder Backend-Seite', 'html'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Kästen und Tabellen auf eigenen Seiten', 'intro' => '', 'note' => '',
+                    'items' => [
+                        $c('beSection', 'Backend-Seite eines AddOns', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eigene Komponente, eigene Dateien', 'intro' => 'Stile und Skripte kommen als Dateien ins Backend. Rundungen wie der Core: Felder und Kästen eckig, nur Knöpfe und Dialoge leicht gerundet.', 'note' => '',
+                    'items' => [
+                        $c('beCss', 'public/assets/project/backend.css', 'css'),
+                        $c('beAssets', 'src/Project.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'JavaScript für Markup, das später kommt', 'intro' => 'Overlays und Wiederholgruppen fügen Markup nachträglich ein. Der Core meldet das mit dem Ereignis rex:ready am neuen Element – kein jQuery nötig.', 'note' => '',
+                    'items' => [
+                        $c('beJs', 'public/assets/project/backend.js', 'js'),
+                    ]]],
                 ['type' => 'faq', 'data' => [
                     'variant' => 'stacked', 'eyebrow' => 'Fragen', 'title' => 'Fragen zum neuen Backend', 'intro' => '',
                     'items' => [
@@ -709,7 +882,7 @@ return [
                         . '<li><strong>Echte Slices:</strong> Jeder Block ist ein Slice – auch die Blöcke in Layout-Spalten. Modulrechte, Arbeitsversion, Historie, Online/Offline und das Backend gelten wie immer.</li>'
                         . '<li><strong>Native Werte:</strong> Gespeichert wird wie bei jedem Modul des Cores in der JSON-Spalte data des Slices (Felder und Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
                         . '<li><strong>Wiederholgruppen eingebaut:</strong> Einträge hinzufügen, sortieren, entfernen – im Backend und in der Seitenleiste gleich.</li>'
-                        . '<li><strong>Medienpool und Linkmap:</strong> Die Auswahl öffnet die echten REDAXO-Popups; Links auf Artikel bleiben als redaxo://ID gültig, auch wenn der Artikel umzieht.</li>'
+                        . '<li><strong>Medienpool und Linkmap:</strong> Die Auswahl öffnet Medienpool und Linkmap des Cores als Overlay; Links auf Artikel bleiben als redaxo://ID gültig, auch wenn der Artikel umzieht.</li>'
                         . '<li><strong>Kit mit Design-System:</strong> Blöcke, Template und CSS gehören zusammen – mit Style-Editor und Vorlagen.</li></ul>',
                 ]],
                 ['type' => 'layout', 'data' => ['preset' => '1-1', 'valign' => 'stretch', 'gap' => 'normal', 'stack' => 'default', 'reverse' => false],
@@ -843,7 +1016,7 @@ return [
                 ]]],
                 ['type' => 'tabs', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'top', 'eyebrow' => 'Für wen', 'title' => 'Ein System, drei Blickwinkel', 'intro' => '', 'items' => [
                     ['label' => 'Redaktion', 'text' => '<p>Sehen, was man ändert: Text direkt auf der Seite, alle Felder in der Seitenleiste, Bilder aus dem Medienpool, Links über die Linkmap. Änderungen landen im Entwurf – erst „Veröffentlichen“ bringt sie live.</p>', 'image' => 'fluid-bearbeiten-datensatz.jpg'],
-                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in value1/value2 – keine eigenen Tabellen.</p>', 'image' => 'fluid-yform-maske.jpg'],
+                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in der Spalte data des Slices – keine eigenen Tabellen.</p>', 'image' => 'fluid-yform-maske.jpg'],
                     ['label' => 'Agentur', 'text' => '<p>Kits mit Design-System und Vorlagen: ein Projekt schnell auf das Erscheinungsbild der Kundschaft bringen – und die Redaktion pflegt danach selbst.</p>', 'image' => 'fluid-website.jpg'],
                 ]]],
                 ['type' => 'pricing', 'data' => ['variant' => 'cards', 'eyebrow' => 'Mitmachen', 'title' => 'Drei Wege zu fluid', 'intro' => 'Open Source unter MIT-Lizenz – Beispielwege, keine Preisliste.', 'items' => [
