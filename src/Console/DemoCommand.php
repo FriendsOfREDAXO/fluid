@@ -210,6 +210,13 @@ final class DemoCommand extends AbstractCommand
         'fluid-yform-maske.jpg' => ['Eingabemaske von YForm', 'Eingabemaske eines Projekts im REDAXO-Backend (YForm) mit Bild, Kurztext und den Blöcken der Fallstudie'],
         'fluid-backend-status.jpg' => ['Statusseite im Backend', 'Statusseite von fluid im REDAXO-Backend mit Prüfungen und Wartung'],
         'fluid-design.jpg' => ['Design-Leiste', 'Startseite im Bearbeiten-Modus, rechts die Design-Leiste mit den Vorlagen zum Wechseln'],
+        'redaxo6-backend-struktur.jpg' => ['Backend: Struktur', 'Strukturverwaltung im Backend von REDAXO 6 mit Kategorien, Artikeln, Status und Funktionen'],
+        'redaxo6-backend-inhalte.jpg' => ['Backend: Artikel bearbeiten', 'Artikel im Backend von REDAXO 6: Arbeitsversion, „Block hinzufügen“ und ein Block mit seiner Leiste, rechts die Metadaten'],
+        'redaxo6-backend-block-hell.jpg' => ['Backend: Block bearbeiten (hell)', 'Formular eines Blocks im Backend von REDAXO 6 im hellen Farbschema'],
+        'redaxo6-backend-block-dunkel.jpg' => ['Backend: Block bearbeiten (dunkel)', 'Formular eines Blocks im Backend von REDAXO 6 im dunklen Farbschema'],
+        'redaxo6-backend-medienpool.jpg' => ['Backend: Medienpool im Overlay', 'Medienpool als Overlay über dem Backend von REDAXO 6, mit Sprachumschaltung und Medienliste'],
+        'redaxo6-backend-linkmap.jpg' => ['Backend: Linkmap', 'Linkmap als Overlay mit Kategorien links und Artikeln rechts'],
+        'redaxo6-backend-mobil.jpg' => ['Backend auf dem Telefon', 'Strukturverwaltung von REDAXO 6 auf einem schmalen Bildschirm mit eingeklapptem Menü'],
     ];
 
     /** Demo-Inhalte des gewählten Kits (oder seines Eltern-Kits): demo.php bzw. demo-redaxo6.php */

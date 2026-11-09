@@ -188,6 +188,65 @@ return [
             ],
         ],
 
+        // ------------------------------------------------------------------ Backend
+        [
+            'slug' => 'backend', 'title' => 'Backend', 'menu' => true,
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
+                    'title' => 'Das neue Backend von REDAXO 6', 'text' => 'Ein Rundgang mit Screenshots: Struktur, Blöcke, Medienpool, Linkmap, hell und dunkel, auf dem Telefon.']],
+                ['type' => 'richtext', 'data' => [
+                    'variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>Noch in Arbeit:</strong> Das Backend von REDAXO 6 wird gerade gebaut. Die Bilder zeigen den Stand vom November 2026 (Branch 6.x von redaxo/core) – Aussehen und Details können sich bis zur Veröffentlichung noch ändern.</p>'
+                        . '<p>Lange lief auch das Backend von REDAXO 6 noch auf Bootstrap 3 und jQuery. Seit dem Umbau Ende Oktober 2026 ist es frei davon: eigene Komponenten, Farben über CSS-Variablen, ohne Sass.</p>',
+                ]],
+                ['type' => 'media_text', 'data' => ['variant' => 'left', 'eyebrow' => 'Struktur', 'title' => 'Vertraut, nur aufgeräumter',
+                    'text' => '<p>Kategorien und Artikel, Sprachen, Status und Funktionen stehen da, wo REDAXO-Nutzer sie erwarten. Neu sind ruhigere Flächen, klare Linien und die Navigation mit Hauptmenü, AddOns und eigenen Bereichen.</p>',
+                    'list' => '', 'image' => 'redaxo6-backend-struktur.jpg', 'ratio' => '16:9', 'split' => 'media']],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Inhalte', 'title' => 'Blöcke statt Slice-Liste von früher',
+                    'text' => '<p>Ein Artikel besteht aus Blöcken (Slices). „Block hinzufügen“ öffnet die Auswahl der erlaubten Module; jeder Block hat seine Leiste zum Bearbeiten, Löschen, Online/Offline und Verschieben.</p>',
+                    'list' => "Arbeitsversion und Liveversion\nHistorie der Inhalte\nMetadaten in der Seitenleiste", 'image' => 'redaxo6-backend-inhalte.jpg', 'ratio' => '16:9', 'split' => 'media']],
+                ['type' => 'cards', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'image', 'eyebrow' => 'Hell und dunkel', 'title' => 'Ein Backend, zwei Farbschemata',
+                    'intro' => 'Das Backend folgt der Einstellung des Systems – oder jeder legt im eigenen Profil hell oder dunkel fest. Hier dasselbe Formular eines Blocks in beiden Varianten.',
+                    'size' => 'l', 'ratio' => '16:9', 'more_label' => '', 'more_link' => '',
+                    'items' => [
+                        ['image' => 'redaxo6-backend-block-hell.jpg', 'eyebrow' => '', 'title' => 'Hell', 'text' => 'Block bearbeiten: Felder, Hinweise und Knöpfe im hellen Schema.', 'link_label' => '', 'link' => ''],
+                        ['image' => 'redaxo6-backend-block-dunkel.jpg', 'eyebrow' => '', 'title' => 'Dunkel', 'text' => 'Dasselbe Formular im dunklen Schema – mit gedämpftem Grün für Bearbeiten-Bereiche.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'media_text', 'data' => ['variant' => 'left', 'eyebrow' => 'Medienpool', 'title' => 'Medienpool im Overlay – und mehrsprachig',
+                    'text' => '<p>Der Medienpool öffnet sich als Overlay über der Seite statt in einem eigenen Fenster. Titel und Beschreibungen der Medien lassen sich jetzt je Sprache pflegen – die Sprachumschaltung steht direkt über der Liste.</p>',
+                    'list' => "Kein Popup-Fenster mehr\nTitel und Alt-Text je Sprache\nAuswahl mehrerer Dateien", 'image' => 'redaxo6-backend-medienpool.jpg', 'ratio' => '16:9', 'split' => 'media']],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Linkmap', 'title' => 'Seiten wählen in zwei Spalten',
+                    'text' => '<p>Auch die Linkmap kommt als Overlay: links die Kategorien, rechts die Artikel der gewählten Kategorie. Overlays lassen sich stapeln – etwa der Medienpool aus einem Formular in einem Overlay heraus.</p>',
+                    'list' => '', 'image' => 'redaxo6-backend-linkmap.jpg', 'ratio' => '16:9', 'split' => 'media']],
+                ['type' => 'media_text', 'data' => ['variant' => 'left', 'eyebrow' => 'Unterwegs', 'title' => 'Auch auf dem Telefon bedienbar',
+                    'text' => '<p>Auf schmalen Bildschirmen klappt das Menü ein, und Tabellen stellen ihre Zeilen untereinander dar. So bleibt die Struktur auch auf dem Telefon lesbar.</p>',
+                    'list' => '', 'image' => 'redaxo6-backend-mobil.jpg', 'ratio' => '3:4', 'split' => 'text']],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Unter der Haube', 'title' => 'Was technisch neu ist', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'code', 'title' => 'Ohne Bootstrap und jQuery', 'text' => 'Eigene Komponenten mit eigenem JavaScript – seit dem Umbau Ende Oktober 2026 ohne Bootstrap, jQuery und Sass.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'paint-brush', 'title' => 'Farben als CSS-Variablen', 'text' => 'Hell und dunkel aus denselben Variablen – AddOns nutzen sie und passen sich automatisch an.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'app-window', 'title' => 'Overlays statt Popups', 'text' => 'Medienpool, Linkmap und andere Seiten öffnen sich in gestapelten Dialogen im selben Fenster.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'shield-check', 'title' => 'Content-Security-Policy', 'text' => 'Die Backend-Seiten senden eine CSP: Skripte und Styles nur aus erlaubten Quellen.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'fingerprint', 'title' => 'Anmelden mit Passkey', 'text' => 'Neben dem Passwort geht die Anmeldung auch mit Passkeys (WebAuthn).', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'puzzle-piece', 'title' => 'Übergang für AddOns', 'text' => 'AddOns mit Bootstrap-Markup können übergangsweise eine Kompatibilitätsschicht laden – sie entfällt mit REDAXO 7.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'faq', 'data' => [
+                    'variant' => 'stacked', 'eyebrow' => 'Fragen', 'title' => 'Fragen zum neuen Backend', 'intro' => '',
+                    'items' => [
+                        ['q' => 'Ist das Backend fertig?', 'a' => '<p>Nein. Es entsteht im Branch 6.x von redaxo/core und ändert sich laufend. Diese Seite zeigt einen Zwischenstand.</p>'],
+                        ['q' => 'Laufen meine AddOns aus REDAXO 5 im neuen Backend?', 'a' => '<p>AddOns müssen für REDAXO 6 ohnehin angepasst werden (Namespaces, Composer). Für Backend-Seiten mit Bootstrap-Markup gibt es übergangsweise eine Kompatibilitätsschicht; besser ist es, gleich die Komponenten des Cores zu nutzen.</p>'],
+                        ['q' => 'Wo kann ich mitreden?', 'a' => '<p>Im Repository redaxo/core auf GitHub – mit Issues und Pull Requests gegen den Branch 6.x.</p>'],
+                    ],
+                ]],
+                $cta,
+            ],
+        ],
+
         // ------------------------------------------------------------------ Bearbeiten
         [
             'slug' => 'bearbeiten', 'title' => 'Bearbeiten', 'menu' => true,
