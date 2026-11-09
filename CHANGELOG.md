@@ -6,6 +6,27 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Für Redakteure
 
+- Datensätze aus YForm auf der Website bearbeiten:
+  - „Eintrag bearbeiten“ und „+ Neuer Eintrag“ öffnen die Maske von YForm im Overlay statt in einem Popup-Fenster.
+    „Speichern“ schließt es und gibt den Block neu aus, „Übernehmen“ bleibt in der Maske.
+  - In der Detailansicht lassen sich Titel und Felder direkt auf der Seite ändern: Text, Internetadresse, E-Mail, Datum,
+    Uhrzeit, Zahl, Auswahl, Ja/Nein, Bild (Medienpool) und Seitenlink (Linkmap). Gespeichert wird sofort, mit den Prüfungen
+    von YForm; Esc nimmt eine Änderung zurück. Ein geänderter Titel ändert die Adresse der Detailseite.
+  - Auf einer Detailseite bleiben „Bearbeiten“, „Ansehen“ und „Arbeitsversion“ in der Leiste beim Eintrag (vorher Sprung
+    zur Liste); Blöcke werden mit dem Eintrag neu ausgegeben.
+  - Der Knopf „Eintrag bearbeiten“ sitzt an Karten unten – die Bildwerkzeuge verdeckten ihn.
+  - Weiterleitungen wegen eines geänderten Titels speichert der Browser nicht mehr (ein zurückbenannter Eintrag führte
+    sonst in eine Schleife).
+- YForm-Einträge mit Sprache (Feld `FluidLanguage`): Datenliste, Detailansicht und Sitemap zeigen nur Einträge der
+  Seitensprache und solche ohne Sprache.
+- Formulare aus YForm übernehmen die Breiten des Layouts (Designer oder `layout()`) auch auf der Website.
+- Formular-Baukasten: Felder Uhrzeit, Datum und Uhrzeit, Kommazahl.
+- Block „Code“ für Codebeispiele (eine oder mehrere Dateien, mit Kopier-Knopf); `<code>` im Rich Text.
+- Menü ⋯ → „Abmelden“: meldet aus REDAXO ab, die Seite bleibt als Besucher offen.
+- Menü-Blatt (Off-Canvas) mit Unterseiten zum Aufklappen, wie in KLXM Studio (vorher nur die erste Ebene).
+- Kopf: Der aktive Eintrag im Untermenü ist auf farbigem Kopf lesbar; die Kopfzeile misst nach dem Laden der Webschriften
+  neu (Menü und Menü-Knopf wechselten sonst zufällig).
+- Die Knöpfe der Hinweis-Leiste wirken auch in der Ansicht (z. B. „Zurücksetzen“ und „Demo beenden“ von `fluid_demo`).
 - Block-Formulare im Backend im Stil von REDAXO 6: Felder, Auswahllisten, Checkboxen und Knöpfe des Cores,
   Wiederholgruppen wie die Sammelfelder des Cores (Kopfzeile mit Titel und Knopfgruppe, aufklappbar), Farben passend
   zum hellen und dunklen Theme.
@@ -81,6 +102,18 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Installation
 
+- Demo „REDAXO 6“ (`fluid:demo --set=redaxo6`): Bereich „REDAXO 6“ (Was sich ändert, Technik, Backend, Projekt anlegen,
+  Module und Templates, YForm, Navigation) und Bereich „fluid“ (Bearbeiten, Bausteine, fluid-Projekt, Eigenes Kit), mit
+  Codebeispielen und Screenshots; englische Fassung aller Seiten und Datensätze mit `--lang=en`
+  (Texte in `demo-redaxo6.en.php`). Auf der Startseite der Trailer, wenn die Datei im Medienpool liegt.
+- `fluid:demo`:
+  - `--page=…` hängt einzelne Seiten an und verschiebt vorhandene an ihre Stelle, `--update` befüllt sie neu.
+  - `--media-dir=…` übernimmt weitere Dateien in den Medienpool (z. B. einen Trailer, der nicht zum Kit gehört);
+    `--media` und `--media-dir` allein scheitern auf einer Website mit Seiten nicht mehr.
+  - Mit `--page=start` wird die vorhandene Startseite neu befüllt; vorher entstand ein zweiter Startartikel, der
+    Start- und 404-Seite wurde.
+  - Website-Einstellungen, die auf gelöschte Seiten zeigen (z. B. die Suchseite), werden beim Import neu gesetzt.
+- Abhängigkeit `friendsofredaxo/navigation_array:6.x-dev` (per VCS, in der Anleitung und in `install-dev.sh`).
 - `install-dev.sh`: REDAXO 6, YForm 6, fluid (und image_editor) mit einem Befehl – mit kompletter Demo oder leer;
   prüft PHP, Erweiterungen und Datenbank, lädt Composer 2.9+ bei Bedarf, richtet Admin, `.env.local` und Webserver ein.
 - `fluid:demo --media --design=redaxo`; README für Einsteiger, Entwickler-Referenz in `docs/entwickler.md`.
@@ -91,6 +124,23 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Für Entwickler
 
+- Menü über [navigation_array](https://github.com/FriendsOfREDAXO/navigation_array) (Branch 6.x) statt einer eigenen
+  Klasse; fluid meldet über den Extension Point `NavigationStart` den Seitenbaum einer Landing-Domain als Start.
+- Blöcke speichern über `ContentHandler::editSlice()` des Cores (#6800) – im Editor und im MCP-Server.
+- `fluid:upgrade:slices` macht `ctype_id` optional, wenn `migrate` `content_section_id` schon angelegt hat (sonst
+  scheiterte jeder neue Block, bis `--drop-old` lief).
+- `Data\RecordInline` und die Editor-Aktion `record_field`: ein Feld eines Datensatzes über `fromInput()` und die
+  Record-API von YForm speichern. Die Maske im Overlay ist eine Seite des Cores im Popup-Modus (Parameter `fluid_frame`
+  bzw. `Sec-Fetch-Dest: iframe`, `assets/frame.css`).
+- Formular-Theme des Kits: Spaltenklassen `dff-c dff-c--{1–12}` für die Breiten des YForm-Layouts.
+- `FluidBlocks` nutzt `filterable` (die dynamische Eigenschaft `searchable` gibt es in YForm 6 nicht, in PHP 8.5
+  deprecated); Beispieltabellen mit filterbaren Feldern, damit YForm eine Suche zeigt.
+- Seite „MCP“ im Backend mit Komponenten des Cores (ohne Bootstrap; Widerrufen fragt wieder nach – `data-confirm`
+  statt `onsubmit`, das die CSP blockierte).
+- Abmelden über die Editor-Aktion `logout` (`BackendLogin`): das CSRF-Token für `rex_logout` aus dem Frontend gilt im
+  Backend nicht.
+- Entwickler-Referenz: Ein Kit als Composer-Paket muss ein AddOn sein (`redaxo-addon` mit AddOn-Klasse).
+- Beispiele `examples/yform`: `TerminTable` und `AnfrageForm` mit `layout()` im Code.
 - FrontendPicker (`Picker\FrontendPicker`, `assets/picker`): Medien- und Seitenauswahl für die Website, für jedes AddOn
   nutzbar – `FrontendPicker::head()` einbinden, im Browser `FrontendPicker.pick('media' | 'article', {…})` mit derselben
   Antwort wie `rex.pick()` im Backend. Eigenständig angelegt, damit daraus später ein eigenes AddOn werden kann.
