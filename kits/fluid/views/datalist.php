@@ -59,10 +59,16 @@ if ($row):
 <div class="wrap df df--head fdl-detail">
   <p class="df-back"><a href="<?= e($here) ?>">← <?= e(lt('Zur Übersicht')) ?></a></p>
   <header class="df-head">
-    <?php if ($metaF && ($m = YFormBridge::html($row, $metaF)) !== ''): ?><p class="df-meta"><?= $m ?></p><?php endif; ?>
+    <?php $metaInline = $metaF ? RecordInline::attrs($t, $row, $metaF) : ''; ?>
+    <?php if ($metaF && (($m = YFormBridge::html($row, $metaF)) !== '' || '' !== $metaInline)): ?><p class="df-meta"<?= $metaInline ?>><?= $m ?></p><?php endif; ?>
     <h2 class="h2 df-title"<?= $titleF ? RecordInline::attrs($t, $row, $titleF) : '' ?>><?= e($title($row)) ?></h2>
     <?= $editBtn($edit($row->id), 'Eintrag bearbeiten') ?>
-    <?php if ($img !== ''): ?><div class="df-img ratio-16-9"><?= $img ?></div><?php endif; ?>
+    <?php
+    // Bild wechseln (Medienpool) – als Knopf am Bild, damit die Bildwerkzeuge (Bearbeiten, Anpassen …) frei bleiben
+    $imgInline = $imageF ? RecordInline::attrs($t, $row, $imageF) : '';
+    $imgBtn = '' !== $imgInline ? '<button type="button" class="fdl-recimg"' . $imgInline . '>' . e('' !== $img ? 'Bild wechseln' : '+ Bild wählen') . '</button>' : '';
+    ?>
+    <?php if ($img !== ''): ?><div class="df-img ratio-16-9"><?= $img ?><?= $imgBtn ?></div><?php elseif ('' !== $imgBtn): ?><p class="df-img-empty"><?= $imgBtn ?></p><?php endif; ?>
   </header>
   <dl class="df-dl">
     <?php $blocksHtml = ''; foreach (YFormBridge::detailFields($t) as $f):

@@ -420,3 +420,13 @@ textarea[data-blocks-rte] { display: none !important; }
 .yfo__x:focus-visible { outline: 2px solid var(--accent); }
 .yfo__f { flex: 1; width: 100%; border: 0; background: var(--bg); }
 @media (max-width: 640px) { .yfo { width: 100vw; height: 100dvh; border-radius: 0; border: 0; } }
+
+/* Feld eines Datensatzes ändern (Detailansicht: Datum, Adresse, Auswahl …) */
+.recpop { position: fixed; z-index: 30; display: grid; gap: 10px; width: min(320px, calc(100vw - 16px)); padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg); color: var(--ink); box-shadow: 0 12px 32px rgb(0 0 0 / .22); }
+.recpop[hidden] { display: none; }
+.recpop__l { font-weight: 650; }
+.recpop input:not([type=checkbox]), .recpop select { box-sizing: border-box; width: 100%; min-height: 38px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font: inherit; }
+.recpop input:focus-visible, .recpop select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.recpop__opts { display: grid; gap: 6px; max-height: 50vh; overflow: auto; }
+.recpop__opts label { display: flex; gap: 8px; align-items: center; }
+.recpop__a { display: flex; justify-content: flex-end; gap: 8px; }

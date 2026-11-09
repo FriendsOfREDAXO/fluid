@@ -85,3 +85,9 @@ html.blocks-editing section[data-block].fluid-dragging { opacity: .45; }
    iOS die ganze Seite) */
 html.blocks-editing, html.blocks-editing body { overflow-x: clip; }
 @supports not (overflow: clip) { html.blocks-editing body { overflow-x: hidden; } }
+/* Datensatz in der Detailansicht: Felder, die per Klick geändert werden (Data\RecordInline) */
+html.blocks-editing [data-rec-field][data-rec-kind]:not([contenteditable]) { cursor: pointer; }
+html.blocks-editing [data-rec-field][aria-busy="true"] { opacity: .5; }
+html.blocks-editing .df-img { position: relative; }
+html.blocks-editing .fdl-recimg { position: absolute; left: .6rem; bottom: .6rem; z-index: 2; padding: .3em .8em; border: 0; border-radius: 999px; background: var(--f-ink, #111); color: var(--f-bg, #fff); font: 600 .75rem/1.4 system-ui, sans-serif; cursor: pointer; }
+html.blocks-editing .df-img-empty .fdl-recimg { position: static; }

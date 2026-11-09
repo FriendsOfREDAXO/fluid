@@ -1175,46 +1175,127 @@
       el.dataset.blocksEditable = '';
       if (el.tagName === 'A' || el.closest('a')) el.closest('a')?.addEventListener('click', (e) => e.preventDefault());
     });
-    // Textfelder eines Datensatzes (Detailansicht der Datenliste, Data\RecordInline)
+    // Felder eines Datensatzes (Detailansicht der Datenliste, Data\RecordInline): Texte direkt, alles andere per Klick
     scope.querySelectorAll('[data-rec-field]').forEach((el) => {
-      el.contentEditable = 'plaintext-only';
-      if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
-      el.spellcheck = true;
-      el.dataset.blocksEditable = '';
-      el.title = `${el.dataset.recLabel} – wird beim Verlassen des Feldes gespeichert`;
+      const text = ['text', 'multi'].includes(el.dataset.recKind);
+      if (text) {
+        el.contentEditable = 'plaintext-only';
+        if (el.contentEditable !== 'plaintext-only') el.contentEditable = 'true';
+        el.spellcheck = true;
+      }
+      if (el.tagName !== 'BUTTON') el.dataset.blocksEditable = '';
+      el.dataset.recReady = '';
+      el.title = text ? `${el.dataset.recLabel} – wird beim Verlassen des Feldes gespeichert`
+        : el.dataset.recKind === 'check' ? `${el.dataset.recLabel}: Klick schaltet um` : `${el.dataset.recLabel} ändern`;
     });
   }
 
-  // Datensätze kennen keinen Entwurf: ein Feld wird beim Verlassen sofort gespeichert (API record_field, Prüfung von
-  // YForm); Esc nimmt die Änderung zurück, Enter beendet einzeilige Felder
-  main.addEventListener('focusin', (e) => {
+  // Datensätze kennen keinen Entwurf: jede Änderung wird sofort gespeichert (API record_field, Prüfung von YForm).
+  async function recSave(el, value, rerender) {
+    const sec = el.closest('[data-block]');
+    el.setAttribute('aria-busy', 'true');
+    try {
+      const r = await api('record_field', { field: el.dataset.recField, value });
+      if (r.url) history.replaceState(history.state, '', r.url + location.search + location.hash);
+      // Datum, Bild, Auswahl …: der Block wird neu ausgegeben (Formatierung, Bild, Abhängigkeiten wie die Meta-Zeile)
+      if (rerender && sec?.isConnected) apply(await api('render', { slice: sec.dataset.block }), sec);
+      else el.innerHTML = r.html;
+      say(`„${el.dataset.recLabel}“ gespeichert.`);
+      return true;
+    } catch (err) {
+      say(err.message, true);
+      return false;
+    } finally { el.removeAttribute('aria-busy'); }
+  }
+
+  // Kleines Eingabefeld an der Stelle: Adresse, E-Mail, Datum, Zeit, Zahl, Auswahl
+  const recPop = h(`<form class="recpop" hidden role="dialog" aria-modal="false" aria-labelledby="fluid-recpop-l">
+      <label class="recpop__l" id="fluid-recpop-l"></label><div class="recpop__c"></div>
+      <div class="recpop__a"><button type="button" class="btn" data-rec-cancel>Abbrechen</button><button type="submit" class="btn btn--primary">Speichern</button></div>
+    </form>`);
+  root.append(recPop);
+  let recEl = null;
+  const recClose = () => { recPop.hidden = true; const el = recEl; recEl = null; el?.focus?.(); };
+  const INPUT = { url: 'url', email: 'email', date: 'date', datetime: 'datetime-local', time: 'time', int: 'number', dec: 'number' };
+  function recOpen(el) {
+    recEl = el;
+    const kind = el.dataset.recKind;
+    recPop.querySelector('.recpop__l').textContent = el.dataset.recLabel;
+    const box = recPop.querySelector('.recpop__c');
+    if (kind === 'choice') {
+      const opts = JSON.parse(el.dataset.recOptions || '[]');
+      const cur = JSON.parse(el.dataset.recValue || '[]');
+      box.innerHTML = 'recMany' in el.dataset
+        ? `<div class="recpop__opts">${opts.map(([v, l]) => `<label><input type="checkbox" value="${esc(v)}"${cur.includes(v) ? ' checked' : ''}> ${esc(l)}</label>`).join('')}</div>`
+        : `<select><option value="">–</option>${opts.map(([v, l]) => `<option value="${esc(v)}"${cur[0] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+    } else {
+      box.innerHTML = `<input type="${INPUT[kind]}"${kind === 'dec' ? ' step="any"' : ''}${kind === 'int' ? ' step="1"' : ''} value="${esc(el.dataset.recValue)}">`;
+    }
+    recPop.hidden = false;
+    recPlace();
+    box.querySelector('input, select')?.focus({ preventScroll: true });
+  }
+  // am Feld ausrichten (unterhalb, sonst oberhalb) – auch beim Scrollen
+  function recPlace() {
+    if (!recEl) return;
+    const r = recEl.getBoundingClientRect();
+    const w = recPop.offsetWidth, ht = recPop.offsetHeight;
+    recPop.style.left = `${Math.max(8, Math.min(r.left, innerWidth - w - 8))}px`;
+    recPop.style.top = `${r.bottom + 8 + ht < innerHeight ? r.bottom + 8 : Math.max(8, r.top - ht - 8)}px`;
+  }
+  recPop.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const el = recEl;
+    if (!el) return;
+    const kind = el.dataset.recKind;
+    const value = kind === 'choice' && 'recMany' in el.dataset
+      ? JSON.stringify([...recPop.querySelectorAll('.recpop__opts input:checked')].map((i) => i.value))
+      : recPop.querySelector('input, select').value;
+    if (await recSave(el, value, true)) recClose();
+  });
+  recPop.querySelector('[data-rec-cancel]').addEventListener('click', recClose);
+  recPop.addEventListener('keydown', (e) => { if (e.key === 'Escape') { e.stopPropagation(); recClose(); } });
+  document.addEventListener('pointerdown', (e) => { if (recEl && !e.composedPath().includes(recPop)) recClose(); }, true);
+  addEventListener('scroll', recPlace, { passive: true });
+  addEventListener('resize', recPlace);
+
+  // Klick auf ein Feld, das kein Text ist: Ja/Nein umschalten, Bild/Seite auswählen, sonst Eingabefeld
+  main.addEventListener('click', async (e) => {
     const el = e.target.closest?.('[data-rec-field]');
+    if (!el || ['text', 'multi'].includes(el.dataset.recKind)) {
+      // Links in editierbaren Texten führen beim Bearbeiten nicht weg
+      if (el && e.target.closest('a')) e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    const kind = el.dataset.recKind;
+    if (kind === 'check') { await recSave(el, el.dataset.recValue === '1' ? '0' : '1', true); return; }
+    if (kind === 'media' || kind === 'article') {
+      const picked = await window.BlocksPick?.pick(kind === 'media' ? 'media' : 'link', { types: el.dataset.recTypes ? el.dataset.recTypes.split(',') : [], value: el.dataset.recValue ? 'redaxo://' + el.dataset.recValue : '' });
+      if (picked) await recSave(el, kind === 'media' ? picked.value : picked.value.replace('redaxo://', ''), true);
+      return;
+    }
+    recOpen(el);
+  });
+
+  main.addEventListener('focusin', (e) => {
+    const el = e.target.closest?.('[data-rec-field][contenteditable]');
     if (el && el.dataset.recOrig === undefined) el.dataset.recOrig = el.innerText;
   });
   main.addEventListener('keydown', (e) => {
-    const el = e.target.closest?.('[data-rec-field]');
+    const el = e.target.closest?.('[data-rec-field][contenteditable]');
     if (!el) return;
     if (e.key === 'Escape') { e.stopPropagation(); el.innerText = el.dataset.recOrig ?? el.innerText; el.blur(); }
     else if (e.key === 'Enter' && !('recMulti' in el.dataset)) { e.preventDefault(); el.blur(); }
   });
   main.addEventListener('focusout', async (e) => {
-    const el = e.target.closest?.('[data-rec-field]');
+    const el = e.target.closest?.('[data-rec-field][contenteditable]');
     if (!el || el.dataset.recOrig === undefined) return;
     const orig = el.dataset.recOrig;
     delete el.dataset.recOrig;
-    const value = el.innerText;
-    if (value.trim() === orig.trim()) return;
-    el.setAttribute('aria-busy', 'true');
-    try {
-      const r = await api('record_field', { field: el.dataset.recField, value });
-      el.innerHTML = r.html;
-      // Titel geändert: Adresse der Detailansicht folgt (/seite/neuer-titel-ID)
-      if (r.url) history.replaceState(history.state, '', r.url + location.search + location.hash);
-      say(`„${el.dataset.recLabel}“ gespeichert.`);
-    } catch (err) {
-      el.innerText = orig;
-      say(err.message, true);
-    } finally { el.removeAttribute('aria-busy'); }
+    if (el.innerText.trim() === orig.trim()) return;
+    if (!(await recSave(el, el.innerText, false))) el.innerText = orig;
   });
 
   main.addEventListener('input', (e) => {
@@ -1230,7 +1311,7 @@
   });
 
   main.addEventListener('keydown', (e) => {
-    const el = e.target.closest?.('[data-edit], [data-rec-field]:not([data-rec-multi])');
+    const el = e.target.closest?.('[data-edit], [data-rec-field][contenteditable]:not([data-rec-multi])');
     if (el && e.key === 'Enter' && !el.dataset.editMode) e.preventDefault();
     // Einzeilige Felder: Ende/Pos1 an Ende/Anfang des ganzen Feldes – nicht der sichtbaren Zeile (große Überschriften
     // brechen um, mit Silbentrennung sogar mitten im Wort); mit Umschalt wird markiert
