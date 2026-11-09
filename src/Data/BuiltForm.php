@@ -37,7 +37,7 @@ final class BuiltForm extends FormDefinition
 {
     public const array TYPES = [
         'text' => 'Textzeile', 'email' => 'E-Mail', 'tel' => 'Telefon', 'url' => 'Internetadresse', 'textarea' => 'Mehrzeiliger Text',
-        'number' => 'Zahl', 'date' => 'Datum', 'select' => 'Auswahlliste', 'radio' => 'Auswahl (eine)', 'checkboxes' => 'Auswahl (mehrere)',
+        'number' => 'Zahl', 'decimal' => 'Kommazahl', 'date' => 'Datum', 'time' => 'Uhrzeit', 'datetime' => 'Datum und Uhrzeit', 'select' => 'Auswahlliste', 'radio' => 'Auswahl (eine)', 'checkboxes' => 'Auswahl (mehrere)',
         'checkbox' => 'Häkchen (z. B. Zustimmung)', 'info' => 'Hinweistext (kein Eingabefeld)', 'step' => '— Neuer Schritt —',
     ];
 
@@ -102,7 +102,10 @@ final class BuiltForm extends FormDefinition
                 'url' => Field\Url::new($name),
                 'textarea' => Field\Textarea::new($name),
                 'number' => Field\Integer::new($name),
+                'decimal' => Field\Decimal::new($name),
                 'date' => Field\Date::new($name),
+                'time' => Field\Time::new($name),
+                'datetime' => Field\DateTime::new($name),
                 'select' => Field\Choice::new($name)->options($options)->placeholder($ph ?: '–'),
                 'radio' => Field\Choice::new($name)->options($options)->expanded(),
                 'checkboxes' => Field\Choice::new($name)->options($options)->expanded()->multiple(),
@@ -118,10 +121,10 @@ final class BuiltForm extends FormDefinition
             if ('' !== $help) {
                 $field->notice($help);
             }
-            if ('' !== $ph && \in_array($type, ['text', 'tel'], true)) {
+            // Text, E-Mail, Internetadresse (Email und Url erben von Text) können placeholder(); Textarea nur als Attribut
+            if ('' !== $ph && $field instanceof Field\Text) {
                 $field->placeholder($ph);
-            }
-            if ('' !== $ph && \in_array($type, ['email', 'url', 'textarea'], true)) {
+            } elseif ('' !== $ph && 'textarea' === $type) {
                 $field->attributes(['placeholder' => $ph]);
             }
             yield $field;
