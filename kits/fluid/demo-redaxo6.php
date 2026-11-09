@@ -599,14 +599,6 @@ return [
         [
             'slug' => 'start', 'title' => 'Start', 'is_home' => true, 'menu' => false,
             'blocks' => [
-                // Trailer (nur wenn die Datei im Medienpool liegt – sie gehört nicht zum Kit: fluid:demo --media-dir=…)
-                ...(is_file(\Redaxo\Core\Filesystem\Path::media('fluid-trailer-redaxo6.mp4')) ? [
-                    ['type' => 'video', 'tunes' => ['background' => 'dark'], 'data' => ['variant' => 'cinema', 'eyebrow' => 'Trailer',
-                        'title' => 'fluid in fünf Minuten', 'intro' => '', 'video_url' => '', 'video_file' => 'fluid-trailer-redaxo6.mp4', 'poster' => 'fluid-trailer-redaxo6.jpg',
-                        'tracks' => [['file' => 'fluid-trailer-redaxo6.de.vtt', 'lang' => 'de', 'kind' => 'subtitles', 'label' => 'Deutsch']],
-                        'cc_on' => true, 'transcript' => false, 'ratio' => '16-9',
-                        'caption' => 'Englische Texte im Bild, deutsche Untertitel. Foto Frankfurt: Leonhard Niederwimmer / Pixabay', 'text' => '']],
-                ] : []),
                 ['type' => 'hero', 'data' => [
                     'variant' => 'type', 'eyebrow' => 'REDAXO 6 · in Entwicklung',
                     'title' => 'REDAXO im Frontend, *einfach*.',
@@ -615,6 +607,14 @@ return [
                     'button2_label' => 'Bearbeiten auf der Website', 'button2_link' => '/bearbeiten',
                     'points' => "Seit 2004 · MIT-Lizenz\nModule als PHP-Klassen\nBearbeiten im Kontext",
                 ]],
+                // Trailer direkt unter dem Einstieg (nur wenn die Datei im Medienpool liegt – sie gehört nicht zum Kit: fluid:demo --media-dir=…)
+                ...(is_file(\Redaxo\Core\Filesystem\Path::media('fluid-trailer-redaxo6.mp4')) ? [
+                    ['type' => 'video', 'tunes' => ['background' => 'dark'], 'data' => ['variant' => 'cinema', 'eyebrow' => 'Trailer',
+                        'title' => 'fluid in fünf Minuten', 'intro' => '', 'video_url' => '', 'video_file' => 'fluid-trailer-redaxo6.mp4', 'poster' => 'fluid-trailer-redaxo6.jpg',
+                        'tracks' => [['file' => 'fluid-trailer-redaxo6.de.vtt', 'lang' => 'de', 'kind' => 'subtitles', 'label' => 'Deutsch']],
+                        'cc_on' => true, 'transcript' => false, 'ratio' => '16-9',
+                        'caption' => 'Englische Texte im Bild, deutsche Untertitel. Foto Frankfurt: Leonhard Niederwimmer / Pixabay', 'text' => '']],
+                ] : []),
                 ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Ausprobieren', 'title' => 'Bilder in Form bringen',
                     'text' => '<p>Unter „Bearbeiten“ wählen Sie beim Bild das Format (16:9, 4:3, quadratisch …), die Darstellung (Bild links, rechts, randlos geteilt) und ziehen die Aufteilung zwischen Bild und Text direkt auf der Seite.</p>',
                     'list' => "Bildformat in der Seitenleiste\nAufteilung per Ziehen am Bildrand\nDarstellung oben im Block wählen",
