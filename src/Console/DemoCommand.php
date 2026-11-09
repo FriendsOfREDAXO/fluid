@@ -44,6 +44,7 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Demo-Bilder des Kits in den Medienpool übernehmen (vorhandene bleiben)')] bool $media = false,
         #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …; auf einer Website mit Seiten nur die Vorlage')] string $design = '',
         #[Option(name: 'kit', description: 'Kit, für das --design gilt (Standard: das gewählte), z. B. native')] string $designKit = '',
+        #[Option(description: 'Mit --page: vorhandene Seiten neu befüllen (ihre Blöcke in der Startsprache werden ersetzt, Seite und Adresse bleiben)')] bool $update = false,
         #[Option(name: 'lang', description: 'Übersetzung der vorhandenen Demo-Seiten anlegen (Sprachcode, z. B. en; Texte aus demo-{set}.{code}.php)')] string $translate = '',
     ): int {
         if ($media) {
@@ -156,14 +157,19 @@ final class DemoCommand extends AbstractCommand
             // 'parent' => 'slug' bei einer Menüseite: Unterseite im Menü (Kategorie in der Kategorie)
             $parentCat = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
             // Seite gibt es schon (z. B. aus einem früheren Lauf auf oberster Ebene): mit --page an die neue Stelle verschieben,
-            // Inhalte bleiben unverändert
+            // Inhalte bleiben – mit --update werden die Blöcke ersetzt
             if ('' !== $page && null !== $parentCat && null !== ($old = $existing($slug)) && null !== ($oldCat = \Redaxo\Core\Content\Category::get($old))) {
                 if ($oldCat->parentId !== $parentCat) {
                     CategoryHandler::move($old, $parentCat);
                     $io->note('„' . $def['title'] . '“ verschoben (vorhandene Inhalte bleiben).');
                 }
                 $ids[$slug] = $old;
-                $kept[$slug] = true;
+                if ($update) {
+                    Sql::factory()->setQuery('DELETE FROM rex_article_slice WHERE article_id = ? AND language_id = ?', [$old, $lang]);
+                    $io->note('„' . $def['title'] . '“ wird neu befüllt.');
+                } else {
+                    $kept[$slug] = true;
+                }
                 continue;
             }
             $id = CategoryHandler::add(['parent_id' => $parentCat, 'priority' => null !== $parentCat ? 99 : $prio++, 'name' => (string) $def['title'], 'status' => 1])->id;

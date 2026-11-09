@@ -4,10 +4,11 @@ namespace FriendsOfRedaxo\Fluid\Kit\Fluid;
 
 use FriendsOfRedaxo\Fluid\BlockModule;
 use FriendsOfRedaxo\Fluid\Kit;
+use FriendsOfRedaxo\NavigationArray\Navigation;
+use FriendsOfRedaxo\NavigationArray\NavigationItem;
 use Override;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\AsTemplate;
-use FriendsOfRedaxo\Fluid\Navigation\NavigationArray;
 use Redaxo\Core\Content\Category;
 use Redaxo\Core\Content\ContentSection;
 use Redaxo\Core\Content\Module;
@@ -44,26 +45,25 @@ final class FluidTemplate extends Template
     }
 
     /**
-     * Menü aus der Struktur (Online-Kategorien, zwei Ebenen) im Format der fluid-Navigation.
+     * Menü aus der Struktur (Online-Kategorien, zwei Ebenen; navigation_array) im Format der fluid-Navigation.
      *
      * @return list<array{label: string, href: string, current: bool, active: bool, children: list<array<string, mixed>>}>
      */
     public static function menu(int $depth = 2): array
     {
-        $nav = NavigationArray::create()->setDepth($depth);
         // Landing-Domain: Menü auf die Landingpage begrenzt (Unterseiten der Einstiegsseite, sonst keins)
+        $start = 0;
         if ($landing = \FriendsOfRedaxo\Fluid\Routing\Router::landing()) {
             if (!$landing->subtree || !Category::get((int) $landing->articleId)) {
                 return [];
             }
-            $nav->setStart((int) $landing->articleId);
+            $start = (int) $landing->articleId;
         }
-        $map = static function (array $items) use (&$map): array {
-            return array_map(static fn (array $i) => [
-                'label' => $i['catName'], 'href' => $i['url'], 'current' => $i['current'], 'active' => $i['active'], 'children' => $map($i['children']),
-            ], $items);
+        // navigation_array: depth zählt die Ebenen unterhalb der ersten
+        $map = static function (NavigationItem $i) use (&$map): array {
+            return ['label' => $i->name, 'href' => $i->url, 'current' => $i->current, 'active' => $i->active, 'children' => array_map($map, $i->children)];
         };
 
-        return $map($nav->generate());
+        return array_map($map, new Navigation(start: $start, depth: $depth - 1)->items());
     }
 }

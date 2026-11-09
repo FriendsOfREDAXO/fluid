@@ -31,7 +31,8 @@
     "require": {
         "php": "^8.5",
         "redaxo/core": "^6.0@dev",
-        "loupe/loupe": "^1.1"
+        "loupe/loupe": "^1.1",
+        "friendsofredaxo/navigation_array": "6.x-dev"
     },
     "suggest": {
         "yakamara/yform": "Formulare, Datenlisten, Postfach und das Feld „Fluid-Blöcke“ (YForm 6)",

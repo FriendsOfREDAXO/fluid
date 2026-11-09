@@ -45,6 +45,7 @@ done
 FLUID_REPO="https://github.com/FriendsOfREDAXO/fluid"
 IMAGE_EDITOR_REPO="https://github.com/FriendsOfREDAXO/image_editor"
 YFORM_REPO="https://github.com/yakamara/yform"
+NAVIGATION_ARRAY_REPO="https://github.com/FriendsOfREDAXO/navigation_array"
 
 b() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 ok() { printf '  \033[32m✓\033[0m %s\n' "$*"; }
@@ -117,6 +118,8 @@ repo() {   # Name, lokale Quelle (optional), GitHub-Adresse
   fi
 }
 repo yform "${YFORM_SOURCE:-}" "$YFORM_REPO"
+# navigation_array (Branch 6.x) – Abhängigkeit von fluid, noch nicht auf Packagist
+repo navigation_array "${NAVIGATION_ARRAY_SOURCE:-}" "$NAVIGATION_ARRAY_REPO"
 repo fluid "${FLUID_SOURCE:-}" "$FLUID_REPO"
 PACKAGES="yakamara/yform:6.x-dev@dev friendsofredaxo/fluid:*@dev"
 if [ -n "${IMAGE_EDITOR_SOURCE:-}" ] || git ls-remote "$IMAGE_EDITOR_REPO" >/dev/null 2>&1; then

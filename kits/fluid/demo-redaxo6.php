@@ -276,38 +276,31 @@ CODE,
     'nav' => <<<'CODE'
 <?php
 
-use FriendsOfRedaxo\Fluid\Navigation\NavigationArray;
+use FriendsOfRedaxo\NavigationArray\Component\NavigationBreadcrumb;
+use FriendsOfRedaxo\NavigationArray\Navigation;
+use FriendsOfRedaxo\NavigationArray\NavigationItem;
 
 use function Redaxo\Core\View\escape;
 
-$nav = NavigationArray::create()
-    ->setDepth(2)
-    ->setExcludedCategories([12]);
+$nav = new Navigation(depth: 1, exclude: [12]);   // erste Ebene und eine darunter, ohne Kategorie 12
 
-$render = static function (array $items) use (&$render): string {
-    $html = '<ul>';
-    foreach ($items as $item) {
-        $html .= '<li' . ($item['active'] ? ' class="active"' : '') . '>';
-        $html .= '<a href="' . escape($item['url']) . '"' . ($item['current'] ? ' aria-current="page"' : '') . '>' . escape($item['catName']) . '</a>';
-        if ($item['hasChildren']) {
-            $html .= $render($item['children']);
-        }
-        $html .= '</li>';
-    }
+// walk(): je Eintrag Markup, $children() rendert die nächste Ebene genauso
+echo '<nav><ul>' . $nav->walk(static fn (NavigationItem $item, Closure $children): string => '<li' . ($item->active ? ' class="active"' : '') . '>'
+    . '<a href="' . escape($item->url) . '"' . ($item->current ? ' aria-current="page"' : '') . '>' . escape($item->name) . '</a>'
+    . ($item->hasChildren() ? '<ul>' . $children() . '</ul>' : '')
+    . '</li>') . '</ul></nav>';
 
-    return $html . '</ul>';
-};
-
-echo '<nav>' . $render($nav->generate()) . '</nav>';
-
-// Brotkrumen und strukturierte Daten
-foreach ($nav->getBreadcrumb() as $crumb) {
-    echo '<a href="' . escape($crumb['url']) . '">' . escape($crumb['name']) . '</a>';
-}
-echo $nav->toJsonLd('https://example.org');
+// Brotkrumen als Komponente, mit strukturierten Daten (Schema.org BreadcrumbList)
+echo new NavigationBreadcrumb($nav, label: 'Sie sind hier', jsonLd: true)->render();
+CODE,
+    'navInstall' => <<<'CODE'
+composer config repositories.navigation_array '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/navigation_array", "no-api": true}'
+composer require friendsofredaxo/navigation_array:6.x-dev
+php bin/console migrate
 CODE,
     'frequire' => <<<'CODE'
 composer config repositories.yform '{"type": "vcs", "url": "https://github.com/yakamara/yform", "no-api": true}'
+composer config repositories.navigation_array '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/navigation_array", "no-api": true}'
 composer config repositories.fluid '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/fluid", "no-api": true}'
 composer require yakamara/yform:6.x-dev@dev friendsofredaxo/fluid:*@dev
 php bin/console migrate
@@ -613,7 +606,7 @@ return [
                         ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
                         ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
                         ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
-                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – wie navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
+                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – mit navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
                         ['icon' => 'pencil-simple', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
                     ],
                 ]],
@@ -815,11 +808,15 @@ return [
             'slug' => 'navigation', 'title' => 'Navigation', 'menu' => true, 'parent' => 'redaxo-6',
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
-                    'title' => 'Navigation als Array', 'text' => 'Menüs, Brotkrumen und strukturierte Daten – mit der API von navigation_array aus REDAXO 5.']],
+                    'title' => 'Navigation als Array', 'text' => 'Menüs, Brotkrumen und strukturierte Daten – mit navigation_array, jetzt auch für REDAXO 6.']],
                 ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
-                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Für REDAXO 5 gibt es das AddOn <a href="https://github.com/FriendsOfREDAXO/navigation_array">navigation_array</a>. fluid bringt die gleiche Idee für REDAXO 6 mit: <code>NavigationArray</code> liefert die Struktur als Array (catId, catName, url, active, current, children …) und lässt die Ausgabe ganz bei dir. Offline-Kategorien und solche ohne Recht fehlen. Die Klasse ist eigenständig gebaut und soll später ein eigenes AddOn werden.</p>']],
-                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Menü, Brotkrumen und JSON-LD', 'intro' => '', 'note' => 'Weitere Methoden: setStart(), setIgnore(), setCategoryFilterCallback(), setCustomDataCallback(), setIncludeArticles(), walk(), getCategory().',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Das AddOn <a href="https://github.com/FriendsOfREDAXO/navigation_array">navigation_array</a> gibt es jetzt auch für REDAXO 6 (Branch 6.x) – neu gebaut für PHP 8.5: <code>Navigation</code> liefert die Struktur als typisierte Einträge (<code>NavigationItem</code>: name, url, active, current, children …), <code>walk()</code> rendert sie verschachtelt, die Ausgabe bleibt bei dir. Offline-Kategorien und solche ohne Recht fehlen. fluid baut sein Menü selbst damit.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'navigation_array installieren', 'intro' => '', 'note' => '',
+                    'items' => [
+                        $c('navInstall', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Menü, Brotkrumen und JSON-LD', 'intro' => '', 'note' => 'Optionen: start, depth, ignoreOffline, exclude, filter, data, articles, languageId. Außerdem items(), find(), breadcrumb(), jsonLd() und die Komponente NavigationMenu.',
                     'items' => [
                         $c('nav', 'Template', 'php'),
                     ]]],

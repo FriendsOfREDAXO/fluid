@@ -161,6 +161,12 @@ final class FluidAddon extends Addon
     #[Override]
     public function boot(): void
     {
+        // navigation_array: Start der Website (Navigation ohne start) = Unterseiten einer Landing-Domain mit eigenem Seitenbaum
+        Extension::register(\FriendsOfRedaxo\NavigationArray\ExtensionPoint\NavigationStart::class, static function (\FriendsOfRedaxo\NavigationArray\ExtensionPoint\NavigationStart $ep): mixed {
+            $landing = Routing\Router::landing();
+
+            return $landing && $landing->subtree && null !== $landing->articleId ? $landing->articleId : $ep->subject;
+        });
         // Seiten des AddOns (Status, MCP …)
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'fluid')) {
             Asset::addCssFile($this->getAssetsUrl('backend.css'));

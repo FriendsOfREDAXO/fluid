@@ -207,10 +207,12 @@ Installation neu auf (Ordner und Datenbank löschen, Skript erneut starten).
 ## fluid in ein bestehendes Projekt einbauen
 
 Du hast schon ein REDAXO-6-Projekt (`composer create-project redaxo/project:6.x-dev`)? Dann reichen drei Schritte.
-Solange fluid und YForm 6 noch nicht auf Packagist stehen, holt Composer sie direkt von GitHub:
+Solange fluid, YForm 6 und navigation_array (für das Menü) noch nicht auf Packagist stehen, holt Composer sie direkt
+von GitHub:
 
 ```bash
 composer config repositories.yform '{"type": "vcs", "url": "https://github.com/yakamara/yform", "no-api": true}'
+composer config repositories.navigation_array '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/navigation_array", "no-api": true}'
 composer config repositories.fluid '{"type": "vcs", "url": "https://github.com/FriendsOfREDAXO/fluid", "no-api": true}'
 composer require yakamara/yform:6.x-dev@dev friendsofredaxo/fluid:*@dev
 
@@ -384,18 +386,17 @@ final class Teaser extends FluidBlock
 `$b->edit('feld')` macht das Feld direkt auf der Website bearbeitbar – fertig ist der Block, mit Seitenleiste,
 Entwurf, Rechten und Historie.
 
-**Navigation als Array** – wie [navigation_array](https://github.com/FriendsOfREDAXO/navigation_array) für REDAXO 5,
-mit derselben API (`create()`, `setStart()`, `setDepth()`, Filter- und Daten-Callbacks, `walk()`, `getBreadcrumb()`,
-`toJsonLd()`). Eigenständig gebaut, soll später ein eigenes AddOn werden; fluid baut sein Menü selbst damit.
+**Navigation:** fluid baut sein Menü mit [navigation_array](https://github.com/FriendsOfREDAXO/navigation_array)
+(Branch 6.x) – im eigenen Template genauso nutzbar. Für Landing-Domains mit eigenem Seitenbaum liefert fluid den Start
+über den Extension Point `NavigationStart`.
 
 ```php
-use FriendsOfRedaxo\Fluid\Navigation\NavigationArray;
+use FriendsOfRedaxo\NavigationArray\Navigation;
+use FriendsOfRedaxo\NavigationArray\NavigationItem;
 
-$nav = NavigationArray::create()->setDepth(2)->setExcludedCategories([12]);
-foreach ($nav->generate() as $item) {
-    // $item['catName'], $item['url'], $item['active'], $item['current'], $item['children'] …
-}
-echo $nav->toJsonLd('https://example.org');   // Brotkrumen als schema.org BreadcrumbList
+echo '<ul>' . new Navigation(depth: 1)->walk(static fn (NavigationItem $item, Closure $children): string
+    => '<li><a href="' . escape($item->url) . '">' . escape($item->name) . '</a>'
+    . ($item->hasChildren() ? '<ul>' . $children() . '</ul>' : '') . '</li>') . '</ul>';
 ```
 
 **Mitmachen:** Fehler und Ideen gern als [Issue](https://github.com/FriendsOfREDAXO/fluid/issues), Pull Requests
