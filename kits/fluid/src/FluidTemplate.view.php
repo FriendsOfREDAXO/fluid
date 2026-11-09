@@ -219,9 +219,7 @@ return static function (ArticleContent $content): void {
     <p class="mnav__title" id="mnav-title"><?= e(lt('Menü')) ?></p>
     <button type="button" class="mnav__close" popovertarget="mnav" popovertargetaction="hide" autofocus><?= icon('x') ?><span class="sr-only"><?= e(lt('Menü schließen')) ?></span></button>
   </div>
-  <nav class="mnav__nav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="mnav__list mnav__list--1" role="list">
-    <?php foreach ($menu as $m): ?><li><a class="mnav__link" href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?>
-  </ul></nav>
+  <nav class="mnav__nav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><?= fluid_nav_sheet($menu) ?></nav>
   <?php if (\count($langs) > 1): ?><ul class="langswitch langswitch--wide" role="list" aria-label="<?= e(lt('Sprache')) ?>"><?php foreach ($langs as $l): ?><li><a href="<?= e($l['url']) ?>" hreflang="<?= e($l['code']) ?>" lang="<?= e($l['code']) ?>"<?= $l['current'] ? ' aria-current="true"' : '' ?>><?= e($l['name']) ?></a></li><?php endforeach; ?></ul><?php endif; ?>
 </div>
 <?php endif; ?>

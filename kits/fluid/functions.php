@@ -664,3 +664,32 @@ function fluid_post_footer(Article $a): string
     return '<nav class="sec post-nav" aria-label="' . e(lt('Weitere Beiträge')) . '"><div class="wrap post-nav__grid">'
         . $l($older, 'Älterer Beitrag', 'post-nav__link--prev') . $l($newer, 'Neuerer Beitrag', 'post-nav__link--next') . '</div></nav>';
 }
+
+/**
+ * Hauptmenü im Seitenblatt (Menü-Schaltfläche) – wie in KLXM Studio (Modus „overview“): Unterseiten als Akkordeon
+ * (<details name> – je Ebene nur eins offen, ohne JavaScript), erster Eintrag „Übersicht: …“, aktiver Zweig offen.
+ *
+ * @param list<array{label: string, href: string, current: bool, active: bool, children: list<array<string, mixed>>}> $menu
+ */
+function fluid_nav_sheet(array $menu): string
+{
+    $cur = fn(array $m) => !empty($m['current']) ? ' aria-current="page"' : '';
+    $chev = icon('caret-down', ['class' => 'mnav__chev']);
+    $level = function (array $items, int $depth) use (&$level, $cur, $chev): string {
+        $h = '<ul class="mnav__list mnav__list--' . $depth . '" role="list">';
+        foreach ($items as $m) {
+            if (empty($m['children'])) {
+                $h .= '<li><a class="mnav__link" href="' . e($m['href']) . '"' . $cur($m) . '>' . e($m['label']) . '</a></li>';
+                continue;
+            }
+            $h .= '<li><details class="mnav__acc" name="mnav-' . $depth . '"' . (!empty($m['active']) ? ' open' : '') . '>'
+                . '<summary class="mnav__link"><span>' . e($m['label']) . '</span>' . $chev . '</summary>'
+                . '<div class="mnav__sub"><a class="mnav__link mnav__link--parent" href="' . e($m['href']) . '"' . $cur($m) . '>' . e(lt('Übersicht: {name}', ['name' => $m['label']])) . '</a>'
+                . $level($m['children'], $depth + 1) . '</div></details></li>';
+        }
+
+        return $h . '</ul>';
+    };
+
+    return $level($menu, 1);
+}
