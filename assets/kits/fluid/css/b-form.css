@@ -27,6 +27,14 @@ section:has(>.fform),section:has(>.dl),section:has(>.fdl-detail){scroll-margin-t
 .fyf .dff-check label{display:flex;align-items:flex-start;gap:.6rem;font-weight:400;cursor:pointer}
 .fyf .yform-required-mark{color:var(--f-danger,#b42318)}
 .fyf .dff-grid{grid-template-columns:1fr}
+/* Breiten aus dem YForm-Layout (Theme: dff-c--1 … 12): nebeneinander, sobald die Zeile breit genug ist */
+.fyf .dff-grid:has(>.dff-c){container-type:inline-size;grid-template-columns:repeat(12,minmax(0,1fr))}
+.fyf .dff-c{grid-column:span 12;min-width:0}
+@container (min-width:30rem){
+.fyf .dff-c--1{grid-column:span 1}.fyf .dff-c--2{grid-column:span 2}.fyf .dff-c--3{grid-column:span 3}.fyf .dff-c--4{grid-column:span 4}
+.fyf .dff-c--5{grid-column:span 5}.fyf .dff-c--6{grid-column:span 6}.fyf .dff-c--7{grid-column:span 7}.fyf .dff-c--8{grid-column:span 8}
+.fyf .dff-c--9{grid-column:span 9}.fyf .dff-c--10{grid-column:span 10}.fyf .dff-c--11{grid-column:span 11}
+}
 .fyf .dff-actions{margin-top:var(--f-s-s)}
 /* Mehrstufige Formulare (js/formsteps.js) – ohne JavaScript alle Schritte untereinander */
 .dff-steps { display: none; }

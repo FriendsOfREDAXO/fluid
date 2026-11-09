@@ -13,6 +13,8 @@ use Yakamara\YForm\Form\Action\SaveRecord;
 use Yakamara\YForm\Form\Action\SendMail;
 use Yakamara\YForm\Form\Action\ShowMessage;
 use Yakamara\YForm\Form\Definition\FormDefinition;
+use Yakamara\YForm\Form\Layout\Cell;
+use Yakamara\YForm\Form\Layout\Layout;
 use Yakamara\YForm\Validation\Errors;
 
 /** Demo-Formular „Anfrage“: speichert in AnfrageTable, Benachrichtigung an die E-Mail aus „Website“ */
@@ -33,6 +35,12 @@ final class AnfrageForm extends FormDefinition
         if (empty($values['privacy'])) {
             $errors->add('privacy', 'Bitte der Speicherung zustimmen.');
         }
+    }
+
+    /** Name und E-Mail nebeneinander, der Rest in voller Breite (alternativ im Designer, YForm → Formulare) */
+    public function layout(Layout $layout): Layout
+    {
+        return $layout->row(Cell::field('name', 6), Cell::field('email', 6))->row('topic')->row('message')->row('privacy');
     }
 
     public function submitLabel(): string
