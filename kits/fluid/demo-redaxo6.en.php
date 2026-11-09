@@ -1,10 +1,12 @@
 <?php
 /*
- * Englische Texte der Demo „REDAXO 6“ – deutsch → englisch, für .
+ * Englische Texte der Demo „REDAXO 6“ – deutsch → englisch, für `php bin/console fluid:demo --set=redaxo6 --lang=en`.
  * Schlüssel sind die deutschen Texte aus demo-redaxo6.php (ändert sich dort ein Text, hier mitziehen).
  */
 
 return [
+    'fluid in fünf Minuten' => 'fluid in five minutes',
+    'Englische Texte im Bild, deutsche Untertitel. Foto Frankfurt: Leonhard Niederwimmer / Pixabay' => 'Photo Frankfurt: Leonhard Niederwimmer / Pixabay',
     'Seit 2004 · MIT-Lizenz
 Module als PHP-Klassen
 Bearbeiten im Kontext' => 'Since 2004 · MIT license

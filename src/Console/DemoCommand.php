@@ -42,6 +42,7 @@ final class DemoCommand extends AbstractCommand
         #[Option(description: 'Nur diese Demo-Seiten (Slugs, mit Komma getrennt) anhängen, z. B. daten oder redaxo-6,projekt – vorhandene Inhalte bleiben')] string $page = '',
         #[Option(description: 'Nur Beispielzeilen in die YForm-Tabellen der Demo schreiben (Tabellen sind Klassen im Projekt)')] bool $yform = false,
         #[Option(description: 'Demo-Bilder des Kits in den Medienpool übernehmen (vorhandene bleiben)')] bool $media = false,
+        #[Option(name: 'media-dir', description: 'Weitere Dateien aus diesem Ordner in den Medienpool übernehmen (vorhandene bleiben), z. B. einen Trailer, der nicht im Kit liegt')] string $mediaDir = '',
         #[Option(description: 'Design-Vorlage setzen, z. B. redaxo (mit REDAXO-Logo aus dem Core), kanzlei, handwerk …; auf einer Website mit Seiten nur die Vorlage')] string $design = '',
         #[Option(name: 'kit', description: 'Kit, für das --design gilt (Standard: das gewählte), z. B. native')] string $designKit = '',
         #[Option(description: 'Mit --page: vorhandene Seiten neu befüllen (ihre Blöcke in der Startsprache werden ersetzt, Seite und Adresse bleiben)')] bool $update = false,
@@ -49,6 +50,14 @@ final class DemoCommand extends AbstractCommand
     ): int {
         if ($media) {
             $io->note(self::media());
+        }
+        if ('' !== $mediaDir) {
+            if (!is_dir($mediaDir)) {
+                $io->error('Ordner nicht gefunden: ' . $mediaDir);
+
+                return Command::FAILURE;
+            }
+            $io->note(self::media($mediaDir));
         }
         if ($yform) {
             $demo = require self::demoFile($set);
@@ -84,6 +93,10 @@ final class DemoCommand extends AbstractCommand
             if ('' !== $design) {
                 $io->note(self::design($design, $designKit));
 
+                return Command::SUCCESS;
+            }
+            // nur Medien übernommen (--media, --media-dir): fertig, die Seiten bleiben
+            if ($media || '' !== $mediaDir) {
                 return Command::SUCCESS;
             }
             $io->error('Es gibt schon Artikel. Mit --force trotzdem anlegen, mit --replace vorher alles löschen.');
@@ -139,6 +152,18 @@ final class DemoCommand extends AbstractCommand
             // Startseite und Seiten außerhalb des Menüs (Impressum, Datenschutz): Artikel auf oberster Ebene;
             // 'parent' => 'slug': Seite in einer Menüseite (z. B. Beiträge eines Blogs, Angaben unter 'post')
             if (!empty($def['is_home']) || empty($def['menu'])) {
+                // mit --page: vorhandene Seite weiterverwenden (Startseite = Startartikel der Website) statt eine zweite anzulegen
+                $old = '' !== $page ? (!empty($def['is_home']) ? (int) Core::getConfig('start_article_id', 0) : (int) $existing($slug)) : 0;
+                if ($old > 0 && null !== \Redaxo\Core\Content\Article::get($old, $lang)) {
+                    $ids[$slug] = $old;
+                    if ($update) {
+                        Sql::factory()->setQuery('DELETE FROM rex_article_slice WHERE article_id = ? AND language_id = ?', [$old, $lang]);
+                        $io->note('„' . $def['title'] . '“ wird neu befüllt.');
+                    } else {
+                        $kept[$slug] = true;
+                    }
+                    continue;
+                }
                 $parent = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
                 // Template „fluid“ (FluidTemplate) – gestaltet vom gewählten Kit
                 $ids[$slug] = ArticleHandler::add(['category_id' => $parent, 'priority' => !empty($def['is_home']) ? 1 : 99, 'name' => (string) $def['title'], 'template' => 'fluid'])->id;
@@ -268,6 +293,9 @@ final class DemoCommand extends AbstractCommand
         'fluid-yform-maske.jpg' => ['Eingabemaske von YForm', 'Eingabemaske eines Projekts im REDAXO-Backend (YForm) mit Bild, Kurztext und den Blöcken der Fallstudie'],
         'fluid-backend-status.jpg' => ['Statusseite im Backend', 'Statusseite von fluid im REDAXO-Backend mit Prüfungen und Wartung'],
         'fluid-design.jpg' => ['Design-Leiste', 'Startseite im Bearbeiten-Modus, rechts die Design-Leiste mit den Vorlagen zum Wechseln'],
+        'fluid-trailer-redaxo6.mp4' => ['Trailer: fluid für REDAXO 6', ''],
+        'fluid-trailer-redaxo6.jpg' => ['Trailer: Vorschaubild', 'Schriftzug „fluid“ auf dunkelblauem Grund, darunter „In-place editing :: REDAXO like ;-)“'],
+        'fluid-trailer-redaxo6.de.vtt' => ['Trailer: deutsche Untertitel', ''],
         'redaxo6-backend-struktur.jpg' => ['Backend: Struktur', 'Strukturverwaltung im Backend von REDAXO 6 mit Kategorien, Artikeln, Status und Funktionen'],
         'redaxo6-backend-inhalte.jpg' => ['Backend: Artikel bearbeiten', 'Artikel im Backend von REDAXO 6: Arbeitsversion, „Block hinzufügen“ und ein Block mit seiner Leiste, rechts die Metadaten'],
         'redaxo6-backend-block-hell.jpg' => ['Backend: Block bearbeiten (hell)', 'Formular eines Blocks im Backend von REDAXO 6 im hellen Farbschema'],
@@ -320,7 +348,9 @@ final class DemoCommand extends AbstractCommand
         };
         $ids = [];
         foreach ($all as $p) {
-            if (null !== ($id = $existing((string) $p['slug']))) {
+            // Startseite: der Startartikel der Website (nicht über den Titel – der kann schon übersetzt sein)
+            $id = !empty($p['is_home']) && ($start = (int) Core::getConfig('start_article_id', 0)) > 0 ? $start : $existing((string) $p['slug']);
+            if (null !== $id) {
                 $ids[(string) $p['slug']] = $id;
             }
         }
@@ -432,10 +462,10 @@ final class DemoCommand extends AbstractCommand
         return '';
     }
 
-    /** Demo-Bilder (demo/media des Kits) in den Medienpool – nur fehlende */
-    private static function media(): string
+    /** Demo-Bilder (demo/media des Kits oder ein anderer Ordner) in den Medienpool – nur fehlende */
+    private static function media(?string $dir = null): string
     {
-        $dir = self::demoMediaDir();
+        $dir ??= self::demoMediaDir();
         $added = [];
         foreach (glob($dir . '/*') ?: [] as $file) {
             $name = basename($file);
