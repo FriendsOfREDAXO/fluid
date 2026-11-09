@@ -176,13 +176,13 @@ final class YFormBridge
     }
 
     /**
-     * @param array{filter?: ?Field, value?: string, sort?: ?Field, dir?: string, limit?: int} $o
+     * @param array{filter?: ?Field, value?: string, sort?: ?Field, dir?: string, limit?: int, language?: ?int} $o
      *
      * @return list<Record>
      */
     public static function rows(Table $table, array $o): array
     {
-        $q = $table::query();
+        $q = self::inLanguage($table, $table::query(), $o['language'] ?? null);
         if (($f = $o['filter'] ?? null) && '' !== ($o['value'] ?? '')) {
             $q->where($f->name, $f instanceof Checkbox ? (bool) $o['value'] : $o['value']);
         }
@@ -201,7 +201,7 @@ final class YFormBridge
      */
     public static function page(Table $table, array $o, int $page, int $perPage): array
     {
-        $q = $table::query();
+        $q = self::inLanguage($table, $table::query(), $o['language'] ?? null);
         if (($f = $o['filter'] ?? null) && '' !== ($o['value'] ?? '')) {
             $q->where($f->name, $f instanceof Checkbox ? (bool) $o['value'] : $o['value']);
         }
@@ -214,14 +214,31 @@ final class YFormBridge
     }
 
     /** Eintrag für die Detailansicht – nur, wenn er die Bedingung der Liste erfüllt */
-    public static function row(Table $table, int $id, ?Field $filter, string $value): ?Record
+    public static function row(Table $table, int $id, ?Field $filter, string $value, ?int $languageId = null): ?Record
     {
-        $q = $table::query()->where('id', $id);
+        $q = self::inLanguage($table, $table::query()->where('id', $id), $languageId);
         if ($filter && '' !== $value) {
             $q->where($filter->name, $filter instanceof Checkbox ? (bool) $value : $value);
         }
 
         return $q->first();
+    }
+
+    /**
+     * Mit Feld „Sprache“ (FluidLanguage): nur Einträge der Sprache (Standard: aktuelle) und solche ohne Sprache.
+     * Beim Auflösen von Adressen ist die aktuelle Sprache noch nicht gesetzt – dort die Sprache der Seite übergeben.
+     */
+    public static function inLanguage(Table $table, \Yakamara\YForm\Data\Query $q, ?int $languageId = null): \Yakamara\YForm\Data\Query
+    {
+        foreach ($table->getFields() as $f) {
+            if ($f instanceof FluidLanguage) {
+                $lang = null !== $languageId ? \Redaxo\Core\Language\Language::get($languageId) : null;
+
+                return $q->whereIn($f->name, ['', ($lang ?? \Redaxo\Core\Language\Language::getCurrent())->code]);
+            }
+        }
+
+        return $q;
     }
 
     /** Wert als Text – Ausgabe der Feldklasse (Auswahl-Beschriftung, Datumsformat, Ja/Nein …) */

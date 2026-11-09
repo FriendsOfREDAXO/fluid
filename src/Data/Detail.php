@@ -73,7 +73,7 @@ final class Detail
             foreach ($rows as $r) {
                 $d = BlockModule::stored($r['data'])['values'];
                 if (!empty($d['detail']) && '' !== (string) ($d['table'] ?? '')) {
-                    $cache[$key] = $d;
+                    $cache[$key] = $d + ['_language' => $languageId];   // Sprache der Seite (Feld „Sprache“ der Tabelle)
                     break;
                 }
             }
@@ -116,7 +116,7 @@ final class Detail
             return [];
         }
         $f = YFormBridge::field($t, (string) ($config['title_field'] ?? ''), [\Yakamara\YForm\Field\Text::class]);
-        $rows = YFormBridge::rows($t, ['filter' => YFormBridge::field($t, (string) ($config['filter_field'] ?? '')), 'value' => trim((string) ($config['filter_value'] ?? '')), 'limit' => $limit]);
+        $rows = YFormBridge::rows($t, ['filter' => YFormBridge::field($t, (string) ($config['filter_field'] ?? '')), 'value' => trim((string) ($config['filter_value'] ?? '')), 'limit' => $limit, 'language' => $config['_language'] ?? null]);
 
         return array_map(static fn ($r) => [(int) $r->id, $f ? YFormBridge::text($r, $f) : ''], $rows);
     }
@@ -129,7 +129,7 @@ final class Detail
             return null;
         }
         $f = YFormBridge::field($t, (string) ($config['title_field'] ?? ''), [\Yakamara\YForm\Field\Text::class]);
-        $row = YFormBridge::row($t, $id, YFormBridge::field($t, (string) ($config['filter_field'] ?? '')), trim((string) ($config['filter_value'] ?? '')));
+        $row = YFormBridge::row($t, $id, YFormBridge::field($t, (string) ($config['filter_field'] ?? '')), trim((string) ($config['filter_value'] ?? '')), $config['_language'] ?? null);
 
         return $row ? ($f ? YFormBridge::text($row, $f) : '') : null;
     }

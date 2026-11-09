@@ -3,6 +3,7 @@
 namespace Project\YForm;
 
 use FriendsOfRedaxo\Fluid\Data\FluidBlocks;
+use FriendsOfRedaxo\Fluid\Data\FluidLanguage;
 use Yakamara\YForm\Attribute\AsTable;
 use Yakamara\YForm\Field\Checkbox;
 use Yakamara\YForm\Field\Integer;
@@ -29,6 +30,8 @@ final class ProjectTable extends Table
         yield FluidBlocks::new('story')->label('Fallstudie (Blöcke)')
             ->blocks('richtext', 'media_text', 'stats', 'quote', 'features', 'faq', 'video', 'cta');
         yield Checkbox::new('online')->label('Online')->default(true);
+        // Sprache: die Datenliste zeigt nur Einträge der aktuellen Sprache (leer = alle Sprachen)
+        yield FluidLanguage::new('lang');
     }
 
     public function list(ListConfig $list): ListConfig

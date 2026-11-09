@@ -2,6 +2,7 @@
 
 namespace Project\YForm;
 
+use FriendsOfRedaxo\Fluid\Data\FluidLanguage;
 use Yakamara\YForm\Attribute\AsTable;
 use Yakamara\YForm\Field\Checkbox;
 use Yakamara\YForm\Field\Date;
@@ -23,6 +24,8 @@ final class TerminTable extends Table
         yield Media::new('image')->label('Bild')->types('jpg', 'jpeg', 'png', 'webp', 'avif');
         yield Textarea::new('text')->label('Beschreibung');
         yield Checkbox::new('online')->label('Online')->default(true);
+        // Sprache: die Datenliste zeigt nur Einträge der aktuellen Sprache (leer = alle Sprachen)
+        yield FluidLanguage::new('lang');
     }
 
     public function list(ListConfig $list): ListConfig

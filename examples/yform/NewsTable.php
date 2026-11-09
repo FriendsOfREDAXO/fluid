@@ -3,6 +3,7 @@
 namespace Project\YForm;
 
 use FriendsOfRedaxo\Fluid\Data\FluidBlocks;
+use FriendsOfRedaxo\Fluid\Data\FluidLanguage;
 use Yakamara\YForm\Attribute\AsTable;
 use Yakamara\YForm\Field\Checkbox;
 use Yakamara\YForm\Field\Date;
@@ -32,6 +33,8 @@ final class NewsTable extends Table
         yield FluidBlocks::new('content')->label('Inhalt (Blöcke)')->blocks('richtext', 'media_text', 'video', 'quote', 'faq', 'downloads', 'cta');
         yield Url::new('link')->label('Weiterführender Link');
         yield Checkbox::new('online')->label('Online')->default(true);
+        // Sprache: die Datenliste zeigt nur Einträge der aktuellen Sprache (leer = alle Sprachen)
+        yield FluidLanguage::new('lang');
     }
 
     public function list(ListConfig $list): ListConfig
