@@ -72,3 +72,7 @@
 .fluid-status-task h3 { margin: 0; font-size: var(--rex-font-size); font-weight: 700; }
 .fluid-status-task > p:not(.fluid-status-task__action) { flex: 1; margin: 0; color: var(--rex-color-text-muted); font-size: var(--rex-font-size-small); }
 .fluid-status-task__action { margin: 0; }
+/* MCP-Seite: Unteroptionen eingerückt, Schlüssel zum Markieren (eigene Klassen, keine Core-Selektoren) */
+.fluid-mcp-sub{margin-block-start:.25rem;padding-inline-start:1.5rem;border-inline-start:2px solid var(--rex-color-border)}
+.fluid-mcp-secret{user-select:all;overflow-x:auto}
+.fluid-mcp-secret--wrap{white-space:pre-wrap;overflow-wrap:anywhere}

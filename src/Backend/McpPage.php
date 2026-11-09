@@ -10,7 +10,8 @@ use FriendsOfRedaxo\Fluid\Mcp\Tokens;
 use Redaxo\Core\Database\Sql;
 use Redaxo\Core\Http\Request;
 use Redaxo\Core\Security\CsrfToken;
-use Redaxo\Core\View\Fragment;
+use Redaxo\Core\View\Component\Section;
+use Redaxo\Core\View\Html;
 use Redaxo\Core\View\Message;
 
 use function in_array;
@@ -34,45 +35,36 @@ final class McpPage
         $csrf = CsrfToken::factory(self::CSRF)->getHiddenField();
         $tables = YFormBridge::tables();
 
-        // ---------------------------------------------------------------- Einstellungen
-        $check = static fn (string $name, bool $on, string $label, string $help = '') => '<div class="checkbox"><label><input type="checkbox" name="mcp[' . $name . ']" value="1"' . ($on ? ' checked' : '') . '> ' . $label . '</label>'
-            . ('' !== $help ? '<p class="help-block">' . $help . '</p>' : '') . '</div>';
+        // ---------------------------------------------------------------- Einstellungen (Markup und Komponenten des Cores)
+        $field = static fn (string $label, string $control, string $note = '', string $for = '') => '<div class="rex-field"><' . ('' !== $for ? 'label for="' . $for . '"' : 'span') . ' class="rex-field-label">' . $label . '</' . ('' !== $for ? 'label' : 'span') . '>'
+            . '<div class="rex-field-control">' . $control . ('' !== $note ? '<p class="rex-field-note">' . $note . '</p>' : '') . '</div></div>';
+        $check = static fn (string $name, bool $on, string $label) => '<div class="rex-check"><label><input type="checkbox" name="mcp[' . $name . ']" value="1"' . ($on ? ' checked' : '') . '> ' . $label . '</label></div>';
         $body = '<form method="post">' . $csrf . '<input type="hidden" name="mcp_do" value="settings">'
-            . $check('enabled', (bool) $cfg['enabled'], '<strong>MCP-Server einschalten</strong>', 'Adresse: <code>' . escape(Server::url()) . '</code> – KI-Werkzeuge (Claude, ChatGPT, Cursor …) lesen und bearbeiten die Website über Zugangsschlüssel.')
-            . '<hr><h4>Öffentlicher Zugang (ohne Schlüssel)</h4>'
-            . $check('public', (bool) $cfg['public'], 'Öffentlich lesbar machen', 'Jeder kann dann ohne Schlüssel lesen – nur veröffentlichte Inhalte, nie Entwürfe, nie schreiben. Höchstens 60 Anfragen je 5 Minuten und IP.')
-            . '<div style="margin-left:1.5rem">'
-            . $check('public_pages', (bool) $cfg['public_pages'], 'Seiten (online) mit ihren Blöcken')
-            . $check('public_search', (bool) $cfg['public_search'], 'Suche')
-            . $check('public_blog', (bool) $cfg['public_blog'], 'Blog-Beiträge');
+            . $field('MCP-Server', $check('enabled', (bool) $cfg['enabled'], 'einschalten'), 'Adresse: <code>' . escape(Server::url()) . '</code> – KI-Werkzeuge (Claude, ChatGPT, Cursor …) lesen und bearbeiten die Website über Zugangsschlüssel.')
+            . $field('Öffentlicher Zugang', $check('public', (bool) $cfg['public'], 'ohne Schlüssel lesbar')
+                . '<div class="fluid-mcp-sub">' . $check('public_pages', (bool) $cfg['public_pages'], 'Seiten (online) mit ihren Blöcken')
+                . $check('public_search', (bool) $cfg['public_search'], 'Suche') . $check('public_blog', (bool) $cfg['public_blog'], 'Blog-Beiträge') . '</div>',
+                'Jeder kann dann ohne Schlüssel lesen – nur veröffentlichte Inhalte, nie Entwürfe, nie schreiben. Höchstens 60 Anfragen je 5 Minuten und IP.');
         if ([] !== $tables) {
-            $body .= '<p><strong>Datentabellen öffentlich lesbar</strong> – nur Tabellen ohne persönliche Daten wählen!</p>';
+            $pub = '';
             foreach ($tables as $name => $label) {
-                $body .= '<div class="checkbox"><label><input type="checkbox" name="mcp[public_tables][]" value="' . escape($name) . '"' . (in_array($name, (array) $cfg['public_tables'], true) ? ' checked' : '') . '> ' . escape($label) . '</label></div>';
+                $pub .= '<div class="rex-check"><label><input type="checkbox" name="mcp[public_tables][]" value="' . escape($name) . '"' . (in_array($name, (array) $cfg['public_tables'], true) ? ' checked' : '') . '> ' . escape($label) . '</label></div>';
             }
-        }
-        $body .= '</div>';
-        if ([] !== $tables) {
-            $body .= '<hr><h4>Datentabellen für Schlüssel</h4><p class="help-block">Welche YForm-Tabellen Schlüssel lesen bzw. ändern dürfen (ändern nur Schlüssel mit „Lesen und ändern“). Postfach-Tabellen mit Anfragen nur freigeben, wenn es sein muss.</p>'
-                . '<div style="max-width:40rem">';
+            $body .= $field('Datentabellen öffentlich', $pub, 'Nur Tabellen ohne persönliche Daten wählen!');
             foreach ($tables as $name => $label) {
                 $mode = ((array) $cfg['tables'])[$name] ?? '';
                 $id = 'mcp-t-' . md5($name);
-                $sel = '<select class="form-control" id="' . $id . '" name="mcp[tables][' . escape($name) . ']">';
+                $sel = '<select class="rex-input" id="' . $id . '" name="mcp[tables][' . escape($name) . ']">';
                 foreach (['' => 'kein Zugriff', 'read' => 'lesen', 'write' => 'lesen und ändern'] as $v => $l) {
                     $sel .= '<option value="' . $v . '"' . ($v === $mode ? ' selected' : '') . '>' . $l . '</option>';
                 }
-                $body .= '<div class="form-group"><label for="' . $id . '">' . escape($label) . '</label>' . $sel . '</select></div>';
+                $body .= $field('Schlüssel: ' . escape($label), $sel . '</select>', '', $id);
             }
-            $body .= '</div>';
+            $body .= '<p class="rex-field-note">Welche YForm-Tabellen Schlüssel lesen bzw. ändern dürfen (ändern nur Schlüssel mit „Lesen und ändern“). Postfach-Tabellen mit Anfragen nur freigeben, wenn es sein muss.</p>';
         }
-        $body .= '<hr><div class="form-group"><label for="mcp-instr">Hinweise für die KI (optional)</label>'
-            . '<textarea class="form-control" id="mcp-instr" name="mcp[instructions]" rows="2" placeholder="z. B. Wir duzen unsere Besucher. Keine Preise nennen.">' . escape((string) $cfg['instructions']) . '</textarea></div>'
-            . '<button class="btn btn-save">Speichern</button></form>';
-        $f = new Fragment();
-        $f->setVar('title', 'MCP-Server', false);
-        $f->setVar('body', $body, false);
-        $out .= $f->parse('core/page/section.php');
+        $body .= $field('Hinweise für die KI', '<textarea class="rex-input" id="mcp-instr" name="mcp[instructions]" rows="2" placeholder="z. B. Wir duzen unsere Besucher. Keine Preise nennen.">' . escape((string) $cfg['instructions']) . '</textarea>', 'Optional.', 'mcp-instr')
+            . '<div class="rex-button-toolbar"><button type="submit" class="rex-button" data-variant="primary">Speichern</button></div></form>';
+        $out .= new Section(title: 'MCP-Server', body: Html::raw($body))->render();
 
         // ---------------------------------------------------------------- Schlüssel
         $rows = '';
@@ -81,25 +73,28 @@ final class McpPage
                 . '<td>' . escape((string) ($t['login'] ?? '–')) . '</td>'
                 . '<td>' . escape(Tokens::SCOPES[$t['scope']] ?? (string) $t['scope']) . ($t['publish'] ? '<br><small>+ veröffentlichen</small>' : '') . '</td>'
                 . '<td><small>angelegt ' . escape((string) $t['created']) . '<br>zuletzt ' . escape((string) ($t['last_used'] ?: '–')) . ($t['client'] ? '<br>' . escape((string) $t['client']) : '') . ($t['expires'] ? '<br>gültig bis ' . escape((string) $t['expires']) : '') . '</small></td>'
-                . '<td><form method="post" onsubmit="return confirm(\'Schlüssel widerrufen? Programme damit verlieren sofort den Zugang.\')">' . $csrf
-                . '<input type="hidden" name="mcp_do" value="revoke"><input type="hidden" name="id" value="' . (int) $t['id'] . '"><button class="btn btn-xs btn-delete">Widerrufen</button></form></td></tr>';
+                . '<td><form method="post">' . $csrf
+                . '<input type="hidden" name="mcp_do" value="revoke"><input type="hidden" name="id" value="' . (int) $t['id'] . '">'
+                . '<button type="submit" class="rex-button" data-variant="danger" data-size="xs" data-confirm="Schlüssel widerrufen? Programme damit verlieren sofort den Zugang.">Widerrufen</button></form></td></tr>';
         }
+        $out .= new Section(
+            title: 'Zugangsschlüssel',
+            body: '' === $rows ? Html::raw('<p>Noch keine Schlüssel.</p>') : '',
+            content: '' !== $rows ? Html::raw('<table class="rex-table" data-hover><thead><tr><th>Name</th><th>Benutzer</th><th>Darf</th><th>Nutzung</th><th></th></tr></thead><tbody>' . $rows . '</tbody></table>') : '',
+        )->render();
+
         $users = '';
         foreach (Sql::factory()->getArray('SELECT id, login, name FROM rex_user WHERE status = 1 ORDER BY login') as $u) {
             $users .= '<option value="' . (int) $u['id'] . '">' . escape($u['login'] . ($u['name'] ? ' (' . $u['name'] . ')' : '')) . '</option>';
         }
-        $body = ('' !== $rows ? '<div class="table-responsive"><table class="table"><thead><tr><th>Name</th><th>Benutzer</th><th>Darf</th><th>Nutzung</th><th></th></tr></thead><tbody>' . $rows . '</tbody></table></div>' : '<p>Noch keine Schlüssel.</p>')
-            . '<h4>Neuer Schlüssel</h4><form method="post" class="row">' . $csrf . '<input type="hidden" name="mcp_do" value="create">'
-            . '<div class="col-sm-3 form-group"><label>Name</label><input class="form-control" name="name" required placeholder="z. B. Claude – Thomas"></div>'
-            . '<div class="col-sm-3 form-group"><label>Handelt als Benutzer</label><select class="form-control" name="user">' . $users . '</select><p class="help-block">Dessen Rechte gelten.</p></div>'
-            . '<div class="col-sm-2 form-group"><label>Darf</label><select class="form-control" name="scope"><option value="read">nur lesen</option><option value="write">lesen und ändern</option></select></div>'
-            . '<div class="col-sm-2 form-group"><label>Gültig bis</label><input class="form-control" type="date" name="expires"></div>'
-            . '<div class="col-sm-2 form-group"><label>&nbsp;</label><div class="checkbox" style="margin:0"><label><input type="checkbox" name="publish" value="1"> darf veröffentlichen</label></div></div>'
-            . '<div class="col-sm-12"><button class="btn btn-save">Schlüssel erzeugen</button> <span class="help-block" style="display:inline">Der Schlüssel erscheint nur einmal.</span></div></form>';
-        $f = new Fragment();
-        $f->setVar('title', 'Zugangsschlüssel', false);
-        $f->setVar('body', $body, false);
-        $out .= $f->parse('core/page/section.php');
+        $body = '<form method="post">' . $csrf . '<input type="hidden" name="mcp_do" value="create">'
+            . $field('Name', '<input class="rex-input" id="mcp-name" name="name" required placeholder="z. B. Claude – Thomas">', '', 'mcp-name')
+            . $field('Handelt als Benutzer', '<select class="rex-input" id="mcp-user" name="user">' . $users . '</select>', 'Dessen Rechte gelten.', 'mcp-user')
+            . $field('Darf', '<select class="rex-input" id="mcp-scope" name="scope"><option value="read">nur lesen</option><option value="write">lesen und ändern</option></select>', '', 'mcp-scope')
+            . $field('Gültig bis', '<input class="rex-input" type="date" id="mcp-expires" name="expires">', 'Optional.', 'mcp-expires')
+            . $field('Veröffentlichen', '<div class="rex-check"><label><input type="checkbox" name="publish" value="1"> darf veröffentlichen</label></div>')
+            . '<div class="rex-button-toolbar"><button type="submit" class="rex-button" data-variant="primary">Schlüssel erzeugen</button><span class="rex-u-text-muted">Der Schlüssel erscheint nur einmal.</span></div></form>';
+        $out .= new Section(title: 'Neuer Schlüssel', body: Html::raw($body))->render();
 
         return $out;
     }
@@ -150,9 +145,9 @@ final class McpPage
                 $json = json_encode(['mcpServers' => ['fluid' => ['type' => 'http', 'url' => $url, 'headers' => ['Authorization' => 'Bearer ' . $t['token']]]]], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
                 return Message::success('<p><strong>Schlüssel erzeugt – jetzt kopieren, er wird nicht wieder angezeigt:</strong></p>'
-                    . '<pre style="user-select:all">' . escape($t['token']) . '</pre>'
-                    . '<p>Claude Code:</p><pre style="white-space:pre-wrap;user-select:all">' . escape($cli) . '</pre>'
-                    . '<p>Andere Programme (JSON):</p><pre style="user-select:all">' . escape((string) $json) . '</pre>'
+                    . '<pre class="fluid-mcp-secret">' . escape($t['token']) . '</pre>'
+                    . '<p>Claude Code:</p><pre class="fluid-mcp-secret fluid-mcp-secret--wrap">' . escape($cli) . '</pre>'
+                    . '<p>Andere Programme (JSON):</p><pre class="fluid-mcp-secret">' . escape((string) $json) . '</pre>'
                     . (Access::config()['enabled'] ? '' : '<p><strong>Hinweis:</strong> Der MCP-Server ist noch ausgeschaltet.</p>'));
             })(),
             'revoke' => (static function (): string {
