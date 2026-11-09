@@ -22,20 +22,20 @@ final class ProjectTable extends Table
 {
     public function fields(): iterable
     {
-        yield Text::new('title')->label('Projekt')->required()->maxLength(191);
-        yield Text::new('client')->label('Kunde')->maxLength(191);
-        yield Integer::new('year')->label('Jahr')->min(1990)->max(2100);
+        yield Text::new('title')->label('Projekt')->required()->maxLength(191)->filterable();
+        yield Text::new('client')->label('Kunde')->maxLength(191)->filterable();
+        yield Integer::new('year')->label('Jahr')->min(1990)->max(2100)->filterable();
         yield Media::new('image')->label('Bild')->types('jpg', 'jpeg', 'png', 'webp', 'avif');
         yield Textarea::new('teaser')->label('Kurztext');
         yield FluidBlocks::new('story')->label('Fallstudie (Blöcke)')
             ->blocks('richtext', 'media_text', 'stats', 'quote', 'features', 'faq', 'video', 'cta');
-        yield Checkbox::new('online')->label('Online')->default(true);
+        yield Checkbox::new('online')->label('Online')->default(true)->filterable();
         // Sprache: die Datenliste zeigt nur Einträge der aktuellen Sprache (leer = alle Sprachen)
         yield FluidLanguage::new('lang');
     }
 
     public function list(ListConfig $list): ListConfig
     {
-        return $list->columns('id', 'title', 'client', 'year', 'online')->sortBy('year', 'desc');
+        return $list->columns('id', 'title', 'client', 'year', 'online', 'lang')->sortBy('year', 'desc');
     }
 }

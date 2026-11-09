@@ -3,10 +3,10 @@
  * Einstieg (H1) – sechs Varianten, alle intrinsisch (Flex-Umbruch bzw. Container-Query statt Breakpoints):
  * split (Text + Bild), centered (Bild darunter), fullbleed (Bild/Video vollflächig), cards (Bild mit gestapelten Karten),
  * type (großer Schriftzug in Container-Einheiten), compact (Seitenkopf).
- * Dazu drei Varianten mit eigenem Stylesheet (nur wo verwendet, theme.php → conditional_css):
+ * Dazu drei Varianten mit eigenem Stylesheet (nur wo verwendet, kit.php → 'assets'):
  *   scale    Fließende Skala: Überschrift füllt ihre Spalte (cqi), Seitenspalte + Stufenleiste ab 48 rem Platz (css/hx-scale.css)
  *   collage  Collage: 1–5 Bilder (Bild + Feld „gallery“) im Raster mit schwebender Textkarte ab 52 rem (css/hx-collage.css)
- *   compare  Vorher/Nachher mit Regler (Core\Blocks\Hero::compare, Tastatur: Pfeile, Pos1/Ende) (css/hx-compare.css)
+ *   compare  Vorher/Nachher mit Regler (fluid_compare() in functions.php, Tastatur: Pfeile, Pos1/Ende) (css/hx-compare.css)
  * @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d
  */
 $v = $b->variant() ?: 'split';

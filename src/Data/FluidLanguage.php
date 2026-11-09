@@ -27,6 +27,7 @@ final class FluidLanguage extends Choice
         parent::init();
         $this->label('Sprache');
         $this->default('');
+        $this->filterable();   // Suche der Liste im Backend: nach Sprache filtern
         $this->options(static function (): array {
             $out = ['' => 'Alle Sprachen'];
             foreach (Language::getAll() as $l) {

@@ -18,18 +18,18 @@ final class TerminTable extends Table
 {
     public function fields(): iterable
     {
-        yield Text::new('title')->label('Titel')->required()->maxLength(191);
-        yield Date::new('date')->label('Datum');
-        yield Text::new('place')->label('Ort')->maxLength(191);
+        yield Text::new('title')->label('Titel')->required()->maxLength(191)->filterable();
+        yield Date::new('date')->label('Datum')->filterable();
+        yield Text::new('place')->label('Ort')->maxLength(191)->filterable();
         yield Media::new('image')->label('Bild')->types('jpg', 'jpeg', 'png', 'webp', 'avif');
         yield Textarea::new('text')->label('Beschreibung');
-        yield Checkbox::new('online')->label('Online')->default(true);
+        yield Checkbox::new('online')->label('Online')->default(true)->filterable();
         // Sprache: die Datenliste zeigt nur Einträge der aktuellen Sprache (leer = alle Sprachen)
         yield FluidLanguage::new('lang');
     }
 
     public function list(ListConfig $list): ListConfig
     {
-        return $list->columns('id', 'title', 'date', 'place', 'online')->sortBy('date');
+        return $list->columns('id', 'title', 'date', 'place', 'online', 'lang')->sortBy('date');
     }
 }

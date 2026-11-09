@@ -158,8 +158,8 @@ final class DemoCommand extends AbstractCommand
             $parentCat = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
             // Seite gibt es schon (z. B. aus einem früheren Lauf auf oberster Ebene): mit --page an die neue Stelle verschieben,
             // Inhalte bleiben – mit --update werden die Blöcke ersetzt
-            if ('' !== $page && null !== $parentCat && null !== ($old = $existing($slug)) && null !== ($oldCat = \Redaxo\Core\Content\Category::get($old))) {
-                if ($oldCat->parentId !== $parentCat) {
+            if ('' !== $page && null !== ($old = $existing($slug)) && null !== ($oldCat = \Redaxo\Core\Content\Category::get($old))) {
+                if (null !== $parentCat && $oldCat->parentId !== $parentCat) {
                     CategoryHandler::move($old, $parentCat);
                     $io->note('„' . $def['title'] . '“ verschoben (vorhandene Inhalte bleiben).');
                 }
@@ -258,6 +258,7 @@ final class DemoCommand extends AbstractCommand
         'redaxo6-backend-medienpool.jpg' => ['Backend: Medienpool im Overlay', 'Medienpool als Overlay über dem Backend von REDAXO 6, mit Sprachumschaltung und Medienliste'],
         'redaxo6-backend-linkmap.jpg' => ['Backend: Linkmap', 'Linkmap als Overlay mit Kategorien links und Artikeln rechts'],
         'redaxo6-backend-mobil.jpg' => ['Backend auf dem Telefon', 'Strukturverwaltung von REDAXO 6 auf einem schmalen Bildschirm mit eingeklapptem Menü'],
+        'redaxo6-kit-nature.jpg' => ['Kit „Nature“: Handlungsaufruf', 'Handlungsaufruf im Beispiel-Kit „Nature“ mit sandfarbenem Hintergrund und Blatt über der Dachzeile'],
     ];
 
     /** Demo-Inhalte des gewählten Kits (oder seines Eltern-Kits): demo.php bzw. demo-redaxo6.php */

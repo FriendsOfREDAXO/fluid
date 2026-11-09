@@ -136,9 +136,23 @@ sobald sie fehlt oder sich geändert hat. Relative Pfade im CSS zeigen auf `asse
 
 ### Als Composer-Paket
 
-Ein Kit für mehrere Projekte ist ein eigenes Paket mit der Kit-Klasse im Autoload (PSR-4), z. B.
-`friendsofredaxo/fluid-kit-nature`. Nach `composer require` und `console migrate` steht es in der Auswahl. Ein Kit
-kann auch von einem anderen Kit als `fluid` erben (`parent: 'nature'`).
+Ein Kit für mehrere Projekte ist ein eigenes Composer-Paket – und zwar ein **AddOn** (Typ `redaxo-addon` mit
+AddOn-Klasse): REDAXO sucht Klassen mit Attributen (`#[AsKit]`) nur im Projekt und in aktiven AddOns, nicht in
+beliebigen Paketen unter `vendor/`. Die Dateien des Kits (`kit.php`, `views/`, `assets/` …) liegen neben der Kit-Klasse.
+
+```json
+{
+    "name": "acme/fluid-kit-nature",
+    "type": "redaxo-addon",
+    "require": { "friendsofredaxo/fluid": "*@dev" },
+    "autoload": { "psr-4": { "Acme\\FluidKitNature\\": "src/" } },
+    "extra": { "redaxo": { "addon-class": "Acme\\FluidKitNature\\NatureAddon" } }
+}
+```
+
+`src/NatureAddon.php` ist eine leere AddOn-Klasse (`final class NatureAddon extends Addon {}`), `src/NatureKit.php` die
+Kit-Klasse, daneben `src/kit.php`, `src/views/` und `src/assets/`. Nach `composer require` und `console migrate` steht
+das Kit in der Auswahl. Ein Kit kann auch von einem anderen Kit als `fluid` erben (`parent: 'nature'`).
 
 ### Kit je Domain
 

@@ -24,21 +24,21 @@ final class NewsTable extends Table
 {
     public function fields(): iterable
     {
-        yield Text::new('title')->label('Titel')->required()->maxLength(191);
-        yield Date::new('date')->label('Datum')->required();
+        yield Text::new('title')->label('Titel')->required()->maxLength(191)->filterable();
+        yield Date::new('date')->label('Datum')->required()->filterable();
         yield Textarea::new('teaser')->label('Kurztext');
         yield Media::new('image')->label('Bild')->types('jpg', 'jpeg', 'png', 'webp', 'avif');
         yield Textarea::new('text')->label('Text');
         // Inhalt aus Blöcken von fluid (Text, Bild + Text, Video …) – Ausgabe in der Detailansicht der Datenliste
         yield FluidBlocks::new('content')->label('Inhalt (Blöcke)')->blocks('richtext', 'media_text', 'video', 'quote', 'faq', 'downloads', 'cta');
         yield Url::new('link')->label('Weiterführender Link');
-        yield Checkbox::new('online')->label('Online')->default(true);
+        yield Checkbox::new('online')->label('Online')->default(true)->filterable();
         // Sprache: die Datenliste zeigt nur Einträge der aktuellen Sprache (leer = alle Sprachen)
         yield FluidLanguage::new('lang');
     }
 
     public function list(ListConfig $list): ListConfig
     {
-        return $list->columns('id', 'title', 'date', 'online')->sortBy('date', 'desc');
+        return $list->columns('id', 'title', 'date', 'online', 'lang')->sortBy('date', 'desc');
     }
 }

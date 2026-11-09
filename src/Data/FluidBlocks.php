@@ -36,7 +36,7 @@ final class FluidBlocks extends Field
     protected function init(): void
     {
         $this->listed = false;
-        $this->searchable = true;
+        $this->filterable = true;   // Suche der Liste im Backend: Text der Blöcke
     }
 
     /** Nur diese Blöcke anbieten (Typ wie „richtext“ oder Modul-Schlüssel wie „fluid.richtext“) */

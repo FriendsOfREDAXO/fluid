@@ -20,9 +20,9 @@ final class AnfrageTable extends Table
 
     public function fields(): iterable
     {
-        yield Text::new('name')->label('Name')->required()->maxLength(191);
-        yield Email::new('email')->label('E-Mail')->required();
-        yield Choice::new('topic')->label('Worum geht es?')->options(self::TOPICS);
+        yield Text::new('name')->label('Name')->required()->maxLength(191)->filterable();
+        yield Email::new('email')->label('E-Mail')->required()->filterable();
+        yield Choice::new('topic')->label('Worum geht es?')->options(self::TOPICS)->filterable();
         yield Textarea::new('message')->label('Nachricht')->required();
         yield Checkbox::new('privacy')->label('Einwilligung zur Speicherung');
         yield CreatedAt::create('created')->label('Eingegangen');

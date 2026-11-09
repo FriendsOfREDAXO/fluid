@@ -241,11 +241,11 @@ final class EventTable extends Table
 {
     public function fields(): iterable
     {
-        yield Text::new('title')->label('Titel')->required()->maxLength(191);
-        yield Date::new('date')->label('Datum')->required();
+        yield Text::new('title')->label('Titel')->required()->maxLength(191)->filterable();
+        yield Date::new('date')->label('Datum')->required()->filterable();
         yield Textarea::new('text')->label('Beschreibung');
         yield Media::new('image')->label('Bild')->types('jpg', 'png', 'webp');
-        yield Checkbox::new('online')->label('Online')->default(true);
+        yield Checkbox::new('online')->label('Online')->default(true)->filterable();
     }
 
     public function list(ListConfig $list): ListConfig
@@ -490,6 +490,103 @@ const init = (root) => {
 init(document);
 document.addEventListener('rex:ready', (event) => init(event.target));
 CODE,
+    'kitCreate' => <<<'CODE'
+php bin/console fluid:kit:create nature --label="Nature" --view=cta
+
+# legt an:
+#   src/Kit/Nature/NatureKit.php       Anmeldung des Kits
+#   src/Kit/Nature/kit.php             Definition – nur, was anders ist
+#   src/Kit/Nature/assets/css/kit.css  eigenes CSS
+#   src/Kit/Nature/views/cta.php       Kopie der View „Handlungsaufruf“ (--view)
+CODE,
+    'kitClass' => <<<'CODE'
+<?php
+
+namespace Project\Kit\Nature;
+
+use FriendsOfRedaxo\Fluid\AsKit;
+use FriendsOfRedaxo\Fluid\Kit;
+
+/**
+ * Kit „Nature“ – erbt von „Fluid“. Dateien in diesem Ordner ersetzen die des Eltern-Kits:
+ * kit.php (Definition), views/{typ}.php, template.view.php, functions.php, assets/.
+ */
+#[AsKit('nature', 'Nature', parent: 'fluid')]
+final class NatureKit extends Kit {}
+CODE,
+    'kitDef' => <<<'CODE'
+<?php
+
+/*
+ * Kit „Nature“: nur, was vom Eltern-Kit „fluid“ abweicht ($parent ist dessen Definition).
+ */
+
+return [
+    'label' => 'Nature',
+    // eigenes CSS für jede Seite – nach dem CSS von „fluid“
+    'css' => ['css/kit.css'],
+    // zusätzlicher Hintergrund für alle Blöcke (Klasse bg-sand)
+    'backgrounds' => ['sand' => 'Sand'],
+    // Handlungsaufruf: zusätzliche Variante „Mit Blatt“ – alles andere vom Block des Eltern-Kits
+    'blocks' => [
+        'cta' => ['variants' => $parent['blocks']['cta']['variants'] + ['leaf' => 'Mit Blatt']] + $parent['blocks']['cta'],
+    ],
+];
+CODE,
+    'kitCss' => <<<'CODE'
+/* Hintergrund „Sand“: aus Akzent und Hintergrund gemischt – passt so zu hell und dunkel */
+.bg-sand {
+    --f-sec-bg: color-mix(in srgb, #c8a96a 22%, var(--f-bg));
+    --f-card: var(--f-bg);
+}
+
+/* Handlungsaufruf „Mit Blatt“ */
+.cta__leaf {
+    color: var(--f-a);
+    font-size: 2.5rem;
+}
+CODE,
+    'kitView' => <<<'CODE'
+<?php
+/** Handlungsaufruf im Kit „Nature“ – wie in „fluid“, dazu die Variante „Mit Blatt“ (Band mit Blatt). @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d */
+$leaf = 'leaf' === $b->variant();
+$v = $leaf ? 'band' : (in_array($b->variant(), ['band', 'box', 'split', 'big'], true) ? $b->variant() : 'band');
+$pic = $v === 'split' ? fluid_image($d['image'] ?? null, '(min-width: 1080px) 560px, 100vw', '4:3', 'cta__media') : '';
+?>
+<div class="wrap">
+  <div class="cta cta--<?= e($v) ?><?= $pic !== '' ? ' cta--media' : '' ?>">
+    <div class="cta__main">
+    <div class="cta__text">
+      <?php if ($leaf): ?><?= icon('leaf', ['class' => 'cta__leaf']) ?><?php endif; ?>
+      <?php if (trim((string) ($d['eyebrow'] ?? '')) !== ''): ?><p class="eyebrow"<?= $b->edit('eyebrow') ?>><?= e($d['eyebrow']) ?></p><?php endif; ?>
+      <h2 id="<?= e($b->titleId()) ?>" class="<?= $v === 'big' ? 'cta__big' : 'h2' ?> cta__title"<?= $b->edit('title') ?>><?= fluid_title((string) $d['title']) ?></h2>
+      <?php if ($d['text'] !== '' || is_editing()): ?><p class="cta__lead"<?= $b->edit('text') ?>><?= nl2br(e($d['text']), false) ?></p><?php endif; ?>
+    </div>
+    <?= fluid_buttons($b, 'cta__actions') ?>
+    </div>
+    <?= $pic ?>
+  </div>
+</div>
+CODE,
+    'kitPackage' => <<<'CODE'
+{
+    "name": "acme/fluid-kit-nature",
+    "type": "redaxo-addon",
+    "require": { "friendsofredaxo/fluid": "*@dev" },
+    "autoload": { "psr-4": { "Acme\\FluidKitNature\\": "src/" } },
+    "extra": { "redaxo": { "addon-class": "Acme\\FluidKitNature\\NatureAddon" } }
+}
+CODE,
+    'kitAddon' => <<<'CODE'
+<?php
+
+namespace Acme\FluidKitNature;
+
+use Redaxo\Core\Addon\Addon;
+
+// Leere AddOn-Klasse: damit REDAXO das Paket kennt und das Kit (src/NatureKit.php) findet
+final class NatureAddon extends Addon {}
+CODE,
 ];
 $c = static fn (string $key, string $file, string $lang): array => ['file' => $file, 'lang' => $lang, 'code' => $code[$key]];
 
@@ -608,6 +705,7 @@ return [
                         ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
                         ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – mit navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
                         ['icon' => 'pencil-simple', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
+                        ['icon' => 'paint-brush', 'title' => 'Eigenes Kit', 'text' => 'Was ein Kit ist und wie man eins baut – vererbt von fluid, mit eigenen Views und eigenem CSS.', 'link_label' => 'Lesen', 'link' => '/eigenes-kit'],
                     ],
                 ]],
                 $cta,
@@ -792,7 +890,7 @@ return [
                     'items' => [
                         $c('yrequire', 'Terminal', 'bash'),
                     ]]],
-                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eine Tabelle', 'intro' => '', 'note' => '',
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eine Tabelle', 'intro' => '', 'note' => 'filterable() zeigt ein Feld in der Suche neben der Liste im Backend – ohne filterable() gibt es dort keine Suche.',
                     'items' => [
                         $c('ytable', 'src/YForm/EventTable.php', 'php'),
                     ]]],
@@ -844,6 +942,57 @@ return [
                     'items' => [
                         $c('fblock', 'src/Block/Teaser.php', 'php'),
                         $c('fview', 'src/Block/Teaser.view.php', 'php'),
+                    ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'eigenes-kit', 'title' => 'Eigenes Kit', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
+                    'title' => 'Ein eigenes Kit bauen', 'text' => 'Was ein Kit ist, wann man eins braucht – und wie es Schritt für Schritt entsteht.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Was ist ein Kit?', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Ein <strong>Kit</strong> bestimmt, wie die ganze Website aussieht: den Seitenrahmen mit Kopf, Menü und Fuß, das CSS, die Ausgabe jedes Blocks (Views) und die Möglichkeiten der Design-Leiste. Es legt auch fest, welche Darstellungen und Hintergründe ein Block anbietet.</p><p>Die <strong>Inhalte</strong> gehören zu keinem Kit. Ein Block „Handlungsaufruf“ bleibt ein Slice mit denselben Feldern – das Kit entscheidet nur, wie er aussieht. Darum lässt sich das Kit unter <em>Website → Kit</em> wechseln, ohne eine Seite anzufassen.</p><p>Jedes Kit <strong>erbt</strong> von einem anderen (Standard: <code>fluid</code>) und bringt nur mit, was es ändert. Alle Blöcke sind also immer da, und Updates von fluid kommen beim eigenen Kit mit an. Das mitgelieferte Kit „NativeCSS“ ist so gebaut: eigener Seitenrahmen und eigene Views für einige Blöcke, alles andere von <code>fluid</code>.</p>']],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Abwägen', 'title' => 'Braucht es ein Kit?', 'intro' => 'Drei Wege, die Website zu gestalten – vom einfachsten zum gründlichsten.', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'palette', 'title' => 'Design-Leiste', 'text' => 'Farben, Schriften, Formen, Kopf und Fuß – direkt auf der Seite, ohne Code. Reicht für die meisten Websites.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'squares-four', 'title' => 'Eigener Block', 'text' => 'Ein neuer Inhaltstyp mit eigenen Feldern – im Projekt, ohne das Kit zu ändern.', 'link_label' => 'So geht es', 'link' => '/fluid-projekt'],
+                        ['icon' => 'code', 'title' => 'Eigenes Kit', 'text' => 'Anderes Markup und CSS für die ganze Website, eigene Darstellungen und Hintergründe – vererbt von fluid.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '1. Kit anlegen', 'intro' => 'Der Befehl legt das Kit im Projekt an. Mit --view kopiert er Views des Eltern-Kits zum Anpassen, mit --template den Seitenrahmen.', 'note' => '',
+                    'items' => [
+                        $c('kitCreate', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '2. Die Kit-Klasse', 'intro' => 'Das Attribut #[AsKit] meldet das Kit an – Schlüssel, Name und Eltern-Kit. Die Klasse selbst bleibt leer.', 'note' => '',
+                    'items' => [
+                        $c('kitClass', 'src/Kit/Nature/NatureKit.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '3. Die Definition: nur, was anders ist', 'intro' => '$parent ist die Definition des Eltern-Kits. blocks, backgrounds und assets werden je Schlüssel ergänzt, css wird angehängt, alles andere ersetzt.', 'note' => '',
+                    'items' => [
+                        $c('kitDef', 'src/Kit/Nature/kit.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '4. Eigenes CSS', 'intro' => 'Geladen nach dem CSS von fluid. Die Variablen der Design-Leiste (--f-…) gelten weiter – darauf aufbauen statt Farben fest einzutragen.', 'note' => '',
+                    'items' => [
+                        $c('kitCss', 'src/Kit/Nature/assets/css/kit.css', 'css'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '5. Eine View ersetzen', 'intro' => 'Eine Datei views/{typ}.php ersetzt die Ausgabe dieses Blocks. $b ist der Block, $d seine Daten – wie beim eigenen Block.', 'note' => '',
+                    'items' => [
+                        $c('kitView', 'src/Kit/Nature/views/cta.php', 'php'),
+                    ]]],
+                ['type' => 'media_text', 'data' => ['variant' => 'left', 'eyebrow' => 'Ergebnis', 'title' => 'Der Handlungsaufruf im Kit „Nature“',
+                    'text' => '<p>Hintergrund „Sand“ und Darstellung „Mit Blatt“ stehen jetzt in der Seitenleiste zur Auswahl. Alle anderen Blöcke, die Design-Leiste und der Seitenrahmen kommen unverändert von fluid.</p>',
+                    'list' => "Ausgewählt unter Website → Kit\nInhalte bleiben beim Wechsel\nDesign-Werte speichert jedes Kit für sich", 'image' => 'redaxo6-kit-nature.jpg', 'ratio' => '16:9', 'split' => 'media']],
+                ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Was ein Kit ersetzen kann', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<ul><li><strong><code>views/{typ}.php</code></strong> – die Ausgabe eines Blocktyps</li><li><strong><code>template.view.php</code></strong> – der Seitenrahmen mit Kopf, Menü und Fuß</li><li><strong><code>assets/…</code></strong> – einzelne Dateien, z. B. <code>assets/css/b-cards.css</code> statt der von fluid</li><li><strong><code>functions.php</code></strong> – zusätzliche Hilfsfunktionen für Views</li><li><strong><code>kit.php</code></strong> – die Definition: Blöcke, Darstellungen, Hintergründe, Design-Leiste</li></ul><p><strong>Design-Werte</strong> speichert jedes Kit für sich; solange ein neues Kit keine eigenen hat, übernimmt es die des Eltern-Kits. <strong>Assets</strong> veröffentlicht fluid bei <code>console migrate</code> – auf dem Server also den Kit-Ordner mit ausliefern und <code>migrate</code> ausführen. Ein Kit je Domain wählt der Extension Point <code>FLUID_KIT</code>.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Als Composer-Paket für mehrere Projekte', 'intro' => 'Ein Kit für mehrere Projekte ist ein AddOn: REDAXO sucht Klassen mit #[AsKit] nur im Projekt und in aktiven AddOns. Die Dateien des Kits liegen neben der Kit-Klasse in src/.', 'note' => 'Nach composer require und console migrate steht das Kit in der Auswahl.',
+                    'items' => [
+                        $c('kitPackage', 'composer.json', 'json'),
+                        $c('kitAddon', 'src/NatureAddon.php', 'php'),
                     ]]],
                 $cta,
             ],
