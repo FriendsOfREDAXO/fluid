@@ -11,7 +11,7 @@ use function in_array;
 /**
  * Rich Text sicher ausgeben – Klassenvertrag der Formatierungsleiste aus KLXM Studio (Core\Sanitizer):
  *   <p class="t-lead|t-small|t-note|t-tip|t-warn|t-kicker|t-center">, <span class="c-accent|c-muted|c-success|c-warning|c-danger">,
- *   <ul class="check">, <mark>, <sup>, <sub>, Überschriften h2–h4, Zitat, Listen, Links (auch data-link="redaxo://ID").
+ *   <ul class="check">, <mark>, <code>, <sup>, <sub>, Überschriften h2–h4, Zitat, Listen, Links (auch data-link="redaxo://ID").
  * Keine style-Attribute; Links auf Artikel bekommen bei der Ausgabe die aktuelle Adresse.
  */
 final class RichText
@@ -62,7 +62,7 @@ final class RichText
 
         return $config ??= new HtmlSanitizerConfig()
             ->allowElement('p', ['class'])->allowElement('br')->allowElement('strong')->allowElement('b')->allowElement('em')->allowElement('i')
-            ->allowElement('mark')->allowElement('sup')->allowElement('sub')->allowElement('span', ['class'])
+            ->allowElement('mark')->allowElement('code')->allowElement('sup')->allowElement('sub')->allowElement('span', ['class'])
             ->allowElement('h2', ['id'])->allowElement('h3', ['id'])->allowElement('h4', ['id'])
             ->allowElement('ul', ['class'])->allowElement('ol')->allowElement('li')->allowElement('blockquote')
             ->allowElement('a', ['href', 'title', 'target', 'rel', 'data-link'])

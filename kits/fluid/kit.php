@@ -70,6 +70,8 @@ return [
         'css/data.css' => ['datalist', 'posts'],
         'css/b-posts.css' => ['posts', '@post', 'datalist'],
         'js/tabs.js' => ['tabs'],
+        'css/b-code.css' => ['code'],
+        'js/code.js' => ['code'],
         'js/reel.js' => ['quote', 'cards'],
         'js/scrolly.js' => ['scrolly'],
     ],
@@ -391,6 +393,21 @@ return [
                 ['name' => 'ratio', 'label' => 'Format', 'type' => 'select', 'required' => true, 'default' => '16-9', 'width' => 'half', 'options' => ['16-9' => '16:9', '4-3' => '4:3', '21-9' => '21:9']],
                 ['name' => 'caption', 'label' => 'Bildunterschrift (optional)', 'type' => 'text', 'max' => 200],
                 ['name' => 'text', 'label' => 'Text daneben (bei „Mit Text daneben“)', 'type' => 'richtext'],
+            ],
+        ],
+        'code' => [
+            'nestable' => true,   // Block „Layout“: in einer Spalte erlaubt
+            'label' => 'Code', 'icon' => 'code', 'group' => 'Inhalt',
+            'help' => 'Codebeispiele zum Kopieren – eine oder mehrere Dateien untereinander (z. B. Klasse und View). Der Code wird so ausgegeben, wie er eingegeben ist.',
+            'fields' => [
+                ...$head(),
+                ['name' => 'items', 'label' => 'Dateien', 'type' => 'repeater', 'item_label' => 'Datei', 'title_field' => 'file', 'min_items' => 1, 'max_items' => 6, 'fields' => [
+                    ['name' => 'file', 'label' => 'Dateiname oder Titel (optional)', 'type' => 'text', 'max' => 120, 'width' => 'half', 'placeholder' => 'z. B. src/Module/Text.php'],
+                    ['name' => 'lang', 'label' => 'Sprache', 'type' => 'select', 'required' => true, 'default' => 'php', 'width' => 'half',
+                        'options' => ['php' => 'PHP', 'bash' => 'Terminal', 'env' => '.env', 'json' => 'JSON', 'yaml' => 'YAML', 'html' => 'HTML', 'css' => 'CSS', 'js' => 'JavaScript', 'text' => 'Text']],
+                    ['name' => 'code', 'label' => 'Code', 'type' => 'textarea', 'rows' => 12, 'required' => true, 'max' => 12000, 'search' => false],
+                ]],
+                ['name' => 'note', 'label' => 'Hinweis unter dem Code (optional)', 'type' => 'text', 'max' => 240],
             ],
         ],
         'downloads' => [
