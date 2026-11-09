@@ -453,9 +453,34 @@ return [
             ],
         ],
 
+        // ------------------------------------------------------------------ REDAXO 6 (Übersicht mit Unterseiten)
+        [
+            'slug' => 'redaxo-6', 'title' => 'REDAXO 6', 'menu' => true,
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Überblick',
+                    'title' => 'REDAXO 6 kennenlernen', 'text' => 'Backend, Projekt, Module, Templates, YForm und Navigation – mit Screenshots und Codebeispielen zum Nachbauen.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Hier steht, wie ein Projekt mit REDAXO 6 entsteht und wie die wichtigsten Bausteine aussehen – und was sich gegenüber REDAXO 5 ändert.</p>']],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'arrows-clockwise', 'title' => 'Was sich ändert', 'text' => 'REDAXO 5 und 6 im Vergleich: Module, Templates, AddOns, Struktur, Konfiguration.', 'link_label' => 'Vergleichen', 'link' => '/was-sich-aendert'],
+                        ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
+                        ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
+                        ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
+                        ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
+                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – wie navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
+                        ['icon' => 'pencil-simple', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
+                    ],
+                ]],
+                $cta,
+            ],
+        ],
+
         // ------------------------------------------------------------------ Was sich ändert
         [
-            'slug' => 'was-sich-aendert', 'title' => 'Was sich ändert', 'menu' => true,
+            'slug' => 'was-sich-aendert', 'title' => 'Was sich ändert', 'menu' => true, 'parent' => 'redaxo-6',
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 5 → 6',
                     'title' => 'Was sich gegenüber REDAXO 5 ändert', 'text' => 'Vertraute Ideen, neues Fundament: Struktur, Slices und Module bleiben – nur sauberer gebaut.']],
@@ -473,30 +498,6 @@ return [
                 ['type' => 'quote', 'tunes' => ['background' => 'tint'], 'data' => ['variant' => 'single', 'eyebrow' => '', 'title' => '', 'items' => [
                     ['text' => 'Slices bleiben Slices. Was sich ändert, ist, was man mit ihnen machen kann.', 'name' => 'fluid', 'role' => 'Blöcke für REDAXO 6', 'image' => null],
                 ]]],
-                $cta,
-            ],
-        ],
-
-        // ------------------------------------------------------------------ REDAXO 6 (Übersicht mit Unterseiten)
-        [
-            'slug' => 'redaxo-6', 'title' => 'REDAXO 6', 'menu' => true,
-            'blocks' => [
-                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Überblick',
-                    'title' => 'REDAXO 6 kennenlernen', 'text' => 'Backend, Projekt, Module, Templates, YForm und Navigation – mit Screenshots und Codebeispielen zum Nachbauen.']],
-                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
-                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
-                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Hier steht, wie ein Projekt mit REDAXO 6 entsteht und wie die wichtigsten Bausteine aussehen. Wer von REDAXO 5 kommt, findet unter <a href="/was-sich-aendert">Was sich ändert</a> den Vergleich, unter <a href="/technik">Technik</a> das Fundament.</p>']],
-                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
-                    'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
-                    'items' => [
-                        ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
-                        ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
-                        ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
-                        ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
-                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – wie navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
-                        ['icon' => 'pencil-simple', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
-                    ],
-                ]],
                 $cta,
             ],
         ],

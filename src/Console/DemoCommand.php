@@ -98,6 +98,7 @@ final class DemoCommand extends AbstractCommand
         $demo = require self::demoFile($set);
         $lang = Language::getStartId();
         $ids = [];
+        $kept = [];   // vorhandene Seiten (nur verschoben): keine Blöcke anlegen
         // Seiten, die ein AddOn brauchen (z. B. YForm), nur anlegen, wenn es da ist
         $demo['pages'] = array_values(array_filter($demo['pages'], static fn (array $p) => 'yform' !== ($p['requires'] ?? null) || YFormBridge::available()));
         // Alle Seiten der Demo (für Seiten und Links, die schon existieren: über den Titel gefunden)
@@ -149,6 +150,17 @@ final class DemoCommand extends AbstractCommand
             }
             // 'parent' => 'slug' bei einer Menüseite: Unterseite im Menü (Kategorie in der Kategorie)
             $parentCat = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
+            // Seite gibt es schon (z. B. aus einem früheren Lauf auf oberster Ebene): mit --page an die neue Stelle verschieben,
+            // Inhalte bleiben unverändert
+            if ('' !== $page && null !== $parentCat && null !== ($old = $existing($slug)) && null !== ($oldCat = \Redaxo\Core\Content\Category::get($old))) {
+                if ($oldCat->parentId !== $parentCat) {
+                    CategoryHandler::move($old, $parentCat);
+                    $io->note('„' . $def['title'] . '“ verschoben (vorhandene Inhalte bleiben).');
+                }
+                $ids[$slug] = $old;
+                $kept[$slug] = true;
+                continue;
+            }
             $id = CategoryHandler::add(['parent_id' => $parentCat, 'priority' => null !== $parentCat ? 99 : $prio++, 'name' => (string) $def['title'], 'status' => 1])->id;
             $sql->setQuery('UPDATE rex_article_translation SET template = ?, status = 1 WHERE article_id = ?', ['fluid', $id]);
             $ids[$slug] = $id;
@@ -173,6 +185,9 @@ final class DemoCommand extends AbstractCommand
         $count = 0;
         $skipped = [];
         foreach ($demo['pages'] as $def) {
+            if (isset($kept[(string) $def['slug']])) {
+                continue;
+            }
             $articleId = $ids[(string) $def['slug']];
             foreach ($def['blocks'] ?? [] as $block) {
                 $key = $moduleKey((string) $block['type']);
@@ -211,7 +226,7 @@ final class DemoCommand extends AbstractCommand
         if ('' !== $design) {
             $io->note(self::design($design, $designKit));
         }
-        $io->success(sprintf('%d Seiten mit %d Blöcken angelegt.%s', count($ids), $count, $skipped ? ' Übersprungen (noch nicht portiert): ' . implode(', ', array_keys($skipped)) : ''));
+        $io->success(sprintf('%d Seiten mit %d Blöcken angelegt.%s', count($ids) - count($kept), $count, $skipped ? ' Übersprungen (noch nicht portiert): ' . implode(', ', array_keys($skipped)) : ''));
 
         return Command::SUCCESS;
     }
