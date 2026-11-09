@@ -10,9 +10,7 @@ use Redaxo\Core\Content\StructurePermission;
 use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\ArticleSlice;
-use Redaxo\Core\Content\ArticleSliceReference;
 use Redaxo\Core\Content\ContentHandler;
-use Redaxo\Core\Content\ExtensionPoint\ArticleContentUpdated;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Content\ModulePermission;
 use Redaxo\Core\Content\Template;
@@ -248,14 +246,7 @@ final class Api
         self::requireModulePerm($user, $module::key());
         [$data, $tunes] = self::input($module);
 
-        $sql = Sql::factory();
-        $sql->setTable('rex_article_slice');
-        $sql->setWhere(['id' => $slice->id, 'article_id' => $article->id, 'revision' => FluidAddon::revision()]);
-        $sql->setValue('data', BlockModule::encodeStore($data, $tunes));
-        $sql->addGlobalUpdateFields($user->login);
-        $sql->update();
-        ArticleSliceReference::update(self::reload($article, $slice->id));
-        self::changed($article, $slice->id, 'slice_updated');
+        ContentHandler::editSlice($slice->id, BlockModule::store($data, $tunes));
         Versions::snapshot($article->id, $article->languageId, FluidAddon::revision(), 'fluid_save');
         Activity::log('save', $article->id, $module::name());
 
@@ -689,13 +680,6 @@ final class Api
         }
 
         return $data;
-    }
-
-    private static function changed(Article $article, int $sliceId, string $type): void
-    {
-        ArticleCache::delete($article->id, $article->languageId);
-        $slice = ArticleSlice::getArticleSliceById($sliceId, $article->languageId, FluidAddon::revision());
-        Extension::dispatch(new ArticleContentUpdated($article, $type, $slice, 'Block gespeichert.'));
     }
 
     private static function requireModulePerm(User $user, string $moduleKey): void

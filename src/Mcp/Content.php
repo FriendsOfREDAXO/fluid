@@ -20,7 +20,6 @@ use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleHandler;
 use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Content\ArticleSlice;
-use Redaxo\Core\Content\ArticleSliceReference;
 use Redaxo\Core\Content\CategoryHandler;
 use Redaxo\Core\Content\ContentHandler;
 use Redaxo\Core\Content\Module;
@@ -307,15 +306,7 @@ final class Content
      */
     private function store(Article $a, int $id, array $data, array $tunes, string $label): void
     {
-        $sql = Sql::factory()->setTable('rex_article_slice')
-            ->setWhere(['id' => $id, 'article_id' => $a->id, 'revision' => FluidAddon::revision()])
-            ->setValue('data', BlockModule::encodeStore($data, $tunes));
-        $sql->addGlobalUpdateFields($this->access->user->login ?? 'mcp');
-        $sql->update();
-        if ($slice = ArticleSlice::getArticleSliceById($id, $a->languageId, FluidAddon::revision())) {
-            ArticleSliceReference::update($slice);
-        }
-        ArticleCache::delete($a->id, $a->languageId);
+        ContentHandler::editSlice($id, BlockModule::store($data, $tunes));
         Versions::snapshot($a->id, $a->languageId, FluidAddon::revision(), 'fluid_save');
         Activity::log('save', $a->id, $label . ' (MCP)');
     }
