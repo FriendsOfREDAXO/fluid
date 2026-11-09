@@ -7,6 +7,7 @@ use FriendsOfRedaxo\Fluid\Kit;
 use Override;
 use Redaxo\Core\Content\ArticleContent;
 use Redaxo\Core\Content\AsTemplate;
+use FriendsOfRedaxo\Fluid\Navigation\NavigationArray;
 use Redaxo\Core\Content\Category;
 use Redaxo\Core\Content\ContentSection;
 use Redaxo\Core\Content\Module;
@@ -49,30 +50,20 @@ final class FluidTemplate extends Template
      */
     public static function menu(int $depth = 2): array
     {
-        $current = Category::getCurrent();
-        $path = $current ? [...$current->path, $current->id] : [];
-        $build = static function (array $cats, int $level) use (&$build, $current, $path, $depth): array {
-            $out = [];
-            foreach ($cats as $c) {
-                $out[] = [
-                    'label' => $c->name,
-                    'href' => $c->getUrl(),
-                    'current' => $current && $current->id === $c->id,
-                    'active' => in_array($c->id, $path, true),
-                    'children' => $level < $depth ? $build($c->getChildren(true), $level + 1) : [],
-                ];
-            }
-
-            return $out;
-        };
-
+        $nav = NavigationArray::create()->setDepth($depth);
         // Landing-Domain: Menü auf die Landingpage begrenzt (Unterseiten der Einstiegsseite, sonst keins)
         if ($landing = \FriendsOfRedaxo\Fluid\Routing\Router::landing()) {
-            $cat = $landing->subtree ? Category::get((int) $landing->articleId) : null;
-
-            return $cat ? $build($cat->getChildren(true), 1) : [];
+            if (!$landing->subtree || !Category::get((int) $landing->articleId)) {
+                return [];
+            }
+            $nav->setStart((int) $landing->articleId);
         }
+        $map = static function (array $items) use (&$map): array {
+            return array_map(static fn (array $i) => [
+                'label' => $i['catName'], 'href' => $i['url'], 'current' => $i['current'], 'active' => $i['active'], 'children' => $map($i['children']),
+            ], $items);
+        };
 
-        return $build(Category::getRootCategories(true), 1);
+        return $map($nav->generate());
     }
 }
