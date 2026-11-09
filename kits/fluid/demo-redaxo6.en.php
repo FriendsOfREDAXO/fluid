@@ -463,4 +463,11 @@ Every kit keeps its own design values',
     'Ein Kit für mehrere Projekte ist ein AddOn: REDAXO sucht Klassen mit #[AsKit] nur im Projekt und in aktiven AddOns. Die Dateien des Kits liegen neben der Kit-Klasse in src/.' => 'A kit for several projects is an AddOn: REDAXO looks for classes with #[AsKit] only in the project and in active AddOns. The files of the kit sit next to the kit class in src/.',
     'Nach composer require und console migrate steht das Kit in der Auswahl.' => 'After composer require and console migrate the kit is available for selection.',
     'filterable() zeigt ein Feld in der Suche neben der Liste im Backend – ohne filterable() gibt es dort keine Suche.' => 'filterable() shows a field in the search next to the list in the backend – without filterable() there is no search there.',
+    // Übersicht fluid, Kachel Technik
+    'AddOn für REDAXO 6' => 'AddOn for REDAXO 6',
+    'fluid: Bearbeiten direkt auf der Website' => 'fluid: editing directly on the website',
+    'Was die Redaktion damit kann, welche Blöcke es gibt – und wie Entwickler eigene Blöcke und Kits bauen.' => 'What editors can do with it, which blocks there are – and how developers build their own blocks and kits.',
+    'Texte, Bilder, Blöcke und Design direkt auf der Seite – mit Entwurf und Veröffentlichen.' => 'Texts, images, blocks and design right on the page – with draft and publishing.',
+    'Weitere Blöcke des Kits: Logos, Bento, Reiter, Preise und mehr.' => 'More blocks of the kit: logos, bento, tabs, pricing and more.',
+    'Das Fundament: Namespaces, Module und Templates als Klassen, AddOns mit Composer, Symfony-Komponenten.' => 'The foundation: namespaces, modules and templates as classes, AddOns with Composer, Symfony components.',
 ];

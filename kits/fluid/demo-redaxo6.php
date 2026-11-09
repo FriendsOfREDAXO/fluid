@@ -649,9 +649,58 @@ return [
             ],
         ],
 
+        // ------------------------------------------------------------------ REDAXO 6 (Übersicht mit Unterseiten)
+        [
+            'slug' => 'redaxo-6', 'title' => 'REDAXO 6', 'menu' => true,
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Überblick',
+                    'title' => 'REDAXO 6 kennenlernen', 'text' => 'Backend, Projekt, Module, Templates, YForm und Navigation – mit Screenshots und Codebeispielen zum Nachbauen.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Hier steht, wie ein Projekt mit REDAXO 6 entsteht und wie die wichtigsten Bausteine aussehen – und was sich gegenüber REDAXO 5 ändert.</p>']],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'arrows-clockwise', 'title' => 'Was sich ändert', 'text' => 'REDAXO 5 und 6 im Vergleich: Module, Templates, AddOns, Struktur, Konfiguration.', 'link_label' => 'Vergleichen', 'link' => '/was-sich-aendert'],
+                        ['icon' => 'gear', 'title' => 'Technik', 'text' => 'Das Fundament: Namespaces, Module und Templates als Klassen, AddOns mit Composer, Symfony-Komponenten.', 'link_label' => 'Lesen', 'link' => '/technik'],
+                        ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
+                        ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
+                        ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
+                        ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
+                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – mit navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
+                    ],
+                ]],
+                $cta,
+            ],
+        ],
+
+        // ------------------------------------------------------------------ Was sich ändert
+        [
+            'slug' => 'was-sich-aendert', 'title' => 'Was sich ändert', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 5 → 6',
+                    'title' => 'Was sich gegenüber REDAXO 5 ändert', 'text' => 'Vertraute Ideen, neues Fundament: Struktur, Slices und Module bleiben – nur sauberer gebaut.']],
+                ['type' => 'features', 'data' => [
+                    'variant' => 'list', 'eyebrow' => '', 'title' => 'Bisher und jetzt', 'intro' => '', 'size' => 'l',
+                    'items' => [
+                        ['icon' => 'code', 'title' => 'Module: von Code in der Datenbank zu PHP-Klassen', 'text' => 'REDAXO 5: Ein- und Ausgabe als PHP im Backend gespeichert. REDAXO 6: Klasse mit #[AsModule], input() und output() – im Projekt versioniert.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'layout', 'title' => 'Templates: von Datenbank-Code zu Klassen mit Inhaltsbereichen', 'text' => 'Ein Template erbt von Template, rendert sich selbst und legt fest, welche Module in welchem Bereich erlaubt sind.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'package', 'title' => 'AddOns: vom Installer zu Composer', 'text' => 'REDAXO 5: herunterladen, installieren, aktivieren. REDAXO 6: Composer-Paket – im Projekt eingetragen heißt aktiv.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'tree-structure', 'title' => 'Struktur: vom AddOn zum Core', 'text' => 'Struktur, Inhalte, Arbeitsversion und Historie waren das AddOn „structure“ mit Plugins – jetzt sind sie Teil des Kerns.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'brackets-curly', 'title' => 'Klassen: von rex_article zu Redaxo\\Core\\Content\\Article', 'text' => 'Namespaces, Typen und Attribute statt globaler rex_-Klassen.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'gear', 'title' => 'Konfiguration: .env und Betriebsmodi', 'text' => 'Datenbank und Modus kommen aus der Umgebung – dev, live oder hardened.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'quote', 'tunes' => ['background' => 'tint'], 'data' => ['variant' => 'single', 'eyebrow' => '', 'title' => '', 'items' => [
+                    ['text' => 'Slices bleiben Slices. Was sich ändert, ist, was man mit ihnen machen kann.', 'name' => 'fluid', 'role' => 'Blöcke für REDAXO 6', 'image' => null],
+                ]]],
+                $cta,
+            ],
+        ],
+
         // ------------------------------------------------------------------ Technik
         [
-            'slug' => 'technik', 'title' => 'Technik', 'menu' => true,
+            'slug' => 'technik', 'title' => 'Technik', 'menu' => true, 'parent' => 'redaxo-6',
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Technik',
                     'title' => 'Das Fundament von REDAXO 6', 'text' => 'Was im Branch 6.x von redaxo/core steckt – und wie ein Projekt entsteht.']],
@@ -682,56 +731,6 @@ return [
                         ['q' => 'Wo liegen Module und Templates?', 'a' => '<p>Als PHP-Klassen im Projekt (bzw. in AddOns) – nicht mehr als Code in der Datenbank. So lassen sie sich versionieren, prüfen und deployen wie jeder andere Code.</p>'],
                     ],
                 ]],
-                $cta,
-            ],
-        ],
-
-        // ------------------------------------------------------------------ REDAXO 6 (Übersicht mit Unterseiten)
-        [
-            'slug' => 'redaxo-6', 'title' => 'REDAXO 6', 'menu' => true,
-            'blocks' => [
-                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Überblick',
-                    'title' => 'REDAXO 6 kennenlernen', 'text' => 'Backend, Projekt, Module, Templates, YForm und Navigation – mit Screenshots und Codebeispielen zum Nachbauen.']],
-                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
-                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
-                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>Hier steht, wie ein Projekt mit REDAXO 6 entsteht und wie die wichtigsten Bausteine aussehen – und was sich gegenüber REDAXO 5 ändert.</p>']],
-                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
-                    'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
-                    'items' => [
-                        ['icon' => 'arrows-clockwise', 'title' => 'Was sich ändert', 'text' => 'REDAXO 5 und 6 im Vergleich: Module, Templates, AddOns, Struktur, Konfiguration.', 'link_label' => 'Vergleichen', 'link' => '/was-sich-aendert'],
-                        ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
-                        ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
-                        ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
-                        ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
-                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – mit navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
-                        ['icon' => 'pencil-simple', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
-                        ['icon' => 'paint-brush', 'title' => 'Eigenes Kit', 'text' => 'Was ein Kit ist und wie man eins baut – vererbt von fluid, mit eigenen Views und eigenem CSS.', 'link_label' => 'Lesen', 'link' => '/eigenes-kit'],
-                    ],
-                ]],
-                $cta,
-            ],
-        ],
-
-        // ------------------------------------------------------------------ Was sich ändert
-        [
-            'slug' => 'was-sich-aendert', 'title' => 'Was sich ändert', 'menu' => true, 'parent' => 'redaxo-6',
-            'blocks' => [
-                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 5 → 6',
-                    'title' => 'Was sich gegenüber REDAXO 5 ändert', 'text' => 'Vertraute Ideen, neues Fundament: Struktur, Slices und Module bleiben – nur sauberer gebaut.']],
-                ['type' => 'features', 'data' => [
-                    'variant' => 'list', 'eyebrow' => '', 'title' => 'Bisher und jetzt', 'intro' => '', 'size' => 'l',
-                    'items' => [
-                        ['icon' => 'code', 'title' => 'Module: von Code in der Datenbank zu PHP-Klassen', 'text' => 'REDAXO 5: Ein- und Ausgabe als PHP im Backend gespeichert. REDAXO 6: Klasse mit #[AsModule], input() und output() – im Projekt versioniert.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'layout', 'title' => 'Templates: von Datenbank-Code zu Klassen mit Inhaltsbereichen', 'text' => 'Ein Template erbt von Template, rendert sich selbst und legt fest, welche Module in welchem Bereich erlaubt sind.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'package', 'title' => 'AddOns: vom Installer zu Composer', 'text' => 'REDAXO 5: herunterladen, installieren, aktivieren. REDAXO 6: Composer-Paket – im Projekt eingetragen heißt aktiv.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'tree-structure', 'title' => 'Struktur: vom AddOn zum Core', 'text' => 'Struktur, Inhalte, Arbeitsversion und Historie waren das AddOn „structure“ mit Plugins – jetzt sind sie Teil des Kerns.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'brackets-curly', 'title' => 'Klassen: von rex_article zu Redaxo\\Core\\Content\\Article', 'text' => 'Namespaces, Typen und Attribute statt globaler rex_-Klassen.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'gear', 'title' => 'Konfiguration: .env und Betriebsmodi', 'text' => 'Datenbank und Modus kommen aus der Umgebung – dev, live oder hardened.', 'link_label' => '', 'link' => ''],
-                    ],
-                ]],
-                ['type' => 'quote', 'tunes' => ['background' => 'tint'], 'data' => ['variant' => 'single', 'eyebrow' => '', 'title' => '', 'items' => [
-                    ['text' => 'Slices bleiben Slices. Was sich ändert, ist, was man mit ihnen machen kann.', 'name' => 'fluid', 'role' => 'Blöcke für REDAXO 6', 'image' => null],
-                ]]],
                 $cta,
             ],
         ],
@@ -922,8 +921,105 @@ return [
             ],
         ],
 
+        // ------------------------------------------------------------------ fluid (Übersicht mit Unterseiten)
         [
-            'slug' => 'fluid-projekt', 'title' => 'fluid-Projekt', 'menu' => true, 'parent' => 'redaxo-6',
+            'slug' => 'fluid', 'title' => 'fluid', 'menu' => true,
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'AddOn für REDAXO 6',
+                    'title' => 'fluid: Bearbeiten direkt auf der Website', 'text' => 'Was die Redaktion damit kann, welche Blöcke es gibt – und wie Entwickler eigene Blöcke und Kits bauen.']],
+                ['type' => 'features', 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'pencil-simple', 'title' => 'Bearbeiten', 'text' => 'Texte, Bilder, Blöcke und Design direkt auf der Seite – mit Entwurf und Veröffentlichen.', 'link_label' => 'Ansehen', 'link' => '/bearbeiten'],
+                        ['icon' => 'squares-four', 'title' => 'Bausteine', 'text' => 'Weitere Blöcke des Kits: Logos, Bento, Reiter, Preise und mehr.', 'link_label' => 'Ansehen', 'link' => '/bausteine'],
+                        ['icon' => 'terminal-window', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
+                        ['icon' => 'paint-brush', 'title' => 'Eigenes Kit', 'text' => 'Was ein Kit ist und wie man eins baut – vererbt von fluid, mit eigenen Views und eigenem CSS.', 'link_label' => 'Lesen', 'link' => '/eigenes-kit'],
+                    ],
+                ]],
+                $cta,
+            ],
+        ],
+
+        // ------------------------------------------------------------------ Bearbeiten
+        [
+            'slug' => 'bearbeiten', 'title' => 'Bearbeiten', 'menu' => true, 'parent' => 'fluid',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
+                    'title' => 'Bearbeiten direkt auf der Website', 'text' => 'Ein Feldschema je Block – daraus entstehen Backend-Formular, Bearbeiten im Kontext, Live-Vorschau und Ausgabe.']],
+                ['type' => 'media_text', 'data' => ['variant' => 'left', 'title' => 'Blöcke in Datensätzen', 'text' => '<p>Auch Einträge aus YForm-Tabellen bekommen Blöcke – bearbeitet direkt in der Detailansicht, mit derselben Seitenleiste wie auf jeder Seite.</p>',
+                    'image' => 'fluid-bearbeiten-datensatz.jpg', 'ratio' => '4:3', 'split' => 'even']],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'title' => 'Formulare zum Zusammenklicken', 'text' => '<p>Felder, Schritte, Bestätigung: Formulare entstehen in der Seitenleiste und speichern über YForm.</p>',
+                    'image' => 'fluid-formular-schritte.jpg', 'ratio' => '4:3', 'split' => 'even']],
+                ['type' => 'features', 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Im Alltag', 'title' => 'Was die Redaktion kann', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'pencil-simple', 'title' => 'Text direkt ändern', 'text' => 'Überschriften und Texte an Ort und Stelle – formatiert mit fett, kursiv, Marker, Farben, Listen und Links.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'sidebar-simple', 'title' => 'Alle Felder in der Seitenleiste', 'text' => 'Darstellung, Bilder aus dem Medienpool, Links über die Linkmap – mit Vorschau beim Tippen.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'squares-four', 'title' => 'Blöcke in Spalten', 'text' => 'Layout wählen, Blöcke in die Spalten stellen – auf dem Telefon automatisch untereinander.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'palette', 'title' => 'Design mit Vorlagen', 'text' => 'Farben, Schriften, Formen, Kopf und Fuß – live auf der Seite, mit Prüfung des Kontrasts.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'eye', 'title' => 'Entwurf und Veröffentlichen', 'text' => 'Änderungen landen in der Arbeitsversion – „Veröffentlichen“ bringt sie auf die Website.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'toggle-left', 'title' => 'Online/Offline, verschieben, löschen', 'text' => 'Jeder Block hat seine Leiste – auch Blöcke in Spalten.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'standard', 'eyebrow' => 'Im Vergleich', 'title' => 'Was fluid anders macht als MForm, MBlock und blÖcks', 'intro' => '',
+                    'measure' => 'wide', 'meta' => '', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p>Die bewährten AddOns lösen je eine Aufgabe im Backend: <strong>MForm</strong> baut Eingabeformulare für Module, <strong>MBlock</strong> macht Feldgruppen innerhalb eines Slices wiederholbar, <strong>blÖcks</strong> ergänzt die Slice-Liste um Verschieben, Kopieren und Online/Offline.</p>'
+                        . '<p><strong>fluid</strong> setzt eine Ebene tiefer an – beim Modul selbst:</p>'
+                        . '<ul><li><strong>Ein Schema für alles:</strong> Die Felder eines Blocks stehen einmal im Kit. Daraus entstehen das Formular im Backend, das Bearbeiten auf der Website, die Vorschau und die Daten der Ausgabe.</li>'
+                        . '<li><strong>Echte Slices:</strong> Jeder Block ist ein Slice – auch die Blöcke in Layout-Spalten. Modulrechte, Arbeitsversion, Historie, Online/Offline und das Backend gelten wie immer.</li>'
+                        . '<li><strong>Native Werte:</strong> Gespeichert wird wie bei jedem Modul des Cores in der JSON-Spalte data des Slices (Felder und Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
+                        . '<li><strong>Wiederholgruppen eingebaut:</strong> Einträge hinzufügen, sortieren, entfernen – im Backend und in der Seitenleiste gleich.</li>'
+                        . '<li><strong>Medienpool und Linkmap:</strong> Die Auswahl öffnet Medienpool und Linkmap des Cores als Overlay; Links auf Artikel bleiben als redaxo://ID gültig, auch wenn der Artikel umzieht.</li>'
+                        . '<li><strong>Kit mit Design-System:</strong> Blöcke, Template und CSS gehören zusammen – mit Style-Editor und Vorlagen.</li></ul>',
+                ]],
+                ['type' => 'layout', 'data' => ['preset' => '1-1', 'valign' => 'stretch', 'gap' => 'normal', 'stack' => 'default', 'reverse' => false],
+                    'children' => [
+                        [1, ['type' => 'cta', 'data' => ['variant' => 'box', 'eyebrow' => 'Für Entwickler', 'title' => 'Ein Block = eine kleine Klasse',
+                            'text' => 'Felder ins Kit, Ausgabe als View-Datei, fertig. Formular, Speichern und Bearbeiten auf der Website kommen von fluid.',
+                            'button_label' => 'Technik', 'button_link' => '/technik', 'button2_label' => '', 'button2_link' => '']]],
+                        [2, ['type' => 'cta', 'data' => ['variant' => 'box', 'eyebrow' => 'Für die Redaktion', 'title' => 'Sehen, was man ändert',
+                            'text' => 'Kein Rätselraten mehr zwischen Formular und Ergebnis – bearbeitet wird dort, wo der Text steht.',
+                            'button_label' => 'Zur Startseite', 'button_link' => '/start', 'button2_label' => '', 'button2_link' => '']]],
+                    ],
+                ],
+            ],
+        ],
+
+        // ------------------------------------------------------------------ Bausteine (Blöcke des Kits im Einsatz)
+        [
+            'slug' => 'bausteine', 'title' => 'Bausteine', 'menu' => true, 'parent' => 'fluid',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Kit fluid',
+                    'title' => 'Bausteine für jede Seite', 'text' => 'Jeder Abschnitt ist ein Block mit Feldschema – und ein echter REDAXO-Slice.']],
+                ['type' => 'logos', 'data' => ['variant' => 'marquee', 'eyebrow' => '', 'title' => 'Gebaut auf bewährten Bausteinen', 'items' => [
+                    ['name' => 'REDAXO', 'link' => '', 'image' => null], ['name' => 'PHP 8.5', 'link' => '', 'image' => null],
+                    ['name' => 'Composer', 'link' => '', 'image' => null], ['name' => 'Symfony', 'link' => '', 'image' => null],
+                    ['name' => 'Intervention Image', 'link' => '', 'image' => null], ['name' => 'Friends Of REDAXO', 'link' => '', 'image' => null],
+                ]]],
+                ['type' => 'bento', 'data' => ['eyebrow' => 'Auf einen Blick', 'title' => 'Was fluid mitbringt', 'intro' => '', 'items' => [
+                    ['size' => 'big', 'tone' => 'dark', 'icon' => 'sparkle', 'image' => null, 'eyebrow' => 'Bearbeiten im Kontext', 'title' => 'Texte, Bilder und Design direkt auf der Seite ändern.', 'text' => 'Mit Live-Vorschau, Arbeitsversion und Veröffentlichen.', 'link' => '/bearbeiten'],
+                    ['size' => 's', 'tone' => 'highlight', 'icon' => '', 'image' => null, 'eyebrow' => '18', 'title' => 'Design-Vorlagen', 'text' => 'Von der Kanzlei bis zum Startup.', 'link' => ''],
+                    ['size' => 's', 'tone' => 'card', 'icon' => 'squares-four', 'image' => null, 'eyebrow' => '', 'title' => 'Layout mit Spalten', 'text' => 'Spalten-Blöcke sind echte Slices.', 'link' => ''],
+                    ['size' => 'wide', 'tone' => 'accent', 'icon' => 'palette', 'image' => null, 'eyebrow' => '', 'title' => 'Style-Editor live auf der Seite', 'text' => 'Farben, Schriften, Formen – mit Kontrastprüfung.', 'link' => ''],
+                    ['size' => 's', 'tone' => 'tint', 'icon' => 'pencil-simple', 'image' => null, 'eyebrow' => '', 'title' => 'Bilder bearbeiten', 'text' => 'Zuschneiden, Drehen, Entzerren – das Original bleibt.', 'link' => ''],
+                    ['size' => 's', 'tone' => 'card', 'icon' => 'package', 'image' => null, 'eyebrow' => '', 'title' => 'Composer-Pakete', 'text' => 'fluid und image_editor als AddOns.', 'link' => ''],
+                ]]],
+                ['type' => 'tabs', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'top', 'eyebrow' => 'Für wen', 'title' => 'Ein System, drei Blickwinkel', 'intro' => '', 'items' => [
+                    ['label' => 'Redaktion', 'text' => '<p>Sehen, was man ändert: Text direkt auf der Seite, alle Felder in der Seitenleiste, Bilder aus dem Medienpool, Links über die Linkmap. Änderungen landen im Entwurf – erst „Veröffentlichen“ bringt sie live.</p>', 'image' => 'fluid-bearbeiten-datensatz.jpg'],
+                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in der Spalte data des Slices – keine eigenen Tabellen.</p>', 'image' => 'fluid-yform-maske.jpg'],
+                    ['label' => 'Agentur', 'text' => '<p>Kits mit Design-System und Vorlagen: ein Projekt schnell auf das Erscheinungsbild der Kundschaft bringen – und die Redaktion pflegt danach selbst.</p>', 'image' => 'fluid-website.jpg'],
+                ]]],
+                ['type' => 'pricing', 'data' => ['variant' => 'cards', 'eyebrow' => 'Mitmachen', 'title' => 'Drei Wege zu fluid', 'intro' => 'Open Source unter MIT-Lizenz – Beispielwege, keine Preisliste.', 'items' => [
+                    ['name' => 'Ausprobieren', 'badge' => '', 'price' => '0 €', 'period' => 'MIT-Lizenz', 'text' => 'Lokal mit REDAXO 6 installieren und die Demo durchklicken.', 'features' => "REDAXO 6 (Branch 6.x)\nfluid:demo legt alles an\nKeine Anmeldung nötig", 'highlight' => false, 'button_label' => 'Technik', 'button_link' => '/technik'],
+                    ['name' => 'Mitmachen', 'badge' => 'Empfohlen', 'price' => '0 €', 'period' => 'Friends Of REDAXO', 'text' => 'Ideen, Fehlerberichte und Blöcke beisteuern.', 'features' => "Issues und Pull Requests\nEigene Kits und Blöcke\nÜbersetzungen", 'highlight' => true, 'button_label' => 'Was sich ändert', 'button_link' => '/was-sich-aendert'],
+                    ['name' => 'Einsetzen', 'badge' => '', 'price' => '0 €', 'period' => 'sobald stabil', 'text' => 'In Projekten nutzen, wenn REDAXO 6 erscheint.', 'features' => "Composer-Paket\nArbeitsversion und Historie\nRechte wie gewohnt", 'highlight' => false, 'button_label' => 'Bearbeiten', 'button_link' => '/bearbeiten'],
+                ], 'rows' => [], 'note' => '']],
+            ],
+        ],
+
+        [
+            'slug' => 'fluid-projekt', 'title' => 'fluid-Projekt', 'menu' => true, 'parent' => 'fluid',
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
                     'title' => 'Ein Projekt mit fluid', 'text' => 'Bearbeiten direkt auf der Website: fluid einbinden, Demo anlegen, eigene Blöcke bauen.']],
@@ -948,7 +1044,7 @@ return [
         ],
 
         [
-            'slug' => 'eigenes-kit', 'title' => 'Eigenes Kit', 'menu' => true, 'parent' => 'redaxo-6',
+            'slug' => 'eigenes-kit', 'title' => 'Eigenes Kit', 'menu' => true, 'parent' => 'fluid',
             'blocks' => [
                 ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
                     'title' => 'Ein eigenes Kit bauen', 'text' => 'Was ein Kit ist, wann man eins braucht – und wie es Schritt für Schritt entsteht.']],
@@ -998,52 +1094,6 @@ return [
             ],
         ],
 
-        // ------------------------------------------------------------------ Bearbeiten
-        [
-            'slug' => 'bearbeiten', 'title' => 'Bearbeiten', 'menu' => true,
-            'blocks' => [
-                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
-                    'title' => 'Bearbeiten direkt auf der Website', 'text' => 'Ein Feldschema je Block – daraus entstehen Backend-Formular, Bearbeiten im Kontext, Live-Vorschau und Ausgabe.']],
-                ['type' => 'media_text', 'data' => ['variant' => 'left', 'title' => 'Blöcke in Datensätzen', 'text' => '<p>Auch Einträge aus YForm-Tabellen bekommen Blöcke – bearbeitet direkt in der Detailansicht, mit derselben Seitenleiste wie auf jeder Seite.</p>',
-                    'image' => 'fluid-bearbeiten-datensatz.jpg', 'ratio' => '4:3', 'split' => 'even']],
-                ['type' => 'media_text', 'data' => ['variant' => 'right', 'title' => 'Formulare zum Zusammenklicken', 'text' => '<p>Felder, Schritte, Bestätigung: Formulare entstehen in der Seitenleiste und speichern über YForm.</p>',
-                    'image' => 'fluid-formular-schritte.jpg', 'ratio' => '4:3', 'split' => 'even']],
-                ['type' => 'features', 'data' => [
-                    'variant' => 'icons', 'eyebrow' => 'Im Alltag', 'title' => 'Was die Redaktion kann', 'intro' => '', 'size' => 'm',
-                    'items' => [
-                        ['icon' => 'pencil-simple', 'title' => 'Text direkt ändern', 'text' => 'Überschriften und Texte an Ort und Stelle – formatiert mit fett, kursiv, Marker, Farben, Listen und Links.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'sidebar-simple', 'title' => 'Alle Felder in der Seitenleiste', 'text' => 'Darstellung, Bilder aus dem Medienpool, Links über die Linkmap – mit Vorschau beim Tippen.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'squares-four', 'title' => 'Blöcke in Spalten', 'text' => 'Layout wählen, Blöcke in die Spalten stellen – auf dem Telefon automatisch untereinander.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'palette', 'title' => 'Design mit Vorlagen', 'text' => 'Farben, Schriften, Formen, Kopf und Fuß – live auf der Seite, mit Prüfung des Kontrasts.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'eye', 'title' => 'Entwurf und Veröffentlichen', 'text' => 'Änderungen landen in der Arbeitsversion – „Veröffentlichen“ bringt sie auf die Website.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'toggle-left', 'title' => 'Online/Offline, verschieben, löschen', 'text' => 'Jeder Block hat seine Leiste – auch Blöcke in Spalten.', 'link_label' => '', 'link' => ''],
-                    ],
-                ]],
-                ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => [
-                    'variant' => 'standard', 'eyebrow' => 'Im Vergleich', 'title' => 'Was fluid anders macht als MForm, MBlock und blÖcks', 'intro' => '',
-                    'measure' => 'wide', 'meta' => '', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
-                    'text' => '<p>Die bewährten AddOns lösen je eine Aufgabe im Backend: <strong>MForm</strong> baut Eingabeformulare für Module, <strong>MBlock</strong> macht Feldgruppen innerhalb eines Slices wiederholbar, <strong>blÖcks</strong> ergänzt die Slice-Liste um Verschieben, Kopieren und Online/Offline.</p>'
-                        . '<p><strong>fluid</strong> setzt eine Ebene tiefer an – beim Modul selbst:</p>'
-                        . '<ul><li><strong>Ein Schema für alles:</strong> Die Felder eines Blocks stehen einmal im Kit. Daraus entstehen das Formular im Backend, das Bearbeiten auf der Website, die Vorschau und die Daten der Ausgabe.</li>'
-                        . '<li><strong>Echte Slices:</strong> Jeder Block ist ein Slice – auch die Blöcke in Layout-Spalten. Modulrechte, Arbeitsversion, Historie, Online/Offline und das Backend gelten wie immer.</li>'
-                        . '<li><strong>Native Werte:</strong> Gespeichert wird wie bei jedem Modul des Cores in der JSON-Spalte data des Slices (Felder und Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
-                        . '<li><strong>Wiederholgruppen eingebaut:</strong> Einträge hinzufügen, sortieren, entfernen – im Backend und in der Seitenleiste gleich.</li>'
-                        . '<li><strong>Medienpool und Linkmap:</strong> Die Auswahl öffnet Medienpool und Linkmap des Cores als Overlay; Links auf Artikel bleiben als redaxo://ID gültig, auch wenn der Artikel umzieht.</li>'
-                        . '<li><strong>Kit mit Design-System:</strong> Blöcke, Template und CSS gehören zusammen – mit Style-Editor und Vorlagen.</li></ul>',
-                ]],
-                ['type' => 'layout', 'data' => ['preset' => '1-1', 'valign' => 'stretch', 'gap' => 'normal', 'stack' => 'default', 'reverse' => false],
-                    'children' => [
-                        [1, ['type' => 'cta', 'data' => ['variant' => 'box', 'eyebrow' => 'Für Entwickler', 'title' => 'Ein Block = eine kleine Klasse',
-                            'text' => 'Felder ins Kit, Ausgabe als View-Datei, fertig. Formular, Speichern und Bearbeiten auf der Website kommen von fluid.',
-                            'button_label' => 'Technik', 'button_link' => '/technik', 'button2_label' => '', 'button2_link' => '']]],
-                        [2, ['type' => 'cta', 'data' => ['variant' => 'box', 'eyebrow' => 'Für die Redaktion', 'title' => 'Sehen, was man ändert',
-                            'text' => 'Kein Rätselraten mehr zwischen Formular und Ergebnis – bearbeitet wird dort, wo der Text steht.',
-                            'button_label' => 'Zur Startseite', 'button_link' => '/start', 'button2_label' => '', 'button2_link' => '']]],
-                    ],
-                ],
-            ],
-        ],
-
         // ------------------------------------------------------------------ Suche (nicht im Menü – Lupe im Kopf)
         [
             'slug' => 'suche', 'title' => 'Suche', 'menu' => false,
@@ -1051,6 +1101,7 @@ return [
                 ['type' => 'search', 'data' => ['eyebrow' => '', 'title' => 'Suche', 'intro' => 'Durchsucht alle veröffentlichten Seiten – auch mit Tippfehlern.', 'placeholder' => '', 'limit' => 20, 'empty_text' => '']],
             ],
         ],
+
         // ------------------------------------------------------------------ Daten (YForm)
         [
             'slug' => 'daten', 'title' => 'Daten', 'menu' => true, 'requires' => 'yform',
@@ -1066,6 +1117,7 @@ return [
                     'note' => 'Ihre Angaben verwenden wir nur zur Beantwortung.']],
             ],
         ],
+
         // ------------------------------------------------------------------ Presse: Kurzmeldungen aus YForm (Datenliste, Blättern, Detailseiten)
         [
             'slug' => 'presse', 'title' => 'Presse', 'menu' => true, 'requires' => 'yform',
@@ -1075,6 +1127,7 @@ return [
                     'filter_field' => 'rex_yf_news.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_news.date', 'sort_dir' => 'desc', 'limit' => 3, 'pager' => true, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
             ],
         ],
+
         // ------------------------------------------------------------------ Projekte: Fallstudien aus Blöcken im YForm-Datensatz (Feld „Fluid-Blöcke“)
         [
             'slug' => 'projekte', 'title' => 'Projekte', 'menu' => true, 'requires' => 'yform',
@@ -1086,6 +1139,7 @@ return [
                     'filter_field' => 'rex_yf_project.online', 'filter_value' => '1', 'sort_field' => 'rex_yf_project.year', 'sort_dir' => 'desc', 'limit' => 0, 'size' => 'm', 'detail' => true, 'empty_text' => '']],
             ],
         ],
+
         // ------------------------------------------------------------------ Anmeldung: eigenes Formular mit drei Schritten (BuiltForm, YForm)
         [
             'slug' => 'anmeldung', 'title' => 'Anmeldung', 'menu' => false, 'requires' => 'yform',
@@ -1110,6 +1164,7 @@ return [
                     ]]],
             ],
         ],
+
         // ------------------------------------------------------------------ Blog: Menüseite mit „Blog / News“, Beiträge = Seiten darin
         [
             'slug' => 'neuigkeiten', 'title' => 'Neuigkeiten', 'menu' => true, 'blog' => true,
@@ -1117,6 +1172,7 @@ return [
                 ['type' => 'posts', 'data' => ['variant' => 'featured', 'eyebrow' => '', 'title' => '', 'intro' => '', 'blog' => '', 'limit' => 6, 'pager' => true, 'tags' => true, 'size' => 'm', 'more' => '', 'empty_text' => '']],
             ],
         ],
+
         [
             'slug' => 'fluid-ist-da', 'title' => 'fluid für REDAXO 6', 'parent' => 'neuigkeiten',
             'post' => ['date' => '2026-10-12', 'author' => 'Friends Of REDAXO', 'tags' => 'REDAXO 6, Release', 'excerpt' => 'Bearbeiten direkt auf der Website – mit Blöcken als echten Slices, Arbeitsversion und Rechten wie im Backend.'],
@@ -1125,6 +1181,7 @@ return [
                     'text' => '<p>fluid bringt das Bearbeiten auf der Website nach REDAXO 6. Jeder Abschnitt ist ein Block mit Feldschema – und ein echter Slice.</p><h2>Was neu ist</h2><ul><li>Texte direkt auf der Seite ändern</li><li>Entwurf speichern, dann veröffentlichen</li><li>Seiten, Sprachen und Domains im Seitenbaum und unter „Website“</li></ul><p>Dieser Beitrag ist selbst ein Beispiel: eine normale Seite im Blog „Neuigkeiten“.</p>']],
             ],
         ],
+
         [
             'slug' => 'blog-mit-fluid', 'title' => 'So funktioniert der Blog', 'parent' => 'neuigkeiten',
             'post' => ['date' => '2026-10-05', 'author' => 'Redaktion', 'tags' => 'Anleitung', 'excerpt' => 'Eine Menüseite wird zum Blog, ihre Seiten zu Beiträgen – mit Datum, Autor und Schlagworten.'],
@@ -1133,43 +1190,13 @@ return [
                     'text' => '<h2>In drei Schritten</h2><ol><li>Bei einer Menüseite in den Seiteneinstellungen „Blog / News“ anhaken.</li><li>Dort den Block „Beiträge“ einfügen.</li><li>„+ Neuer Beitrag“ – Titel eingeben, schreiben, veröffentlichen.</li></ol><p>Datum, Autor und Schlagworte stehen in den Seiteneinstellungen des Beitrags. Teaserbild und Kurztext sind das Bild für soziale Netzwerke und die Beschreibung für Suchmaschinen.</p>']],
             ],
         ],
+
         [
             'slug' => 'sommerfest', 'title' => 'Rückblick: Sommerfest', 'parent' => 'neuigkeiten',
             'post' => ['date' => '2026-07-04', 'author' => 'Redaktion', 'tags' => 'Veranstaltung', 'excerpt' => 'Grill, Musik und viele Gäste – ein Beispielbeitrag mit Schlagwort „Veranstaltung“.'],
             'blocks' => [
                 ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'measure' => 'normal',
                     'text' => '<p>Ein Beispielbeitrag, damit Übersicht, Schlagworte und „Älterer/Neuerer Beitrag“ etwas zu zeigen haben.</p>']],
-            ],
-        ],
-        // ------------------------------------------------------------------ Bausteine (Blöcke des Kits im Einsatz)
-        [
-            'slug' => 'bausteine', 'title' => 'Bausteine', 'menu' => true,
-            'blocks' => [
-                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'Kit fluid',
-                    'title' => 'Bausteine für jede Seite', 'text' => 'Jeder Abschnitt ist ein Block mit Feldschema – und ein echter REDAXO-Slice.']],
-                ['type' => 'logos', 'data' => ['variant' => 'marquee', 'eyebrow' => '', 'title' => 'Gebaut auf bewährten Bausteinen', 'items' => [
-                    ['name' => 'REDAXO', 'link' => '', 'image' => null], ['name' => 'PHP 8.5', 'link' => '', 'image' => null],
-                    ['name' => 'Composer', 'link' => '', 'image' => null], ['name' => 'Symfony', 'link' => '', 'image' => null],
-                    ['name' => 'Intervention Image', 'link' => '', 'image' => null], ['name' => 'Friends Of REDAXO', 'link' => '', 'image' => null],
-                ]]],
-                ['type' => 'bento', 'data' => ['eyebrow' => 'Auf einen Blick', 'title' => 'Was fluid mitbringt', 'intro' => '', 'items' => [
-                    ['size' => 'big', 'tone' => 'dark', 'icon' => 'sparkle', 'image' => null, 'eyebrow' => 'Bearbeiten im Kontext', 'title' => 'Texte, Bilder und Design direkt auf der Seite ändern.', 'text' => 'Mit Live-Vorschau, Arbeitsversion und Veröffentlichen.', 'link' => '/bearbeiten'],
-                    ['size' => 's', 'tone' => 'highlight', 'icon' => '', 'image' => null, 'eyebrow' => '18', 'title' => 'Design-Vorlagen', 'text' => 'Von der Kanzlei bis zum Startup.', 'link' => ''],
-                    ['size' => 's', 'tone' => 'card', 'icon' => 'squares-four', 'image' => null, 'eyebrow' => '', 'title' => 'Layout mit Spalten', 'text' => 'Spalten-Blöcke sind echte Slices.', 'link' => ''],
-                    ['size' => 'wide', 'tone' => 'accent', 'icon' => 'palette', 'image' => null, 'eyebrow' => '', 'title' => 'Style-Editor live auf der Seite', 'text' => 'Farben, Schriften, Formen – mit Kontrastprüfung.', 'link' => ''],
-                    ['size' => 's', 'tone' => 'tint', 'icon' => 'pencil-simple', 'image' => null, 'eyebrow' => '', 'title' => 'Bilder bearbeiten', 'text' => 'Zuschneiden, Drehen, Entzerren – das Original bleibt.', 'link' => ''],
-                    ['size' => 's', 'tone' => 'card', 'icon' => 'package', 'image' => null, 'eyebrow' => '', 'title' => 'Composer-Pakete', 'text' => 'fluid und image_editor als AddOns.', 'link' => ''],
-                ]]],
-                ['type' => 'tabs', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'top', 'eyebrow' => 'Für wen', 'title' => 'Ein System, drei Blickwinkel', 'intro' => '', 'items' => [
-                    ['label' => 'Redaktion', 'text' => '<p>Sehen, was man ändert: Text direkt auf der Seite, alle Felder in der Seitenleiste, Bilder aus dem Medienpool, Links über die Linkmap. Änderungen landen im Entwurf – erst „Veröffentlichen“ bringt sie live.</p>', 'image' => 'fluid-bearbeiten-datensatz.jpg'],
-                    ['label' => 'Entwicklung', 'text' => '<p>Ein Block ist eine kleine Klasse: Felder ins Kit, Ausgabe als View-Datei. Formular, Speichern und Bearbeiten auf der Website kommen von fluid. Daten liegen nativ in der Spalte data des Slices – keine eigenen Tabellen.</p>', 'image' => 'fluid-yform-maske.jpg'],
-                    ['label' => 'Agentur', 'text' => '<p>Kits mit Design-System und Vorlagen: ein Projekt schnell auf das Erscheinungsbild der Kundschaft bringen – und die Redaktion pflegt danach selbst.</p>', 'image' => 'fluid-website.jpg'],
-                ]]],
-                ['type' => 'pricing', 'data' => ['variant' => 'cards', 'eyebrow' => 'Mitmachen', 'title' => 'Drei Wege zu fluid', 'intro' => 'Open Source unter MIT-Lizenz – Beispielwege, keine Preisliste.', 'items' => [
-                    ['name' => 'Ausprobieren', 'badge' => '', 'price' => '0 €', 'period' => 'MIT-Lizenz', 'text' => 'Lokal mit REDAXO 6 installieren und die Demo durchklicken.', 'features' => "REDAXO 6 (Branch 6.x)\nfluid:demo legt alles an\nKeine Anmeldung nötig", 'highlight' => false, 'button_label' => 'Technik', 'button_link' => '/technik'],
-                    ['name' => 'Mitmachen', 'badge' => 'Empfohlen', 'price' => '0 €', 'period' => 'Friends Of REDAXO', 'text' => 'Ideen, Fehlerberichte und Blöcke beisteuern.', 'features' => "Issues und Pull Requests\nEigene Kits und Blöcke\nÜbersetzungen", 'highlight' => true, 'button_label' => 'Was sich ändert', 'button_link' => '/was-sich-aendert'],
-                    ['name' => 'Einsetzen', 'badge' => '', 'price' => '0 €', 'period' => 'sobald stabil', 'text' => 'In Projekten nutzen, wenn REDAXO 6 erscheint.', 'features' => "Composer-Paket\nArbeitsversion und Historie\nRechte wie gewohnt", 'highlight' => false, 'button_label' => 'Bearbeiten', 'button_link' => '/bearbeiten'],
-                ], 'rows' => [], 'note' => '']],
             ],
         ],
     ],

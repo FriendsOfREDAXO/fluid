@@ -180,6 +180,23 @@ final class DemoCommand extends AbstractCommand
             }
         }
 
+        // Unterseiten im Menü in der Reihenfolge der Demo (mit --page verschobene oder neue Seiten landen sonst am Ende)
+        if ('' !== $page) {
+            $parents = array_unique(array_filter(array_map(static fn (array $p): ?string => !empty($p['menu']) ? ($p['parent'] ?? null) : null, $demo['pages'])));
+            foreach ($parents as $parentSlug) {
+                $priority = 1;
+                foreach ($all as $p) {
+                    if (empty($p['menu']) || ($p['parent'] ?? null) !== $parentSlug) {
+                        continue;
+                    }
+                    $cid = $ids[(string) $p['slug']] ?? $existing((string) $p['slug']);
+                    if (null !== $cid && \Redaxo\Core\Content\Category::get($cid)) {
+                        CategoryHandler::edit($cid, $lang, ['priority' => $priority++]);
+                    }
+                }
+            }
+        }
+
         // 2. Blöcke – Links auf Demo-Seiten (/kontakt) werden zu redaxo://ID
         $mapLinks = static function (mixed $v) use (&$mapLinks, $ids, $existing): mixed {
             if (is_array($v)) {
