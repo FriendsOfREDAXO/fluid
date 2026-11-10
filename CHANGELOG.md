@@ -4,6 +4,15 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Diagramme
+
+- Neuer Block „Diagramm“ (`fluid.chart`): Balken, waagerechte Balken, Linie, Fläche, Torte, Ring – Werte von Hand
+  (Reihen als `Collection`) oder aus einer Datenquelle (`#[AsChartSource]`), Tabelle der Werte für Screenreader und
+  ohne JavaScript, Darstellungen „standard“ und „split“.
+- `Chart::render()` für Templates, Module und AddOns; Engine austauschbar (`#[AsChartEngine]`, `ChartConfig`),
+  Standard Apache ECharts, selbst gehostet, lädt erst in Sichtweite (aus KLXM Studio – `Core\Charts`).
+- Demo: Seite „Diagramme“ im Bereich fluid, Quelle „Blöcke je Art“ des Kits zählt live aus der Datenbank.
+
 ### Versionen: Live-Schaltung = Stand, Entwurf = Zwischenstände
 
 - Jede Live-Schaltung legt den Stand an, der live geht („Veröffentlicht“, Archiv). Vorher ein Stand der alten

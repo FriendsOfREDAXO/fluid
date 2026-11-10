@@ -417,4 +417,9 @@ return array (
   'Alle Beiträge' => 'All posts',
   'Blättern' => 'Pagination',
   'Diesen Eintrag gibt es nicht mehr.' => 'This entry no longer exists.',
+  // Diagramme
+  'Keine Daten für dieses Diagramm.' => 'No data for this chart.',
+  'Reihe {n}' => 'Series {n}',
+  'Blöcke' => 'Blocks',
+  'Die häufigsten Blöcke auf dieser Website, gezählt aus der Datenbank' => 'The most frequent blocks on this website, counted from the database',
 );

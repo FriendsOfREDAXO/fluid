@@ -9,7 +9,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [YForm: Formulare und Datenlisten](#yform-formulare-und-datenlisten)
 - [Blöcke in YForm-Tabellen](#blöcke-in-yform-tabellen-feld-fluid-blöcke)
 - [Adressen, Domains, SEO](#adressen-domains-seo)
-- [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten)
+- [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten) · [Diagramme](#diagramme)
 - [Versionen](#versionen) · [MCP-Server](#mcp-server) · [E-Mail](#e-mail)
 - [Suche](#suche) · [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Gastzugang](#gastzugang-für-addons) · [Bausteine](#bausteine-später-eigene-addons) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
@@ -526,6 +526,38 @@ Teaserbild = Bild für soziale Netzwerke, Kurztext = Beschreibung. Sortierung na
 
 MapLibre GL und OpenFreeMap über den eigenen Proxy `/proxy/ofm/…` (Cache im Cache-Ordner des AddOns). Besucher verbinden
 sich nicht mit Dritten. Detailkacheln gibt es nur rund um Orte, die auf der Website als Karte vorkommen.
+
+## Diagramme
+
+`FriendsOfRedaxo\Fluid\Chart\Chart` zeichnet Diagramme mit austauschbarer Engine (aus KLXM Studio). Aufrufer
+beschreiben ein Diagramm in einem eigenen, schlichten Format – nie im Format einer Bibliothek:
+
+```php
+echo Chart::render([
+    'type' => 'bar',                       // line | area | bar | hbar | pie | donut (Torte/Ring: eine Reihe)
+    'labels' => ['Jan', 'Feb', 'Mär'],
+    'series' => [['name' => 'Anfragen', 'data' => [12, 19, 15]]],
+    'description' => 'Anfragen je Monat',  // Screenreader (role="img")
+    'format' => 'number',                  // number | percent | bytes | duration (Sekunden)
+    'unit' => '', 'stacked' => false, 'height' => 320,
+], ['table' => false]);                    // true = Tabelle aufgeklappt, 'none' = ohne
+```
+
+- **Ausgabe:** `<figure data-chart>` mit den Daten als `<script type="application/json">`, einer Tabelle („Als Tabelle
+  anzeigen“, auch ohne JavaScript) und einmal je Seite `assets/css/charts.css` und `assets/js/charts.mjs`. Der Lader
+  holt die Engine erst in Sichtweite und zeichnet bei Hell/Dunkel neu.
+- **Farben:** `--chart-1` … `--chart-8` (hell), `--chart-d1` … `--chart-d8` (dunkel), Text und Linien aus der Umgebung;
+  Kits setzen `--chart-c1` … `c6` (das Kit fluid nimmt für Reihe 1 die Akzentfarbe).
+- **Engine tauschen:** Klasse mit `#[AsChartEngine('name')]`, die `ChartEngine` implementiert (`url()` → ES-Modul mit
+  `export function render(el, spec, theme) → {update, resize, dispose, image?}`), gewählt in `Project::configure()`:
+  `Chart::$config = new ChartConfig(engine: 'name')`. Vorlage: `resources/js/charts-echarts.mjs` (Quelle des Bundles
+  `assets/vendor/echarts/charts-echarts.mjs`, Apache ECharts, Apache-2.0, nur Linie/Balken/Torte, Canvas).
+- **Datenquellen:** statische Methode mit `#[AsChartSource('key', 'Bezeichnung')]`, die `labels` und `series` liefert
+  (optional `type`, `format`, `unit`, `description`) – erscheint im Block „Diagramm“ unter „Daten“, Werte bei jedem
+  Aufruf frisch. Beispiel: `kits/fluid/src/ChartSources.php`.
+- **Block „Diagramm“** (`fluid.chart`): Art, Daten (von Hand oder Quelle), Beschriftungen je Zeile, Reihen als
+  `Collection` (Werte mit `;` oder Zeilenumbruch, `Chart::number()` liest „1.250“, „12,5“, „3.5“), Zahlen, Einheit,
+  Stapeln, Höhe, Tabelle, Satz für Screenreader; Darstellungen „standard“ und „split“.
 
 ## Versionen
 

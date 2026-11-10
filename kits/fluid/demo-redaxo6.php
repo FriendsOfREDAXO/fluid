@@ -291,6 +291,48 @@ final class EventRoutes extends RouteSource
     }
 }
 CODE,
+    'chartRender' => <<<'CODE'
+use FriendsOfRedaxo\Fluid\Chart\Chart;
+
+echo Chart::render([
+    'type' => 'line',                              // line | area | bar | hbar | pie | donut
+    'labels' => ['Jan', 'Feb', 'Mär', 'Apr'],
+    'series' => [['name' => 'Anfragen', 'data' => [12, 19, 15, 24]]],
+    'description' => 'Anfragen je Monat, höchster Wert im April',
+    'format' => 'number', 'unit' => '', 'height' => 320,
+], ['table' => false]);   // true = Tabelle aufgeklappt, 'none' = ohne
+CODE,
+    'chartSource' => (string) file_get_contents(__DIR__ . '/src/ChartSources.php'),
+    'chartEngine' => <<<'CODE'
+use FriendsOfRedaxo\Fluid\Chart\Attribute\AsChartEngine;
+use FriendsOfRedaxo\Fluid\Chart\ChartEngine;
+
+#[AsChartEngine('apex')]
+final class ApexEngine implements ChartEngine
+{
+    public function url(): string
+    {
+        return '/assets/project/charts-apex.mjs';
+    }
+}
+
+// src/Project.php – in configure()
+Chart::$config = new ChartConfig(engine: 'apex');
+CODE,
+    'chartJs' => <<<'CODE'
+// assets/project/charts-apex.mjs – die einzige Datei, die die Bibliothek kennt
+export function render(el, spec, theme) {
+  // spec: type, labels, series[{name, data}], format, unit, stacked, height, locale
+  // theme: colors[], ink, muted, grid, bg, font, dark (aus den CSS-Variablen der Seite)
+  const chart = draw(el, spec, theme);
+  return {
+    update: (t) => chart.restyle(t),   // Hell/Dunkel gewechselt
+    resize: () => chart.resize(),
+    dispose: () => chart.destroy(),
+    image: () => chart.png(),          // optional: Bild für den Druck
+  };
+}
+CODE,
     'rendpoint' => <<<'CODE'
 final class Calendar
 {
@@ -1249,6 +1291,7 @@ vollständig: Module, Templates, Schema'],
                         ['icon' => 'terminal-window', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
                         ['icon' => 'paint-brush', 'title' => 'Eigenes Kit', 'text' => 'Was ein Kit ist und wie man eins baut – vererbt von fluid, mit eigenen Views und eigenem CSS.', 'link_label' => 'Lesen', 'link' => '/eigenes-kit'],
                         ['icon' => 'signpost', 'title' => 'Adressen', 'text' => 'Feste Adressen, Weiterleitungen, Sitemap und Seitenkopf – auch für Einträge anderer AddOns.', 'link_label' => 'Lesen', 'link' => '/adressen'],
+                        ['icon' => 'chart-line-up', 'title' => 'Diagramme', 'text' => 'Balken, Linie, Torte – von Hand oder live aus Daten, mit austauschbarer Engine.', 'link_label' => 'Ansehen', 'link' => '/diagramme'],
                     ],
                 ]],
                 $cta,
@@ -1440,6 +1483,48 @@ vollständig: Module, Templates, Schema'],
                 ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Später austauschbar', 'intro' => '', 'meta' => '',
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<p>Der Rewriter liegt in <code>src/Routing/</code> und kennt nichts von fluid. Er kann ein eigenes AddOn werden – oder durch yrewrite und ein URL-AddOn ersetzt werden, sobald sie das Nötige können. Quellen, Endpunkte und Erweiterungen sprechen nur mit ihm, nicht mit fluid; ein Wechsel betrifft dann einen Adapter, nicht jedes AddOn.</p>']],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'diagramme', 'title' => 'Diagramme', 'menu' => true, 'parent' => 'fluid',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
+                    'title' => 'Diagramme mit *austauschbarer Engine*', 'text' => 'Balken, Linie, Fläche, Torte und Ring – beschrieben in einem schlichten Format, gezeichnet von einer Engine, die das Projekt wählt. Standard ist Apache ECharts, selbst gehostet.']],
+                ['type' => 'chart', 'data' => ['variant' => 'standard', 'eyebrow' => 'Werte von Hand', 'title' => 'Anfragen je Monat', 'intro' => 'Zwei Reihen, Beschriftungen je Zeile, Werte mit Semikolon getrennt.',
+                    'chart_type' => 'bar', 'source' => '', 'labels' => "Jan\nFeb\nMär\nApr\nMai\nJun",
+                    'series' => [['name' => 'Website', 'values' => '42; 51; 47; 63; 78; 71'], ['name' => 'Telefon', 'values' => '18; 22; 19; 17; 21; 16']],
+                    'format' => 'number', 'unit' => '', 'stacked' => false, 'height' => '320', 'table_view' => '', 'description' => 'Anfragen je Monat über Website und Telefon, höchster Wert im Mai']],
+                ['type' => 'chart', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'split', 'eyebrow' => 'Live aus der Datenbank', 'title' => 'Was auf dieser Website steht', 'intro' => 'Eine Datenquelle des Kits zählt die Blöcke dieser Website – bei jedem Aufruf frisch. Eigene Quellen meldet ein AddOn oder das Projekt mit #[AsChartSource] an.',
+                    'chart_type' => 'hbar', 'source' => 'fluid.blocks', 'labels' => '', 'series' => [],
+                    'format' => 'number', 'unit' => '', 'stacked' => false, 'height' => '320', 'table_view' => '', 'description' => '']],
+                ['type' => 'layout', 'data' => ['preset' => '1-1', 'valign' => 'top', 'gap' => 'normal', 'stack' => 'default', 'reverse' => false], 'children' => [
+                    [1, ['type' => 'chart', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Besuche gestapelt', 'intro' => '',
+                        'chart_type' => 'area', 'source' => '', 'labels' => "Mo\nDi\nMi\nDo\nFr\nSa\nSo",
+                        'series' => [['name' => 'Neu', 'values' => '120; 132; 101; 134; 90; 230; 210'], ['name' => 'Wiederkehrend', 'values' => '220; 182; 191; 234; 290; 330; 310']],
+                        'format' => 'number', 'unit' => '', 'stacked' => true, 'height' => '240', 'table_view' => '', 'description' => 'Neue und wiederkehrende Besuche je Wochentag']]],
+                    [2, ['type' => 'chart', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Anteil der Geräte', 'intro' => '',
+                        'chart_type' => 'donut', 'source' => '', 'labels' => "Smartphone\nDesktop\nTablet",
+                        'series' => [['name' => 'Anteil', 'values' => '58; 36; 6']],
+                        'format' => 'percent', 'unit' => '', 'stacked' => false, 'height' => '240', 'table_view' => '', 'description' => 'Smartphone 58 %, Desktop 36 %, Tablet 6 %']]],
+                ]],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'So arbeiten die Diagramme', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<h3>Eigenes Format statt Bibliothek</h3><p>Blöcke und AddOns beschreiben ein Diagramm mit <code>type</code>, <code>labels</code> und <code>series</code> – nie im Format einer Bibliothek. Wer die Engine tauscht, ändert keinen Aufrufer.</p><h3>Erst laden, wenn es sichtbar wird</h3><p>Der Lader (<code>charts.mjs</code>, wenige KB) holt die Engine erst, wenn ein Diagramm in Sichtweite kommt. Seiten ohne Diagramm laden nichts.</p><h3>Barrierearm</h3><p>Jedes Diagramm hat einen Satz für Screenreader und die Werte als Tabelle („Als Tabelle anzeigen“). Ohne JavaScript bleibt die Tabelle stehen.</p><h3>Farben aus dem Kit</h3><p>Reihenfarben kommen aus CSS-Variablen (<code>--chart-1</code> … <code>--chart-8</code>), Text und Linien aus der Umgebung – hell wie dunkel, auch in dunklen Abschnitten.</p><h3>Bearbeiten auf der Website</h3><p>Der Block „Diagramm“ hat gewöhnliche Felder des Cores: Beschriftungen, Reihen als Collection, Art, Zahlenformat. Werte ändern sich in der Seitenleiste und erscheinen sofort.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein Diagramm ausgeben', 'intro' => 'Aus jedem Template, Modul oder AddOn – gleiche Ausgabe wie der Block.', 'note' => 'Torte und Ring zeigen eine Reihe; Stapeln gilt für Balken und Fläche.',
+                    'items' => [
+                        $c('chartRender', 'PHP', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eine Datenquelle anmelden', 'intro' => 'Eine statische Methode mit #[AsChartSource] erscheint im Block unter „Daten“. Diese Quelle liefert das Diagramm oben.', 'note' => '',
+                    'items' => [
+                        $c('chartSource', 'kits/fluid/src/ChartSources.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Die Engine tauschen', 'intro' => 'Eine Klasse mit #[AsChartEngine] nennt das ES-Modul, die Konfiguration wählt es – wie die Policies von REDAXO 6.', 'note' => 'Vorlage für eine eigene Engine: resources/js/charts-echarts.mjs in fluid.',
+                    'items' => [
+                        $c('chartEngine', 'src/Chart/ApexEngine.php', 'php'),
+                        $c('chartJs', 'charts-apex.mjs', 'javascript'),
+                    ]]],
                 $cta,
             ],
         ],
