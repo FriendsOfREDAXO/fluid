@@ -313,8 +313,15 @@ textarea[data-blocks-rte] { display: none !important; }
 .tree__btn.is-off { position: relative; color: var(--warn); }
 .tree__btn.is-off::after { content: ""; position: absolute; left: 22%; right: 22%; top: 50%; height: 2px; margin-top: -1px; border-radius: 1px; background: currentColor; transform: rotate(-45deg); box-shadow: 0 0 0 1.5px var(--bg); }
 .tree__badge.is-hidden { color: var(--warn); font-weight: 600; }
-.tree__tools { flex: none; display: flex; gap: 2px; opacity: .55; }
-.tree__row:hover .tree__tools, .tree__row:focus-within .tree__tools { opacity: 1; }
+/* Status im Seitenbaum: online grün, offline grau, gesperrt (weiterer Status eines AddOns) rot */
+.tree__st { font-size: 15px; }
+.tree__st.st-on { color: var(--ok); }
+.tree__st.st-off { color: var(--muted); }
+.tree__st.st-locked, .tree__badge .st-locked { color: var(--danger); }
+.tree__tools { flex: none; display: flex; gap: 2px; }
+/* Werkzeuge gedämpft bis zum Zeigen – Status und „nicht im Menü“ bleiben immer kräftig */
+.tree__tools > .tree__btn:not(.tree__st, .is-off) { opacity: .55; }
+.tree__row:hover .tree__tools > .tree__btn, .tree__row:focus-within .tree__tools > .tree__btn { opacity: 1; }
 .tree__btn { all: unset; cursor: pointer; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; font-size: 13px; }
 .tree__btn:hover { background: var(--line); }
 .tree__btn:focus-visible { outline: 2px solid var(--accent, #4f46e5); }

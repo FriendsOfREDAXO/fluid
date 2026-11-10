@@ -18,8 +18,12 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - Weiterleitungen wegen eines geänderten Titels speichert der Browser nicht mehr (ein zurückbenannter Eintrag führte
     sonst in eine Schleife).
 - Seitenbaum: „Nicht im Menü zeigen“ blendet einen Menüpunkt nur aus dem Menü aus – die Seite bleibt online, an ihrer
-  Stelle und mit ihren Unterseiten (wie in KLXM Studio). Vorher wurde sie zur Seite ohne Menüeintrag umgewandelt und
-  sprang dabei in der Reihenfolge; mit Unterseiten ging es gar nicht.
+  Stelle, mit ihren Unterseiten und in der Sitemap (wie in KLXM Studio). Gespeichert im Metafeld „Nicht in der
+  Navigation zeigen“ von navigation_array (auch im Backend unter Kategorie bearbeiten). Vorher wurde der Menüpunkt zur
+  Seite ohne Menüeintrag umgewandelt und sprang dabei in der Reihenfolge; mit Unterseiten ging es gar nicht.
+  Im Baum: ☰ schräg durchgestrichen und „nicht im Menü“ in Warnfarbe.
+- Seitenbaum: Status farbig – online grün ●, offline grau ○, gesperrt rot ● (weiterer Status eines AddOns, mit dessen
+  Bezeichnung). Nur online steht in Menü und Sitemap.
 - Menüs der Seite (Kopf, Menü-Blatt, Fuß) passen sich sofort an, wenn im Seitenbaum etwas online/offline geschaltet,
   aus dem Menü genommen, verschoben oder gelöscht wird – ohne Neuladen.
 - YForm-Einträge mit Sprache (Feld `FluidLanguage`): Datenliste, Detailansicht und Sitemap zeigen nur Einträge der

@@ -25,35 +25,33 @@ use function in_array;
  */
 final class Structure
 {
-    /** Menüpunkte, die nicht im Menü erscheinen (Kategorien – Stelle, Unterseiten und Status bleiben) */
-    private const string HIDDEN = 'menu_hidden';
-
-    /** @return list<int> */
-    public static function hiddenIds(): array
-    {
-        return array_values(array_map('intval', (array) FluidAddon::instance()->getConfig(self::HIDDEN, [])));
-    }
-
+    /**
+     * Menüpunkt „nicht im Menü“: Metafeld „Nicht in der Navigation zeigen“ von navigation_array (Spalte
+     * meta_nav_hidden der Kategorie, für alle Sprachen) – Stelle, Unterseiten und Status bleiben, die Navigation lässt
+     * die Kategorie weg. Im Backend unter Kategorie → Metadaten.
+     */
     public static function isHidden(int $categoryId): bool
     {
-        return in_array($categoryId, self::hiddenIds(), true);
+        $cat = Category::get($categoryId);
+
+        return null !== $cat && \FriendsOfRedaxo\NavigationArray\NavigationMeta::of($cat)->navHidden;
     }
 
-    private static function setHidden(int $categoryId, bool $hidden): void
+    private static function setHidden(int $categoryId, int $languageId, bool $hidden): void
     {
-        $ids = array_values(array_diff(self::hiddenIds(), [$categoryId]));
-        if ($hidden) {
-            $ids[] = $categoryId;
-        }
-        FluidAddon::instance()->setConfig(self::HIDDEN, $ids);
+        CategoryHandler::edit($categoryId, $languageId, [], ['nav_hidden' => $hidden]);
     }
 
     /** @return list<array<string, mixed>> */
     public static function tree(int $languageId): array
     {
         $home = Article::getSiteStartArticleId();
-        $node = static function (Article $a, bool $menu, array $children = []) use ($home): array {
+        $types = ArticleHandler::statusTypes();   // 0 offline, 1 online, weitere von AddOns (z. B. gesperrt)
+        $node = static function (Article $a, bool $menu, array $children = []) use ($home, $types): array {
+            $status = (int) $a->getValue('status');
+
             return ['id' => $a->id, 'name' => $a->name, 'url' => $a->getUrl(), 'online' => $a->isOnline(), 'menu' => $menu,
+                'status' => $status, 'statusLabel' => (string) ($types[$status][0] ?? ''),
                 'hidden' => $menu && self::isHidden($a->id),
                 'home' => $a->id === $home, 'blog' => $menu && Blog\Blog::isBlog($a->id), 'parent' => $a->categoryId && !$menu ? $a->categoryId : ($menu ? (Category::get($a->id)->parentId ?? 0) : 0),
                 'children' => $children];
@@ -110,7 +108,7 @@ final class Structure
                     if ($isCat) {
                         // Menüpunkt: nur aus dem Menü ausblenden bzw. wieder zeigen – Stelle, Unterseiten und Status bleiben
                         $hide = !self::isHidden($a->id);
-                        self::setHidden($a->id, $hide);
+                        self::setHidden($a->id, $languageId, $hide);
                         $msg = $hide ? '„' . $a->name . '“ erscheint nicht mehr im Menü – die Seite bleibt online und an ihrer Stelle.' : '„' . $a->name . '“ steht wieder im Menü.';
                     } else {
                         // Seite ohne Menüeintrag: Menüpunkte sind in REDAXO Kategorien
@@ -123,9 +121,6 @@ final class Structure
                         throw new ApiError('Startseite und Seite „nicht gefunden“ lassen sich nicht löschen.');
                     }
                     $isCat ? CategoryHandler::delete($a->id) : ArticleHandler::delete($a->id);
-                    if ($isCat) {
-                        self::setHidden($a->id, false);
-                    }
                     $msg = '„' . $a->name . '“ gelöscht.';
                     break;
             }
