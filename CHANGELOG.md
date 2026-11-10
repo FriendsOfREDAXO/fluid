@@ -26,6 +26,10 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   Bezeichnung). Nur online steht in Menü und Sitemap.
 - Menüs der Seite (Kopf, Menü-Blatt, Fuß) passen sich sofort an, wenn im Seitenbaum etwas online/offline geschaltet,
   aus dem Menü genommen, verschoben oder gelöscht wird – ohne Neuladen.
+- Gewöhnliche REDAXO-Module (ohne fluid-Felder) lassen sich auf der Website pflegen: Im Bearbeiten-Modus zeigt ihre
+  Ausgabe „… bearbeiten“; die Seitenleiste öffnet das Formular des Cores für diesen Slice, „Übernehmen“ speichert und
+  erneuert die Ausgabe auf der Seite. Das Template „fluid“ erlaubt dafür neben den Blöcken des Kits auch gewöhnliche
+  Module (vorher lehnte der Core das Speichern solcher Slices ab – auch im Backend).
 - YForm-Einträge mit Sprache (Feld `FluidLanguage`): Datenliste, Detailansicht und Sitemap zeigen nur Einträge der
   Seitensprache und solche ohne Sprache.
 - Formulare aus YForm übernehmen die Breiten des Layouts (Designer oder `layout()`) auch auf der Website.

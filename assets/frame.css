@@ -6,3 +6,22 @@
 .rex-is-popup .yform-list-layout > :first-child:not(:only-child) { display: none; }
 .rex-is-popup .yform-list-layout > :last-child { grid-column: 1 / -1; }
 .rex-is-popup .rex-main { padding-top: 16px; }
+
+/* Formular eines Slices (gewöhnliches Modul) in der Seitenleiste der Website: nur dieses Formular, ohne Metadaten,
+   Versionsleiste, andere Slices und „Block hinzufügen“ */
+.rex-is-popup:has(#REX_FORM) .rex-grid > :not(#rex-js-main-content) { display: none; }
+.rex-is-popup:has(#REX_FORM) .rex-grid > #rex-js-main-content { grid-column: 1 / -1; }
+.rex-is-popup:has(#REX_FORM) #rex-js-main-content > :not(#rex-js-page-main-content) { display: none; }
+.rex-is-popup:has(#REX_FORM) #rex-js-page-main-content > :not(.rex-slices) { display: none; }
+.rex-is-popup:has(#REX_FORM) .rex-slices > li:not(:has(#REX_FORM)) { display: none; }
+.rex-is-popup:has(#REX_FORM) .rex-main-frame > :not(.rex-grid) { display: none; }
+/* Absenden übernimmt die Seitenleiste („Übernehmen“) – Knöpfe des Formulars ausblenden */
+.rex-is-popup #REX_FORM :is(button, input)[name="btn_save"],
+.rex-is-popup #REX_FORM :is(button, input)[name="btn_update"] { display: none; }
+/* Seitenleiste: Brotkrumen, Kopf des Slices (Titel steht in der Leiste, „löschen“) und Fuß des Formulars ausblenden */
+.rex-is-popup:has(#REX_FORM) #rex-js-structure-breadcrumb,
+.rex-is-popup #REX_FORM > section > header,
+.rex-is-popup #REX_FORM > section > footer { display: none; }
+.rex-is-popup:has(#REX_FORM) .rex-slices > li:has(#REX_FORM) > :not(#REX_FORM) { display: none; }
+.rex-is-popup:has(#REX_FORM) .rex-main-inner > :not(.rex-main-frame) { display: none; }
+.rex-is-popup:has(#REX_FORM) .rex-main { padding-top: 0; }

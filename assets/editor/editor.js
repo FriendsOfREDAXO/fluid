@@ -146,6 +146,7 @@
         <p class="panel__vis-note" data-panel-vis-note hidden>Ausgeblendet – Besucher sehen diesen Block nicht. Sie sehen ihn nur hier im Bearbeiten-Modus.</p>
       </div>
       <form class="panel__body" data-panel-form novalidate></form>
+      <iframe class="panel__frame" data-panel-frame hidden title="Modul bearbeiten"></iframe>
       <footer class="panel__foot"><button type="button" class="btn" data-panel-cancel>Abbrechen</button><button type="button" class="btn btn--primary" data-panel-apply>Übernehmen</button></footer>
     </aside>`);
   const picker = h(`
@@ -1183,6 +1184,95 @@
     } catch { /* Netzwerk: beim nächsten Laden aktuell */ }
   }
 
+  // ------------------------------------------------------------------ Gewöhnliche REDAXO-Module (keine fluid-Blöcke)
+  // Ihre Ausgabe trägt im Bearbeiten-Modus data-fluid-slice (FluidAddon, SliceOutput). „… bearbeiten“ öffnet das Formular
+  // des Cores für diesen Slice in der Seitenleiste (Backend-Seite im Rahmen, nur das Formular – assets/frame.css).
+  // „Block speichern“ schließt die Leiste, „Block übernehmen“ lässt sie offen; die Ausgabe auf der Seite wird erneuert.
+  const modFrame = panel.querySelector('[data-panel-frame]');
+  let modId = 0, modLoads = 0, modMode = false;
+  function initModules(scope) {
+    scope.querySelectorAll('[data-fluid-slice]').forEach((el) => {
+      if (el.querySelector(':scope > .fluid-mod__btn')) return;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fluid-mod__btn';
+      b.textContent = `✎ ${el.dataset.label} bearbeiten`;
+      b.title = 'Modul ohne fluid-Felder – sein Formular erscheint in der Seitenleiste';
+      el.prepend(b);
+    });
+  }
+  // Seitenleiste wieder für Blöcke: Rahmen leeren und ausblenden
+  function modReset() {
+    modMode = false;
+    modFrame.hidden = true;
+    modFrame.src = 'about:blank';
+    form.hidden = false;
+    main.querySelector('.fluid-mod.is-editing')?.classList.remove('is-editing');
+  }
+  async function refreshSlice(id) {
+    try {
+      const res = await fetch(location.href, { credentials: 'same-origin' });
+      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+      const fresh = doc.querySelector(`[data-fluid-slice="${id}"]`), old = main.querySelector(`[data-fluid-slice="${id}"]`);
+      if (fresh && old) {
+        old.replaceWith(fresh);
+        initModules(fresh.parentElement);
+        if (modMode) fresh.classList.add('is-editing');
+      }
+    } catch { /* beim nächsten Laden aktuell */ }
+  }
+  main.addEventListener('click', async (e) => {
+    const b = e.target.closest?.('.fluid-mod__btn');
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!panel.hidden) await cancelPanel();
+    const el = b.closest('[data-fluid-slice]');
+    el.classList.add('is-editing');
+    modMode = true;
+    modId = +el.dataset.fluidSlice;
+    modLoads = 0;
+    const u = new URL(unamp(cfg.backendUrl), location.href);
+    u.searchParams.delete('mode');
+    u.searchParams.set('slice_id', String(modId));
+    u.searchParams.set('content_section_id', el.dataset.section || '1');
+    u.searchParams.set('function', 'edit');
+    u.searchParams.set('fluid_frame', '1');
+    u.hash = 'slice' + modId;
+    $('[data-panel-title]').textContent = el.dataset.label;
+    $('[data-panel-vis]').hidden = true;
+    form.hidden = true;
+    modFrame.hidden = false;
+    modFrame.src = u.href;
+    panel.hidden = false;
+    document.documentElement.classList.add('blocks-panel-open');
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+  // „Übernehmen“ der Seitenleiste: Formular des Cores absenden („Block speichern“)
+  function modApply() {
+    try {
+      const btn = modFrame.contentDocument?.querySelector('#REX_FORM [name="btn_save"]');
+      if (!btn) { say('Das Formular ist noch nicht geladen.', true); return; }
+      btn.click();
+    } catch { say('Das Formular ließ sich nicht absenden.', true); }
+  }
+  modFrame.addEventListener('load', async () => {
+    if (!modMode) return;
+    let doc;
+    try { doc = modFrame.contentDocument; if (!doc || modFrame.contentWindow.location.href === 'about:blank') return; } catch { return; }
+    modLoads++;
+    const formEl = doc.getElementById('REX_FORM');
+    if (1 === modLoads) {
+      if (!formEl) say('Das Formular dieses Moduls ließ sich hier nicht öffnen – bitte im Backend bearbeiten.', true);
+      return;
+    }
+    // Pflichtfeld o. Ä.: Formular kommt mit Meldung zurück – Leiste bleibt offen
+    if (formEl) return;
+    await refreshSlice(modId);
+    closePanel();
+    say('Modul gespeichert.');
+  });
+
   // ------------------------------------------------------------------ Text direkt auf der Seite
 
   function initEditables(scope) {
@@ -1748,6 +1838,7 @@
   });
 
   function closePanel() {
+    modReset();
     panel.hidden = true;
     form.innerHTML = '';
     panelBlock?.removeAttribute('data-blocks-panel');
@@ -1757,6 +1848,7 @@
   }
 
   async function cancelPanel() {
+    if (modMode) { closePanel(); return; }
     clearTimeout(previewTimer);
     previewSeq++;
     if (panelBlock && original) replace(panelBlock, original);
@@ -1764,6 +1856,7 @@
   }
 
   async function applyPanel() {
+    if (modMode) { modApply(); return; }
     if (!panelBlock) return;
     clearTimeout(previewTimer);
     previewSeq++;
@@ -2396,6 +2489,7 @@
   highlightNotes();
 
   initEditables(main);
+  initModules(main);
   initColumns(main);
   initHandles(main);
   emptyHint();

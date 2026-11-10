@@ -41,7 +41,9 @@ final class FluidTemplate extends Template
     #[Override]
     public function isModuleAllowed(ContentSection $section, string $module): bool
     {
-        return is_a($module, BlockModule::class, true) && $module::kit() === Kit::active();
+        // fluid-Blöcke nur die des aktiven Kits; gewöhnliche Module des Projekts oder von AddOns wie üblich in REDAXO –
+        // im Backend pflegbar und auf der Website über die Seitenleiste (Formular des Cores)
+        return is_a($module, BlockModule::class, true) ? $module::kit() === Kit::active() : true;
     }
 
     /**

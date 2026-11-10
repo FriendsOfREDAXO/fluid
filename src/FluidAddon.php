@@ -172,15 +172,18 @@ final class FluidAddon extends Addon
             Asset::addCssFile($this->getAssetsUrl('backend.css'));
         }
         // YForm-Maske: Feld „Fluid-Blöcke“ (Data\FluidBlocks) braucht dieselben Formular-Skripte wie die Slices
+        // Im Rahmen der Website (editor.js, iframe mit fluid_frame=1): Seite ohne Navigation wie ein Popup des Cores –
+        // YForm-Maske im Overlay und Formular eines gewöhnlichen Moduls in der Seitenleiste. Nach dem Speichern leiten YForm
+        // und Core ohne den Parameter weiter – der Browser meldet den Rahmen aber weiter (Sec-Fetch-Dest).
+        $page = Request::get('page', 'string');
+        if (Core::isBackend() && (str_starts_with($page, 'yform') || 'content/edit' === $page)
+            && (Request::get('fluid_frame', 'bool') || 'iframe' === Core::getRequest()->headers->get('Sec-Fetch-Dest'))) {
+            Extension::register('PAGE_CHECKED', static function (): void {
+                \Redaxo\Core\Backend\Controller::getCurrentPageObject()?->setPopup(true);
+            });
+            Asset::addCssFile($this->getAssetsUrl('frame.css'));
+        }
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'yform')) {
-            // Maske im Overlay der Website (editor.js, iframe mit fluid_frame=1): Seite ohne Navigation wie ein Popup des Cores.
-            // Nach „Übernehmen“ leitet YForm ohne den Parameter weiter – der Browser meldet den Rahmen aber weiter (Sec-Fetch-Dest).
-            if (Request::get('fluid_frame', 'bool') || 'iframe' === Core::getRequest()->headers->get('Sec-Fetch-Dest')) {
-                Extension::register('PAGE_CHECKED', static function (): void {
-                    \Redaxo\Core\Backend\Controller::getCurrentPageObject()?->setPopup(true);
-                });
-                Asset::addCssFile($this->getAssetsUrl('frame.css'));
-            }
             Asset::addCssFile($this->getAssetsUrl('form.css'));
             Asset::addCssFile($this->getAssetsUrl('rte.css'));
             Asset::addCssFile($this->getAssetsUrl('blocks-field.css'));
@@ -302,6 +305,18 @@ final class FluidAddon extends Addon
         });
         Extension::register(ArticleSlicesQuery::class, static fn (ArticleSlicesQuery $ep): string => Versions::sliceQuery((string) $ep->subject));
         Extension::register(SliceOutput::class, static fn (SliceOutput $ep): string => Versions::markSlice((string) $ep->subject, $ep->slice->id));
+        // Gewöhnliche REDAXO-Module (keine fluid-Blöcke) im Bearbeiten-Modus kennzeichnen: editor.js bietet „Modul bearbeiten“
+        // an und öffnet das Formular des Cores in der Seitenleiste
+        Extension::register(SliceOutput::class, static function (SliceOutput $ep): string {
+            $html = (string) $ep->subject;
+            if (!Editing::active() || Editing::isGuest() || null !== BlockModule::classFor($ep->slice->moduleKey)) {
+                return $html;
+            }
+            $class = \Redaxo\Core\Content\Module::getClass($ep->slice->moduleKey);
+            $label = null !== $class ? (string) $class::name() : $ep->slice->moduleKey;
+
+            return '<div class="fluid-mod" data-fluid-slice="' . $ep->slice->id . '" data-section="' . $ep->slice->contentSectionId . '" data-label="' . \Redaxo\Core\View\escape($label) . '">' . $html . '</div>';
+        });
 
         // Im Bearbeiten-Modus auch Offline-Blöcke zeigen (gekennzeichnet), damit sie sich wieder einschalten lassen
         Extension::register(ArticleSlicesQuery::class, static function (ArticleSlicesQuery $ep): ?string {

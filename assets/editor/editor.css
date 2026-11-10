@@ -91,3 +91,10 @@ html.blocks-editing [data-rec-field][aria-busy="true"] { opacity: .5; }
 html.blocks-editing .df-img { position: relative; }
 html.blocks-editing .fdl-recimg { position: absolute; left: .6rem; bottom: .6rem; z-index: 2; padding: .3em .8em; border: 0; border-radius: 999px; background: var(--f-ink, #111); color: var(--f-bg, #fff); font: 600 .75rem/1.4 system-ui, sans-serif; cursor: pointer; }
 html.blocks-editing .df-img-empty .fdl-recimg { position: static; }
+
+/* Gewöhnliche REDAXO-Module (keine fluid-Blöcke) im Bearbeiten-Modus: Rahmen beim Zeigen, Knopf „… bearbeiten“ */
+html.blocks-editing .fluid-mod { position: relative; outline: 1px dashed transparent; outline-offset: 2px; transition: outline-color .15s; }
+html.blocks-editing .fluid-mod:hover, html.blocks-editing .fluid-mod.is-editing { outline-color: color-mix(in srgb, var(--blocks-accent) 70%, transparent); }
+html.blocks-editing .fluid-mod__btn { position: absolute; z-index: 5; top: .5rem; right: .5rem; padding: .3em .8em; border: 0; border-radius: 999px; background: var(--blocks-accent); color: #fff; font: 600 13px/1.4 system-ui, sans-serif; cursor: pointer; opacity: 0; transition: opacity .15s; }
+html.blocks-editing .fluid-mod:hover > .fluid-mod__btn, html.blocks-editing .fluid-mod.is-editing > .fluid-mod__btn, html.blocks-editing .fluid-mod__btn:focus-visible { opacity: 1; }
+html:not(.blocks-editing) .fluid-mod__btn { display: none; }

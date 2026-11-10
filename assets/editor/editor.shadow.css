@@ -441,3 +441,6 @@ textarea[data-blocks-rte] { display: none !important; }
 .recpop__opts { display: grid; gap: 6px; max-height: 50vh; overflow: auto; }
 .recpop__opts label { display: flex; gap: 8px; align-items: center; }
 .recpop__a { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Seitenleiste: Formular eines gewöhnlichen REDAXO-Moduls (Backend im Rahmen) statt der Block-Felder */
+.panel__frame { flex: 1 1 auto; width: 100%; border: 0; background: var(--bg); }
