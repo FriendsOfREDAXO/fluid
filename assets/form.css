@@ -45,10 +45,26 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Absprung „Auf der Website bearbeiten“ über den Slices, Hinweise zu Layout-Spalten */
 .blocks-frontend-link { margin: 0 0 12px; text-align: right; }
-.blocks-be-col, .blocks-be-layout { margin: 0 0 8px; padding: 6px 10px; background: var(--rex-color-accent-subtle); color: var(--rex-color-link); font-size: var(--rex-font-size-small); font-weight: 700; }
-/* Verschachtelung in der Slice-Liste: Layout listet seine Spalten, Spalten-Blöcke stehen eingerückt mit Linie (eigenes Markup) */
-.blocks-be-cols { margin: 0; padding: 0 0 0 10px; list-style: none; font-size: var(--rex-font-size-small); }
-.blocks-be-cols li { padding: 2px 0; }
-/* Ganze Slice eingerückt (nur Slices mit Spalten-Markup von fluid), Linie links ordnet sie dem Layout darüber zu */
-.rex-slice-output:has(.blocks-be-nest) { margin-left: 40px; position: relative; }
-.rex-slice-output:has(.blocks-be-nest)::before { content: ""; position: absolute; left: -22px; top: 0; bottom: 0; border-left: 3px solid #EE7F2D; border-radius: 2px; }
+.blocks-be-layout { margin: 0 0 10px; color: var(--rex-color-link); font-size: var(--rex-font-size-small); font-weight: 700; }
+/* Layout und seine Spalten-Blöcke als Baum (Slice-Liste des Backends; nur Slices mit Markup von fluid):
+   Layout mit Rasterskizze, darunter die Spalten-Blöcke eingerückt an einem Ast mit Abzweig je Block. */
+.blocks-be-grid { display: flex; gap: 8px; }
+.blocks-be-gcol { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px; border: 2px dashed color-mix(in srgb, #EE7F2D 55%, transparent); border-radius: 6px; background: color-mix(in srgb, #EE7F2D 6%, transparent); }
+.blocks-be-w1 { flex: 1 1 0; }.blocks-be-w2 { flex: 2 1 0; }.blocks-be-w3 { flex: 3 1 0; }.blocks-be-w4 { flex: 4 1 0; }.blocks-be-w5 { flex: 5 1 0; }.blocks-be-w6 { flex: 6 1 0; }.blocks-be-w7 { flex: 7 1 0; }.blocks-be-w8 { flex: 8 1 0; }.blocks-be-w9 { flex: 9 1 0; }.blocks-be-w10 { flex: 10 1 0; }.blocks-be-w11 { flex: 11 1 0; }.blocks-be-w12 { flex: 12 1 0; }
+.blocks-be-gcol__label { color: #C2611A; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.blocks-be-chip { display: block; overflow: hidden; padding: 4px 8px; border-radius: 4px; background: var(--rex-color-surface, #fff); box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 15%, transparent); color: inherit; font-size: var(--rex-font-size-small); text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.blocks-be-chip:hover, .blocks-be-chip:focus-visible { box-shadow: 0 0 0 2px #EE7F2D; }
+.blocks-be-chip.is-offline { opacity: .55; text-decoration: line-through; }
+.blocks-be-empty { color: color-mix(in srgb, currentColor 55%, transparent); font-size: var(--rex-font-size-small); font-style: italic; }
+.blocks-be-col { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: var(--rex-font-size-small); color: color-mix(in srgb, currentColor 75%, transparent); }
+.blocks-be-col__n { padding: 2px 8px; border-radius: 999px; background: #EE7F2D; color: #fff; font-weight: 700; }
+.blocks-be-col a { margin-left: auto; color: var(--rex-color-link); }
+/* Layout: Kante oben links in Orange (Wurzel des Astes) */
+.rex-slice-output:has(.blocks-be-layout) { position: relative; }
+.rex-slice-output:has(.blocks-be-layout)::after { content: ""; position: absolute; left: 18px; bottom: -22px; height: 22px; border-left: 3px solid #EE7F2D; }
+/* Spalten-Blöcke und die „Block hinzufügen“-Leisten zwischen ihnen: eingerückt am Ast */
+.rex-slice-output:has(.blocks-be-nest), .rex-slice-select:has(+ .rex-slice-output .blocks-be-nest) { position: relative; margin-left: 48px; }
+.rex-slice-output:has(.blocks-be-nest)::before, .rex-slice-select:has(+ .rex-slice-output .blocks-be-nest)::before { content: ""; position: absolute; left: -30px; top: -22px; bottom: 0; border-left: 3px solid #EE7F2D; }
+.rex-slice-output:has(.blocks-be-nest)::after { content: ""; position: absolute; left: -30px; top: 0; width: 30px; height: 22px; border-left: 3px solid #EE7F2D; border-bottom: 3px solid #EE7F2D; border-bottom-left-radius: 10px; }
+/* letzter Spalten-Block: Ast endet am Abzweig */
+.rex-slice-output:has(.blocks-be-nest):not(:has(+ .rex-slice-select + .rex-slice-output .blocks-be-nest))::before { bottom: calc(100% - 4px); }

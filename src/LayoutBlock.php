@@ -68,19 +68,24 @@ abstract class LayoutBlock extends BlockModule
         $b = $this->context();
         // Backend: Kurzinfo statt Raster – die Spalten-Blöcke folgen als eigene Slices
         if (self::backendPreview()) {
+            // Rasterskizze: Spalten in ihrer Breite (Zwölftel), darin die Blöcke als Sprungmarken zu ihren Slices darunter
+            $n = Layout::count($b->data);
+            $cols = array_fill(1, $n, '');
             $children = Layout::children($b->slice);
-            $cols = array_fill(1, Layout::count($b->data), []);
             foreach ($children as $child) {
-                $cols[min(Layout::col($child), Layout::count($b->data))][] = escape(BlockModule::summary($child));
+                $cols[min(Layout::col($child), $n)] .= '<a class="blocks-be-chip' . (1 !== $child->status ? ' is-offline' : '') . '" href="#slice' . $child->id . '">'
+                    . escape(BlockModule::summary($child)) . '</a>';
             }
-            $list = '';
-            foreach ($cols as $i => $names) {
-                $list .= '<li><strong>Spalte ' . $i . ':</strong> ' . ([] !== $names ? implode(' · ', $names) : '<em>leer</em>') . '</li>';
+            $units = Layout::units($b->data);
+            $grid = '';
+            foreach ($cols as $i => $chips) {
+                $grid .= '<div class="blocks-be-gcol blocks-be-w' . max(1, min(12, (int) ($units[$i - 1] ?? 6))) . '"><span class="blocks-be-gcol__label">Spalte ' . $i . '</span>'
+                    . ('' !== $chips ? $chips : '<span class="blocks-be-empty">leer</span>') . '</div>';
             }
-            $n = count($children);
+            $count = count($children);
 
-            return '<p class="blocks-be-layout"><i class="rex-icon fa-table-columns"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
-                . ' · ' . $n . ' ' . (1 === $n ? 'Block' : 'Blöcke') . ' in den Spalten – sie folgen eingerückt darunter</p><ul class="blocks-be-cols">' . $list . '</ul>';
+            return '<p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
+                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . ' in den Spalten</p><div class="blocks-be-grid">' . $grid . '</div>';
         }
 
         return Layout::render($b);

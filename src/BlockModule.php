@@ -384,8 +384,8 @@ abstract class BlockModule extends Module
         $parent = Layout::parentOf($ep->slice);
         $data = null !== $parent ? self::of($parent)->context()->data : [];
 
-        return '<div class="blocks-be-nest"><p class="blocks-be-col"><i class="rex-icon fa-turn-up fa-rotate-90" aria-hidden="true"></i> Spalte ' . Layout::col($ep->slice)
-            . ' von ' . Layout::count($data) . ' · im Layout „' . escape(Layout::PRESET_LABELS[Layout::preset($data)]) . '“ darüber</p>' . $ep->subject . '</div>';
+        return '<div class="blocks-be-nest"><p class="blocks-be-col"><span class="blocks-be-col__n">Spalte ' . Layout::col($ep->slice) . ' / ' . Layout::count($data) . '</span>'
+            . ' im Layout ' . escape(Layout::PRESET_LABELS[Layout::preset($data)]) . ($parent ? ' <a href="#slice' . $parent->id . '">↑ zum Layout</a>' : '') . '</p>' . $ep->subject . '</div>';
     }
 
     /** Kurzbezeichnung eines Slices für Übersichten: Name des Blocks und – falls vorhanden – Überschrift bzw. Titel */
