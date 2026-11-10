@@ -4,6 +4,12 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Demo: Abschnitte & Spalten
+
+- Neue Seite im Kapitel fluid mit Beispielen: Abschnitte mit Hintergründen, Spalten ½ + ½ (mittig), ⅓ × 3 (gestreckt,
+  Karten durch Hintergrund), ⅔ + ⅓ (gestreckt, mobil umgekehrt), ¼ × 4 (schon auf Tablets untereinander), Bento als
+  Raster, Kacheln als flexibles Raster und „So baut man es“ (freie Grid-/Flex-Container sind geplant).
+
 ### Keine Inline-Styles (Content-Security-Policy)
 
 - `InlineStyle`: Werte, die sich nicht über feste Klassen abbilden lassen (Fokuspunkt eines Bildes, Rasterbreite …),
