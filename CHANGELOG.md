@@ -40,7 +40,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   „Block hinzufügen“ in einer Spalte gibt die Spalte mit (`fluid_col`, im Formular vorgewählt). Wird ein Spalten-Block
   bearbeitet oder über „+ Block in Spalte n“ angelegt, öffnet das Formular des Cores in einem Dialog über dem Raster
   (Esc/✕ wie „Abbrechen“; auf dem Telefon bildschirmfüllend), ohne Skript stehen die Spalten untereinander. Schmaler
-  Platz (iPad hochkant, Telefon): Container Query auf das Layout-Panel – unter 560 px untereinander. Hell und dunkel
+  Platz: Container Query auf das Layout-Panel – je Spalte mind. ~190 px (2 ab 420, 3 ab 620, 4 ab 820 px), sonst
+  untereinander; schmale Spalten zeigen die Vorschau verkleinert. Hell und dunkel
   über `light-dark()`.
 - Vorschauen in der Slice-Liste in der Höhe begrenzt (360 px, in Spalten 300 px) und in sich scrollbar – unten
   ausgeblendet, „Ganze Vorschau“ klappt auf; überlaufende Vorschauen sind per Tastatur erreichbar (für alle Blöcke und
