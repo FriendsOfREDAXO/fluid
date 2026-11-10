@@ -4,6 +4,17 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Kopieren, Ausschneiden, Einfügen, Verdoppeln – auch im Backend
+
+- Jeder fluid-Block hat in der Slice-Liste ein Menü „⋯“: Verdoppeln (auch ohne Skript), Kopieren, Ausschneiden und
+  „Einfügen darunter“. Dieselbe Zwischenablage wie auf der Website (Browser, seitenübergreifend): auf der Website
+  kopieren, im Backend einfügen und umgekehrt. `Backend\BlockOpsApi` (API-Funktion `fluid_block_ops`, CSRF, Rechte auf
+  Seite, Modul und Template).
+- Einfügen hinter einem Spalten-Block landet in derselben Spalte (`BlockOps::insertAfter()`), Verdoppeln ebenso.
+- Ausschneiden (Backend und Website): Das Original wird erst nach dem Einfügen entfernt (`BlockOps::finishCut()`) – es
+  geht nichts verloren; danach bleibt der Inhalt als Kopie in der Zwischenablage.
+- Spalten-Blöcke: schwebende Leiste mit Titel-Reiter, Bearbeiten, ↑ ↓ und „⋯“ (Status, Löschen, Zwischenablage).
+
 ### Backend: Layout als Raster wie auf der Website
 
 - In der Slice-Liste stehen die Blöcke eines Layouts jetzt im Layout-Panel nebeneinander in ihren Spalten (Breiten wie

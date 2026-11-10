@@ -16,6 +16,7 @@ if ('' === $this->content) {
     return;
 }
 ?>
-<ul class="rex-slices">
-    <?= SliceGrid::assemble($this->content) ?>
+<?php $content = SliceGrid::assemble($this->content) ?>
+<ul class="rex-slices"<?= SliceGrid::opsAttr() ?>>
+    <?= $content ?>
 </ul>

@@ -5,23 +5,87 @@
  */
 (() => {
   /*
-   * Schwebende Leiste der Spalten-Blöcke wie die Blockleiste von fluid: Titel als Reiter links, rechts „Bearbeiten“ und
-   * „⋯“ mit den übrigen Knöpfen des Cores (Status, Verschieben, Löschen) – Platz für weitere Aktionen (Kopieren, Einfügen).
-   * Die Knöpfe bleiben die des Cores (nur verschoben; Rückfrage beim Löschen über data-confirm wie gehabt).
+   * Menü „⋯“ an jedem fluid-Block (Kopf des Cores): Verdoppeln, Kopieren, Ausschneiden, Einfügen darunter – Zwischenablage
+   * wie auf der Website (localStorage „fluid-clipboard“, auch seitenübergreifend). Ausschneiden löscht das Original erst
+   * nach dem Einfügen (Backend\BlockOpsApi). Spalten-Blöcke: schwebende Leiste mit Titel-Reiter, „Bearbeiten“ und „⋯“ –
+   * Pfeile zum Verschieben bleiben sichtbar, Status und Löschen des Cores stehen im Menü (verschoben, Rückfrage über data-confirm wie gehabt).
    */
+  const CLIP = 'fluid-clipboard';
+  const clip = () => { try { return JSON.parse(localStorage.getItem(CLIP) || 'null'); } catch { return null; } };
+  const ops = () => document.querySelector('[data-fluid-ops]')?.dataset.fluidOps || '';
+  const toast = (text, bad = false) => {
+    let t = document.querySelector('.fluid-be-toast');
+    if (!t) { t = document.createElement('div'); t.className = 'fluid-be-toast'; t.setAttribute('role', 'status'); document.body.append(t); }
+    t.textContent = text;
+    t.classList.toggle('is-bad', bad);
+    t.hidden = false;
+    clearTimeout(t.timer);
+    t.timer = setTimeout(() => { t.hidden = true; }, 3500);
+  };
+  const item = (label, op) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('role', 'menuitem');
+    b.dataset.fluidOp = op;
+    b.innerHTML = '<span class="fluid-be-menu__label"></span>';
+    b.firstChild.textContent = label;
+    return b;
+  };
+  const refreshPaste = () => {
+    const c = clip();
+    document.querySelectorAll('[data-fluid-op="paste"]').forEach((b) => {
+      b.disabled = !c;
+      b.firstChild.textContent = c ? `${c.cut ? 'Verschieben hierher' : 'Einfügen darunter'}: „${c.label}“` : 'Einfügen darunter';
+    });
+  };
+  const doOp = async (op, slice) => {
+    const url = ops();
+    if (!url) return;
+    if (op === 'copy' || op === 'cut') {
+      try {
+        const r = await fetch(url + '&fluid_op=copy&slice_id=' + slice, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        const d = r.ok ? await r.json() : null;
+        if (!d?.clip) throw new Error();
+        const p = new URL(url, location.href).searchParams;
+        const entry = { clip: d.clip, label: d.label };
+        if (op === 'cut') entry.cut = { article: +p.get('article_id'), language: +p.get('language'), slice: +slice };
+        localStorage.setItem(CLIP, JSON.stringify(entry));
+        refreshPaste();
+        toast(op === 'cut' ? `„${d.label}“ ausgeschnitten – an der neuen Stelle über ⋯ → Verschieben hierher.` : `„${d.label}“ kopiert – über ⋯ → Einfügen darunter, auch auf einer anderen Seite oder auf der Website.`);
+      } catch { toast('Kopieren hat nicht geklappt.', true); }
+      return;
+    }
+    if (op === 'paste') {
+      const c = clip();
+      if (!c) return;
+      const f = document.createElement('form');
+      f.method = 'post';
+      f.action = url + '&fluid_op=paste&slice_id=' + slice + '#slice' + slice;
+      const field = (n, v) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; f.append(i); };
+      field('clip', JSON.stringify(c.clip));
+      if (c.cut) {
+        field('cut', JSON.stringify(c.cut));
+        delete c.cut;   // nach dem Verschieben bleibt der Inhalt als Kopie in der Zwischenablage
+        localStorage.setItem(CLIP, JSON.stringify(c));
+      }
+      document.body.append(f);
+      f.submit();
+    }
+  };
+
   const bars = () => {
     let n = 0;
-    document.querySelectorAll('.fluid-be-list > .rex-slice-output > .rex-section > .rex-section-header').forEach((h) => {
+    document.querySelectorAll('.rex-slice-output > .rex-section > .rex-section-header').forEach((h) => {
       if (h.dataset.fluidBar) return;
+      const dup = h.querySelector('[data-fluid-op="duplicate"]');
+      if (!dup) return;   // kein fluid-Block
       h.dataset.fluidBar = '1';
+      const slice = dup.dataset.slice;
+      const inCol = !!h.closest('.fluid-be-list');
       const opts = h.querySelector('.rex-section-options');
-      const all = opts ? [...opts.querySelectorAll('a[href], button')] : [];
+      const all = [...opts.querySelectorAll('a[href], button')];
       const edit = all.find((a) => /[?&]function=edit/.test(a.getAttribute('href') || ''));
-      const rest = all.filter((a) => a !== edit);
-      if (!edit || !rest.length) return;
-      const id = 'fluid-be-m' + (++n) + '-' + (h.closest('[id]')?.id || '');
-      const wrap = document.createElement('div');
-      wrap.className = 'fluid-be-acts';
+      const id = 'fluid-be-m' + (++n) + '-' + slice;
       const more = document.createElement('button');
       more.type = 'button';
       more.className = 'fluid-be-more';
@@ -35,39 +99,75 @@
       list.id = id;
       list.setAttribute('role', 'menu');
       list.hidden = true;
-      rest.forEach((a) => {
+      const asItem = (a) => {
         a.setAttribute('role', 'menuitem');
-        // im Menü sichtbar: die versteckte Beschriftung des Cores (sonst stünde sie doppelt im DOM)
         const hidden = a.querySelector('.rex-u-visually-hidden');
         if (hidden) {
           hidden.classList.replace('rex-u-visually-hidden', 'fluid-be-menu__label');
           hidden.textContent = hidden.textContent.trim().replace(/^Modul .*? (Nach (oben|unten) verschieben)$/, '$1');
         }
         a.removeAttribute('title');
-        list.append(a);
-      });
-      edit.classList.add('fluid-be-edit');
-      wrap.append(edit, more, list);
-      opts.replaceWith(wrap);
+        return a;
+      };
+      // Zwischenablage-Gruppe
+      dup.closest('.rex-button-group')?.remove();
+      list.append(asItem(dup), item('Kopieren', 'copy'), item('Ausschneiden', 'cut'), item('Einfügen darunter', 'paste'));
+      if (inCol && edit) {
+        // Spalten-Block: übrige Knöpfe des Cores ins Menü
+        // Verschieben bleibt sichtbar (wird oft gebraucht), Status und Löschen ins Menü
+        const arrows = all.filter((a) => a.querySelector('.rex-icon-up, .rex-icon-down'));
+        const rest = all.filter((a) => a !== edit && a !== dup && !arrows.includes(a));
+        if (rest.length) {
+          const sep = document.createElement('hr');
+          sep.className = 'fluid-be-menu__sep';
+          list.append(sep, ...rest.map(asItem));
+        }
+        const wrap = document.createElement('div');
+        wrap.className = 'fluid-be-acts';
+        edit.classList.add('fluid-be-edit');
+        const move = document.createElement('div');
+        move.className = 'fluid-be-move';
+        move.append(...arrows);
+        wrap.append(edit, move, more, list);
+        opts.replaceWith(wrap);
+        h.classList.add('fluid-be-bar');
+      } else {
+        const wrap = document.createElement('div');
+        wrap.className = 'fluid-be-acts fluid-be-acts--inline';
+        wrap.append(more, list);
+        opts.append(wrap);
+      }
       const close = () => { list.hidden = true; more.setAttribute('aria-expanded', 'false'); };
-      more.addEventListener('click', () => {
+      more.addEventListener('click', (e) => {
+        e.stopPropagation();
         const open = list.hidden;
         document.querySelectorAll('.fluid-be-menu:not([hidden])').forEach((m) => { m.hidden = true; });
+        refreshPaste();
         list.hidden = !open;
         more.setAttribute('aria-expanded', String(open));
-        if (open) list.querySelector('a, button')?.focus();
+        if (open) list.querySelector('[role=menuitem]:not([disabled])')?.focus();
+      });
+      list.addEventListener('click', (e) => {
+        const b = e.target.closest('button[data-fluid-op]');
+        if (!b) return;
+        close();
+        doOp(b.dataset.fluidOp, slice);
       });
       list.addEventListener('keydown', (e) => {
-        const items = [...list.querySelectorAll('[role=menuitem]')];
+        const items = [...list.querySelectorAll('[role=menuitem]:not([disabled])')];
         const i = items.indexOf(document.activeElement);
         if (e.key === 'Escape') { e.preventDefault(); close(); more.focus(); }
         else if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
       });
       h.closest('.rex-slice-output').addEventListener('focusout', (e) => { if (!h.contains(e.relatedTarget)) close(); });
-      h.classList.add('fluid-be-bar');
     });
-    document.addEventListener('click', (e) => { if (!e.target.closest?.('.fluid-be-acts')) document.querySelectorAll('.fluid-be-menu:not([hidden])').forEach((m) => { m.hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false'); }); });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest?.('.fluid-be-acts')) return;
+      document.querySelectorAll('.fluid-be-menu:not([hidden])').forEach((m) => { m.hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false'); });
+    });
+    addEventListener('storage', (e) => { if (e.key === CLIP) refreshPaste(); });   // in einem anderen Tab kopiert
+    refreshPaste();
   };
 
   const run = () => {

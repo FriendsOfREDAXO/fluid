@@ -135,7 +135,15 @@ final class Api
                 $clip = 'duplicate' === Request::get(self::PARAM, 'string')
                     ? BlockOps::payload($article, Request::post('slice', 'int', 0))['clip']
                     : (json_decode(Request::post('clip', 'string', ''), true) ?: self::fail('Die Zwischenablage ist leer.'));
+                // Ausschneiden: Original erst nach dem Einfügen entfernen – nicht hinter sich selbst
+                $cut = 'paste' === Request::get(self::PARAM, 'string') ? json_decode(Request::post('cut', 'string', ''), true) : null;
+                if (is_array($cut) && (int) ($cut['slice'] ?? 0) === Request::post('after', 'int', 0)) {
+                    self::fail('Ein Block lässt sich nicht hinter sich selbst verschieben.');
+                }
                 $id = BlockOps::insert($article, $user, Request::post('after', 'int', 0), $clip);
+                if (is_array($cut) && (int) ($cut['slice'] ?? 0) > 0) {
+                    BlockOps::finishCut($user, $cut, $id);
+                }
 
                 return ['slice' => $id] + self::render($article, $id, false);
             })(),

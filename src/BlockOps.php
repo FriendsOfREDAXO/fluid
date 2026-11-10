@@ -199,6 +199,60 @@ final class BlockOps
     }
 
     /**
+     * Einfügen hinter einem Block – auch in einer Layout-Spalte: Steht $after in einer Spalte, kommt der Block direkt
+     * dahinter in dieselbe Spalte (nur Blöcke, die in Spalten stehen dürfen, kein Layout). Sonst wie insert().
+     */
+    public static function insertAfter(Article $article, User $user, int $after, array $clip): int
+    {
+        $target = $after > 0 ? ArticleSlice::getArticleSliceById($after, $article->languageId, FluidAddon::revision()) : null;
+        $col = null !== $target && null !== Layout::parentOf($target) ? Layout::col($target) : 0;
+        if (0 === $col) {
+            return self::insert($article, $user, $after, $clip);
+        }
+        $key = (string) ($clip['module'] ?? '');
+        $m = BlockModule::classFor($key);
+        if (null === $m || !empty($clip['children']) || !$m::nestable()) {
+            throw new ApiError('Dieser Block lässt sich nicht in eine Spalte einfügen.');
+        }
+        $perm = $user->getComplexPerm('modules');
+        if (!$user->admin && (!$perm instanceof ModulePermission || !$perm->hasPerm($key))) {
+            throw new ApiError('Keine Berechtigung für den Block „' . $m::label() . '“.');
+        }
+        if (!Template::checkModuleAllowed((string) $article->templateKey, 1, $key)) {
+            throw new ApiError('Der Block „' . $m::label() . '“ ist im Template dieser Seite nicht erlaubt.');
+        }
+        [$values, $tunes] = self::clipValues($clip);
+        $tunes['col'] = $col;
+        $new = ContentHandler::addSlice($article->id, $article->languageId, $target->contentSectionId, $key, BlockModule::store($values, $tunes), $target->priority + 1, FluidAddon::revision());
+        self::place($new, $target->priority + 1);
+        ArticleCache::delete($article->id, $article->languageId);
+
+        return $new->id;
+    }
+
+    /**
+     * Ausschneiden abschließen: den Quell-Block (bei Layout samt Spalten) löschen, nachdem die Kopie eingefügt ist.
+     * Nur mit Recht auf seine Seite; fehlt er schon, passiert nichts.
+     *
+     * @param array{article?: int, language?: int, slice?: int} $cut
+     */
+    public static function finishCut(User $user, array $cut, int $inserted): void
+    {
+        $id = (int) ($cut['slice'] ?? 0);
+        $source = $id > 0 ? ArticleSlice::getArticleSliceById($id, (int) ($cut['language'] ?? 0), FluidAddon::revision()) : null;
+        if (null === $source || $source->id === $inserted) {
+            return;
+        }
+        $article = Article::get($source->articleId, $source->languageId);
+        $perm = $user->getComplexPerm('structure');
+        if (null === $article || (!$user->admin && !($perm instanceof \Redaxo\Core\Content\StructurePermission && $perm->hasCategoryPerm($article->categoryId)))) {
+            throw new ApiError('Eingefügt – das Original lässt sich ohne Recht auf seine Seite nicht entfernen.');
+        }
+        ContentHandler::deleteSlice($source->id);   // Spalten-Blöcke eines Layouts: FluidAddon (SliceDeleting)
+        ArticleCache::delete($article->id, $article->languageId);
+    }
+
+    /**
      * Werte eines Eintrags der Zwischenablage; ältere Einträge (vor REDAXO-Core 9132fc1) tragen value1/value2 als JSON.
      *
      * @param array<array-key, mixed> $it

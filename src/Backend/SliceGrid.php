@@ -55,6 +55,9 @@ final class SliceGrid
 
     private static bool $on = false;
 
+    /** Adresse der API-Funktion für Kopieren/Einfügen (mit CSRF-Token) – für das Skript an der Slice-Liste */
+    private static ?string $opsUrl = null;
+
     /** Im Backend auf der Inhaltsseite einschalten (FluidAddon::boot) */
     public static function boot(): void
     {
@@ -120,6 +123,12 @@ final class SliceGrid
         return '<div class="fluid-be-grid fluid-be-cols' . $n . (isset(self::$editing[$layout->id]) ? ' is-editing' : '') . '" data-fluid-grid="' . $layout->id . '">' . $h . '</div>';
     }
 
+    /** Attribut für die Slice-Liste: Adresse der API-Funktion (Kopieren, Ausschneiden, Einfügen) */
+    public static function opsAttr(): string
+    {
+        return null !== self::$opsUrl ? ' data-fluid-ops="' . escape(self::$opsUrl) . '"' : '';
+    }
+
     /** Fragment slice_list.php: Panels der Spalten-Blöcke in die Platzhalter setzen */
     public static function assemble(string $content): string
     {
@@ -162,7 +171,20 @@ final class SliceGrid
     public static function compactMenu(SliceMenu $ep): void
     {
         $slice = ArticleSlice::getArticleSliceById($ep->sliceId, $ep->languageId, 0) ?? ArticleSlice::getArticleSliceById($ep->sliceId, $ep->languageId, 1);
-        if (null === $slice || null === Layout::parentOf($slice)) {
+        if (null === $slice || null === BlockModule::classFor($slice->moduleKey)) {
+            return;
+        }
+        // Verdoppeln (auch ohne Skript); Kopieren, Ausschneiden, Einfügen ergänzt assets/slice-grid.js im Menü „⋯“
+        $article = \Redaxo\Core\Content\Article::get($slice->articleId, $slice->languageId);
+        if (null !== $article && $ep->hasPerm) {
+            self::$opsUrl ??= BlockOpsApi::url($article, $slice->contentSectionId);
+            $ep->additionalActions[] = [
+                'hidden_label' => 'Verdoppeln', 'icon' => 'duplicate',
+                'url' => self::$opsUrl . '&fluid_op=duplicate&slice_id=' . $slice->id . '#slice' . $slice->id,
+                'attributes' => ['title' => 'Verdoppeln', 'data-fluid-op' => 'duplicate', 'data-slice' => (string) $slice->id],
+            ];
+        }
+        if (null === Layout::parentOf($slice)) {
             return;
         }
         $icon = static function (array $action, string $name): array {

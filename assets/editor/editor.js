@@ -133,6 +133,7 @@
       <div class="bb__menu" role="menu" hidden>
         <button type="button" role="menuitem" data-bb-op="duplicate">Verdoppeln</button>
         <button type="button" role="menuitem" data-bb-op="copy">Kopieren</button>
+        <button type="button" role="menuitem" data-bb-op="cut">Ausschneiden</button>
         <button type="button" role="menuitem" data-bb-op="paste">Einfügen darunter</button>
         <button type="button" role="menuitem" data-bb-op="left" data-col-only>← In die linke Spalte</button>
         <button type="button" role="menuitem" data-bb-op="right" data-col-only>→ In die rechte Spalte</button>
@@ -2048,7 +2049,7 @@
     const c = clip();
     const paste = bbMenu.querySelector('[data-bb-op="paste"]');
     paste.disabled = !c || inCol;
-    paste.textContent = c ? `Einfügen darunter: „${c.label}“` : 'Einfügen darunter';
+    paste.textContent = c ? `${c.cut ? 'Verschieben hierher' : 'Einfügen darunter'}: „${c.label}“` : 'Einfügen darunter';
     bbMenu.querySelector('[data-bb-op="duplicate"]').disabled = inCol;
     bbMenu.querySelector('[data-bb-op="collapse"]').textContent = sec?.classList.contains('fluid-collapsed') ? 'Aufklappen' : 'Einklappen';
   });
@@ -2085,10 +2086,14 @@
     try {
       if (op === 'collapse') { setFold(top, !top.classList.contains('fluid-collapsed')); place(); return; }
       await saveAll();
-      if (op === 'copy') {
+      if (op === 'copy' || op === 'cut') {
+        // Ausschneiden: wie Kopieren, das Original wird erst nach dem Einfügen entfernt (BlockOps::finishCut) – gleiche
+        // Zwischenablage wie im Backend (Backend\BlockOpsApi)
         const res = await api('copy', { slice: sec.dataset.block });
-        localStorage.setItem(CLIP, JSON.stringify({ clip: res.clip, label: res.label }));
-        say(`„${res.label}“ kopiert – auf dieser oder einer anderen Seite über ⋯ → Einfügen.`);
+        const entry = { clip: res.clip, label: res.label };
+        if (op === 'cut') entry.cut = { article: cfg.article.id, language: cfg.article.language, slice: +sec.dataset.block };
+        localStorage.setItem(CLIP, JSON.stringify(entry));
+        say(op === 'cut' ? `„${res.label}“ ausgeschnitten – an der neuen Stelle über ⋯ → Verschieben hierher.` : `„${res.label}“ kopiert – auf dieser oder einer anderen Seite über ⋯ → Einfügen.`);
         return;
       }
       if (op === 'left' || op === 'right') {
@@ -2099,7 +2104,15 @@
       }
       const res = op === 'duplicate'
         ? await api('duplicate', { slice: top.dataset.block, after: top.dataset.block })
-        : await api('paste', { after: top.dataset.block, clip: JSON.stringify(clip()?.clip || null) });
+        : await api('paste', { after: top.dataset.block, clip: JSON.stringify(clip()?.clip || null), cut: JSON.stringify(clip()?.cut || null) });
+      if (op === 'paste' && clip()?.cut) {
+        // verschoben: Original ist entfernt – Zwischenablage behält den Inhalt als Kopie; Seite neu, falls es hier stand
+        const c = clip();
+        const here = c.cut.article === cfg.article.id;
+        delete c.cut;
+        localStorage.setItem(CLIP, JSON.stringify(c));
+        if (here) { location.reload(); return; }
+      }
       const el = h(res.html);
       top.after(el);
       initEditables(el);
