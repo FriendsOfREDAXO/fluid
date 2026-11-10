@@ -61,9 +61,9 @@ textarea[data-blocks-rte] { display: none !important; }
 .blocks-be-col { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--rex-color-text-muted); font-size: var(--rex-font-size-small); }
 .blocks-be-col__n { padding: 2px 8px; border-radius: 999px; background: var(--fluid-be-orange); color: var(--fluid-be-on-orange); font-weight: 700; }
 .blocks-be-col a { margin-left: auto; color: var(--rex-color-link); }
-/* Layout: Kopf orange getönt mit Kante links, Wurzel des Astes unten */
+/* Layout: Kopf orange getönt, Wurzel des Astes unten */
 .rex-slice-output:has(.blocks-be-layout) { position: relative; }
-.rex-slice-output:has(.blocks-be-layout) .rex-section-header { background: var(--fluid-be-orange-subtle); box-shadow: inset 4px 0 0 var(--fluid-be-orange); }
+.rex-slice-output:has(.blocks-be-layout) .rex-section-header { background: var(--fluid-be-orange-subtle); }
 .rex-slice-output:has(.blocks-be-layout) .rex-section-header :is(h1, h2, h3, .rex-section-title) { color: var(--fluid-be-orange-text); }
 .rex-slice-output:has(.blocks-be-layout)::after { content: ""; position: absolute; left: 18px; bottom: -22px; height: 22px; border-left: 3px solid var(--fluid-be-orange); }
 /* Spalten-Blöcke und die „Block hinzufügen“-Leisten zwischen ihnen: eingerückt am Ast */
