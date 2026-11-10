@@ -19,10 +19,10 @@ use function is_dir;
 use function is_file;
 
 /**
- * Ein Kit: Gestaltung (Template, CSS, JS) plus Blocktypen mit Feldschema – im Format der Studio-Kits.
+ * Ein Kit: Gestaltung (Template, CSS, JS) und die Ausgaben der Blöcke (deren Felder stehen in den Blockklassen).
  *
  * Aufbau eines Kits (Ordner, {@see path()}):
- *   kit.php           Definition: label, blocks (Typ => label, variants, fields …), backgrounds, assets (CSS je Blocktyp),
+ *   kit.php           Definition: label, backgrounds, assets (CSS je Blocktyp), blocks (Ergänzungen je Blocktyp, z. B. Varianten),
  *                     css (weitere Stylesheets für jede Seite), design (Style-Editor)
  *   functions.php     Hilfsfunktionen der Ausgaben (wird einmal geladen)
  *   views/{typ}.php   Ausgabe je Blocktyp (`$b` = Block, `$d` = Daten)
@@ -222,9 +222,15 @@ abstract class Kit
     private static function merge(array $parent, array $own): array
     {
         $out = array_replace($parent, $own);
-        foreach (['blocks', 'backgrounds', 'assets'] as $key) {
+        foreach (['backgrounds', 'assets'] as $key) {
             if (isset($parent[$key], $own[$key])) {
                 $out[$key] = array_replace((array) $parent[$key], (array) $own[$key]);
+            }
+        }
+        if (isset($parent['blocks'], $own['blocks'])) {
+            $out['blocks'] = (array) $parent['blocks'];
+            foreach ((array) $own['blocks'] as $type => $block) {
+                $out['blocks'][$type] = self::overlayBlock((array) ($parent['blocks'][$type] ?? []), (array) $block);
             }
         }
         $out['css'] = [...(array) ($parent['css'] ?? []), ...(array) ($own['css'] ?? [])];
@@ -232,16 +238,39 @@ abstract class Kit
         return $out;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Angaben des Kits zu einem Blocktyp (kit.php 'blocks'), die über die Definition der Blockklasse gelegt werden –
+     * z. B. zusätzliche Varianten mit eigener View. Leer = Block wie in seiner Klasse.
+     *
+     * @return array<string, mixed>
+     */
     final public function block(string $type): array
     {
         /** @var array<string, mixed> */
-        return $this->definition()['blocks'][$type] ?? ['label' => $type, 'fields' => []];
+        return (array) ($this->definition()['blocks'][$type] ?? []);
     }
 
-    final public function hasBlock(string $type): bool
+    /**
+     * Angaben eines Kits über eine Blockdefinition legen: `variants` und `variant_help` werden ergänzt, `fields` angehängt,
+     * alles andere ersetzt.
+     *
+     * @param array<string, mixed> $def
+     * @param array<string, mixed> $overlay
+     * @return array<string, mixed>
+     */
+    public static function overlayBlock(array $def, array $overlay): array
     {
-        return array_key_exists($type, $this->definition()['blocks'] ?? []);
+        $out = array_replace($def, $overlay);
+        foreach (['variants', 'variant_help'] as $key) {
+            if (isset($def[$key], $overlay[$key])) {
+                $out[$key] = array_replace((array) $def[$key], (array) $overlay[$key]);
+            }
+        }
+        if (isset($def['fields'], $overlay['fields'])) {
+            $out['fields'] = [...(array) $def['fields'], ...(array) $overlay['fields']];
+        }
+
+        return $out;
     }
 
     /** @return list<string> */

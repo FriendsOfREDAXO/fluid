@@ -246,24 +246,6 @@ final class Maps
         ];
     }
 
-    /** Felder für den Block „Karte“ */
-    public static function blockFields(): array
-    {
-        return [
-            ['name' => 'location', 'label' => 'Ort', 'type' => 'select', 'required' => true, 'default' => 'site',
-                'options' => ['site' => 'Standort der Website (Website → Kontakt & Zeiten)', 'custom' => 'Eigener Ort']],
-            ['name' => 'point', 'label' => 'Eigener Ort', 'type' => 'geo', 'help' => '„Breite, Länge“ – oder „Aus Adresse ermitteln“ mit der Adresse unten.'],
-            ['name' => 'label', 'label' => 'Beschriftung', 'type' => 'text', 'width' => 'half', 'placeholder' => 'Standard: Name der Website'],
-            ['name' => 'address', 'label' => 'Adresse unter der Karte', 'type' => 'text', 'width' => 'half', 'placeholder' => 'Standard: Adresse der Website'],
-            ['name' => 'zoom', 'label' => 'Zoomstufe', 'type' => 'select', 'required' => true, 'default' => '15', 'width' => 'half',
-                'options' => ['11' => '11 – Stadt', '13' => '13 – Stadtteil', '15' => '15 – Straße', '16' => '16', '17' => '17 – Gebäude']],
-            ['name' => 'height', 'label' => 'Höhe', 'type' => 'select', 'required' => true, 'default' => 'm', 'width' => 'half', 'options' => self::HEIGHTS],
-            ['name' => 'style', 'label' => 'Kartenstil', 'type' => 'select', 'default' => 'liberty', 'width' => 'half', 'options' => self::STYLES],
-            ['name' => 'click', 'label' => 'Erst nach Klick laden (Zwei-Klick)', 'type' => 'bool', 'default' => false, 'width' => 'half'],
-            ['name' => 'route', 'label' => 'Link „Route planen“ anzeigen', 'type' => 'bool', 'default' => true],
-        ];
-    }
-
     public static function renderBlock(array $d, array $extra = []): string
     {
         $site = 'custom' !== ($d['location'] ?? 'site');

@@ -23,11 +23,12 @@ use function Redaxo\Core\View\escape;
 /**
  * Basis für Module mit Feldschema („Block-Module“).
  *
- * Ein Block-Modul beschreibt nur seine Felder (in der Kit-Definition) und seine Ausgabe (View-Datei des Kits).
+ * Ein Block-Modul beschreibt nur seine Felder (Attribute an den Eigenschaften, siehe Field\Field) und seine Ausgabe
+ * (view() in der Klasse, View-Datei daneben oder View des Kits).
  * Eingabeformular, Speichern und Bearbeiten auf der Website ergeben sich daraus. Gespeichert wird in der JSON-Spalte
  * `data` des Slices:
  *
- *   values  Felder des Blocks (laut Kit-Definition)
+ *   values  Felder des Blocks (laut Feld-Attributen)
  *   tunes   Abschnitts-Optionen (Hintergrund, Sprungmarke, Abstände, Spalte im Layout)
  *
  * Was den Blocktyp betrifft (Definition, Felder, Kit), ist statisch; eine Instanz gehört zu einem Slice
@@ -35,8 +36,22 @@ use function Redaxo\Core\View\escape;
  *
  * Beispiel:
  *
- *     #[AsModule('fluid.cta', 'Handlungsaufruf')]
- *     final class Cta extends FluidBlock {}
+ *     #[AsModule('fluid.hinweis', 'Hinweis')]
+ *     #[AsBlock(icon: 'info', group: 'Inhalt', nestable: true)]
+ *     final class Hinweis extends FluidBlock
+ *     {
+ *         #[Text('Überschrift', required: true, maxLength: 120)]
+ *         public string $headline = '';
+ *
+ *         #[Choice('Art', choices: ['info' => 'Information', 'warn' => 'Warnung'])]
+ *         public string $kind = 'info';
+ *
+ *         protected static function view(Block $b, array $d): string
+ *         {
+ *             return '<div class="wrap"><p class="note note--' . escape($d['kind']) . '"' . $b->edit('headline') . '>'
+ *                 . escape($d['headline']) . '</p></div>';
+ *         }
+ *     }
  */
 abstract class BlockModule extends Module
 {
@@ -84,28 +99,34 @@ abstract class BlockModule extends Module
         return false === $pos ? $key : substr($key, $pos + 1);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Definition des Blocks: #[AsBlock] an der Klasse und die Feld-Attribute an den Eigenschaften (Field\BlockSchema),
+     * darüber die Angaben des Kits zum Blocktyp (kit.php 'blocks' – z. B. zusätzliche Varianten) und der Extension
+     * Point FLUID_BLOCK_DEFINITION (Felder ergänzen, Beschriftungen ändern …).
+     *
+     * @return array<string, mixed>
+     */
     public static function definition(): array
     {
-        // Eigener Block im Projekt: define() liefert die Definition; sonst die des Kits. Projekte passen sie über
-        // den Extension Point FLUID_BLOCK_DEFINITION an (Felder ergänzen, Beschriftungen ändern …).
         return self::$definitions[static::class] ??= (array) Extension::dispatch(new ExtensionPoint('FLUID_BLOCK_DEFINITION',
-            static::define() ?? static::kit()->block(static::type()), ['type' => static::type(), 'module' => static::class, 'kit' => static::kit()]));
+            Kit::overlayBlock(Field\BlockSchema::of(static::class, static::name()), static::kit()->block(static::type())),
+            ['type' => static::type(), 'module' => static::class, 'kit' => static::kit()]));
     }
 
-    /** Beschriftung des Blocks (Kit-Definition, sonst Name des Moduls) */
+    /** Beschriftung des Blocks (#[AsBlock] label, sonst Name des Moduls) */
     public static function label(): string
     {
         return (string) (static::definition()['label'] ?? static::name());
     }
 
     /**
-     * Definition eines eigenen Blocks (Format wie in kit.php: label, icon, group, help, variants, fields …).
-     * null = Block des Kits. Beispiel siehe README („Eigener Block“).
+     * Ausgabe direkt in der Klasse – wie output() bei gewöhnlichen Modulen. `$b` ist der Block (`$b->edit('feld')`
+     * macht ein Feld auf der Seite bearbeitbar), `$d` sind die Felder mit Standardwerten. null = View-Datei
+     * ({@see viewFile()}); die Blöcke des Kits nutzen Views im Kit, damit jedes Kit sie anders gestalten kann.
      *
-     * @return array<string, mixed>|null
+     * @param array<string, mixed> $d
      */
-    protected static function define(): ?array
+    protected static function view(Block $b, array $d): ?string
     {
         return null;
     }
@@ -119,7 +140,7 @@ abstract class BlockModule extends Module
         return (string) Extension::dispatch(new ExtensionPoint('FLUID_BLOCK_VIEW', $file, ['type' => $b->type, 'variant' => $b->variant(), 'block' => $b]));
     }
 
-    /** Benötigte AddOns vorhanden? (Kit-Angabe „requires“, z. B. 'yform') – sonst fehlt der Block in der Auswahl */
+    /** Benötigte AddOns vorhanden? (#[AsBlock(requires: …)], z. B. 'yform') – sonst fehlt der Block in der Auswahl */
     public static function available(): bool
     {
         return match (static::definition()['requires'] ?? null) {
@@ -234,7 +255,7 @@ abstract class BlockModule extends Module
         return Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'content');
     }
 
-    /** Darf der Block (in dieser Variante) in einer Layout-Spalte stehen? (Kit: 'nestable' => true | ['variante', …]) */
+    /** Darf der Block (in dieser Variante) in einer Layout-Spalte stehen? (#[AsBlock(nestable: true | ['variante', …])]) */
     public static function nestable(string $variant = ''): bool
     {
         $n = static::definition()['nestable'] ?? false;
@@ -250,6 +271,12 @@ abstract class BlockModule extends Module
         $outer = Block::$rendering;   // Layout: Spalten-Blöcke werden innerhalb seiner View ausgegeben
         Block::$rendering = $b;
         try {
+            // Ausgabe in der Klasse (view()) – sonst View-Datei neben der Klasse bzw. des Kits
+            $own = static::view($b, $b->data);
+            if (null !== $own) {
+                return $own;
+            }
+
             return (static function (string $__file, Block $b, array $d): string {
                 ob_start();
                 try {

@@ -84,10 +84,11 @@ final class KitCreateCommand extends AbstractCommand
 
             /*
              * Kit „{$label}“: Definition. \$parent ist die Definition des Eltern-Kits „{$parentKit->key()}“ – alles, was hier
-             * fehlt, gilt von dort. Blöcke, Hintergründe und 'assets' werden je Schlüssel ergänzt, 'css' wird angehängt.
+             * fehlt, gilt von dort. Hintergründe und 'assets' werden je Schlüssel ergänzt, 'css' wird angehängt. Felder der
+             * Blöcke stehen in deren Klassen; 'blocks' ergänzt sie je Blocktyp (Varianten kommen hinzu, Felder werden angehängt).
              *
              * Beispiele:
-             *   'blocks' => ['hero' => ['variants' => ['eigene' => 'Eigene Variante'] + \$parent['blocks']['hero']['variants']] + \$parent['blocks']['hero']],
+             *   'blocks' => ['hero' => ['variants' => ['eigene' => 'Eigene Variante']]],   // View: views/hero.php
              *   'backgrounds' => ['sand' => 'Sand'],
              *   'design' => \$parent['design'],   // Style-Editor; eigene Vorlagen unter ['presets']
              */

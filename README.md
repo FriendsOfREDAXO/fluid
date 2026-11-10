@@ -236,8 +236,9 @@ Danach entweder auf der Website „Erste Schritte“ nutzen oder in der Konsole:
 # Beispiel-Tabellen der Demo (optional, für Daten/Presse/Projekte)
 mkdir -p src/YForm && cp vendor/friendsofredaxo/fluid/examples/yform/*.php src/YForm/ && php bin/console migrate
 
-# Beispiel-Module ohne fluid-Felder (optional, für die Seite „Native Module“)
-mkdir -p src/Module && cp vendor/friendsofredaxo/fluid/examples/module/*.php src/Module/
+# Beispiel-Module ohne fluid-Felder und derselbe Hinweis als Block (optional, für die Seite „Native Module“)
+mkdir -p src/Module src/Block && cp vendor/friendsofredaxo/fluid/examples/module/*.php src/Module/ \
+  && cp vendor/friendsofredaxo/fluid/examples/block/Hinweis.php src/Block/
 
 # komplette Demo mit Bildern und Design „REDAXO · Blau“
 php bin/console fluid:demo --set=redaxo6 --media --design=redaxo
@@ -397,7 +398,8 @@ IP-Adresse und ist harmlos. Mit `http://localhost:8000/` verschwindet die Meldun
 
 Alles Technische steht in der **[Entwickler-Referenz](docs/entwickler.md)**:
 
-- eigene Blöcke als Modulklasse + View, alle Feldtypen und Block-Optionen
+- eigene Blöcke als Modulklasse mit Feld-Attributen (`#[Text]`, `#[Media]`, `#[Repeater]` …) und `view()`, alle Felder
+  und Block-Optionen
 - eigene Kits: erben vom Kit fluid und ersetzen nur CSS, Views oder Template (`fluid:kit:create`), Auswahl unter
   Website → Kit, Inhalte bleiben beim Wechsel
 - Extension Points (`FLUID_BLOCK_DEFINITION`, `FLUID_BLOCK_VIEW`, `FLUID_SETTINGS_SCHEMA` …)
@@ -406,29 +408,26 @@ Alles Technische steht in der **[Entwickler-Referenz](docs/entwickler.md)**:
 - Suche (was in den Index kommt, `'search' => false`), Live-Aktualisierung per SSE, „Neu laden auf Aktion“
   (`Live::region`, `data-live-nav`), Präsenz der Redaktion – Live und Präsenz wie in KLXM Studio
 
-Ein eigener Block in Kürze:
+Ein eigener Block in Kürze – Felder als Attribute wie bei den Modulen des Cores, Ausgabe in `view()`:
 
 ```php
 // src/Block/Teaser.php
 #[AsModule('fluid.teaser', 'Teaser')]
+#[AsBlock(icon: 'star', group: 'Inhalt')]
 final class Teaser extends FluidBlock
 {
-    protected static function define(): array
+    #[Text('Überschrift', required: true)]
+    public string $title = '';
+
+    #[Textarea('Text')]
+    public string $text = '';
+
+    protected static function view(Block $b, array $d): string
     {
-        return ['label' => 'Teaser', 'group' => 'Inhalt', 'fields' => [
-            ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true],
-            ['name' => 'text', 'label' => 'Text', 'type' => 'textarea'],
-        ]];
+        return '<div class="wrap"><h2' . $b->edit('title') . '>' . escape($d['title']) . '</h2>'
+            . '<p' . $b->edit('text', 'lines') . '>' . nl2br(escape($d['text']), false) . '</p></div>';
     }
 }
-```
-
-```php
-<?php // src/Block/Teaser.view.php ?>
-<div class="wrap">
-  <h2<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
-  <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
-</div>
 ```
 
 `$b->edit('feld')` macht das Feld direkt auf der Website bearbeitbar – fertig ist der Block, mit Seitenleiste,

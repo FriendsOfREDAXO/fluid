@@ -143,6 +143,24 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 ### Für Entwickler
 
+- **Felder der Blöcke als Attribute** – wie bei den Modulen des Cores. An der Klasse `#[AsBlock(icon:, group:, variants:,
+  nestable: …)]`, an den Eigenschaften die Felder aus `FriendsOfRedaxo\Fluid\Field`: `Text`, `Textarea`, `Choice`,
+  `Checkbox`, `Number`, `DatePicker`, `TimePicker`, `Url` (Namen und Parameter wie im Core: `label`, `note`, `required`,
+  `key`, `maxLength` …) sowie `RichText`, `Link`, `Media`, `File`, `Repeater`, `Icon`, `Geo`, `MediaCategory`, `Blog`,
+  `YFormTable`, `YFormForm`, `YFormField`; dazu `width: 'half'` und `variants:`. Schlüssel = Eigenschaft in snake_case,
+  Standardwert = Vorgabewert der Eigenschaft. Gespeichert wird unverändert unter `values` – vorhandene Inhalte bleiben.
+  - Die 24 Blöcke des Kits fluid stehen so in `kits/fluid/src/Module/` (vorher als Arrays in `kits/fluid/kit.php`);
+    die Definitionen sind unverändert (maschinell umgestellt und verglichen).
+  - **Ausgabe in der Klasse:** `protected static function view(Block $b, array $d): string` – wie `output()` bei
+    gewöhnlichen Modulen. Sonst `{Klasse}.view.php` daneben, dann die View des Kits.
+  - **Entfällt:** `define()` und die Felder in `kit.php`. `'blocks'` in `kit.php` ergänzt jetzt die Definition der
+    Blockklasse (Varianten und `variant_help` kommen hinzu, `fields` werden angehängt, anderes ersetzt) – statt sie
+    komplett zu ersetzen. `Kit::hasBlock()` und `Maps::blockFields()` entfallen.
+  - Beispiel `examples/block/Hinweis.php`: das Beispiel-Modul „Hinweis“ als Block in einer Datei; die Seite „Native
+    Module“ der Demo zeigt die Umstellung Schritt für Schritt.
+  - Demo: Auf der Seite „Native Module“ stand unter „Derselbe Hinweis als fluid-Block“ der Code des Teasers (doppelter
+    Schlüssel im Demo-Inhalt).
+
 - Menü über [navigation_array](https://github.com/FriendsOfREDAXO/navigation_array) (Branch 6.x) statt einer eigenen
   Klasse; fluid meldet über den Extension Point `NavigationStart` den Seitenbaum einer Landing-Domain als Start.
 - Blöcke speichern über `ContentHandler::editSlice()` des Cores (#6800) – im Editor und im MCP-Server.

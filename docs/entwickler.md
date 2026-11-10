@@ -17,57 +17,94 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 
 ## Ein eigener Block
 
-Ein Block ist eine Modulklasse mit Feldschema und eine View. Im Projekt, ohne das Kit zu ändern:
+Ein Block ist eine Modulklasse: die Felder als Attribute an Eigenschaften (wie bei den Modulen des Cores), die Ausgabe in
+`view()` – oder als View-Datei daneben. Im Projekt, ohne das Kit zu ändern:
 
 ```php
 // src/Block/Teaser.php
 namespace Project\Block;
 
+use FriendsOfRedaxo\Fluid\Block;
+use FriendsOfRedaxo\Fluid\Field\AsBlock;
+use FriendsOfRedaxo\Fluid\Field\{Link, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
 
+use function Redaxo\Core\View\escape;
+
 #[AsModule('fluid.teaser', 'Teaser')]
+#[AsBlock(icon: 'star', group: 'Inhalt', nestable: true)]   // nestable: darf in eine Layout-Spalte
 final class Teaser extends FluidBlock
 {
-    protected static function define(): array
+    #[Text('Überschrift', required: true, maxLength: 80)]
+    public string $title = '';
+
+    #[Textarea('Text', rows: 3)]
+    public string $text = '';
+
+    #[Link('Link')]
+    public string $link = '';
+
+    protected static function view(Block $b, array $d): string
     {
-        return [
-            'label' => 'Teaser', 'icon' => 'star', 'group' => 'Inhalt',
-            'nestable' => true,   // darf in eine Layout-Spalte
-            'fields' => [
-                ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true, 'max' => 80],
-                ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 3],
-                ['name' => 'link', 'label' => 'Link', 'type' => 'link'],
-            ],
-        ];
+        return '<div class="wrap"><h2 class="h3"' . $b->edit('title') . '>' . escape($d['title']) . '</h2>'
+            . '<p' . $b->edit('text', 'lines') . '>' . nl2br(escape($d['text']), false) . '</p></div>';
     }
 }
 ```
 
+Statt `view()` geht auch eine Datei neben der Klasse (`Teaser.view.php`, `$b` = Block, `$d` = Daten) – praktisch bei
+längerem Markup:
+
 ```php
-<?php // src/Block/Teaser.view.php – $b = Block, $d = Daten ?>
 <div class="wrap">
   <h2 class="h3"<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
   <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
 </div>
 ```
 
+Reihenfolge der Ausgabe: `view()` der Klasse → `{Klasse}.view.php` → `views/{typ}.php` des Kits. Die Blöcke von fluid
+haben ihre Ausgabe im Kit, damit jedes Kit sie anders gestalten kann.
+
 - `$b->edit('feld')` macht ein Feld direkt auf der Seite bearbeitbar (`'lines'` mehrzeilig, `'rich'` mit Formatierung).
+- Schlüssel eines Felds ist der Name der Eigenschaft in snake_case (`$buttonLink` → `button_link`, anders mit `key:`),
+  der Standardwert ihr Vorgabewert. Die Reihenfolge der Eigenschaften ist die Reihenfolge im Formular; Felder einer
+  Basisklasse kommen zuerst.
 - Daten liegen in der JSON-Spalte `data` des Slices: Felder unter `values`, Abschnitts-Optionen (Hintergrund, Abstände,
   Spalte) unter `tunes` – echte Slices mit Rechten, Arbeitsversion und Historie des Cores. Im Code:
-  `BlockModule::of($slice)->values` bzw. `->data()` (mit Standardwerten), `->tunes`.
-- Was den Blocktyp betrifft, ist statisch: `define()`, `kit()`, `fields()`, `definition()`, `label()`.
+  `BlockModule::of($slice)->values` bzw. `->data()` (mit Standardwerten), `->tunes`. Die Eigenschaften selbst
+  beschreiben nur die Felder, sie werden nicht befüllt.
+- Was den Blocktyp betrifft, ist statisch: `kit()`, `fields()`, `definition()`, `label()`, `view()`.
   `BlockModule::classFor($key)` liefert die Klasse eines Block-Moduls, `BlockModule::all()` alle.
-- Vorlage: `examples/block/`.
+- Vorlagen: `examples/block/` (`Hinweis.php` in einer Datei, `Teaser.php` mit View-Datei).
 
-**Feldtypen:** `text`, `textarea`, `richtext`, `select` (`options`), `bool`, `number`, `url`, `time`, `media`, `file`,
-`link` (Linkmap), `mediacategory`, `repeater` (`fields`, `item_label`, `title_field`), `geo` (Koordinaten mit Adresssuche),
-`yform_form`, `yform_table`, `yform_field`. Optionen je Feld: `label`, `help`, `required`, `default`, `max`, `rows`,
-`placeholder`, `width` (`half`), `variants` (nur bei bestimmten Darstellungen), `types` (bei `file`: erlaubte Endungen, z. B. `['vtt', 'srt']`).
+**Vom Modul des Cores zum Block:** von `FluidBlock` statt `Module` erben, Schlüssel mit `fluid.`, `#[AsBlock]` an die
+Klasse, die Feld-Attribute aus `FriendsOfRedaxo\Fluid\Field` statt aus `Redaxo\Core\Form\Field` (Namen und Parameter sind
+gleich), `view()` statt `output()`. Werte sind dabei Zeichenketten wie im Formular (Datum `2026-11-10`, Bild = Dateiname,
+Link = `redaxo://12` oder Adresse).
 
-**Block-Optionen:** `variants` (Darstellungen), `background`, `nestable`, `requires` (`'yform'`), `jsonld`
-(strukturierte Daten, z. B. `['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']`),
-`drags` (Greifer auf der Seite: `['field' => 'measure', 'target' => '.prose', 'class' => 'prose--m-{v}', 'label' => 'Textbreite']`).
+**Felder** (`FriendsOfRedaxo\Fluid\Field\…`; alle mit `label`, `note`, `required`, `key`, `width: 'half'`,
+`variants: [...]` – nur bei diesen Darstellungen – und `default:` für Felder ohne Eigenschaft):
+
+| Attribut | | weitere Parameter |
+|---|---|---|
+| `Text`, `Textarea` | Text | `maxLength`, `placeholder`, `rows` (Textarea), `search: false` (nicht in die Suche) |
+| `RichText` | formatierter Text | |
+| `Choice` | Auswahl | `choices: [...]` oder `choices: [Klasse::class, 'methode']` |
+| `Checkbox`, `Number`, `DatePicker`, `TimePicker`, `Url` | wie im Core | |
+| `Link` | Seite, `#anker`, `https://…`, `mailto:` | |
+| `Media`, `File` | Bild bzw. Datei aus dem Medienpool | `types: ['vtt', 'srt']` |
+| `Repeater` | Wiederholgruppe | `fields: [new Text('Titel', key: 'title'), …]`, `item`, `titleField`, `min`, `max` |
+| `Icon`, `Geo`, `MediaCategory`, `Blog` | Symbol, Ort mit Adresssuche, Kategorie des Medienpools, Blog | |
+| `YFormTable`, `YFormForm`, `YFormField` | Tabelle, Formular-Klasse, Feld der gewählten Tabelle | |
+
+**Block** (`#[AsBlock]`): `icon`, `group`, `help`, `label` (Standard: Name aus `AsModule`), `variants` (Darstellungen,
+erste = Standard), `variantHelp`, `nestable` (`true` oder Liste der Varianten), `background`, `requires` (`'yform'`),
+`reload` (Teil der Seite ohne Neuladen aktualisieren), `jsonld` (strukturierte Daten, z. B.
+`['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']`), `drags` (Greifer auf der Seite:
+`[['field' => 'measure', 'target' => '.prose', 'class' => 'prose--m-{v}', 'label' => 'Textbreite']]`).
+
+Felder ergänzen oder Beschriftungen ändern, ohne die Klasse anzufassen: Extension Point `FLUID_BLOCK_DEFINITION`.
 
 ## Eigene Kits
 
@@ -106,7 +143,8 @@ Legt `src/Kit/Nature/` im Projekt an:
 
 Jede Datei im Kit-Ordner ersetzt die gleichnamige des Eltern-Kits, alles andere gilt von dort:
 
-- `views/{typ}.php` – Ausgabe eines Blocktyps (`$b` = Block, `$d` = Daten, wie beim eigenen Block)
+- `views/{typ}.php` – Ausgabe eines Blocktyps (`$b` = Block, `$d` = Daten, wie beim eigenen Block); die Felder stehen
+  in den Blockklassen (`kits/fluid/src/Module/`)
 - `template.view.php` – Seitenrahmen (Kopf, Menü, Fuß); Vorlage ist `kits/fluid/src/FluidTemplate.view.php`
 - `assets/…` – einzelne Dateien, z. B. `assets/css/b-cards.css` statt der des Eltern-Kits
 - `functions.php` – zusätzliche Hilfsfunktionen (die des Eltern-Kits sind schon geladen)
@@ -119,14 +157,16 @@ return [
     'css' => ['css/kit.css'],                                   // Stylesheets für jede Seite (angehängt)
     'backgrounds' => ['sand' => 'Sand'],                          // ergänzt die Hintergründe
     'assets' => ['css/b-gallery.css' => ['gallery']],             // CSS je Blocktyp (ergänzt)
-    'blocks' => [                                                // je Typ ersetzt oder neu
-        'hero' => ['variants' => ['leaf' => 'Mit Blatt'] + $parent['blocks']['hero']['variants']] + $parent['blocks']['hero'],
+    'blocks' => [                                                // je Blocktyp über die Blockklasse gelegt
+        'hero' => ['variants' => ['leaf' => 'Mit Blatt']],          // neue Variante, Ausgabe in views/hero.php
     ],
     'design' => $parent['design'],                              // Style-Editor; eigene Vorlagen unter ['presets']
 ];
 ```
 
-`blocks`, `backgrounds` und `assets` werden je Schlüssel ergänzt, `css` wird angehängt, alle anderen Einträge ersetzt.
+`backgrounds` und `assets` werden je Schlüssel ergänzt, `css` wird angehängt, alle anderen Einträge ersetzt. `blocks` legt
+sich über die Definition aus der Blockklasse: `variants` und `variant_help` werden ergänzt, `fields` angehängt, alles
+andere (z. B. `label`, `help`) ersetzt.
 
 **Design-Werte** speichert jedes Kit für sich. Solange ein abgeleitetes Kit keine eigenen hat, übernimmt es die seines
 Eltern-Kits – nach dem Wechsel sieht die Website also zunächst aus wie vorher.

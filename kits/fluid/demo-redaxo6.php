@@ -139,81 +139,10 @@ final class TeaserModule extends Module
     }
 }
 CODE,
-    'nmodule' => <<<'CODE'
-<?php
-
-namespace Project\Module;
-
-use Redaxo\Core\Content\AsModule;
-use Redaxo\Core\Content\Module;
-use Redaxo\Core\Form\Field\Choice;
-use Redaxo\Core\Form\Field\MediaPicker;
-use Redaxo\Core\Form\Field\Text;
-use Redaxo\Core\Form\Field\Textarea;
-use Redaxo\Core\MediaPool\Media;
-
-use function Redaxo\Core\View\escape;
-
-#[AsModule('hinweis', 'Hinweis')]
-final class HinweisModule extends Module
-{
-    #[Text('Überschrift', required: true, maxLength: 120)]
-    public string $headline = '';
-
-    #[Textarea('Text', rows: 4)]
-    public string $text = '';
-
-    #[Choice('Art', ['info' => 'Information', 'warn' => 'Warnung'])]
-    public string $kind = 'info';
-
-    #[MediaPicker('Bild', types: ['jpg', 'png', 'webp'])]
-    public ?Media $image = null;
-
-    public function output(): string
-    {
-        return '<aside class="note note--' . escape($this->kind) . '"><h2>' . escape($this->headline) . '</h2>'
-            . '<p>' . nl2br(escape($this->text)) . '</p></aside>';
-    }
-}
-CODE,
-    'fblock' => <<<'CODE'
-<?php
-
-namespace Project\Block;
-
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
-use Redaxo\Core\Content\AsModule;
-
-// 1. erbt von FluidBlock statt Module, Schlüssel mit „fluid.“
-#[AsModule('fluid.hinweis', 'Hinweis')]
-final class Hinweis extends FluidBlock
-{
-    // 2. Felder als Schema statt als Attribute an Eigenschaften
-    protected static function define(): array
-    {
-        return [
-            'label' => 'Hinweis', 'icon' => 'info', 'group' => 'Inhalt', 'nestable' => true,
-            'fields' => [
-                ['name' => 'headline', 'label' => 'Überschrift', 'type' => 'text', 'required' => true, 'max' => 120],
-                ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 4],
-                ['name' => 'kind', 'label' => 'Art', 'type' => 'select', 'default' => 'info',
-                    'options' => ['info' => 'Information', 'warn' => 'Warnung']],
-                ['name' => 'image', 'label' => 'Bild', 'type' => 'media'],
-            ],
-        ];
-    }
-}
-CODE,
-    'fblock_view' => <<<'CODE'
-<?php /** 3. Ausgabe als View neben der Klasse: $b = Block, $d = Felder */ ?>
-<div class="wrap">
-  <aside class="note note--<?= e($d['kind']) ?>">
-    <h2<?= $b->edit('headline') ?>><?= e($d['headline']) ?></h2>
-    <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
-    <?php if ('' !== $d['image']): ?><?= img($d['image'], '24rem') ?><?php endif; ?>
-  </aside>
-</div>
-CODE,
+    // gewöhnliches Modul: die Datei, die auch im Projekt liegt (examples/module)
+    'nmodule' => (string) file_get_contents(__DIR__ . '/../../examples/module/HinweisModule.php'),
+    // derselbe Hinweis als Block: die Datei, die auch im Projekt liegt
+    'hblock' => (string) file_get_contents(__DIR__ . '/../../examples/block/Hinweis.php'),
     'nmodule_input' => <<<'CODE'
 public function input(Form $form): string
 {
@@ -396,27 +325,24 @@ CODE,
 
 namespace Project\Block;
 
+use FriendsOfRedaxo\Fluid\Field\AsBlock;
+use FriendsOfRedaxo\Fluid\Field\{Link, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
-use Override;
 use Redaxo\Core\Content\AsModule;
 
-/** Eigener Block im Projekt: Klasse + Teaser.view.php daneben – das Kit bleibt unverändert. */
+/** Eigener Block im Projekt: Felder als Attribute, Ausgabe in Teaser.view.php daneben – das Kit bleibt unverändert. */
 #[AsModule('fluid.teaser', 'Teaser (Projekt)')]
+#[AsBlock(icon: 'star', group: 'Inhalt', nestable: true, help: 'Beispiel für einen eigenen Block im Projekt.')]
 final class Teaser extends FluidBlock
 {
-    #[Override]
-    protected static function define(): array
-    {
-        return [
-            'label' => 'Teaser (Projekt)', 'icon' => 'star', 'group' => 'Inhalt', 'nestable' => true,
-            'help' => 'Beispiel für einen eigenen Block im Projekt.',
-            'fields' => [
-                ['name' => 'title', 'label' => 'Überschrift', 'type' => 'text', 'required' => true, 'max' => 80],
-                ['name' => 'text', 'label' => 'Text', 'type' => 'textarea', 'rows' => 3],
-                ['name' => 'link', 'label' => 'Link', 'type' => 'link'],
-            ],
-        ];
-    }
+    #[Text('Überschrift', required: true, maxLength: 80)]
+    public string $title = '';
+
+    #[Textarea('Text', rows: 3)]
+    public string $text = '';
+
+    #[Link('Link')]
+    public string $link = '';
 }
 CODE,
     'fview' => <<<'CODE'
@@ -609,9 +535,9 @@ return [
     'css' => ['css/kit.css'],
     // zusätzlicher Hintergrund für alle Blöcke (Klasse bg-sand)
     'backgrounds' => ['sand' => 'Sand'],
-    // Handlungsaufruf: zusätzliche Variante „Mit Blatt“ – alles andere vom Block des Eltern-Kits
+    // Handlungsaufruf: zusätzliche Variante „Mit Blatt“ – Felder und alles andere aus der Blockklasse
     'blocks' => [
-        'cta' => ['variants' => $parent['blocks']['cta']['variants'] + ['leaf' => 'Mit Blatt']] + $parent['blocks']['cta'],
+        'cta' => ['variants' => ['leaf' => 'Mit Blatt']],
     ],
 ];
 CODE,
@@ -998,15 +924,16 @@ return [
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<p>Ein natives Modul funktioniert mit fluid ohne Änderung. Soll es sich anfühlen wie die Blöcke von fluid, sind es drei Schritte:</p>'
                         . '<ol><li><strong>Klasse:</strong> erbt von <code>FluidBlock</code> statt von <code>Module</code>; der Schlüssel beginnt mit <code>fluid.</code>.</li>'
-                        . '<li><strong>Felder:</strong> stehen als Schema in <code>define()</code> statt als Attribute an Eigenschaften – mit Feldtypen wie <code>text</code>, <code>select</code>, <code>media</code>, <code>link</code>, <code>richtext</code> oder <code>repeater</code>.</li>'
-                        . '<li><strong>Ausgabe:</strong> liegt in einer View neben der Klasse (<code>Hinweis.view.php</code>) statt in <code>output()</code>; <code>$b-&gt;edit(\'feld\')</code> macht ein Feld direkt auf der Seite bearbeitbar.</li></ol>'
+                        . '<li><strong>Felder:</strong> bleiben Attribute an Eigenschaften – mit denselben Namen und Parametern, nur aus <code>FriendsOfRedaxo\\Fluid\\Field</code>. Dazu kommen Felder von fluid wie <code>Link</code>, <code>Media</code>, <code>RichText</code> oder <code>Repeater</code>.</li>'
+                        . '<li><strong>Ausgabe:</strong> <code>view()</code> statt <code>output()</code> – in der Klasse oder als View-Datei daneben; <code>$b-&gt;edit(\'feld\')</code> macht ein Feld direkt auf der Seite bearbeitbar.</li></ol>'
                         . '<p><strong>Was man gewinnt:</strong> Texte direkt auf der Seite, Vorschau beim Tippen, der Block erscheint in der Blockauswahl der Website, Hintergrund und Abstände je Abschnitt, Layout-Spalten, Kopieren und Einfügen, Greifer – und die Gestaltung kommt aus dem Kit, auch beim Wechsel der Design-Vorlage.</p>'
                         . '<p><strong>Gut zu wissen:</strong> Der Schlüssel ändert sich, vorhandene Slices des nativen Moduls werden nicht von selbst zu Blöcken. Beides darf nebeneinander bestehen – neue Inhalte mit dem Block, alte bleiben, bis sie ersetzt sind.</p>']],
-                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Derselbe Hinweis als fluid-Block', 'intro' => 'Klasse mit Feldschema und eine View daneben – mehr braucht ein Block nicht.', 'note' => 'Mehr dazu in der Entwickler-Referenz (docs/entwickler.md, „Ein eigener Block“) und auf der Seite „Eigenes Kit“.',
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Derselbe Hinweis als fluid-Block', 'intro' => 'Eine Klasse: Felder als Attribute, Ausgabe in view() – mehr braucht ein Block nicht.', 'note' => 'Mehr dazu in der Entwickler-Referenz (docs/entwickler.md, „Ein eigener Block“) und auf der Seite „Eigenes Kit“.',
                     'items' => [
-                        $c('fblock', 'src/Block/Hinweis.php', 'php'),
-                        $c('fblock_view', 'src/Block/Hinweis.view.php', 'php'),
+                        $c('hblock', 'src/Block/Hinweis.php', 'php'),
                     ]]],
+                // derselbe Hinweis als Block – nur, wenn examples/block/Hinweis.php im Projekt liegt
+                ['type' => 'hinweis', 'data' => ['headline' => 'Derselbe Hinweis als fluid-Block', 'text' => 'Diesen Text direkt hier auf der Seite ändern – alle Felder stehen wie bei jedem Block in der Seitenleiste.', 'kind' => 'ok', 'strong' => false, 'until' => '', 'link' => '', 'image' => '']],
                 $cta,
             ],
         ],

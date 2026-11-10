@@ -26,11 +26,12 @@ use function preg_match;
 use function preg_match_all;
 
 /**
- * Feldtyp der Block-Module: speichert die Werte eines Blocks (Felder laut Kit-Definition oder Abschnitts-Optionen) als
+ * Feldtyp der Block-Module: speichert die Werte eines Blocks (Felder laut Feld-Attributen oder Abschnitts-Optionen) als
  * verschachteltes Array in der JSON-Spalte `data` des Slices.
  *
- * Die Felder eines Blocks stehen nicht als Eigenschaften im Modul, sondern in der Kit-Definition – deshalb ein Feld für
- * alle Werte statt eines Felds je Wert. Das Formular zeichnet BlockModule::input() (FieldForm), nicht das Feld selbst.
+ * Die Feld-Attribute von fluid (Field\Field) beschreiben die Felder, gespeichert wird gesammelt unter `values` – so
+ * bleiben Wiederholgruppen, Varianten und die Ergänzungen der Kits möglich. Das Formular zeichnet BlockModule::input()
+ * (FieldForm), nicht das Feld selbst.
  *
  * Verweise (Tabelle rex_article_slice_reference des Cores, Löschschutz, „Verwendet in“): Seiten als `redaxo://ID` in
  * jedem Text (Linkfelder, Rich-Text), Medien als Dateiname bzw. Liste von Dateinamen, die es im Medienpool gibt.
