@@ -130,3 +130,15 @@ textarea[data-blocks-rte] { display: none !important; }
   .fluid-be-list > .rex-slice-output > .rex-section > .rex-section-header .rex-section-options { gap: 3px; }
   .fluid-be-list > .rex-slice-output > .rex-section > .rex-section-header > .rex-section-title { font-size: .95rem; }
 }
+/* Leiste mit Titel-Reiter und Menü „⋯“ (assets/slice-grid.js) */
+.fluid-be-list > .rex-slice-output > .rex-section > .rex-section-header.fluid-be-bar { justify-content: space-between; gap: 8px; padding: 0; border: 0; background: none; box-shadow: none; }
+@media (hover: hover) { .fluid-be-list > .rex-slice-output > .rex-section > .rex-section-header.fluid-be-bar { inset: -16px 8px auto; width: auto; max-width: none; } }
+.fluid-be-bar > .rex-section-title { flex: 0 1 auto; min-width: 0; padding: 5px 10px; border-radius: 8px; background: var(--rex-color-surface-strong); box-shadow: 0 4px 12px rgb(0 0 0 / .15); font-size: .9rem; }
+.fluid-be-acts { position: relative; display: flex; flex: none; gap: 2px; padding: 3px; border-radius: 8px; background: var(--rex-color-surface-strong); box-shadow: 0 4px 12px rgb(0 0 0 / .15); }
+.fluid-be-more { min-width: 32px; height: 30px; padding: 0 8px; border: 1px solid var(--rex-color-border-strong); border-radius: 6px; background: var(--rex-color-surface); color: var(--rex-color-text); font-size: 18px; line-height: 1; cursor: pointer; }
+.fluid-be-more:focus-visible, .fluid-be-menu [role=menuitem]:focus-visible { outline: 2px solid var(--rex-color-focus); outline-offset: 1px; }
+.fluid-be-menu { position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; display: grid; min-width: 200px; padding: 6px; border: 1px solid var(--rex-color-border-strong); border-radius: 10px; background: var(--rex-color-surface); box-shadow: 0 12px 32px rgb(0 0 0 / .22); }
+.fluid-be-menu[hidden] { display: none; }
+.fluid-be-menu [role=menuitem] { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; margin: 0; padding: 8px 10px; border: 0; border-radius: 6px; background: none !important; color: var(--rex-color-text) !important; text-align: left; box-shadow: none; }
+.fluid-be-menu [role=menuitem]:hover { background: var(--rex-color-surface-subtle) !important; }
+.fluid-be-menu__label { font-size: var(--rex-font-size-small); }
