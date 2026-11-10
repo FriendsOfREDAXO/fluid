@@ -40,7 +40,7 @@ $base = [
     'eyebrow' => 'line', 'header' => 'inline', 'header_sticky' => true, 'header_bg' => 'page', 'nav_style' => 'plain', 'topbar' => 'off',
     'footer' => 'columns', 'footer_bg' => 'surface', 'sections' => 'flush', 'progress' => false, 'totop' => false, 'footer_line' => 'auto', 'footer_line_color' => 'auto', 'footer_line_width' => 'auto', 'header_height' => 'auto', 'pagebg' => 'plain',
     'logo_size' => 'normal', 'side_width' => 'normal', 'side_tree' => 'branch', 'side_banner' => 'off', 'side_banner_height' => 'normal', 'side_banner_overlay' => 'none', 'palette' => 'brand',
-    'motion' => true, 'dark' => true,
+    'motion' => true, 'transition' => 'off', 'dark' => true,
 ];
 
 $design = [
@@ -215,6 +215,9 @@ $design = [
                 'help' => 'Besucher mit „Bewegung reduzieren“ sehen nie Animationen – unabhängig von dieser Einstellung.'],
             ['name' => 'motion_style', 'label' => 'Art des Einblendens', 'type' => 'choice', 'class' => 'mo-{value}', 'default' => 'rise',
                 'options' => ['rise' => 'Aufsteigen', 'fade' => 'Nur Blende', 'scale' => 'Leicht wachsen', 'blur' => 'Aus der Unschärfe', 'clip' => 'Aufdecken von unten', 'slide' => 'Seitlich hereingleiten']],
+            ['name' => 'transition', 'label' => 'Seitenwechsel', 'type' => 'choice', 'default' => 'off',
+                'options' => ['off' => 'Wie gewohnt (sofort)', 'fade' => 'Überblenden (Kopf bleibt stehen)', 'morph' => 'Morphen: angeklicktes Bild bzw. Text wird zum Bild bzw. zur Überschrift der neuen Seite'],
+                'help' => 'Nur mit Animationen und nie bei „Bewegung reduzieren“. Chrome, Edge und Safari ab 18.2 – andere Browser wechseln wie gewohnt.'],
             ['name' => 'dark', 'label' => 'Dunkles Farbschema, wenn im Gerät der Besucher eingestellt', 'type' => 'bool', 'class' => 'has-dark', 'default' => true],
         ]],
     ],

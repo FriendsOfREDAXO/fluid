@@ -1,0 +1,11 @@
+/* Design „Seitenwechsel: Überblenden“ (View Transitions; Chrome, Edge, Safari ≥ 18.2 – andere wechseln wie gewohnt). Der Kopf
+   bleibt stehen, der Inhalt blendet weich über. Nur mit „Animationen“ und nie bei „Bewegung reduzieren“. Aus KLXM Studio. */
+@media (prefers-reduced-motion:no-preference){
+  @view-transition{navigation:auto}
+  .has-motion .hdr{view-transition-name:f-hdr}
+  .has-motion::view-transition-old(root){animation:f-vt-out .3s cubic-bezier(.4,0,1,1) both}
+  .has-motion::view-transition-new(root){animation:f-vt-in .5s cubic-bezier(.2,.7,.2,1) .06s both}
+  :root:not(.has-motion)::view-transition-group(*),:root:not(.has-motion)::view-transition-old(*),:root:not(.has-motion)::view-transition-new(*){animation:none}
+}
+@keyframes f-vt-out{to{opacity:0;translate:0 -.75rem}}
+@keyframes f-vt-in{from{opacity:0;translate:0 1.5rem}}

@@ -10,7 +10,7 @@ return [
     // Style-Editor: Farben, Schriften, Form, Kopf & Fuß, Vorlagen (FriendsOfRedaxo\Fluid\Design)
     'design' => require __DIR__ . '/design.php',
     // Design-Optionen mit eigenem Stylesheet (nur das Gewählte wird geladen): css/opt-{option}-{wert}.css
-    'design_css' => ['header', 'footer', 'pagebg', 'buttons', 'eyebrow', 'cards', 'dividers', 'palette', 'sections'],
+    'design_css' => ['header', 'footer', 'pagebg', 'buttons', 'eyebrow', 'cards', 'dividers', 'palette', 'sections', 'transition'],
     'backgrounds' => ['white' => 'Standard', 'muted' => 'Getönt', 'tint' => 'Akzent hell', 'accent' => 'Akzentfarbe', 'secondary' => 'Zweite Markenfarbe', 'dark' => 'Dunkel'],
     'dark_backgrounds' => ['accent', 'secondary', 'dark'],
 

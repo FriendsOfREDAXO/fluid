@@ -4,6 +4,14 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Seitenwechsel: Überblenden und Morphen (optional)
+
+- Neue Design-Einstellung „Seitenwechsel“ im Kit fluid (Bewegung & Farbschema, Standard „Wie gewohnt“): „Überblenden“
+  (Kopf bleibt stehen, Inhalt blendet über) oder „Morphen“ (angeklicktes Bild wird zum großen Bild der Zielseite, ein
+  kurzer Linktext zur Überschrift; zurück umgekehrt). Cross-Document View Transitions (`@view-transition`), Chrome, Edge,
+  Safari ab 18.2 – andere Browser wechseln wie gewohnt. Nur mit Animationen, nie bei „Bewegung reduzieren“, nicht im
+  Bearbeiten-Modus (aus KLXM Studio, Kits foto/galerie).
+
 ### Bildergalerie und Slider
 
 - Block „Bildergalerie“ (`fluid.gallery`): Raster, Mosaik oder bündige Zeilen, Bilder als `Collection` mit

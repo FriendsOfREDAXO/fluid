@@ -111,6 +111,8 @@ return static function (ArticleContent $content): void {
 <?php foreach ($css as $href): ?><link rel="stylesheet" href="<?= e($href) ?>"<?= str_contains($href, '/opt-') ? ' data-fluid-opt' : '' ?>>
 <?php endforeach; ?>
 <?= $design->head() ?>
+<?php if (!Editing::active() && 'morph' === ($kit->design()->values()['transition'] ?? '')): ?><script src="<?= e($kit->assetUrl('js/vt.js')) ?>"></script>
+<?php endif; ?>
 <?php if (!Editing::active()): ?><script src="<?= e($kit->assetUrl('js/site.js')) ?>" defer></script>
 <?php foreach ($kit->blockJs() as $js): ?><script src="<?= e($js) ?>" defer></script>
 <?php endforeach; ?>
