@@ -188,3 +188,7 @@ textarea[data-blocks-rte] { display: none !important; }
 .rex-slice-offline .fluid-be-list > .rex-slice-output:not(.rex-slice-offline) > .rex-section > .rex-section-body { pointer-events: auto; }
 .rex-slice-offline:has(> .rex-section .fluid-be-grid) > .rex-section > .rex-section-body::before,
 .rex-slice-offline .fluid-be-list > .rex-slice-output:not(.rex-slice-offline) > .rex-section > .rex-section-body::before { content: none; }
+/* Layout offline: Spalten-Blöcke leicht gedämpft, bei Zeiger oder Fokus voll da (zum Bearbeiten) */
+.rex-slice-output:has(> .rex-section .is-inherited-offline) > .rex-section { opacity: .55; transition: opacity .15s; }
+.rex-slice-output:has(> .rex-section .is-inherited-offline):is(:hover, :focus-within) > .rex-section { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .rex-slice-output:has(> .rex-section .is-inherited-offline) > .rex-section { transition: none; } }

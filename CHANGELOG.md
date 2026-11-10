@@ -39,7 +39,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   ausgeblendet, „Ganze Vorschau“ klappt auf; überlaufende Vorschauen sind per Tastatur erreichbar (für alle Blöcke und
   Module, nicht bei geöffnetem Formular).
 - Layout offline: Seine Spalten-Blöcke sind auf der Website ebenfalls nicht sichtbar (nur das Layout gibt sie aus) –
-  das zeigt jetzt ein Hinweis am Layout und an jedem Spalten-Block. Im Raster bleiben die Blöcke voll lesbar und
+  das zeigt jetzt ein Hinweis am Layout und an jedem Spalten-Block; die Blöcke sind leicht gedämpft, bei Zeiger oder
+  Fokus voll da. Im Raster bleiben sie lesbar und
   bedienbar: Schleier und Klicksperre des Cores für Offline-Slices trafen bisher auch die Spalten.
 - Umschalter „Spalten | Baum“ im Layout-Panel (gemerkt im Cookie `fluid_view`): „Baum“ zeigt die Rasterskizze und die
   Spalten-Blöcke eingerückt am Ast darunter – für viele Spalten oder schmale Bildschirme.
