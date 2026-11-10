@@ -674,3 +674,47 @@ function fluid_nav_sheet(array $menu): string
 
     return $level($menu, 1);
 }
+
+/**
+ * Bildergalerie und Slider (Kit-Blöcke gallery/slider, aus KLXM Studio – Core\MediaBlocks): Link zur großen Fassung für
+ * die Lightbox (ohne JavaScript ein gewöhnlicher Link), Klasse für „Zeilen“ (Seitenverhältnis × 10) und Dialog/Skript.
+ */
+function fluid_lightbox_link(string $file, string $caption): string
+{
+    $m = Media::get($file);
+    if (!$m) {
+        return '';
+    }
+    $editor = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::class : null;
+    $editable = $editor && null === $editor::editable($m);
+
+    return ' href="' . e($editable ? $editor::url($m->fileName, 1920) : $m->getUrl()) . '"'
+        . ($editable ? ' data-srcset="' . e($editor::srcset($m->fileName)) . '"' : '')
+        . ('' !== $caption ? ' data-caption="' . e($caption) . '"' : '');
+}
+
+function fluid_aspect_class(string $file): string
+{
+    $m = Media::get($file);
+    $w = (int) ($m?->width ?? 0);
+    $h = (int) ($m?->height ?? 0);
+
+    return 'ar-' . ($w && $h ? max(5, min(24, (int) round($w / $h * 10))) : 13);
+}
+
+/** Lightbox-Dialog einmal je Seite (js/media.js befüllt ihn) – nicht im Bearbeiten-Modus */
+function fluid_lightbox(): string
+{
+    static $done = false;
+    if ($done || is_editing()) {
+        return '';
+    }
+    $done = true;
+    $svg = static fn (string $p) => '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2"><path d="' . $p . '"/></svg>';
+
+    return '<dialog class="cms-lb" aria-label="' . e(lt('Bildansicht')) . '" data-count="' . e(lt('Bild {n} von {total}')) . '">'
+        . '<button type="button" class="cms-lb__btn cms-lb__close" aria-label="' . e(lt('Schließen')) . '">' . $svg('M6 6l12 12M18 6 6 18') . '</button>'
+        . '<figure class="cms-lb__fig"><img class="cms-lb__img" alt="" sizes="100vw"><figcaption class="cms-lb__cap" aria-live="polite"><span></span><span class="cms-lb__count"></span></figcaption></figure>'
+        . '<button type="button" class="cms-lb__btn cms-lb__prev" data-d="-1" aria-label="' . e(lt('Vorheriges Bild')) . '">' . $svg('M15 5l-7 7 7 7') . '</button>'
+        . '<button type="button" class="cms-lb__btn cms-lb__next" data-d="1" aria-label="' . e(lt('Nächstes Bild')) . '">' . $svg('M9 5l7 7-7 7') . '</button></dialog>';
+}

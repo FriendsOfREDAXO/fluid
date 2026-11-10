@@ -31,6 +31,8 @@ return [
         'css/b-logos.css' => ['logos'],
         'css/b-stats.css' => ['stats'],
         'css/b-chart.css' => ['chart'],
+        'css/b-media.css' => ['gallery', 'slider'],
+        'js/media.js' => ['gallery', 'slider'],
         'css/b-quote.css' => ['quote'],
         'css/b-steps.css' => ['steps'],
         'css/b-pricing.css' => ['pricing'],

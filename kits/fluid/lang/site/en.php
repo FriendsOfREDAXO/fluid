@@ -422,4 +422,5 @@ return array (
   'Reihe {n}' => 'Series {n}',
   'Blöcke' => 'Blocks',
   'Die häufigsten Blöcke auf dieser Website, gezählt aus der Datenbank' => 'The most frequent blocks on this website, counted from the database',
+  // Bildergalerie, Slider
 );

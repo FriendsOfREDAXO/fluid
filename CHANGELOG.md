@@ -4,6 +4,16 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Bildergalerie und Slider
+
+- Block „Bildergalerie“ (`fluid.gallery`): Raster, Mosaik oder bündige Zeilen, Bilder als `Collection` mit
+  Bildunterschrift, Lightbox als `<dialog>` (Fokus bleibt im Dialog und kehrt zurück, ←/→, Wischen, Esc, Zähler); ohne
+  JavaScript führen die Bilder zur großen Fassung.
+- Block „Slider“ (`fluid.slider`, Darstellungen Schieben/Überblenden): Muster „Carousel“ von WAI-ARIA – Region mit
+  `aria-roledescription`, Folien als Gruppe „n von m“, nicht sichtbare Folien `inert`, Pfeile, Punkte, Tastatur
+  (←/→, Pos1/Ende), Wischen. Automatisch weiter nur mit Pause-Knopf, hält bei Maus und Fokus, nie bei „Bewegung
+  reduzieren“; ohne JavaScript ein wischbarer Scroll-Snap-Streifen (aus KLXM Studio, `media.mjs`).
+
 ### Rechtstexte zentral, Datenschutz im Dialog (optional)
 
 - `Legal\Legal`: Impressum, Datenschutz und Barrierefreiheit aus Website → Einstellungen → „Recht“ an einer Stelle
