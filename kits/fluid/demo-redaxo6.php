@@ -21,7 +21,7 @@ $cta = [
 $yform = [
     'rex_yf_termin' => ['rows' => [
         ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'fluid-formular-schritte.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => true],
-        ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => null, 'text' => 'Ein Block ist eine Modulklasse, ein Feldschema und eine View. Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => true],
+        ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => null, 'text' => 'Ein Block ist eine Modulklasse: Felder als Attribute, Ausgabe in view(). Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => true],
         ['title' => 'Sprechstunde: Von REDAXO 5 nach 6', 'date' => '2026-12-03', 'place' => 'Online', 'image' => null, 'text' => 'Fragen zu Composer, Modulen als Klassen und console migrate – mitbringen, was im eigenen Projekt ansteht.', 'online' => true],
         ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => null, 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => false],
     ]],
@@ -517,7 +517,7 @@ use FriendsOfRedaxo\Fluid\Kit;
 
 /**
  * Kit „Nature“ – erbt von „Fluid“. Dateien in diesem Ordner ersetzen die des Eltern-Kits:
- * kit.php (Definition), views/{typ}.php, template.view.php, functions.php, assets/.
+ * kit.php (Definition, z. B. Darstellungen für Blöcke), views/{typ}.php, template.view.php, functions.php, assets/.
  */
 #[AsKit('nature', 'Nature', parent: 'fluid')]
 final class NatureKit extends Kit {}
@@ -1128,7 +1128,7 @@ return [
                     'items' => [
                         $c('kitClass', 'src/Kit/Nature/NatureKit.php', 'php'),
                     ]]],
-                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '3. Die Definition: nur, was anders ist', 'intro' => '$parent ist die Definition des Eltern-Kits. blocks, backgrounds und assets werden je Schlüssel ergänzt, css wird angehängt, alles andere ersetzt.', 'note' => '',
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => '3. Die Definition: nur, was anders ist', 'intro' => '$parent ist die Definition des Eltern-Kits. backgrounds und assets werden je Schlüssel ergänzt, css wird angehängt; blocks legt sich über die Blockklassen (Darstellungen kommen hinzu). Alles andere wird ersetzt.', 'note' => '',
                     'items' => [
                         $c('kitDef', 'src/Kit/Nature/kit.php', 'php'),
                     ]]],
@@ -1145,7 +1145,7 @@ return [
                     'list' => "Ausgewählt unter Website → Kit\nInhalte bleiben beim Wechsel\nDesign-Werte speichert jedes Kit für sich", 'image' => 'redaxo6-kit-nature.jpg', 'ratio' => '16:9', 'split' => 'media']],
                 ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Was ein Kit ersetzen kann', 'intro' => '', 'meta' => '',
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
-                    'text' => '<ul><li><strong><code>views/{typ}.php</code></strong> – die Ausgabe eines Blocktyps</li><li><strong><code>template.view.php</code></strong> – der Seitenrahmen mit Kopf, Menü und Fuß</li><li><strong><code>assets/…</code></strong> – einzelne Dateien, z. B. <code>assets/css/b-cards.css</code> statt der von fluid</li><li><strong><code>functions.php</code></strong> – zusätzliche Hilfsfunktionen für Views</li><li><strong><code>kit.php</code></strong> – die Definition: Blöcke, Darstellungen, Hintergründe, Design-Leiste</li></ul><p><strong>Design-Werte</strong> speichert jedes Kit für sich; solange ein neues Kit keine eigenen hat, übernimmt es die des Eltern-Kits. <strong>Assets</strong> veröffentlicht fluid bei <code>console migrate</code> – auf dem Server also den Kit-Ordner mit ausliefern und <code>migrate</code> ausführen. Ein Kit je Domain wählt der Extension Point <code>FLUID_KIT</code>.</p>']],
+                    'text' => '<ul><li><strong><code>views/{typ}.php</code></strong> – die Ausgabe eines Blocktyps</li><li><strong><code>template.view.php</code></strong> – der Seitenrahmen mit Kopf, Menü und Fuß</li><li><strong><code>assets/…</code></strong> – einzelne Dateien, z. B. <code>assets/css/b-cards.css</code> statt der von fluid</li><li><strong><code>functions.php</code></strong> – zusätzliche Hilfsfunktionen für Views</li><li><strong><code>kit.php</code></strong> – die Definition: Hintergründe, Design-Leiste, zusätzliche Darstellungen der Blöcke (ihre Felder stehen in den Blockklassen)</li></ul><p><strong>Design-Werte</strong> speichert jedes Kit für sich; solange ein neues Kit keine eigenen hat, übernimmt es die des Eltern-Kits. <strong>Assets</strong> veröffentlicht fluid bei <code>console migrate</code> – auf dem Server also den Kit-Ordner mit ausliefern und <code>migrate</code> ausführen. Ein Kit je Domain wählt der Extension Point <code>FLUID_KIT</code>.</p>']],
                 ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Als Composer-Paket für mehrere Projekte', 'intro' => 'Ein Kit für mehrere Projekte ist ein AddOn: REDAXO sucht Klassen mit #[AsKit] nur im Projekt und in aktiven AddOns. Die Dateien des Kits liegen neben der Kit-Klasse in src/.', 'note' => 'Nach composer require und console migrate steht das Kit in der Auswahl.',
                     'items' => [
                         $c('kitPackage', 'composer.json', 'json'),

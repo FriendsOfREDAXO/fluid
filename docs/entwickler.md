@@ -469,7 +469,7 @@ Ohne JavaScript bleiben es normale Links und Formulare.
 Eigener Block:
 
 ```php
-// kit.php: 'reload' => true beim Block
+// an der Blockklasse: #[AsBlock(reload: true)]
 <div class="wrap …"<?= \FriendsOfRedaxo\Fluid\Live::region($b) ?>>
   <a href="?seite=2#<?= $b->domId() ?>" data-live-nav>Weiter</a>
   <form method="get" data-live-nav><input name="q" id="…" data-live-input data-live-delay="600" data-live-min="3"></form>
@@ -488,7 +488,7 @@ Eigener Block:
   - Der Fokus bleibt im Feld (mit Cursor) bzw. geht an den Block. Die Ansage für Screenreader nimmt den Text aus
     `[data-live-count]`.
   - Bei Fehlern lädt es die Seite normal.
-- Der Server (`Live::block()`, über `FE_OUTPUT`) rendert nur Blöcke mit `'reload'` oder `'live'` der veröffentlichten
+- Der Server (`Live::block()`, über `FE_OUTPUT`) rendert nur Blöcke mit `reload` (bzw. `'live'` in der Definition) der veröffentlichten
   Seite. Die übrigen Parameter liest der Block wie beim normalen Aufruf und prüft sie selbst. `fluid_block` ist reserviert.
 
 ## Live-Aktualisierung
@@ -654,7 +654,8 @@ neuen AddOns melden, Abhängigkeit in `composer.json` eintragen. Beim Routing zu
 |---|---|
 | `src/` | Namespace `FriendsOfRedaxo\Fluid`: Editor-API (`Api`), Blöcke (`BlockModule`, `Block`, `BlockData`), Routing, Blog, Daten (YForm), Medien, Suche |
 | `src/Data/` | YForm-Anbindung: `YFormBridge`, Formular-Baukasten `BuiltForm`, Feld `FluidBlocks`, `RecordBlocks`, `Detail`, Postfach |
-| `kits/fluid/` | das Grund-Kit: `kit.php` (Blöcke), `design.php` (Design-Tokens, Vorlagen), `views/` (Ausgaben), `functions.php`, `lang/` |
+| `src/Field/` | Feld-Attribute der Blöcke (`Text`, `Media`, `Repeater` …), `AsBlock`, `BlockSchema` (Definition aus den Attributen) |
+| `kits/fluid/` | das Grund-Kit: `src/Module/` (Blockklassen mit Feld-Attributen), `views/` (Ausgaben), `kit.php` (Assets, Hintergründe), `design.php` (Design-Tokens, Vorlagen), `functions.php`, `lang/` |
 | `src/Kit.php`, `src/AsKit.php` | Kits: Anmeldung, Auswahl (`Kit::active()`), Vererbung, Assets |
 | `kits/native/` | Kit „NativeCSS“: `template.view.php`, `views/`, `kit.php`, `assets/css/native.css`, NativeCSS in `assets/ncss/` |
 | `assets/` | Editor (`editor/`), Formulare (`form.js`, `rte.js`), Kit-CSS/JS (`kits/fluid/`), Schriften, MapLibre |

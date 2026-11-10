@@ -75,7 +75,7 @@ fluid läuft auch ohne.
 
 **Für Besucher:** schnelle, barrierearme Seiten, Blättern, Filtern und Suchen ohne Seitenwechsel, schöne Adressen, Sitemap, strukturierte Daten, keine Cookies für Karten.
 
-**Für Entwickler:** Blöcke sind kleine PHP-Klassen mit Feldschema und View, Extension Points an allen wichtigen
+**Für Entwickler:** Blöcke sind kleine PHP-Klassen mit Feld-Attributen (wie Module des Cores) und einer Ausgabe, Extension Points an allen wichtigen
 Stellen, YForm-Tabellen und -Formulare als Klassen – mehr in der [Entwickler-Referenz](docs/entwickler.md).
 
 | Formular in Schritten | Blöcke in einem YForm-Datensatz |
