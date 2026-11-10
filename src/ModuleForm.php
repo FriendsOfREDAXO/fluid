@@ -2,14 +2,9 @@
 
 namespace FriendsOfRedaxo\Fluid;
 
-use BackedEnum;
-use DateTimeImmutable;
-use DateTimeInterface;
 use FriendsOfRedaxo\Fluid\Form\FieldForm;
 use ReflectionMethod;
-use ReflectionNamedType;
 use ReflectionProperty;
-use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\ContentHandler;
 use Redaxo\Core\Content\Module;
@@ -25,14 +20,11 @@ use Redaxo\Core\Form\Field\Text;
 use Redaxo\Core\Form\Field\Textarea;
 use Redaxo\Core\Form\Field\TimePicker;
 use Redaxo\Core\Form\Field\Url;
-use Redaxo\Core\MediaPool\Media;
+use Redaxo\Core\Form\Form;
 use Redaxo\Core\Translation\Translatable;
 use Throwable;
 
-use function in_array;
-use function is_a;
 use function is_string;
-use function mb_strlen;
 use function preg_replace;
 use function strtolower;
 use function trim;
@@ -41,9 +33,8 @@ use function trim;
  * Gewöhnliche REDAXO-Module (keine fluid-Blöcke) in der Seitenleiste der Website – im Formular von fluid.
  *
  * Nur öffentliche API des Cores: die Feld-Attribute der Modulklasse (#[Text], #[MediaPicker] …) per Reflection,
- * `Module::of()` für die aktuellen Werte, `Field::toRaw()`/`encode()`, `Module::validate()` und
- * `ContentHandler::editSlice()`. Die Umwandlung der Eingaben in die Typen der Eigenschaften übernimmt diese Klasse für
- * die üblichen Feldtypen. Module mit eigenem `input()` oder anderen Feldtypen (z. B. Collection, Mehrfachauswahl)
+ * `Module::of()` für die aktuellen Werte, `Field::toRaw()`/`encode()`, das Formular des Cores (`Form::submit()` wandelt
+ * um und prüft wie im Backend), `Module::validate()` und `ContentHandler::editSlice()`. Module mit eigenem `input()` oder anderen Feldtypen (z. B. Collection, Mehrfachauswahl)
  * öffnen weiter das Formular des Cores im Rahmen (null von {@see self::fields()}).
  */
 final class ModuleForm
@@ -133,107 +124,36 @@ final class ModuleForm
             throw new ApiError('Dieses Modul lässt sich nur im Formular des Backends bearbeiten.');
         }
         $module = Module::of($slice);
-        $stored = [];
+        // Eingaben wie die Felder des Cores sie senden (nach Eigenschaft), umgewandelt und geprüft vom Formular des Cores
+        $raw = [];
         foreach ($fields as $f) {
-            $prop = new ReflectionProperty($module, $f['prop']);
-            $type = $prop->getType();
-            $typeName = $type instanceof ReflectionNamedType ? $type->getName() : 'string';
-            $nullable = null === $type || $type->allowsNull();
-            $raw = trim((string) ($input[$f['name']] ?? ''));
-            $label = $f['schema']['label'];
-            if ($f['field']->required && '' === $raw && 'bool' !== $f['kind']) {
-                throw new ApiError('„' . $label . '“ ist ein Pflichtfeld.');
+            $value = trim((string) ($input[$f['name']] ?? ''));
+            $raw[$f['prop']] = match ($f['kind']) {
+                'bool' => '' !== $value && '0' !== $value ? '1' : '',
+                'article' => (string) preg_replace('~^redaxo://~', '', $value),
+                default => $value,
+            };
+        }
+        $form = new Form($module, name: 'fluid_module', csrf: false);
+        if (!$form->submit($raw)) {
+            $labels = array_column(array_map(static fn (array $f) => [$f['prop'], $f['schema']['label']], $fields), 1, 0);
+            $messages = [];
+            foreach ($form->getFieldErrors() as $prop => $error) {
+                $messages[] = '„' . ($labels[$prop] ?? $prop) . '“: ' . self::text($error);
             }
-            $value = self::convert($f, $raw, $typeName, $nullable, $label);
-            $prop->setValue($module, $value);
-            $stored[$f['name']] = $f['field']->encode($value);
+            throw new ApiError(implode(' ', $messages) ?: 'Die Eingaben sind nicht gültig.');
         }
         $error = $module->validate();
         if (null !== $error) {
             throw new ApiError(self::text($error));
         }
+        $stored = [];
+        foreach ($fields as $f) {
+            $stored[$f['name']] = $f['field']->encode($module->{$f['prop']});
+        }
         $module->beforeSave();
         ContentHandler::editSlice($slice->id, $stored);
         $module->afterSave();
-    }
-
-    /** @param array{kind: string, field: Field, schema: array<string, mixed>} $f */
-    private static function convert(array $f, string $raw, string $type, bool $nullable, string $label): mixed
-    {
-        $empty = static fn () => $nullable ? null : ('int' === $type || 'float' === $type ? 0 : ('bool' === $type ? false : ''));
-        $invalid = static fn (): never => throw new ApiError('„' . $label . '“ enthält keinen gültigen Wert.');
-
-        switch ($f['kind']) {
-            case 'text':
-                $max = $f['schema']['max'] ?? null;
-                if (null !== $max && mb_strlen($raw) > $max) {
-                    throw new ApiError('„' . $label . '“ ist zu lang (höchstens ' . $max . ' Zeichen).');
-                }
-                if ('' !== $raw && $f['field'] instanceof Email && false === filter_var($raw, FILTER_VALIDATE_EMAIL)) {
-                    $invalid();
-                }
-                if ('' !== $raw && $f['field'] instanceof Url && false === filter_var($raw, FILTER_VALIDATE_URL)) {
-                    $invalid();
-                }
-
-                return '' === $raw && $nullable ? null : $raw;
-            case 'number':
-                if ('' === $raw) {
-                    return $empty();
-                }
-                if (!is_numeric($raw)) {
-                    $invalid();
-                }
-
-                return 'int' === $type ? (int) $raw : ('float' === $type ? (float) $raw : $raw);
-            case 'bool':
-                return '' !== $raw && '0' !== $raw;
-            case 'choice':
-                if ('' === $raw) {
-                    return $empty();
-                }
-                if (!$f['field'] instanceof Choice || !array_key_exists($raw, self::options($f['field']))) {
-                    $invalid();
-                }
-                if (is_a($type, BackedEnum::class, true)) {
-                    return $type::tryFrom(is_numeric($raw) && 'int' === (string) new \ReflectionEnum($type)->getBackingType() ? (int) $raw : $raw) ?? $invalid();
-                }
-
-                return 'int' === $type ? (int) $raw : $raw;
-            case 'date':
-            case 'time':
-                if ('' === $raw) {
-                    return $empty();
-                }
-                $format = 'date' === $f['kind'] ? 'Y-m-d' : 'H:i';
-                $date = DateTimeImmutable::createFromFormat('!' . $format, $raw) ?: $invalid();
-                if ($date->format($format) !== $raw) {
-                    $invalid();
-                }
-
-                return is_a($type, DateTimeInterface::class, true) ? $date : $raw;
-            case 'media':
-                if ('' === $raw) {
-                    return $empty();
-                }
-                $media = Media::get($raw) ?? $invalid();
-                $types = $f['schema']['types'] ?? [];
-                if ([] !== $types && !in_array(strtolower(pathinfo($raw, PATHINFO_EXTENSION)), $types, true)) {
-                    $invalid();
-                }
-
-                return is_a($type, Media::class, true) ? $media : $raw;
-            case 'article':
-                $id = (int) preg_replace('~^redaxo://~', '', $raw);
-                if (0 === $id) {
-                    return $empty();
-                }
-                $article = Article::get($id) ?? $invalid();
-
-                return is_a($type, Article::class, true) ? $article : ('int' === $type ? $id : (string) $id);
-        }
-
-        return $raw;
     }
 
     /** @return array<string, string> */
