@@ -258,6 +258,7 @@ final class SliceGrid
         if (!$items) {
             return '';
         }
+        usort($items, static fn (array $a, array $b): int => strnatcasecmp($a['title'], $b['title']));
         $fragment = new Fragment();
         $fragment->setVar('block', true);
         $fragment->setVar('button_label', '+ Block in Spalte ' . $col);

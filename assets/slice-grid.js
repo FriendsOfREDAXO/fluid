@@ -160,7 +160,15 @@
         else if (e.key === 'ArrowDown') { e.preventDefault(); items[(i + 1) % items.length]?.focus(); }
         else if (e.key === 'ArrowUp') { e.preventDefault(); items[(i - 1 + items.length) % items.length]?.focus(); }
       });
-      h.closest('.rex-slice-output').addEventListener('focusout', (e) => { if (!h.contains(e.relatedTarget)) close(); });
+      // Schließen, wenn der Fokus den Block verlässt – nicht während eines Klicks im Menü (Safari fokussiert Knöpfe beim
+      // Klick nicht, relatedTarget ist dann leer und das Menü wäre vor dem Klick schon zu)
+      let pressing = false;
+      more.parentElement.addEventListener('pointerdown', () => { pressing = true; });
+      document.addEventListener('pointerup', () => { setTimeout(() => { pressing = false; }, 0); });
+      h.closest('.rex-slice-output').addEventListener('focusout', (e) => {
+        if (pressing || h.contains(e.relatedTarget)) return;
+        close();
+      });
     });
     document.addEventListener('click', (e) => {
       if (e.target.closest?.('.fluid-be-acts')) return;

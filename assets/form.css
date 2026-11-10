@@ -194,3 +194,7 @@ textarea[data-blocks-rte] { display: none !important; }
 @media (prefers-reduced-motion: reduce) { .rex-slice-output:has(> .rex-section .is-inherited-offline) > .rex-section { transition: none; } }
 /* Titel-Reiter der schwebenden Leiste: eigene Schriftfarbe (in Offline-Slices setzt der Core die Kopfschrift auf Weiß) */
 .fluid-be-bar > .rex-section-title { color: var(--rex-color-text); }
+/* Layout-Panel mit Raster: nichts abschneiden – Dropdowns („+ Block in Spalte“) und Menüs „⋯“ der Spalten-Blöcke ragen
+   über den Inhaltsbereich hinaus (der Core gibt ihm overflow: auto) */
+.rex-slice-output > .rex-section > .rex-section-body:has(.fluid-be-grid) { overflow: visible; }
+.fluid-be-acts { z-index: 20; }
