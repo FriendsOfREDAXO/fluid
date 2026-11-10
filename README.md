@@ -236,6 +236,9 @@ Danach entweder auf der Website „Erste Schritte“ nutzen oder in der Konsole:
 # Beispiel-Tabellen der Demo (optional, für Daten/Presse/Projekte)
 mkdir -p src/YForm && cp vendor/friendsofredaxo/fluid/examples/yform/*.php src/YForm/ && php bin/console migrate
 
+# Beispiel-Module ohne fluid-Felder (optional, für die Seite „Native Module“)
+mkdir -p src/Module && cp vendor/friendsofredaxo/fluid/examples/module/*.php src/Module/
+
 # komplette Demo mit Bildern und Design „REDAXO · Blau“
 php bin/console fluid:demo --set=redaxo6 --media --design=redaxo
 ```

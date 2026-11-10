@@ -243,6 +243,18 @@ final class DemoCommand extends AbstractCommand
             }
             $articleId = $ids[(string) $def['slug']];
             foreach ($def['blocks'] ?? [] as $block) {
+                // gewöhnliches REDAXO-Modul ('native' => Modulschlüssel, 'values' => Felder) – nur, wenn es im Projekt liegt
+                if (isset($block['native'])) {
+                    if (!\Redaxo\Core\Content\Module::exists((string) $block['native'])) {
+                        $skipped[$block['native']] = true;
+                        continue;
+                    }
+                    foreach (array_unique([ArticleRevision::LIVE, FluidAddon::revision()]) as $rev) {
+                        ContentHandler::addSlice($articleId, $lang, 1, (string) $block['native'], (array) ($block['values'] ?? []), revision: $rev);
+                    }
+                    ++$count;
+                    continue;
+                }
                 $key = $moduleKey((string) $block['type']);
                 if (null === $key) {
                     $skipped[$block['type']] = true;
@@ -385,6 +397,15 @@ final class DemoCommand extends AbstractCommand
             // vorhandene Blöcke dieser Sprache ersetzen (beide Fassungen)
             Sql::factory()->setQuery('DELETE FROM rex_article_slice WHERE article_id = ? AND language_id = ?', [$id, $lang]);
             foreach ($def['blocks'] ?? [] as $block) {
+                if (isset($block['native'])) {
+                    if (\Redaxo\Core\Content\Module::exists((string) $block['native'])) {
+                        foreach (array_unique([ArticleRevision::LIVE, FluidAddon::revision()]) as $rev) {
+                            ContentHandler::addSlice($id, $lang, 1, (string) $block['native'], (array) $tr((array) ($block['values'] ?? [])), revision: $rev);
+                        }
+                        ++$count;
+                    }
+                    continue;
+                }
                 $key = $moduleKey((string) $block['type']);
                 if (null === $key) {
                     continue;

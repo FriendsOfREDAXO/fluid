@@ -139,6 +139,50 @@ final class TeaserModule extends Module
     }
 }
 CODE,
+    'nmodule' => <<<'CODE'
+<?php
+
+namespace Project\Module;
+
+use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\Content\Module;
+use Redaxo\Core\Form\Field\Choice;
+use Redaxo\Core\Form\Field\MediaPicker;
+use Redaxo\Core\Form\Field\Text;
+use Redaxo\Core\Form\Field\Textarea;
+use Redaxo\Core\MediaPool\Media;
+
+use function Redaxo\Core\View\escape;
+
+#[AsModule('hinweis', 'Hinweis')]
+final class HinweisModule extends Module
+{
+    #[Text('Überschrift', required: true, maxLength: 120)]
+    public string $headline = '';
+
+    #[Textarea('Text', rows: 4)]
+    public string $text = '';
+
+    #[Choice('Art', ['info' => 'Information', 'warn' => 'Warnung'])]
+    public string $kind = 'info';
+
+    #[MediaPicker('Bild', types: ['jpg', 'png', 'webp'])]
+    public ?Media $image = null;
+
+    public function output(): string
+    {
+        return '<aside class="note note--' . escape($this->kind) . '"><h2>' . escape($this->headline) . '</h2>'
+            . '<p>' . nl2br(escape($this->text)) . '</p></aside>';
+    }
+}
+CODE,
+    'nmodule_input' => <<<'CODE'
+public function input(Form $form): string
+{
+    // eigener Aufbau – fluid zeigt dafür das Formular des Cores in der Seitenleiste
+    return '<p class="rex-field-note">Hinweis über den Feldern</p>' . $form->rest();
+}
+CODE,
     'template' => <<<'CODE'
 <?php
 
@@ -674,6 +718,7 @@ return [
                         ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
                         ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
                         ['icon' => 'code', 'title' => 'Module und Templates', 'text' => 'PHP-Klassen mit Feldern als Attributen und Templates mit Inhaltsbereichen.', 'link_label' => 'Lesen', 'link' => '/module-templates'],
+                        ['icon' => 'puzzle-piece', 'title' => 'Native Module', 'text' => 'Gewöhnliche Module auf der Website pflegen – in der Seitenleiste von fluid.', 'link_label' => 'Ausprobieren', 'link' => '/native-module'],
                         ['icon' => 'list-checks', 'title' => 'YForm', 'text' => 'Tabellen als Klassen im Projekt und Daten mit wenigen Zeilen abfragen.', 'link_label' => 'Lesen', 'link' => '/yform'],
                         ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'Menü, Brotkrumen und strukturierte Daten als Array – mit navigation_array.', 'link_label' => 'Lesen', 'link' => '/navigation'],
                     ],
@@ -880,6 +925,36 @@ return [
                 ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Standard-Template festlegen', 'intro' => 'Die Klasse Project ist der Einstieg ins eigene Projekt – für Konfiguration, Start und eigene Tabellen.', 'note' => '',
                     'items' => [
                         $c('project', 'src/Project.php', 'php'),
+                    ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'native-module', 'title' => 'Native Module', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 6',
+                    'title' => 'Native Module auf der Website', 'text' => 'Gewöhnliche REDAXO-Module – ohne fluid-Felder – lassen sich mit fluid auf der Website pflegen: in derselben Seitenleiste wie die Blöcke.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p>'
+                        . '<p>„Native Module“ sind hier gewöhnliche Module von REDAXO 6: eine Klasse mit <code>#[AsModule]</code>, Feldern als Attributen und <code>output()</code> – ohne etwas von fluid. Sie stehen neben den fluid-Blöcken auf derselben Seite und werden im Backend wie immer gepflegt.</p>'
+                        . '<h3>So geht fluid damit um</h3><ul>'
+                        . '<li>Im Bearbeiten-Modus zeigt die Ausgabe eines Moduls beim Darüberfahren „… bearbeiten“.</li>'
+                        . '<li>Die Seitenleiste zeigt seine Felder im Formular von fluid – Text, Textbereich, E-Mail, Internetadresse, Zahl, Ja/Nein, Auswahl, Datum, Uhrzeit, Bild aus dem Medienpool und Seitenlink.</li>'
+                        . '<li>„Übernehmen“ prüft wie das Backend (Pflichtfelder, Länge, gültige Werte, <code>validate()</code> des Moduls), speichert in den Entwurf und erneuert die Ausgabe auf der Seite. Sichtbar für Besucher wird es mit „Veröffentlichen“.</li>'
+                        . '<li>Baut ein Modul sein Formular mit eigenem <code>input()</code> oder nutzt es andere Feldtypen (z. B. Wiederholgruppen, Mehrfachauswahl), zeigt die Seitenleiste das Formular des Cores.</li>'
+                        . '<li>Das Template „fluid“ erlaubt gewöhnliche Module neben den Blöcken des Kits. Neu eingefügt werden sie im Backend („Block hinzufügen“), die Blockauswahl auf der Website zeigt nur fluid-Blöcke.</li></ul>'
+                        . '<p><strong>Ausprobieren:</strong> Angemeldet oben auf „Bearbeiten“ tippen und mit der Maus auf die beiden Beispiele unten zeigen. Im Demo-Zugang ohne Anmeldung ist das nicht möglich.</p>']],
+                ['native' => 'hinweis', 'values' => ['headline' => 'Ein natives Modul zum Ausprobieren', 'text' => 'Dieses Modul kennt fluid nicht – es ist eine gewöhnliche Modulklasse. Im Bearbeiten-Modus öffnet „Hinweis (Beispiel) bearbeiten“ seine Felder in der Seitenleiste.', 'kind' => 'info', 'strong' => false, 'until' => null, 'image' => null, 'link' => null]],
+                ['native' => 'hinweis_eigen', 'values' => ['title' => 'Modul mit eigenem Formular', 'text' => 'Sein input() baut das Formular selbst – die Seitenleiste zeigt dafür das Formular des Cores.']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Das Beispielmodul', 'intro' => 'Felder als Eigenschaften mit den Feld-Attributen des Cores, die Ausgabe in output(). Mehr braucht fluid nicht.', 'note' => 'Die vollständigen Beispiele liegen in examples/module des AddOns fluid.',
+                    'items' => [
+                        $c('nmodule', 'src/Module/HinweisModule.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eigenes Formular', 'intro' => 'Mit eigenem input() bestimmt das Modul den Aufbau seines Formulars – dann zeigt fluid das Formular des Cores.', 'note' => '',
+                    'items' => [
+                        $c('nmodule_input', 'src/Module/HinweisEigenesFormularModule.php', 'php'),
                     ]]],
                 $cta,
             ],

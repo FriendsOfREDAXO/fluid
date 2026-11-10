@@ -118,7 +118,7 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 ### Installation
 
 - Demo „REDAXO 6“ (`fluid:demo --set=redaxo6`): Bereich „REDAXO 6“ (Was sich ändert, Technik, Backend, Projekt anlegen,
-  Module und Templates, YForm, Navigation) und Bereich „fluid“ (Bearbeiten, Bausteine, fluid-Projekt, Eigenes Kit), mit
+  Module und Templates, Native Module, YForm, Navigation) und Bereich „fluid“ (Bearbeiten, Bausteine, fluid-Projekt, Eigenes Kit), mit
   Codebeispielen und Screenshots; englische Fassung aller Seiten und Datensätze mit `--lang=en`
   (Texte in `demo-redaxo6.en.php`). Auf der Startseite der Trailer, wenn die Datei im Medienpool liegt.
 - `fluid:demo`:
@@ -127,6 +127,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
     `--media` und `--media-dir` allein scheitern auf einer Website mit Seiten nicht mehr.
   - Mit `--page=start` wird die vorhandene Startseite neu befüllt; vorher entstand ein zweiter Startartikel, der
     Start- und 404-Seite wurde.
+  - Blöcke gewöhnlicher Module (`'native' => 'modul', 'values' => […]`), nur wenn das Modul im Projekt liegt –
+    Beispiele in `examples/module` (Seite „Native Module“).
   - Website-Einstellungen, die auf gelöschte Seiten zeigen (z. B. die Suchseite), werden beim Import neu gesetzt.
 - Abhängigkeit `friendsofredaxo/navigation_array:6.x-dev` (per VCS, in der Anleitung und in `install-dev.sh`).
 - `install-dev.sh`: REDAXO 6, YForm 6, fluid (und image_editor) mit einem Befehl – mit kompletter Demo oder leer;
