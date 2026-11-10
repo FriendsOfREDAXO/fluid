@@ -73,6 +73,7 @@ new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes)
 const refresh = () => { for (const { fig, inst } of live) if (fig.isConnected) inst.update?.(theme(fig)); };
 matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', refresh);
 new MutationObserver(refresh).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-accent', 'class'] });
+new MutationObserver(refresh).observe(document.body, { attributes: true, attributeFilter: ['class'] });   // Backend von REDAXO: Theme als Klasse am body (rex-theme-dark)
 
 // Drucken: Canvas-Diagramme passen sich der Papierbreite nicht zuverlässig an (der Browser setzt das Druckformat erst danach).
 // Deshalb vor dem Drucken je Diagramm ein scharfes Bild (Engine: image(), optional) einsetzen, das im Druck mit der Breite skaliert.
