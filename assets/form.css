@@ -49,4 +49,6 @@ textarea[data-blocks-rte] { display: none !important; }
 /* Verschachtelung in der Slice-Liste: Layout listet seine Spalten, Spalten-Blöcke stehen eingerückt mit Linie (eigenes Markup) */
 .blocks-be-cols { margin: 0; padding: 0 0 0 10px; list-style: none; font-size: var(--rex-font-size-small); }
 .blocks-be-cols li { padding: 2px 0; }
-.blocks-be-nest { margin-left: 16px; padding-left: 14px; border-left: 3px solid var(--rex-color-link); }
+/* Ganze Slice eingerückt (nur Slices mit Spalten-Markup von fluid), Linie links ordnet sie dem Layout darüber zu */
+.rex-slice-output:has(.blocks-be-nest) { margin-left: 40px; position: relative; }
+.rex-slice-output:has(.blocks-be-nest)::before { content: ""; position: absolute; left: -22px; top: 0; bottom: 0; border-left: 3px solid var(--rex-color-link); border-radius: 2px; opacity: .45; }
