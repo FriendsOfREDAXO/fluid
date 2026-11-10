@@ -5,7 +5,10 @@ namespace FriendsOfRedaxo\Fluid\Data;
 use FriendsOfRedaxo\Fluid\Routing\Sitemap;
 use FriendsOfRedaxo\Fluid\Routing\Router;
 use FriendsOfRedaxo\Fluid\BlockModule;
+use FriendsOfRedaxo\Fluid\Routing\RouteMatch;
 use FriendsOfRedaxo\Fluid\Routing\Routes;
+use FriendsOfRedaxo\Fluid\Routing\Seo\PageMeta;
+use Redaxo\Core\Language\Language;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\ArticleRevision;
 use Redaxo\Core\Database\Sql;
@@ -24,25 +27,29 @@ final class Detail
      */
     public static function boot(): void
     {
-        Router::resolver(static function (string $full, int $lang, array $query): ?int {
+        Router::resolver(static function (string $full, int $lang): ?RouteMatch {
             if (null === ($dm = self::match($full, $lang))) {
                 return null;
             }
             [$pid, $eid] = $dm;
-            $title = self::title((array) self::config($pid, $lang), $eid);
+            $cfg = (array) self::config($pid, $lang);
+            $title = self::title($cfg, $eid);
             if (null === $title) {
                 return null;
             }
-            $want = self::url(Router::url($pid, $lang), $title, $eid);
-            $r = \Redaxo\Core\Core::getRequest();
-            if (substr(rawurldecode((string) parse_url($want, PHP_URL_PATH)), \strlen(Router::base())) !== rawurldecode($r->getPathInfo())) {
-                // Titel lassen sich ändern (auch zurück): Weiterleitung nicht im Browser zwischenspeichern, sonst Schleife
-                Router::redirectTo(self::url(Router::url($pid, $lang, $query), $title, $eid), 301, false);
+            // dieselbe Sache in anderen Sprachen: Seite mit Datenliste, Eintrag erfüllt dort die Bedingung
+            $alternates = [];
+            foreach (Language::getAll() as $l) {
+                $c = $l->id === $lang ? $cfg : self::config($pid, $l->id);
+                $t = $l->id === $lang ? $title : ($c ? self::title($c, $eid) : null);
+                if (null !== $t && '' !== ($page = Router::url($pid, $l->id))) {
+                    $alternates[$l->id] = self::url($page, $t, $eid);
+                }
             }
-            $r->query->set(self::PARAM, (string) $eid);
-            $_GET[self::PARAM] = (string) $eid;
 
-            return $pid;
+            // Titel lassen sich ändern (auch zurück): Weiterleitung auf die richtige Adresse nicht zwischenspeichern
+            return new RouteMatch($pid, $lang, [self::PARAM => $eid], self::url(Router::url($pid, $lang), $title, $eid),
+                cacheRedirect: false, meta: self::meta($cfg, $eid, $title), alternates: $alternates);
         });
         Router::onPage(static function (int $id, int $lang, array $query): void {
             if (isset($query[self::PARAM]) && ($cfg = self::config($id, $lang)) && null !== ($t = self::title($cfg, (int) $query[self::PARAM]))) {
@@ -91,11 +98,33 @@ final class Detail
         return ('' !== trim($s, '-') ? rtrim($s, '-') . '-' : '') . $id;
     }
 
+    /** Adresse eines Eintrags unter der Adresse seiner Seite – im Adressformat des Routings (/daten/titel-5.html) */
     public static function url(string $pageUrl, string $title, int $id): string
     {
         [$path, $query] = array_pad(explode('?', $pageUrl, 2), 2, '');
+        $format = Router::config()->format;
 
-        return rtrim($path, '/') . '/' . self::slug($title, $id) . ('' !== $query ? '?' . $query : '');
+        return $format->strip($path) . '/' . $format->append(self::slug($title, $id)) . ('' !== $query ? '?' . $query : '');
+    }
+
+    /** Meta-Angaben eines Eintrags für den Seitenkopf: Titel, Beschreibung (Textfeld), Bild */
+    public static function meta(array $config, int $id, string $title): PageMeta
+    {
+        $t = YFormBridge::table((string) $config['table']);
+        $row = $t ? YFormBridge::row($t, $id, YFormBridge::field($t, (string) ($config['filter_field'] ?? '')), trim((string) ($config['filter_value'] ?? '')), $config['_language'] ?? null) : null;
+        if (!$t || !$row) {
+            return new PageMeta(title: $title);
+        }
+        $textF = YFormBridge::field($t, (string) ($config['text_field'] ?? ''), [\Yakamara\YForm\Field\Textarea::class]);
+        $imageF = YFormBridge::field($t, (string) ($config['image_field'] ?? ''), [\Yakamara\YForm\Field\Media::class]);
+        $text = $textF ? trim((string) preg_replace('~\s+~u', ' ', html_entity_decode(strip_tags(YFormBridge::text($row, $textF))))) : '';
+
+        return new PageMeta(
+            title: '' !== $title ? $title : null,
+            description: '' !== $text ? mb_strimwidth($text, 0, 160, '…') : null,
+            image: $imageF && '' !== ($f = YFormBridge::file($row, $imageF)) ? $f : null,
+            type: 'article',
+        );
     }
 
     /** Adresse ohne Seite: [Seiten-ID, Eintrags-ID], wenn sie auf eine Detailansicht passt */

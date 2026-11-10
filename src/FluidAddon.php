@@ -65,49 +65,8 @@ final class FluidAddon extends Addon
             ->ensureIndex(new \Redaxo\Core\Database\Index('token_hash', ['token_hash'], \Redaxo\Core\Database\Index::UNIQUE))
             ->ensure();
 
-        // Schöne Adressen, Domains, Weiterleitungen (Routing\*)
-        Table::get(Routing\Routes::TABLE)
-            ->ensureColumn(new Column('article_id', 'int(10) unsigned'))
-            ->ensureColumn(new Column('language_id', 'int(10) unsigned'))
-            ->ensureColumn(new Column('slug', 'varchar(191)'))
-            ->ensureColumn(new Column('path', 'varchar(500)'))
-            ->setPrimaryKey(['article_id', 'language_id'])
-            ->ensureIndex(new \Redaxo\Core\Database\Index('lang_path', ['language_id', 'path']))
-            ->ensure();
-        Table::get(Routing\Domains::TABLE)
-            ->ensurePrimaryIdColumn()
-            ->ensureColumn(new Column('host', 'varchar(191)'))
-            ->ensureColumn(new Column('role', 'varchar(10)', false, 'alias'))
-            ->ensureColumn(new Column('article_id', 'int(10) unsigned', true))
-            ->ensureColumn(new Column('subtree', 'tinyint(1)', false, '0'))
-            ->ensureColumn(new Column('canonical', 'varchar(10)', false, 'own'))
-            ->ensureColumn(new Column('note', 'varchar(191)', true))
-            ->ensure();
-        Table::get(Routing\Redirects::TABLE)
-            ->ensurePrimaryIdColumn()
-            ->ensureColumn(new Column('source', 'varchar(500)'))
-            ->ensureColumn(new Column('source_hash', 'varchar(40)'))
-            ->ensureColumn(new Column('wildcard', 'tinyint(1)', false, '0'))
-            ->ensureColumn(new Column('target', 'varchar(500)'))
-            ->ensureColumn(new Column('code', 'smallint(3)', false, '301'))
-            ->ensureColumn(new Column('note', 'varchar(191)', true))
-            ->ensureColumn(new Column('origin', 'varchar(10)', false, 'manual'))
-            ->ensureColumn(new Column('hits', 'int(10) unsigned', false, '0'))
-            ->ensureColumn(new Column('last_hit', 'datetime', true))
-            ->ensureColumn(new Column('active', 'tinyint(1)', false, '1'))
-            ->ensureColumn(new Column('created', 'datetime', true))
-            ->ensureColumn(new Column('updated', 'datetime', true))
-            ->ensureIndex(new \Redaxo\Core\Database\Index('source_hash', ['source_hash']))
-            ->ensure();
-        Table::get(Routing\Redirects::TABLE_404)
-            ->ensurePrimaryIdColumn()
-            ->ensureColumn(new Column('path', 'varchar(500)'))
-            ->ensureColumn(new Column('path_hash', 'varchar(40)'))
-            ->ensureColumn(new Column('hits', 'int(10) unsigned', false, '1'))
-            ->ensureColumn(new Column('first_seen', 'datetime', true))
-            ->ensureColumn(new Column('last_seen', 'datetime', true))
-            ->ensureIndex(new \Redaxo\Core\Database\Index('path_hash', ['path_hash']))
-            ->ensure();
+        // Schöne Adressen, Einträge der Quellen, Domains, Weiterleitungen (Routing\*)
+        Routing\Schema::install();
         Table::get(Activity::TABLE)
             ->ensurePrimaryIdColumn()
             ->ensureColumn(new Column('created', 'datetime', true))
@@ -125,7 +84,6 @@ final class FluidAddon extends Addon
             ->setPrimaryKey(['table_name', 'dataset_id'])
             ->ensure();
         \Redaxo\Core\Content\ArticleSliceHistory::checkTables();
-        Routing\Routes::rebuild();
         // Assets der Kits aus Projekt und Composer-Paketen nach assets/fluid-kits/ (das Kit fluid bringt der Core mit)
         Kit::publishAll();
     }
@@ -138,7 +96,7 @@ final class FluidAddon extends Addon
     #[Override]
     public function getOwnedSchema(): OwnedSchema
     {
-        return new OwnedSchema(tables: [PageSettings::TABLE, Routing\Routes::TABLE, Routing\Domains::TABLE, Routing\Redirects::TABLE, Routing\Redirects::TABLE_404, Activity::TABLE, Data\Inbox::TABLE, Mcp\Tokens::TABLE]);
+        return new OwnedSchema(tables: [PageSettings::TABLE, ...Routing\Schema::TABLES, Activity::TABLE, Data\Inbox::TABLE, Mcp\Tokens::TABLE]);
     }
 
     /** Backend: AddOns → fluid (Status, Hilfe) – nur Admins */
@@ -222,12 +180,8 @@ final class FluidAddon extends Addon
 
         // Bausteine melden sich beim Routing (Endpunkte, Adressen, Sitemap) und bei SEO an – das Routing kennt sie nicht.
         // So lassen sie sich später einzeln als eigene AddOns herauslösen (siehe docs/entwickler.md → Bausteine).
-        Live::boot();
-        PresenceApi::boot();
-        Mcp\Server::boot();
-        Maps\Proxy::boot();
+        // Endpunkte (Live, Präsenz, MCP, Karten-Proxy, Untertitel) melden sich per #[AsEndpoint] selbst an.
         Maps\Maps::boot();
-        Media\Tracks::boot();
         Data\Detail::boot();
         Blog\Blog::boot();
         Search\Search::boot();
@@ -237,12 +191,16 @@ final class FluidAddon extends Addon
         Routing\Sitemap::exclude(static fn (int $id, int $lang): bool => PageSettings::noindex($id, $lang));
         Routing\Sitemap::images(PageSettings::sitemapImages(...));
         Routing\Robots::allowPreviews((bool) Settings::get('robots_previews', false));
-        Extension::register('FLUID_ROBOTS_RULES', static function (ExtensionPoint $ep): string {
+        Extension::register(Routing\ExtensionPoint\RobotsTxt::class, static function (Routing\ExtensionPoint\RobotsTxt $ep): string {
+            if ('rules' !== $ep->part) {
+                return (string) $ep->subject;
+            }
             $own = trim((string) Settings::get('robots', ''));
 
             return '' !== $own ? $own : (string) $ep->subject . "\nDisallow: /*?" . Editing::PARAM . '=';
         });
-        // Schöne Adressen (ArticleUrl, Strukturänderungen; im Frontend: Adresse → Seite)
+        // Schöne Adressen: Asset-Adressen ab dem Basis-Pfad. Adresse → Seite, ArticleUrl und Neuaufbau nach
+        // Strukturänderungen hängen per #[AsExtension] am Router (Routing\Router::handleRequest …).
         Routing\Router::boot();
 
         // Suchindex: jede Inhaltsänderung des Cores (Blöcke hinzufügen, löschen, verschieben, online/offline, Inhalte kopieren –

@@ -28,7 +28,7 @@ final class Blog
     /** Beim Routing und SEO anmelden: RSS /{blog}/feed.xml, Feed-Link im Seitenkopf, schema.org Blog/BlogPosting */
     public static function boot(): void
     {
-        Router::resolver(static function (string $full, int $lang): ?int {
+        Router::resolver(static function (string $full, int $lang): ?\FriendsOfRedaxo\Fluid\Routing\RouteMatch {
             if (preg_match('~^(.+)/feed\.xml$~', $full, $m) && null !== ($bid = \FriendsOfRedaxo\Fluid\Routing\Routes::find($m[1], $lang)) && self::isBlog($bid)) {
                 Language::setCurrentId($lang);
                 Router::respond(self::feed($bid), 'application/rss+xml; charset=utf-8');
@@ -36,16 +36,16 @@ final class Blog
 
             return null;
         });
-        Extension::register('FLUID_SEO_HEAD', static function (ExtensionPoint $ep): string {
-            $article = $ep->getParam('article');
+        // Feed-Link im Seitenkopf der Übersicht und der Beiträge
+        Extension::register(\FriendsOfRedaxo\Fluid\Routing\ExtensionPoint\PageMetaResolved::class, static function (\FriendsOfRedaxo\Fluid\Routing\ExtensionPoint\PageMetaResolved $ep): \FriendsOfRedaxo\Fluid\Routing\Seo\PageMeta {
+            $article = $ep->article;
             $blog = self::isBlog($article->id) && $article->isStartArticle() ? $article->id : self::blogOf($article);
-            $h = (string) $ep->subject;
             if ($blog && ($b = Article::get($blog, $article->languageId))) {
-                $h .= '<link rel="alternate" type="application/rss+xml" title="' . \Redaxo\Core\View\escape($b->name) . '" href="'
-                    . \Redaxo\Core\View\escape(rtrim(Router::canonical($blog, $article->languageId), '/') . '/feed.xml') . '">' . "\n";
+                $feed = self::feedUrl($blog, $article->languageId);
+                $ep->subject->add(\FriendsOfRedaxo\Fluid\Routing\Seo\HeadTag::link('alternate', $feed, ['type' => 'application/rss+xml', 'title' => $b->name]));
             }
 
-            return $h;
+            return $ep->subject;
         });
         // Übersicht = Blog, Beitrag = BlogPosting (Datum, Autor, Bild)
         Extension::register('FLUID_STRUCTURED_DATA', static function (ExtensionPoint $ep): array {
@@ -69,6 +69,12 @@ final class Blog
 
             return $data;
         });
+    }
+
+    /** Adresse des RSS-Feeds eines Blogs: {blog}/feed.xml (ohne Endung des Adressformats) */
+    public static function feedUrl(int $blogId, int $languageId): string
+    {
+        return rtrim(Router::config()->format->strip(Router::canonical($blogId, $languageId)), '/') . '/feed.xml';
     }
 
     /** @var array<int, bool>|null */
@@ -235,7 +241,7 @@ final class Blog
             . '<link>' . escape(Router::canonical($blogId, $lang)) . '</link>'
             . '<description>' . escape((string) (PageSettings::get($blogId, $lang)['description'] ?: $site)) . '</description>'
             . '<language>' . escape(Language::get($lang)->code ?? 'de') . '</language>'
-            . '<atom:link href="' . escape(rtrim(Router::canonical($blogId, $lang), '/') . '/feed.xml') . '" rel="self" type="application/rss+xml"/>';
+            . '<atom:link href="' . escape(self::feedUrl($blogId, $lang)) . '" rel="self" type="application/rss+xml"/>';
         foreach (self::posts($blogId, ['limit' => 30])['posts'] as $p) {
             $url = Router::canonical($p->article->id, $lang);
             $xml .= '<item><title>' . escape($p->article->name) . '</title><link>' . escape($url) . '</link><guid isPermaLink="true">' . escape($url) . '</guid>'

@@ -6,6 +6,7 @@ use FriendsOfRedaxo\Fluid\Block;
 use FriendsOfRedaxo\Fluid\Editing;
 use FriendsOfRedaxo\Fluid\PageSettings;
 use FriendsOfRedaxo\Fluid\Routing\Router;
+use FriendsOfRedaxo\Fluid\Routing\Seo\PageMeta;
 use FriendsOfRedaxo\Fluid\Settings;
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\Content\Category;
@@ -56,10 +57,15 @@ final class StructuredData
         }
     }
 
-    /** @return array<string, mixed> */
-    public static function graph(Article $article): array
+    /**
+     * @param PageMeta|null $meta Angaben des Seitenkopfs – auf der Adresse eines Eintrags dessen Adresse, Titel, Text
+     * @return array<string, mixed>
+     */
+    public static function graph(Article $article, ?PageMeta $meta = null): array
     {
-        $url = Router::canonical($article->id, $article->languageId);
+        $pageUrl = Router::canonical($article->id, $article->languageId);
+        $url = $meta?->url ?? $pageUrl;
+        $entry = $url !== $pageUrl;
         $home = Router::canonical(Article::getSiteStartArticleId(), $article->languageId);
         $lang = Language::get($article->languageId)->code ?? 'de';
         $org = Head::organizationNode();
@@ -77,15 +83,19 @@ final class StructuredData
                 }
             }
             if (!$article->isStartArticle() || !in_array($article->id, $article->path, true)) {
-                $crumbs[] = [$article->name, $url];
+                $crumbs[] = [$article->name, $pageUrl];
             }
+        }
+        if ($entry && null !== $meta) {
+            $crumbs[] = [(string) $meta->title, $url];   // Eintrag unter der Seite
         }
         $s = PageSettings::get($article->id, $article->languageId);
         $page = array_filter([
-            '@type' => 'WebPage', '@id' => $url . '#webpage', 'url' => $url, 'name' => PageSettings::title($article, Settings::name()),
-            'description' => $s['description'] ?: (string) Settings::get('default_meta_description', '') ?: null, 'inLanguage' => $lang,
+            '@type' => 'WebPage', '@id' => $url . '#webpage', 'url' => $url,
+            'name' => null !== $meta ? ($meta->documentTitle ?? $meta->title) : ($s['title'] ?: $article->name),
+            'description' => null !== $meta ? $meta->description : ($s['description'] ?: (string) Settings::get('default_meta_description', '') ?: null), 'inLanguage' => $lang,
             'isPartOf' => ['@id' => $home . '#website'], 'breadcrumb' => \count($crumbs) > 1 ? ['@id' => $url . '#breadcrumb'] : null,
-            'dateModified' => $article->updateDate ? date('c', $article->updateDate) : null,
+            'dateModified' => null !== $meta?->modified ? date('c', $meta->modified) : ($article->updateDate ? date('c', $article->updateDate) : null),
         ]);
         if (\count($crumbs) > 1) {
             $items = [];

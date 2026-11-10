@@ -48,13 +48,7 @@ if ($entry > 0 && !$row && !is_editing()) {
 }
 if ($row):
     $img = $pic($row, '(min-width: 1280px) 1200px, 100vw', '16:9');
-    // Seitenkopf: Titel, Beschreibung, Bild und Canonical des Eintrags
-    \FriendsOfRedaxo\Fluid\PageSettings::override([
-        'title' => $title($row),
-        'description' => $textF ? mb_strimwidth(trim(strip_tags(YFormBridge::text($row, $textF))), 0, 160, '…') : '',
-        'image' => YFormBridge::file($row, $imageF),
-        'canonical' => \FriendsOfRedaxo\Fluid\Routing\Router::absolute($href($row)),
-    ]);
+    // Seitenkopf (Titel, Beschreibung, Bild, Canonical, hreflang) kommt vom Resolver der Detailansicht (Data\Detail)
 ?>
 <div class="wrap df df--head fdl-detail">
   <p class="df-back"><a href="<?= e($here) ?>">← <?= e(lt('Zur Übersicht')) ?></a></p>

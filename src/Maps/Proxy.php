@@ -28,14 +28,13 @@ use function strlen;
  */
 final class Proxy
 {
-    /** Eigener Proxy für Karten (Kacheln, Stile, Schriften) unter /proxy/{dienst}/… – Besucher verbinden sich nie mit Dritten */
-    public static function boot(): void
+    /** @internal Eigener Proxy für Karten (Kacheln, Stile, Schriften) unter /proxy/{dienst}/… – Besucher verbinden sich nie mit Dritten */
+    #[\FriendsOfRedaxo\Fluid\Routing\Attribute\AsEndpoint('/proxy/*')]
+    public static function serve(string $path, string $rest): void
     {
-        Router::endpoint('/proxy/*', static function (string $path, string $rest): void {
-            if (preg_match('~^([a-z][a-z0-9_-]{1,30})(/.*)?$~', $rest, $m)) {
-                self::handle($m[1], (string) ($m[2] ?? ''));
-            }
-        });
+        if (preg_match('~^([a-z][a-z0-9_-]{1,30})(/.*)?$~', $rest, $m)) {
+            self::handle($m[1], (string) ($m[2] ?? ''));
+        }
     }
 
     private const array DEFAULT_TYPES = ['image/', 'application/json', 'application/x-protobuf', 'application/vnd.mapbox-vector-tile',

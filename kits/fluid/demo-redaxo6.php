@@ -143,6 +143,85 @@ CODE,
     'nmodule' => (string) file_get_contents(__DIR__ . '/../../examples/module/HinweisModule.php'),
     // derselbe Hinweis als Block: die Datei, die auch im Projekt liegt
     'hblock' => (string) file_get_contents(__DIR__ . '/../../examples/block/Hinweis.php'),
+    // Adressen (Routing): die Datei, die auch im Projekt liegt (examples/routing)
+    'rnews' => (string) file_get_contents(__DIR__ . '/../../examples/routing/NewsRoutes.php'),
+    'rconfig' => <<<'CODE'
+use FriendsOfRedaxo\Fluid\Routing\Router;
+use FriendsOfRedaxo\Fluid\Routing\RoutingConfig;
+use FriendsOfRedaxo\Fluid\Routing\Seo\Head;
+use FriendsOfRedaxo\Fluid\Routing\Seo\HeadConfig;
+use FriendsOfRedaxo\Fluid\Routing\Seo\HeadTag;
+use FriendsOfRedaxo\Fluid\Routing\UrlFormat;
+
+public function configure(): void
+{
+    // Endung der Adressen: none() · slash() · html() · mixed() · suffix('.htm')
+    // jede andere Schreibweise leitet per 301 auf diese um
+    Router::$config = new RoutingConfig(format: UrlFormat::mixed());
+
+    // eigene Tags auf jeder Seite (gleicher Schlüssel ersetzt eine Angabe des Routings)
+    Head::$config = new HeadConfig(tags: [
+        HeadTag::meta('theme-color', '#1f7a4d'),
+        HeadTag::link('preconnect', 'https://cdn.example.org'),
+    ]);
+}
+CODE,
+    'rshow' => <<<'CODE'
+// Adresse eines Eintrags (aktuelle Sprache bzw. eine andere)
+$url = Router::urlFor('news', $id);
+$en = Router::urlFor('news', $id, 2);
+
+// nach dem Speichern eines Datensatzes: Adressen neu berechnen
+// (geänderte Adressen bekommen automatisch eine 301-Weiterleitung)
+Routes::rebuildSource('news');
+CODE,
+    'rrebuild' => <<<'CODE'
+php bin/console routing:rebuild                  # Seiten und alle Quellen
+php bin/console routing:rebuild --source=news    # nur eine Quelle
+CODE,
+    'rcode' => <<<'CODE'
+#[AsRouteSource('events', label: 'Termine')]
+final class EventRoutes extends RouteSource
+{
+    /** alle Einträge – je Sprache einer */
+    public function entries(): iterable
+    {
+        foreach (Event::upcoming() as $e) {
+            yield new RouteEntry('events', (string) $e->id, $e->languageId, articleId: 7,
+                slug: $e->date->format('Y') . '/' . $e->title,      // /termine/2026/sommerfest
+                params: ['event' => $e->id], modified: $e->updated);
+        }
+    }
+
+    /** Angaben für den Seitenkopf: Titel, Text, Bild, schema.org */
+    public function meta(RouteEntry $entry): ?PageMeta
+    {
+        $e = Event::get((int) $entry->id);
+
+        return new PageMeta(title: $e->title, description: $e->teaser, image: $e->image, type: 'article',
+            jsonLd: [['@type' => 'Event', 'name' => $e->title, 'startDate' => $e->date->format('c')]]);
+    }
+}
+CODE,
+    'rendpoint' => <<<'CODE'
+final class Calendar
+{
+    // eigene Adresse vor den Seiten
+    #[AsEndpoint('/termine.ics')]
+    public static function ics(): void
+    {
+        Router::respond(self::build(), 'text/calendar; charset=utf-8');
+    }
+
+    // eigener Tag im Seitenkopf jeder Seite
+    #[AsExtension]
+    public static function head(PageMetaResolved $ep): PageMeta
+    {
+        return $ep->subject->add(HeadTag::link('alternate', Router::absolute('/termine.ics'),
+            ['type' => 'text/calendar', 'title' => 'Termine']));
+    }
+}
+CODE,
     'nmodule_input' => <<<'CODE'
 public function input(Form $form): string
 {
@@ -995,6 +1074,7 @@ return [
                         ['icon' => 'squares-four', 'title' => 'Bausteine', 'text' => 'Weitere Blöcke des Kits: Logos, Bento, Reiter, Preise und mehr.', 'link_label' => 'Ansehen', 'link' => '/bausteine'],
                         ['icon' => 'terminal-window', 'title' => 'fluid-Projekt', 'text' => 'fluid einbinden, Demo anlegen und eigene Blöcke bauen.', 'link_label' => 'Lesen', 'link' => '/fluid-projekt'],
                         ['icon' => 'paint-brush', 'title' => 'Eigenes Kit', 'text' => 'Was ein Kit ist und wie man eins baut – vererbt von fluid, mit eigenen Views und eigenem CSS.', 'link_label' => 'Lesen', 'link' => '/eigenes-kit'],
+                        ['icon' => 'signpost', 'title' => 'Adressen', 'text' => 'Feste Adressen, Weiterleitungen, Sitemap und Seitenkopf – auch für Einträge anderer AddOns.', 'link_label' => 'Lesen', 'link' => '/adressen'],
                     ],
                 ]],
                 $cta,
@@ -1151,6 +1231,42 @@ return [
                         $c('kitPackage', 'composer.json', 'json'),
                         $c('kitAddon', 'src/NatureAddon.php', 'php'),
                     ]]],
+                $cta,
+            ],
+        ],
+
+        [
+            'slug' => 'adressen', 'title' => 'Adressen', 'menu' => true, 'parent' => 'fluid',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid',
+                    'title' => 'Schöne Adressen – für Seiten und Daten', 'text' => 'Der Rewriter von fluid: feste Adressen, Weiterleitungen, Sitemap und Seitenkopf – auch für Einträge anderer AddOns.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'So arbeitet der Rewriter', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><h3>Feste Adressen</h3><p>Jede Seite bekommt je Sprache einen Slug aus ihrem Namen – beim Anlegen, nicht bei jedem Umbenennen. Die Adresse ist der Weg durch die Elternseiten, etwa <code>/leistungen/beratung</code>. Ändern lässt sie sich in den Seiteneinstellungen; die alte leitet danach von selbst weiter.</p><h3>Eine Adresse je Seite</h3><p>Andere Schreibweisen – Großbuchstaben, Schrägstrich am Ende, eine andere Endung, <code>/EN/</code> statt <code>/en/</code>, alte Links mit <code>?article_id=</code> – leiten per 301 auf die eine richtige Adresse. Suchmaschinen sehen nie zwei Fassungen derselben Seite.</p><h3>Sprachen und Domains</h3><p>Weitere Sprachen haben ein Präfix (<code>/en/…</code>). Weitere Domains leiten auf die Hauptadresse, Landing-Domains zeigen eine einzelne Seite unter eigener Adresse.</p><h3>Alles aus einer Hand</h3><p>Aus denselben Adressen entstehen <code>sitemap.xml</code> mit Sprachfassungen und Bildern, <code>robots.txt</code>, Canonical, hreflang, Open Graph und schema.org – für Seiten und für Einträge.</p><h3>Mehr als Seiten</h3><p>News, Termine oder Produkte bekommen eine eigene Adresse unter ihrer Seite – aus einer Tabelle nur mit Attributen, oder aus einer eigenen Quelle. Der Rewriter speichert die Adressen, hält sie eindeutig und leitet nach einer Änderung weiter.</p><h3>Im Code eingestellt</h3><p>Wie REDAXO 6 selbst: Einstellungen in <code>Project::configure()</code>, Quellen und Endpunkte als Attribute, Erweiterungen über Extension Points. Ein Backend braucht es dafür nicht.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Adressformat und Seitenkopf einstellen', 'intro' => 'Ohne Angabe gelten Adressen ohne Endung. Ein Wechsel braucht keinen Neuaufbau: Gespeichert wird immer ohne Endung.', 'note' => 'Startseiten (/ und /en/) haben nie eine Endung.',
+                    'items' => [
+                        $c('rconfig', 'src/Project.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Einträge einer Tabelle als Adressen', 'intro' => 'Nur Attribute: Tabelle, Seite und Spalten. Die Klasse bleibt leer – REDAXO findet sie selbst.', 'note' => 'Titel, Beschreibung, Bild und Adresse eines Eintrags lassen sich auf der Website in den Seiteneinstellungen der Detailseite bearbeiten.',
+                    'items' => [
+                        $c('rnews', 'src/Routing/NewsRoutes.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Adresse erzeugen und neu berechnen', 'intro' => 'Gleiche Titel werden durchnummeriert, Einträge weichen Seiten aus (-2, -3 …).', 'note' => '',
+                    'items' => [
+                        $c('rshow', 'PHP', 'php'),
+                        $c('rrebuild', 'Terminal', 'bash'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eine eigene Quelle', 'intro' => 'Für alles, was keine einfache Tabelle ist: entries() liefert die Einträge, meta() die Angaben für den Seitenkopf.', 'note' => 'Ein Slug darf „/“ enthalten – jeder Teil wird wie ein Seitenname bereinigt.',
+                    'items' => [
+                        $c('rcode', 'src/Routing/EventRoutes.php', 'php'),
+                    ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Eigene Adressen und Tags im Seitenkopf', 'intro' => 'Endpunkte antworten vor den Seiten. Tags mit demselben Schlüssel ersetzen die Angaben des Rewriters.', 'note' => 'Von X/Twitter kommt nur twitter:card – Titel, Text und Bild liest X aus Open Graph.',
+                    'items' => [
+                        $c('rendpoint', 'src/Calendar.php', 'php'),
+                    ]]],
+                ['type' => 'richtext', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Später austauschbar', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p>Der Rewriter liegt in <code>src/Routing/</code> und kennt nichts von fluid. Er kann ein eigenes AddOn werden – oder durch yrewrite und ein URL-AddOn ersetzt werden, sobald sie das Nötige können. Quellen, Endpunkte und Erweiterungen sprechen nur mit ihm, nicht mit fluid; ein Wechsel betrifft dann einen Adapter, nicht jedes AddOn.</p>']],
                 $cta,
             ],
         ],

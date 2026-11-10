@@ -3,6 +3,7 @@
 namespace FriendsOfRedaxo\Fluid;
 
 use Redaxo\Core\Content\Article;
+use Redaxo\Core\ExtensionPoint\AsExtension;
 use Redaxo\Core\Content\ArticleCache;
 use Redaxo\Core\Content\ArticleHandler;
 use Redaxo\Core\Content\ArticleRevision;
@@ -45,37 +46,43 @@ final class PageSettings
         return ['description' => (string) ($row['description'] ?? ''), 'image' => (string) ($row['image'] ?? ''), 'noindex' => !empty($row['noindex']), 'title' => (string) ($row['title'] ?? '')];
     }
 
-    /** @var array{title?: string, description?: string, image?: string, canonical?: string} */
-    private static array $override = [];
-
     /**
-     * Angaben für den Seitenkopf aus einer Ausgabe überschreiben – z. B. Detailansicht eines Eintrags:
+     * Angaben für den Seitenkopf aus einer Ausgabe überschreiben – z. B. ein Block, der einen Eintrag zeigt:
      * PageSettings::override(['title' => …, 'description' => …, 'image' => 'datei.jpg', 'canonical' => 'https://…']).
-     * Muss beim Rendern der Blöcke passieren (das Template rendert den Inhalt vor dem Kopf).
+     * Muss beim Rendern der Blöcke passieren (das Template rendert den Inhalt vor dem Kopf). Kurzform für Seo\Head::override().
      */
     public static function override(array $values): void
     {
-        self::$override = array_filter($values, static fn ($v) => \is_string($v) && '' !== trim($v)) + self::$override;
+        Routing\Seo\Head::override($values);
     }
 
-    /** @internal */
-    public static function overridden(string $key): ?string
+    /**
+     * @internal SEO-Felder der Seite (Seiteneinstellungen) und Vorgaben der Website in die Meta-Angaben des Routings:
+     * eigener SEO-Titel = Titel im Browser-Tab und og:title, Beschreibung (sonst Standard der Website), Bild, „nicht indexieren“.
+     */
+    #[AsExtension]
+    public static function articleMeta(Routing\ExtensionPoint\ArticleMeta $ep): Routing\Seo\PageMeta
     {
-        return self::$override[$key] ?? null;
+        $m = $ep->subject;
+        $a = $ep->article;
+        $s = self::get($a->id, $a->languageId);
+        $m->siteName = Settings::name();
+        if ('' !== $s['title']) {
+            $m->title = $m->documentTitle = $s['title'];
+        }
+        $m->description = '' !== $s['description'] ? $s['description'] : (trim((string) Settings::get('default_meta_description', '')) ?: null);
+        $m->image = '' !== $s['image'] ? $s['image'] : $m->image;
+        if ($s['noindex']) {
+            $m->noindex = $m->nofollow = true;
+        }
+
+        return $m;
     }
 
     /** Titel im Browser-Tab und in Suchergebnissen: eigener SEO-Titel oder „Seite – Website“ (Startseite: Website) */
-    public static function title(Article $article, string $siteName): string
+    public static function title(Article $article, string $siteName = ''): string
     {
-        if (null !== ($t = self::$override['title'] ?? null)) {
-            return $t . ' – ' . $siteName;
-        }
-        $own = self::get($article->id, $article->languageId)['title'];
-        if ('' !== $own) {
-            return $own;
-        }
-
-        return $article->id === Article::getSiteStartArticleId() ? $siteName : $article->name . ' – ' . $siteName;
+        return Routing\Seo\Head::title($article);
     }
 
     /** Titel, Status und Angaben speichern */
@@ -113,41 +120,10 @@ final class PageSettings
         ArticleCache::delete($article->id, $article->languageId);
     }
 
-    /** <meta>-Angaben für das Template (Beschreibung, Social-Bild, robots) */
-    public static function head(Article $article, string $siteName): string
+    /** Seitenkopf für das Template (Beschreibung, robots, Canonical, hreflang, Open Graph, JSON-LD) – Kurzform für Seo\Head::render() */
+    public static function head(Article $article, string $siteName = ''): string
     {
-        $s = array_merge(self::get($article->id, $article->languageId), array_intersect_key(self::$override, ['title' => 1, 'description' => 1, 'image' => 1]));
-        // Ohne eigene Beschreibung: Standard aus „Website“
-        if ('' === $s['description']) {
-            $s['description'] = trim((string) Settings::get('default_meta_description', ''));
-        }
-        $h = '';
-        if ('' !== $s['description']) {
-            $h .= '<meta name="description" content="' . escape($s['description']) . '">' . "\n"
-                . '<meta property="og:description" content="' . escape($s['description']) . '">' . "\n";
-        }
-        $h .= Seo\Head::head($article);
-        $h .= '<meta property="og:title" content="' . escape($s['title'] ?: $article->name) . '">' . "\n"
-            . '<meta property="og:site_name" content="' . escape($siteName) . '">' . "\n";
-        if ('' !== $s['image'] && ($m = Media::get($s['image']))) {
-            // Mit image_editor: 1200 × 630 als JPEG um den Fokuspunkt (Format der Netzwerke, LinkedIn kann kein WebP)
-            $share = class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditor::shareUrl($m->fileName) : null;
-            $url = $share ?? $m->getUrl();
-            // Netzwerke brauchen eine absolute Adresse
-            $url = preg_match('~^https?://~', $url) ? $url : Url::absoluteBase(ltrim(preg_replace('~^\./~', '', $url), '/'));
-            $h .= '<meta property="og:image" content="' . escape($url) . '">' . "\n";
-            if (null !== $share) {
-                $h .= '<meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">' . "\n";
-            }
-            if ('' !== $alt = trim((string) ($m->getValue('meta_alt') ?? ''))) {
-                $h .= '<meta property="og:image:alt" content="' . escape($alt) . '">' . "\n";
-            }
-        }
-        if ($s['noindex'] || !$article->isOnline()) {
-            $h .= '<meta name="robots" content="noindex, nofollow">' . "\n";
-        }
-
-        return $h;
+        return Routing\Seo\Head::render($article);
     }
 
     /**

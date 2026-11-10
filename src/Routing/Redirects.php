@@ -186,6 +186,12 @@ final class Redirects
 
             return $a && $a->isOnline() ? Url::article($a->id) . ($m[2] ?? '') : null;
         }
+        // Eintrag einer Quelle: route://quelle/ID (automatisch bei geänderter Adresse)
+        if (preg_match('~^route://([^/]+)/(.+)$~', $t, $m)) {
+            $url = Router::urlFor($m[1], $m[2]);
+
+            return '' !== $url ? $url : null;
+        }
         if (preg_match('~^https?://~i', $t)) {
             return str_replace('*', $rest, $t);
         }
@@ -207,9 +213,10 @@ final class Redirects
 
     /**
      * Geänderte Pfade (Routes::rebuild): neue Adresse aus exakten Regeln entfernen (echte Seite geht vor), alte Adresse
-     * online stehender Seiten → redaxo://ID (vorhandene Regel derselben Quelle übernimmt das Ziel – keine Ketten).
+     * online stehender Seiten bzw. Einträge → Ziel (redaxo://ID, route://quelle/ID; vorhandene Regel derselben Quelle
+     * übernimmt das Ziel – keine Ketten).
      *
-     * @param list<array{id: int, lang: int, old: string, new: string, online: bool}> $changes
+     * @param list<array{target: string, lang: int, old: string, new: string, online: bool}> $changes
      */
     public static function pathsChanged(array $changes): void
     {
@@ -222,7 +229,7 @@ final class Redirects
                 continue;
             }
             $old = self::normalize($prefix . '/' . $c['old']);
-            $target = 'redaxo://' . $c['id'];
+            $target = $c['target'];
             $row = $sql->getArray('SELECT id FROM ' . self::TABLE . ' WHERE source_hash = ? AND wildcard = 0 LIMIT 1', [sha1(self::key($old))])[0] ?? null;
             if ($row) {
                 $sql->setQuery('UPDATE ' . self::TABLE . ' SET target = ?, code = 301, active = 1, updated = NOW() WHERE id = ?', [$target, $row['id']]);

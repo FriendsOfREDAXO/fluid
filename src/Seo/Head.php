@@ -3,48 +3,40 @@
 namespace FriendsOfRedaxo\Fluid\Seo;
 
 use FriendsOfRedaxo\Fluid\Routing\Router;
-use FriendsOfRedaxo\Fluid\Routing\Routes;
+use FriendsOfRedaxo\Fluid\Routing\ExtensionPoint\PageMetaResolved;
+use FriendsOfRedaxo\Fluid\Routing\Seo\PageMeta;
+use Redaxo\Core\ExtensionPoint\AsExtension;
+use Redaxo\Core\MediaPool\Media;
 use Redaxo\Core\Content\Article;
-use Redaxo\Core\ExtensionPoint\Extension;
-use Redaxo\Core\ExtensionPoint\ExtensionPoint;
 use Redaxo\Core\Language\Language;
 
-use function count;
-
-use function Redaxo\Core\View\escape;
 
 /**
- * Angaben für Suchmaschinen im Seitenkopf: Canonical, hreflang, schema.org (StructuredData) – aus den Seiten- und
- * Website-Einstellungen von fluid. Adressen kommen vom Routing (Router::canonical). Bausteine ergänzen eigene Angaben über
- * FLUID_SEO_HEAD (HTML im Kopf, z. B. RSS-Feed) und FLUID_STRUCTURED_DATA (Knoten im @graph).
+ * Angaben von fluid für den Seitenkopf des Routings (Routing\Seo\Head): Bild für soziale Netzwerke mit image_editor
+ * (1200 × 630 als JPEG um den Fokuspunkt) und schema.org (StructuredData). Bausteine ergänzen eigene Knoten über
+ * FLUID_STRUCTURED_DATA, eigene Tags über den Extension Point PageMetaResolved des Routings.
  */
 final class Head
 {
-    /** Canonical und hreflang für den Seitenkopf */
-    public static function head(Article $article): string
+    /** @internal */
+    #[AsExtension]
+    public static function resolved(PageMetaResolved $ep): PageMeta
     {
-        $h = '';
-        if ('' !== ($c = \FriendsOfRedaxo\Fluid\PageSettings::overridden('canonical') ?? Router::canonical($article->id, $article->languageId))) {
-            $h .= '<link rel="canonical" href="' . escape($c) . '">' . "\n";
+        $m = $ep->subject;
+        // Netzwerke: 1200 × 630 als JPEG um den Fokuspunkt (LinkedIn kann kein WebP)
+        if (null !== $m->image && '' !== $m->image && !preg_match('~^https?://~i', $m->image) && class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditor::class)
+            && ($media = Media::get($m->image)) && null !== ($share = \FriendsOfRedaxo\ImageEditor\ImageEditor::shareUrl($media->fileName))) {
+            $m->imageAlt ??= '' !== ($alt = trim((string) ($media->getValue('meta_alt') ?? ''))) ? $alt : null;
+            $m->image = Router::absolute($share);
+            $m->imageType = 'image/jpeg';
+            $m->imageWidth = 1200;
+            $m->imageHeight = 630;
         }
-        $langs = Routes::all()[$article->id] ?? [];
-        if (count($langs) > 1 && null === \FriendsOfRedaxo\Fluid\PageSettings::overridden('canonical')) {
-            foreach ($langs as $lang => $_) {
-                $a = Article::get($article->id, $lang);
-                if ($a && $a->isOnline()) {
-                    $h .= '<link rel="alternate" hreflang="' . escape(Language::get($lang)->code ?? '') . '" href="' . escape(Router::canonical($article->id, $lang)) . '">' . "\n";
-                }
-            }
-        }
-
-        // Weitere Angaben der Bausteine (z. B. RSS-Feed des Blogs)
-        $h .= (string) Extension::dispatch(new ExtensionPoint('FLUID_SEO_HEAD', '', ['article' => $article]));
-
         if (!\FriendsOfRedaxo\Fluid\Editing::active()) {
-            $h .= '<script type="application/ld+json">' . json_encode(StructuredData::graph($article), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) . '</script>' . "\n";
+            $m->jsonLd = [...(array) (StructuredData::graph($ep->article, $m)['@graph'] ?? []), ...$m->jsonLd];
         }
 
-        return $h;
+        return $m;
     }
 
     /** schema.org-Knoten der Organisation: Name, Logo, Adresse, Telefon, E-Mail, Geo, Öffnungszeiten, Social Media */

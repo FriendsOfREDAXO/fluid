@@ -4,9 +4,11 @@ namespace FriendsOfRedaxo\Fluid\Routing;
 
 use Redaxo\Core\Content\Article;
 use Redaxo\Core\ExtensionPoint\Extension;
-use Redaxo\Core\ExtensionPoint\ExtensionPoint;
+use FriendsOfRedaxo\Fluid\Routing\ExtensionPoint\SitemapEntries;
 use Redaxo\Core\Language\Language;
 
+use function array_filter;
+use function array_map;
 use function array_slice;
 use function array_values;
 use function ceil;
@@ -28,7 +30,8 @@ use function Redaxo\Core\View\escape;
  *   Sitemap::images(fn (int $id, int $lang): iterable)         Bilder einer Seite (Adressen, z. B. Vorschaubild, Medien der Blöcke)
  *   Sitemap::children(fn (int $id, int $lang, string $loc): iterable)  weitere Adressen unter einer Seite
  *                                                              (z. B. Detailseiten einer Datenliste): ['loc' => …, 'lastmod' => int|null]
- *   EP FLUID_SITEMAP (Liste aller Einträge, Param landing)       hinzufügen, ändern, entfernen
+ *   Einträge der Quellen (RouteSource) kommen von selbst dazu (sitemap: true, Bilder, hreflang)
+ *   Extension Point SitemapEntries (Liste aller Einträge, landing)  hinzufügen, ändern, entfernen
  */
 final class Sitemap
 {
@@ -89,15 +92,7 @@ final class Sitemap
                 }
                 $pages[$lang] = [$loc, $a->updateDate > 0 ? $a->updateDate : null];
             }
-            $alternates = [];
-            if (count($pages) > 1) {
-                foreach ($pages as $lang => [$loc]) {
-                    $alternates[Language::get($lang)->code ?? (string) $lang] = $loc;
-                }
-                if (isset($pages[$startLang])) {
-                    $alternates['x-default'] = $pages[$startLang][0];
-                }
-            }
+            $alternates = self::alternatesOf($pages, $startLang);
             foreach ($pages as $lang => [$loc, $time]) {
                 $out[] = ['loc' => $loc, 'lastmod' => $time, 'alternates' => $alternates, 'images' => self::imagesOf($id, $lang)];
                 foreach (self::$children as $provider) {
@@ -108,7 +103,30 @@ final class Sitemap
             }
         }
 
-        $out = Extension::dispatch(new ExtensionPoint('FLUID_SITEMAP', $out, ['landing' => $landing]));
+        // Einträge der Quellen (je Eintrag mit hreflang seiner Sprachfassungen)
+        $groups = [];
+        foreach (Routes::entries() as $e) {
+            if (!$e->sitemap) {
+                continue;
+            }
+            $a = Article::get($e->articleId, $e->languageId);
+            if (!$a || !$a->isOnlineIncludingParents() || '' === ($loc = Router::canonicalFor($e->source, $e->id, $e->languageId))) {
+                continue;
+            }
+            if (null !== $origin ? !str_starts_with($loc, $origin . '/') : self::onLanding($e->articleId, $a->path)) {
+                continue;
+            }
+            $images = array_slice(array_map(Seo\Head::imageUrl(...), $e->images), 0, self::IMAGES);
+            $groups[$e->source . '|' . $e->id][$e->languageId] = [$loc, $e->modified, array_values(array_filter($images))];
+        }
+        foreach ($groups as $pages) {
+            $alternates = self::alternatesOf($pages, $startLang);
+            foreach ($pages as [$loc, $time, $images]) {
+                $out[] = ['loc' => $loc, 'lastmod' => $time, 'alternates' => $alternates, 'images' => $images];
+            }
+        }
+
+        $out = Extension::dispatch(new SitemapEntries($out, $landing));
 
         return is_array($out) ? array_values($out) : [];
     }
@@ -213,6 +231,27 @@ final class Sitemap
         }
 
         return array_values($out);
+    }
+
+    /**
+     * hreflang (inkl. x-default = Startsprache), wenn es mehr als eine Sprachfassung gibt.
+     *
+     * @param array<int, array{0: string}> $pages Sprache => [Adresse, …]
+     * @return array<string, string>
+     */
+    private static function alternatesOf(array $pages, int $startLang): array
+    {
+        $alternates = [];
+        if (count($pages) > 1) {
+            foreach ($pages as $lang => [$loc]) {
+                $alternates[Language::get($lang)->code ?? (string) $lang] = $loc;
+            }
+            if (isset($pages[$startLang])) {
+                $alternates['x-default'] = $pages[$startLang][0];
+            }
+        }
+
+        return $alternates;
     }
 
     private static function excluded(int $id, int $lang): bool

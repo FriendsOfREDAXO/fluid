@@ -14,10 +14,11 @@ use Redaxo\Core\MediaPool\Media;
  */
 final class Tracks
 {
-    /** Untertitel aus dem Medienpool unter /fluid-track/{datei} (geprüft als WebVTT) */
-    public static function boot(): void
+    /** @internal Untertitel aus dem Medienpool unter /fluid-track/{datei} (geprüft als WebVTT) */
+    #[\FriendsOfRedaxo\Fluid\Routing\Attribute\AsEndpoint(self::ROUTE . '*')]
+    public static function serve(string $path, string $rest): void
     {
-        \FriendsOfRedaxo\Fluid\Routing\Router::endpoint(self::ROUTE . '*', static fn (string $path, string $rest) => self::handle($rest));
+        self::handle($rest);
     }
 
     public const string ROUTE = '/fluid-track/';

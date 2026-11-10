@@ -175,7 +175,7 @@ final class Api
                 return ['reload' => true, 'message' => 'Inhalt übernommen – jetzt übersetzen und veröffentlichen.'];
             })(),
             'page' => self::page($article),
-            'page_save' => self::pageSave($article),
+            'page_save' => self::pageSave($article, $user),
             'page_add' => self::pageAdd($article, $user),
             'template_save' => (static function () use ($article, $user) {
                 $perm = $user->getComplexPerm('structure');
@@ -420,6 +420,7 @@ final class Api
         $f = static fn (string $label, string $control, string $help = '') => '<div class="blocks-form__field"><label class="control-label">' . escape($label) . '</label>' . $control
             . ('' !== $help ? '<p class="help-block">' . escape($help) . '</p>' : '') . '</div>';
         $html = '<div class="blocks-form" data-blocks-form><div class="blocks-form__grid">'
+            . self::routeFields($article, $f)
             . $f('Titel der Seite', '<input class="form-control" type="text" name="name" value="' . escape($article->name) . '" required maxlength="191">', $article->isStartArticle() && $article->categoryId ? 'Erscheint auch im Menü.' : '')
             . '<div class="blocks-form__field"><label class="blocks-form__check"><input type="checkbox" name="online" value="1"' . ($article->isOnline() ? ' checked' : '') . '> Online – für Besucher sichtbar</label></div>'
             . (Article::getSiteStartArticleId() === $article->id
@@ -458,8 +459,91 @@ final class Api
             . '<p class="help-block">Teaserbild = „Bild für soziale Netzwerke“, Kurztext = „Beschreibung für Suchmaschinen“.</p>';
     }
 
-    private static function pageSave(Article $article): array
+    /**
+     * Eintrag einer Quelle des Routings, den die Seite gerade zeigt (aus dem Editor: cfg.route = „quelle:id“) –
+     * [Quelle, Eintrag] oder null.
+     *
+     * @return array{0: Routing\RouteSource, 1: Routing\RouteEntry}|null
+     */
+    private static function routeEntry(Article $article): ?array
     {
+        $key = Request::post('route', 'string', '');
+        if (!str_contains($key, ':')) {
+            return null;
+        }
+        [$src, $id] = explode(':', $key, 2);
+        $source = Routing\Sources::get($src);
+        $path = Routing\Routes::entryPath($src, $id, $article->languageId);
+        if (null === $source || null === $path || Routing\Routes::entryArticle($src, $id, $article->languageId) !== $article->id) {
+            return null;
+        }
+        $entry = Routing\Routes::findEntry($path, $article->languageId);
+
+        return null !== $entry ? [$source, $entry] : null;
+    }
+
+    /** Seiteneinstellungen auf der Adresse eines Eintrags: dessen editierbare Felder (Titel, Beschreibung, Bild, Adresse) zuerst */
+    private static function routeFields(Article $article, callable $f): string
+    {
+        [$source, $entry] = self::routeEntry($article) ?? [null, null];
+        $fields = null !== $source ? $source->editable($entry) : [];
+        if (!$fields) {
+            return '';
+        }
+        $html = '<h3 class="blocks-form__h">' . escape($source->label()) . '</h3>';
+        foreach ($fields as $fd) {
+            $name = 'route_field[' . $fd->name . ']';
+            $html .= $f($fd->label, match ($fd->kind) {
+                'textarea' => '<textarea class="form-control" name="' . escape($name) . '" rows="3" maxlength="1000" data-count="160">' . escape($fd->value) . '</textarea>',
+                'media' => Form\Picker::media('route_' . $fd->name, $name, $fd->value, true, false),
+                default => '<input class="form-control" type="text" name="' . escape($name) . '" value="' . escape($fd->value) . '" maxlength="191"' . ('title' === $fd->role ? ' data-count="60"' : '') . '>',
+            }, 'slug' === $fd->role ? 'Die Adresse entsteht daraus; die alte leitet danach automatisch weiter.' : '');
+        }
+
+        return $html . '<h3 class="blocks-form__h">Seite</h3>';
+    }
+
+    /** Felder eines Eintrags speichern: YForm-Tabellen über die Record-API (Prüfungen, Zeitstempel), sonst die Quelle */
+    private static function routeSave(Article $article, User $user): ?string
+    {
+        $re = self::routeEntry($article);
+        $values = Request::post('route_field', 'array', []);
+        if (null === $re || !$values) {
+            return null;
+        }
+        [$source, $entry] = $re;
+        $values = array_map(static fn ($v) => trim((string) $v), $values);
+        $table = $source instanceof Routing\TableSource && class_exists(\Yakamara\YForm\Table\Table::class) ? Data\YFormBridge::table($source->table()->table) : null;
+        if (null !== $table) {
+            if (Editing::isGuest() || !Data\RecordBlocks::canEdit($user, $table)) {
+                self::fail('Dafür fehlt Ihnen das Recht, diese YForm-Tabelle zu bearbeiten.', 403);
+            }
+            $record = $table::query()->where('id', (int) $entry->id)->first() ?? self::fail('Eintrag nicht gefunden.');
+            foreach ($source->editable($entry) as $fd) {
+                if (\array_key_exists($fd->name, $values) && null !== ($field = $table->getField($fd->name))) {
+                    $record->set($fd->name, $field->fromInput($values[$fd->name]));
+                }
+            }
+            try {
+                $record->save();
+            } catch (\Yakamara\YForm\Validation\ValidationException $e) {
+                self::fail(implode(' ', $e->errors->all()) ?: 'Ein Wert ist nicht gültig.');
+            }
+            Routing\Routes::rebuildSource($source->key());
+        } else {
+            if (Editing::isGuest()) {
+                self::fail('Gäste können Einträge nicht ändern.', 403);
+            }
+            $source->save($entry, $values);
+        }
+        Activity::log('page_settings', $article->id, $source->label() . ' ' . $entry->id);
+
+        return Routing\Router::urlFor($source->key(), $entry->id, $article->languageId) ?: null;
+    }
+
+    private static function pageSave(Article $article, User $user): array
+    {
+        $entryUrl = self::routeSave($article, $user);
         if ($article->isStartArticle() && null !== \Redaxo\Core\Content\Category::get($article->id)) {
             Blog\Blog::setBlog($article->id, Request::post('blog', 'bool', false));
         } elseif (Blog\Blog::blogOf($article)) {
@@ -471,7 +555,7 @@ final class Api
         Routing\Routes::rebuild();
 
         // Neue Adresse: dorthin wechseln (offline gibt es für die alte keine Weiterleitung)
-        return ['message' => 'Seiteneinstellungen gespeichert.', 'reload' => true, 'url' => Url::article($article->id, $article->languageId)];
+        return ['message' => 'Seiteneinstellungen gespeichert.', 'reload' => true, 'url' => $entryUrl ?? Url::article($article->id, $article->languageId)];
     }
 
     /** Adresse der Elternseiten (für die Anzeige vor dem Slug), z. B. „/leistungen/“ */

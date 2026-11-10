@@ -41,7 +41,7 @@ final class Search
     /** Adressen neu berechnet (Struktur geändert) → Suchindex beim nächsten Suchen neu aufbauen */
     public static function boot(): void
     {
-        \Redaxo\Core\ExtensionPoint\Extension::register('FLUID_ROUTES_REBUILT', static fn () => self::markDirty());
+        \Redaxo\Core\ExtensionPoint\Extension::register(\FriendsOfRedaxo\Fluid\Routing\ExtensionPoint\RoutesRebuilt::class, static fn () => self::markDirty());
     }
 
     private const string DIRTY = 'search_dirty';

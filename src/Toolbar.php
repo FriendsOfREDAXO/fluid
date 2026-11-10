@@ -65,6 +65,8 @@ final class Toolbar
             'api' => Url::article($article->id, $article->languageId, [Api::PARAM => '__action__']),
             'csrf' => CsrfToken::factory(Api::CSRF)->getValue(),
             'entry' => null !== $entryTitle ? $entry : 0,   // Detailansicht: an die API, damit Blöcke mit dem Eintrag neu ausgegeben werden
+            // Eintrag einer Quelle (Routing\RouteSource) auf dieser Adresse: seine Felder in den Seiteneinstellungen
+            'route' => Routing\Router::current()?->entry?->key() ?? '',
             'editUrl' => $here([Editing::PARAM => 1]),
             'viewUrl' => $here(),
             // Ansicht der Arbeitsversion (REDAXO-Core: rex_version=1, nur mit Backend-Anmeldung)

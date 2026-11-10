@@ -39,6 +39,7 @@
     }
     fd.append('_csrf_token', cfg.csrf);
     if (cfg.entry) fd.append('eintrag', cfg.entry);   // Detailansicht eines Datensatzes (Api)
+    if (cfg.route) fd.append('route', cfg.route);     // Eintrag einer Quelle des Routings (Seiteneinstellungen)
     // AddOns können Felder ergänzen (z. B. fluid_demo: gemerkte Änderungen) und erfahren vom Erfolg (fluid:api-done)
     document.dispatchEvent(new CustomEvent('fluid:api-request', { detail: { action, fd } }));
     let res;

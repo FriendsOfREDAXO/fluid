@@ -4,6 +4,34 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Adressen (Rewriter)
+
+- **Für alle AddOns:** Einträge eigener Quellen (News, Termine, Produkte …) bekommen eine Adresse unter ihrer Seite –
+  aus einer Tabelle nur mit Attributen (`#[AsRouteSource]`, `#[FromTable]`, `#[Slug]`, `#[Title]`, `#[Description]`,
+  `#[Image]`, `#[Modified]`, Klasse `TableSource`) oder als eigene `RouteSource`. Gespeichert, eindeutig gegen Seiten,
+  301 nach einer Änderung, in der Sitemap mit hreflang und Bildern, mit Canonical, hreflang und Open Graph im Kopf.
+  `Router::urlFor()`, `Routes::rebuildSource()`, Konsole `routing:rebuild`.
+- **Adressformat** im Projekt: ohne Endung, „/“, „.html“, gemischt (Menüpunkte „/“, Seiten „.html“) oder eigene Endung
+  (`Router::$config = new RoutingConfig(format: UrlFormat::mixed())`). Jede andere Schreibweise leitet per 301 um – eine
+  kanonische Adresse je Seite, an einer Stelle geprüft (Groß-/Kleinschreibung, Schrägstrich, Endung, Sprachpräfix).
+- **Seitenkopf** für Seiten und Einträge gleich (`Routing\Seo\Head`): neu `og:url`, `og:type`, `og:locale` (+ alternate),
+  `x-default`, `article:*_time`, `twitter:card` (nur dieses – den Rest liest X aus Open Graph), Bildmaße aus dem
+  Medienpool. Eigene Tags über `HeadConfig::$tags`, `Head::add()` oder `PageMetaResolved` (gleicher Schlüssel ersetzt).
+- Felder eines Eintrags (Titel, Beschreibung, Bild, Adresse) in den **Seiteneinstellungen der Detailseite** bearbeitbar;
+  YForm-Tabellen über die Record-API.
+- Detailseiten der Datenlisten: Titel, Beschreibung, Bild, Canonical und hreflang kommen jetzt vom Resolver (unabhängig
+  von der Reihenfolge beim Rendern), Brotkrumen und JSON-LD mit der Adresse des Eintrags. Mit Endung `.html` entstand
+  vorher `/daten.html/titel-5`.
+- Cache: Adressen der Seiten und jeder Quelle als PHP-Datei (OPcache) statt einer Abfrage aller Adressen je Anfrage.
+- REDAXO-6-Stil: Auflösen bei `PACKAGES_INCLUDED` (Quellen und Endpunkte von AddOns, die nach fluid starten, gelten
+  jetzt auch), Erweiterungen per `#[AsExtension]`, eigene Adressen per `#[AsEndpoint]`, Extension Points als Klassen
+  (`ArticleMeta`, `PageMetaResolved`, `SitemapEntries`, `RobotsTxt`, `RoutesRebuilt` statt `FLUID_SEO_HEAD`,
+  `FLUID_SITEMAP`, `FLUID_ROBOTS`, `FLUID_ROBOTS_RULES`, `FLUID_ROUTES_REBUILT`). `Router::endpoint()` ohne `afterPackages`,
+  Resolver geben `RouteMatch` statt einer Seiten-ID zurück.
+- `RoutingConfig(enabled: false)` schaltet den Rewriter ab (z. B. für yrewrite). `src/Routing/README.md`: Herauslösen als
+  eigenes AddOn und Abbildung auf yrewrite + URL-AddOn.
+- Demo: Seite „Adressen“ im Kapitel fluid.
+
 ### Für Redakteure
 
 - Datensätze aus YForm auf der Website bearbeiten:

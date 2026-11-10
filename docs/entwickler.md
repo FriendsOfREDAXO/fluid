@@ -211,14 +211,29 @@ Extension::register('FLUID_KIT', static fn (ExtensionPoint $ep) => 'shop.example
 | `FLUID_SETTINGS_SCHEMA` | Reiter der Website-Einstellungen | – | eigene Einstellungen (lesen mit `setting('name')`) |
 | `FLUID_SEARCH_DOCUMENT` | Dokument (array) oder null | `article` | Suchindex ergänzen, Seiten ausschließen |
 | `FLUID_STRUCTURED_DATA` | JSON-LD (`@graph`) | `article`, `url`, `org`, `lang` | schema.org ergänzen |
-| `FLUID_ROBOTS` | Text der robots.txt | – | Regeln ergänzen |
 | `FLUID_SITE_TRANSLATIONS` | Übersetzungen (array) | `code` | feste Texte des Kits für eine Sprache ergänzen/ändern |
 | `FLUID_EDITOR_CONFIG` | Einstellungen des Editors | `article`, `user` | Blöcke/Menüpunkte für Rollen ausblenden |
 | `FLUID_KIT` | Schlüssel des Kits | – | Kit je Anfrage wählen, z. B. je Domain |
-| `FLUID_SITEMAP` | Einträge (`loc`, `lastmod`, `alternates`) | `landing` | Adressen der sitemap.xml ergänzen, ändern, entfernen |
-| `FLUID_ROBOTS_RULES` | Regeln der robots.txt | – | Regeln ersetzen (fluid setzt hier den eigenen Text der Website) |
-| `FLUID_ROUTES_REBUILT` | – | – | Adressen wurden neu berechnet (Struktur geändert) |
-| `FLUID_SEO_HEAD` | HTML (string) | `article` | eigene Angaben im Seitenkopf (z. B. RSS-Feed) |
+
+Das Routing hat eigene Extension Points als Klassen (wie der Core), Namespace `FriendsOfRedaxo\Fluid\Routing\ExtensionPoint`:
+
+| Klasse | Subject | Eigenschaften | Zweck |
+|---|---|---|---|
+| `ArticleMeta` | `PageMeta` | `article`, `match` | Meta-Angaben der Seite, bevor Eintrag und Overrides dazukommen (fluid trägt hier die SEO-Felder ein) |
+| `PageMetaResolved` | `PageMeta` | `article`, `match` | fertige Meta-Angaben kurz vor der Ausgabe – ändern, eigene Tags, JSON-LD |
+| `SitemapEntries` | Einträge (`loc`, `lastmod`, `alternates`, `images`) | `landing` | Adressen der sitemap.xml ergänzen, ändern, entfernen |
+| `RobotsTxt` | Text | `part` (`rules` bzw. `text`) | Regeln ersetzen (`rules`, fluid setzt hier den eigenen Text der Website) bzw. fertigen Text ergänzen |
+| `RoutesRebuilt` | – | `source` | Adressen wurden neu berechnet (Seiten bzw. eine Quelle) |
+
+Angemeldet wie im Core, z. B. als Methode mit `#[AsExtension]` – der Name kommt aus dem Typ des Parameters:
+
+```php
+#[AsExtension]
+public static function head(PageMetaResolved $ep): PageMeta
+{
+    return $ep->subject->add(HeadTag::meta('theme-color', '#1f7a4d'));
+}
+```
 
 Dazu nutzt fluid die Extension Points des Cores, z. B. `ArticleUrl` für die Adressen.
 
@@ -285,37 +300,159 @@ Vorlagen: `examples/yform/` (`TerminTable`, `NewsTable`, `ProjectTable`, `Anfrag
 
 ## Adressen, Domains, SEO
 
-- Adresse = Slugs der Elternseiten + eigener Slug (Tabelle `rex_fluid_route`); der Slug bleibt beim Umbenennen gleich.
+Der Rewriter liegt in `src/Routing/` (Namespace `FriendsOfRedaxo\Fluid\Routing`) und kennt nichts von fluid – er lässt
+sich als eigenes AddOn herauslösen oder später durch yrewrite und ein URL-AddOn ersetzen (`src/Routing/README.md`).
+Eingestellt wird er wie REDAXO 6 selbst im Code, ein Backend braucht er nicht.
+
+**So arbeitet er**
+
+- **Feste Adressen:** Jede Seite hat je Sprache einen Slug (Tabelle `rex_fluid_route`). Er entsteht beim Anlegen aus dem
+  Namen und bleibt beim Umbenennen gleich; ändern lässt er sich in den Seiteneinstellungen. Adresse = Slugs der
+  Elternseiten + eigener Slug. Gleiche Slugs auf einer Ebene werden durchnummeriert (`-2`, `-3` …).
+- **Neu berechnet** wird nach jeder Strukturänderung (Artikel, Kategorien, Status, Sprachen – per `#[AsExtension]` am
+  Router). Geänderte Adressen online stehender Seiten bekommen automatisch eine 301-Weiterleitung (`redaxo://ID`).
+- **Eine Adresse je Seite:** Andere Schreibweise, Schrägstrich am Ende, eine andere Endung, `/EN/` statt `/en/`, die
+  natürliche Adresse der Startseite (`/start`) und alte Links `?article_id=…` leiten per 301 auf die kanonische Adresse.
+  POST-Anfragen werden nie umgeleitet.
+- **Aufgelöst** wird bei `PACKAGES_INCLUDED` (früh), wenn alle AddOns geladen sind – ihre Quellen und Endpunkte sind dann
+  bekannt, egal in welcher Reihenfolge sie starten. Ablauf: frühe Endpunkte · Alias-Domain → 301 · Endpunkte · Gates ·
+  `?article_id` → 301 · Sprachpräfix · Endung weg · Seite, Eintrag einer Quelle oder Resolver · kanonische Adresse
+  prüfen · Weiterleitungen · 404 (mit Protokoll).
+- **Cache:** Die Adressen der Seiten liegen als PHP-Datei im Cache (`var/cache/routing/pages.php`, OPcache), die
+  Einträge jeder Quelle in einer eigenen Datei, die erst geladen wird, wenn eine Adresse der Quelle gebraucht wird. Eine
+  Adresse, die keine Seite ist, kostet eine indizierte Abfrage. `console cache:clear` leert ihn, er entsteht von selbst neu.
+
+**Einstellen** in `Project::configure()`:
+
+```php
+use FriendsOfRedaxo\Fluid\Routing\{Router, RoutingConfig, UrlFormat};
+use FriendsOfRedaxo\Fluid\Routing\Seo\{Head, HeadConfig, HeadTag};
+
+Router::$config = new RoutingConfig(
+    format: UrlFormat::mixed(),   // none() /a/b · slash() /a/b/ · html() /a/b.html · mixed() /a/ + /a/b.html · suffix('.htm')
+    cache: true,                  // Adressen als PHP-Datei im Cache
+    redirectBy: 'REDAXO',         // Kopfzeile X-Redirect-By ('' = keine)
+    enabled: true,                // false: Rewriter ganz aus (z. B. wenn yrewrite die Adressen übernimmt)
+);
+Head::$config = new HeadConfig(
+    siteName: null,               // og:site_name und Titel; fluid setzt den Namen aus Website → Allgemein
+    tags: [HeadTag::meta('theme-color', '#1f7a4d')],   // auf jeder Seite
+    twitterCard: 'summary_large_image',               // null = kein twitter:card
+);
+```
+
+Gespeichert wird immer ohne Endung – ein Wechsel des Formats braucht keinen Neuaufbau, alte Schreibweisen (auch `.html`
+und `.htm`) leiten per 301 um. Startseiten (`/`, `/en/`) haben nie eine Endung. Für ganz eigene Regeln lässt sich
+`UrlFormat` ableiten (`append()`, `strip()`).
+
+**Eigene Adressen für Einträge (Quellen)**
+
+News, Termine, Produkte … bekommen eine Adresse unter ihrer Seite – gespeichert wie Seiten (`rex_fluid_route_entry`),
+eindeutig gegen Seiten und andere Einträge, mit 301 nach einer Änderung (`route://quelle/ID`), in der Sitemap (mit
+hreflang und Bildern) und mit Canonical, hreflang, Open Graph und schema.org im Seitenkopf. Die Seite bekommt die
+Parameter des Eintrags (Request und `$_GET`) und gibt ihn aus; gibt es den Eintrag nicht mehr, kommt 404.
+
+Aus einer Tabelle (auch YForm) nur mit Attributen – REDAXO findet die Klasse selbst (`examples/routing/NewsRoutes.php`):
+
+```php
+#[AsRouteSource('news', label: 'News')]
+#[FromTable('rex_news', page: 12, where: 'status = 1', param: 'news_id')]   // language: 'clang_id' – sonst alle Sprachen
+#[Slug('title')]            // withId: true → /aktuelles/titel-12
+#[Title('seo_title')]       // sonst die Slug-Spalte
+#[Description('teaser')]    // ohne HTML, gekürzt
+#[Image('image')]           // Datei(en) des Medienpools – die erste zählt
+#[Modified('updatedate')]   // Zeitstempel oder Datum
+final class NewsRoutes extends TableSource {}
+```
+
+Für alles andere eine eigene Quelle mit `entries()` (und optional `meta()`, `exists()`, `editable()`, `save()`):
+
+```php
+#[AsRouteSource('events', label: 'Termine')]
+final class EventRoutes extends RouteSource
+{
+    public function entries(): iterable
+    {
+        foreach (Event::upcoming() as $e) {
+            yield new RouteEntry('events', (string) $e->id, $e->languageId, articleId: 7,
+                slug: $e->date->format('Y') . '/' . $e->title, params: ['event' => $e->id], modified: $e->updated);
+        }
+    }
+
+    public function meta(RouteEntry $entry): ?PageMeta
+    {
+        $e = Event::get((int) $entry->id);
+
+        return new PageMeta(title: $e->title, description: $e->teaser, image: $e->image, type: 'article');
+    }
+}
+```
+
+```php
+Router::urlFor('news', $id);            // Adresse (aktuelle Sprache), Router::urlFor('news', $id, 2) in Sprache 2
+Router::canonicalFor('news', $id, 1);   // absolut
+Routes::rebuildSource('news');          // nach dem Speichern (alle Einträge der Quelle)
+Routes::put($entry); Routes::remove('news', $id);   // einzelne Einträge
+Router::current()?->entry;              // Eintrag der aktuellen Adresse (oder null)
+```
+
+Konsole: `routing:rebuild` (Seiten und alle Quellen), `routing:rebuild --source=news`.
+
+**Bearbeiten auf der Website:** Spalten mit `#[Slug]`, `#[Title]`, `#[Description]` und `#[Image]` (Standard
+`editable: true`) zeigt fluid in den Seiteneinstellungen der Detailseite über den Feldern der Seite. Gespeichert wird
+bei YForm-Tabellen über die Record-API (Prüfungen und Zeitstempel der Tabelle greifen, Recht auf die Tabelle nötig),
+sonst über `RouteSource::save()`; danach wird die Quelle neu berechnet und der Editor springt auf die neue Adresse.
+
+**Dynamische Adressen** ohne Speicherung (z. B. die Detailseiten der Datenlisten `/seite/titel-ID`) liefern einen
+`RouteMatch` – mit kanonischer Adresse (abweichende Anfragen → 301), Parametern, Meta-Angaben und Sprachfassungen:
+
+```php
+Router::resolver(static function (string $path, int $lang, array $query): ?RouteMatch {
+    // $path ohne Sprachpräfix und Endung
+    return …matches… ? new RouteMatch($pageId, $lang, ['item' => $id], url: $canonical, meta: new PageMeta(title: …)) : null;
+});
+```
+
+**Seitenkopf** (`Routing\Seo\Head`, im Template `Head::title()` und `Head::render()` – bzw. die Kurzformen
+`PageSettings::title()`/`head()`): Titel, Beschreibung, robots, Canonical, hreflang samt `x-default`, `og:type`,
+`og:url`, `og:title`, `og:description`, `og:site_name`, `og:locale` (+ `og:locale:alternate`), `og:image` mit Typ,
+Maßen und Alt-Text, `article:published_time`/`modified_time`, `twitter:card` und JSON-LD. Von X/Twitter kommt nur
+`twitter:card` – Titel, Text und Bild liest X aus Open Graph.
+
+Woher die Angaben kommen (leere Werte überschreiben nie): Seite (Name, Adresse, Sprachen) → `ArticleMeta` (fluid: SEO-Titel,
+Beschreibung bzw. Standard der Website, Bild, „nicht indexieren“) → Eintrag der Quelle bzw. `RouteMatch` → `Head::override()`
+(Blöcke; `PageSettings::override()` ist die Kurzform) → `PageMetaResolved` (fluid: Bild für soziale Netzwerke mit
+image_editor 1200 × 630 als JPEG um den Fokuspunkt, schema.org-@graph).
+
+Eigene Tags: `HeadTag::meta()`, `::property()`, `::link()`, `::html()` (nur aus Code) und `::remove('property:og:image')`.
+Gleicher Schlüssel ersetzt – so lässt sich jede Angabe des Rewriters überschreiben. Anmelden über `HeadConfig::$tags`
+(jede Seite), `Head::add()` (diese Anfrage) oder `$ep->subject->add()` in `PageMetaResolved`.
+
+**Domains, Sitemap, robots.txt**
+
 - Domains (Website → Domains): **Hauptadresse**, **weitere Domains** (301 auf die Hauptadresse), **Landing-Domains**
   (eigene Domain für eine Seite, optional mit Unterseiten, Canonical „eigene Domain“ oder „Spiegel“).
 - `sitemap.xml` je Domain (Hauptadresse bzw. Landing-Domain): Seiten, die online sind (samt Eltern), nicht auf „nicht
   indexieren“ stehen und deren Canonical auf diese Domain zeigt – mit `lastmod` (Änderungsdatum mit Uhrzeit), hreflang samt
-  `x-default` (Startsprache), bis zu fünf Bildern je Adresse (Vorschaubild der Seite, Bilder der veröffentlichten Blöcke)
-  und den Detailseiten von Datenlisten. Ab 45 000 Adressen ein Sitemap-Index mit `/sitemap-1.xml`, `/sitemap-2.xml` …
-  Im Browser zeigt `/sitemap.xsl` die Adressen als Tabelle; Sitemap und robots.txt kommen mit `Cache-Control: no-cache`
-  (Proxy-Caches halten keine alte Fassung fest). Bilder ergänzen AddOns über `Sitemap::images()`, eigene Adressen über
-  `Sitemap::children()` oder `FLUID_SITEMAP`:
+  `x-default` (Startsprache), bis zu fünf Bildern je Adresse (Vorschaubild der Seite, Bilder der veröffentlichten Blöcke),
+  den Einträgen der Quellen und den Detailseiten von Datenlisten. Ab 45 000 Adressen ein Sitemap-Index mit
+  `/sitemap-1.xml`, `/sitemap-2.xml` … Im Browser zeigt `/sitemap.xsl` die Adressen als Tabelle; Sitemap und robots.txt
+  kommen mit `Cache-Control: no-cache`. Ergänzen:
 
   ```php
-  // weitere Adressen unter einer Seite (z. B. Produkte einer Übersichtsseite)
-  Sitemap::children(static fn (int $id, int $lang, string $loc): iterable => $id === 42 ? [['loc' => $loc . '/produkt-1', 'lastmod' => time()]] : []);
-  // Bilder einer Seite (Adressen, relativ oder absolut)
-  Sitemap::images(static fn (int $id, int $lang): iterable => $id === 42 ? ['/media/produkt.jpg'] : []);
-  // ganze Liste ändern
-  Extension::register('FLUID_SITEMAP', static fn (ExtensionPoint $ep) => [...$ep->subject, ['loc' => 'https://example.org/extra', 'lastmod' => null, 'alternates' => []]]);
+  Sitemap::exclude(static fn (int $id, int $lang): bool => …);                    // Seite weglassen
+  Sitemap::images(static fn (int $id, int $lang): iterable => ['/media/x.jpg']);    // Bilder einer Seite
+  Sitemap::children(static fn (int $id, int $lang, string $loc): iterable => …);  // dynamische Adressen unter einer Seite
+  Extension::register(SitemapEntries::class, static fn (SitemapEntries $ep) => [...$ep->subject, ['loc' => 'https://example.org/extra', 'lastmod' => null, 'alternates' => []]]);
   ```
 - `robots.txt` je Domain mit Zeile „Sitemap:“; eigener Text unter Website → Recht & Suchmaschinen. Optional (Haken
   „Linkvorschau beim Teilen erlauben …“, Standard aus; im Code `Robots::allowPreviews()`): Sperrt der Text die ganze
   Website (`User-agent: *` + `Disallow: /`), dürfen Linkvorschauen trotzdem lesen (`Robots::PREVIEW_BOTS`: Facebook,
   LinkedIn, WhatsApp …) – Suchmaschinen bleiben draußen. Eigene Regeln für diese Bots haben Vorrang.
-- Vorschaubild für soziale Netzwerke (`og:image`, Seiteneinstellungen): mit image_editor 1200 × 630 als JPEG um den
-  Fokuspunkt (`ImageEditor::shareUrl()`), mit Breite, Höhe und Alt-Text.
 - Erstes Bild im ersten Block der Seite: ohne Angabe im Kit sofort und mit `fetchpriority="high"` (Einstieg, LCP);
   `img(…, ['eager' => false])` im Kit hat Vorrang.
-- Canonical, hreflang und schema.org-@graph (Organisation, WebSite, WebPage, Brotkrumen, Blöcke) im Seitenkopf
-  (`Seo\Head`, `Seo\StructuredData`).
-- Weitere Sprachen bekommen ein Präfix (`/en/…`); Sprachwahl im Kopf und im mobilen Menü zeigt nur Sprachen, in denen
-  die Seite online ist (`Router::alternates($article)`).
+- Weitere Sprachen bekommen ein Präfix (`/en/…`); die Sprachwahl zeigt nur Sprachen, in denen die Seite online ist
+  (`Router::alternates($article)` – auf der Adresse eines Eintrags dessen Sprachfassungen).
 
 ## Sprachen
 
@@ -615,38 +752,41 @@ Umbau geht, gelten feste Regeln:
 
 | Baustein | Ordner | Meldet an | Braucht | Stand |
 |---|---|---|---|---|
-| **Routing** (schöne Adressen, Domains, Weiterleitungen, 404-Protokoll, sitemap.xml, robots.txt) | `src/Routing/` | ArticleUrl, eigene Endpunkte | nur den Core | herauslösbar – kennt nichts von fluid |
-| SEO im Seitenkopf (Canonical, hreflang, schema.org) | `src/Seo/` | – | Routing, Einstellungen von fluid | bleibt im Kern |
-| Suche (Loupe) | `src/Search/` | `FLUID_ROUTES_REBUILT` | Routing, Block-Inhalte | herauslösbar nach dem Routing |
+| **Routing** (schöne Adressen, Quellen, Domains, Weiterleitungen, 404-Protokoll, sitemap.xml, robots.txt, Seitenkopf) | `src/Routing/` | ArticleUrl, Strukturänderungen, `PACKAGES_INCLUDED` (alles per `#[AsExtension]`) | nur den Core | herauslösbar – kennt nichts von fluid |
+| SEO von fluid (SEO-Felder, Bild für soziale Netzwerke, schema.org) | `src/Seo/`, `PageSettings` | `ArticleMeta`, `PageMetaResolved` | Routing, Einstellungen von fluid | bleibt im Kern |
+| Suche (Loupe) | `src/Search/` | `RoutesRebuilt` | Routing, Block-Inhalte | herauslösbar nach dem Routing |
 | Karten (MapLibre, eigener Proxy) | `src/Maps/` | Endpunkt `/proxy/*`, Geo in schema.org | Routing, Einstellungen | herauslösbar |
 | Videos und Untertitel | `src/Media/` | Endpunkt `/fluid-track/*` | Routing | herauslösbar |
 | Datenlisten, Formulare, Postfach (YForm) | `src/Data/` | Resolver Detailseiten, Sitemap-Einträge | Routing, Blöcke, YForm | bleibt vorerst im Kern |
-| Blog | `src/Blog/` | Resolver `feed.xml`, RSS im Kopf, schema.org | Routing, Seiteneinstellungen | herauslösbar |
+| Blog | `src/Blog/` | Resolver `feed.xml`, RSS im Kopf (`PageMetaResolved`), schema.org | Routing, Seiteneinstellungen | herauslösbar |
 | MCP-Server | `src/Mcp/` | Endpunkt `/fluid-mcp` | Kern (Blöcke, Rechte) | herauslösbar |
 | E-Mail (Status, erneut senden, Layout, Aufbewahrung) | `src/Mail/` | Cronjob `fluid_mail_archive_purge` | Core-Mailer, Einstellungen, Kit (Farben) | herauslösbar |
 | Live, Präsenz | `src/Live.php`, `src/PresenceApi.php` | Endpunkte | Kern | bleibt im Kern |
 | Demo | eigenes AddOn [fluid_demo](https://github.com/FriendsOfREDAXO/fluid_demo) | Gastzugang | Kern | eigenständig |
 | Bildeditor | eigenes AddOn [image_editor](https://github.com/FriendsOfREDAXO/image_editor) | – | Core | eigenständig |
 
-**Haken des Routings** (`FriendsOfRedaxo\Fluid\Routing\Router`, vor `Router::boot()` anmelden):
+**Haken des Routings** (`FriendsOfRedaxo\Fluid\Routing`) – Attribute werden über die Klassenerkennung des Cores gefunden,
+die Aufrufe gehen in `boot()` jedes AddOns (aufgelöst wird erst bei `PACKAGES_INCLUDED`):
 
 ```php
-Router::endpoint('/mein-dienst', fn () => MeinDienst::handle(), afterPackages: true);   // eigene Adresse
-Router::endpoint('/dateien/*', fn (string $path, string $rest) => Dateien::send($rest)); // Präfix
-Router::resolver(fn (string $path, int $lang, array $query): ?int => …);   // Pfad → anzuzeigende Seite (oder null)
+#[AsEndpoint('/mein-dienst')]                 // an einer statischen Methode fn (string $path, string $rest): void
+#[AsEndpoint('/dateien/*')]                   // Präfix, Rest als $rest
+#[AsEndpoint('/mcp', early: true, param: 'mcp')]   // vor der Domain-Umleitung, auch als ?mcp=…
+#[AsRouteSource('news')]                      // Quelle eigener Adressen (RouteSource/TableSource)
+Router::endpoint('/x', fn (string $path, string $rest) => …);               // dasselbe ohne Attribut
+Router::resolver(fn (string $path, int $lang, array $query): ?RouteMatch => …);   // dynamische Adressen
 Router::onPage(fn (int $id, int $lang, array $query) => …);               // Seite gefunden (z. B. alte Parameter umleiten)
 Router::gate(fn (string $path) => …);                                       // vor der Seitensuche
 Router::keep('mein_param');                                                 // ?article_id=… mit diesem Parameter nicht umleiten
-Sitemap::exclude(fn (int $id, int $lang): bool => …);                       // Seite nicht in die Sitemap
-Sitemap::children(fn (int $id, int $lang, string $loc): iterable => …);     // Adressen unter einer Seite
+Sources::add(new MeineQuelle());                                            // Quelle ohne Attribut
 ```
 
 Antworten schicken Bausteine mit `Router::respond($body, $contentType)`, Weiterleitungen mit `Router::redirectTo($url, 301)`.
 
 **Herauslösen eines Bausteins** (Ablauf): Ordner in ein eigenes Paket verschieben (Namespace bleibt oder bekommt einen
 eigenen), `boot()` aus `FluidAddon::boot()` in die Addon-Klasse des neuen Pakets, Tabellen über `getOwnedSchema()` des
-neuen AddOns melden, Abhängigkeit in `composer.json` eintragen. Beim Routing zusätzlich: Auflösen der Adresse erst bei
-`PACKAGES_INCLUDED`, damit AddOns, die nach ihm starten, ihre Haken noch anmelden können.
+neuen AddOns melden, Abhängigkeit in `composer.json` eintragen. Beim Routing: `Router::boot()` und `Schema::install()` in die
+Addon-Klasse, `Schema::TABLES` in `getOwnedSchema()`; alles andere hängt schon per Attribut am Core.
 
 ## Aufbau des AddOns
 
