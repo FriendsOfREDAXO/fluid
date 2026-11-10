@@ -67,6 +67,12 @@ abstract class LayoutBlock extends BlockModule
     {
         $b = $this->context();
         // Backend: Kurzinfo statt Raster – die Spalten-Blöcke folgen als eigene Slices
+        if (self::backendPreview() && Backend\SliceGrid::active() && null !== $b->slice) {
+            $count = count(Layout::children($b->slice));
+
+            return '<p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
+                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . '</p>' . Backend\SliceGrid::grid($b->slice, $b->data);
+        }
         if (self::backendPreview()) {
             // Rasterskizze: Spalten in ihrer Breite (Zwölftel), darin die Blöcke als Sprungmarken zu ihren Slices darunter
             $n = Layout::count($b->data);

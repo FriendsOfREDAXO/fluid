@@ -150,6 +150,7 @@ final class FluidAddon extends Addon
             Asset::addJsFile($this->getAssetsUrl('blocks-field.js'));
         }
         if (Core::isBackend() && str_starts_with(Request::get('page', 'string'), 'content')) {
+            Backend\SliceGrid::boot();   // Blöcke eines Layouts nebeneinander in ihren Spalten
             Asset::addCssFile($this->getAssetsUrl('form.css'));
             Asset::addCssFile($this->getAssetsUrl('rte.css'));
             Asset::addJsFile($this->getAssetsUrl('form.js'));

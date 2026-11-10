@@ -366,8 +366,11 @@ abstract class BlockModule extends Module
     #[AsExtension(SliceOutput::class, ExtensionLevel::Early)]
     public static function wrapOutput(SliceOutput $ep): string
     {
-        if (null === self::classFor($ep->slice->moduleKey) || $ep->content instanceof ArticleContentEditor) {
+        if (null === self::classFor($ep->slice->moduleKey)) {
             return (string) $ep->subject;
+        }
+        if ($ep->content instanceof ArticleContentEditor) {
+            return Backend\SliceGrid::collect($ep) ?? (string) $ep->subject;   // Spalten-Blöcke ins Raster des Layouts
         }
 
         return self::of($ep->slice)->wrap((string) $ep->subject);

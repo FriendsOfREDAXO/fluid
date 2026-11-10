@@ -63,12 +63,30 @@ textarea[data-blocks-rte] { display: none !important; }
 .blocks-be-col a { margin-left: auto; color: var(--rex-color-link); }
 /* Layout: Kopf orange getönt, Wurzel des Astes unten */
 .rex-slice-output:has(.blocks-be-layout) { position: relative; }
-.rex-slice-output:has(.blocks-be-layout) .rex-section-header { background: var(--fluid-be-orange-subtle); }
-.rex-slice-output:has(.blocks-be-layout) .rex-section-header :is(h1, h2, h3, .rex-section-title) { color: var(--fluid-be-orange-text); }
-.rex-slice-output:has(.blocks-be-layout)::after { content: ""; position: absolute; left: 18px; bottom: -22px; height: 22px; border-left: 3px solid var(--fluid-be-orange); }
+.rex-slice-output:has(.blocks-be-layout) > .rex-section > .rex-section-header { background: var(--fluid-be-orange-subtle); }
+.rex-slice-output:has(.blocks-be-layout) > .rex-section > .rex-section-header > .rex-section-title { color: var(--fluid-be-orange-text); }
+.rex-slice-output:has(.blocks-be-layout):not(:has(.fluid-be-grid))::after { content: ""; position: absolute; left: 18px; bottom: -22px; height: 22px; border-left: 3px solid var(--fluid-be-orange); }
 /* Spalten-Blöcke und die „Block hinzufügen“-Leisten zwischen ihnen: eingerückt am Ast */
-.rex-slice-output:has(.blocks-be-nest), .rex-slice-select:has(+ .rex-slice-output .blocks-be-nest) { position: relative; margin-left: 48px; }
-.rex-slice-output:has(.blocks-be-nest)::before, .rex-slice-select:has(+ .rex-slice-output .blocks-be-nest)::before { content: ""; position: absolute; left: -30px; top: -22px; bottom: 0; border-left: 3px solid var(--fluid-be-orange); }
-.rex-slice-output:has(.blocks-be-nest)::after { content: ""; position: absolute; left: -30px; top: 0; width: 30px; height: 22px; border-left: 3px solid var(--fluid-be-orange); border-bottom: 3px solid var(--fluid-be-orange); border-bottom-left-radius: 10px; }
+.rex-slices:not(.fluid-be-list) > :is(.rex-slice-output:has(.blocks-be-nest):not(:has(.fluid-be-grid)), .rex-slice-select:has(+ .rex-slice-output .blocks-be-nest):not(:has(+ .rex-slice-output .fluid-be-grid))) { position: relative; margin-left: 48px; }
+.rex-slices:not(.fluid-be-list) > :is(.rex-slice-output:has(.blocks-be-nest):not(:has(.fluid-be-grid)), .rex-slice-select:has(+ .rex-slice-output .blocks-be-nest):not(:has(+ .rex-slice-output .fluid-be-grid)))::before { content: ""; position: absolute; left: -30px; top: -22px; bottom: 0; border-left: 3px solid var(--fluid-be-orange); }
+.rex-slices:not(.fluid-be-list) > .rex-slice-output:has(.blocks-be-nest):not(:has(.fluid-be-grid))::after { content: ""; position: absolute; left: -30px; top: 0; width: 30px; height: 22px; border-left: 3px solid var(--fluid-be-orange); border-bottom: 3px solid var(--fluid-be-orange); border-bottom-left-radius: 10px; }
 /* letzter Spalten-Block: Ast endet am Abzweig */
-.rex-slice-output:has(.blocks-be-nest):not(:has(+ .rex-slice-select + .rex-slice-output .blocks-be-nest))::before { bottom: calc(100% - 4px); }
+.rex-slices:not(.fluid-be-list) > .rex-slice-output:has(.blocks-be-nest):not(:has(.fluid-be-grid)):not(:has(+ .rex-slice-select + .rex-slice-output .blocks-be-nest))::before { bottom: calc(100% - 4px); }
+
+/* Raster im Layout-Panel (Backend\SliceGrid): Spalten-Blöcke mit ihren Panels nebeneinander wie auf der Website */
+.fluid-be-grid { display: flex; align-items: flex-start; gap: 12px; }
+.fluid-be-gcol { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 10px; border: 2px dashed color-mix(in srgb, var(--fluid-be-orange) 60%, transparent); border-radius: 8px; background: var(--fluid-be-orange-subtle); }
+.fluid-be-list { margin: 0; padding: 0; list-style: none; }
+.fluid-be-list > .rex-slice { margin: 0; }
+.fluid-be-list > .rex-slice-select { margin-bottom: 8px; }
+.fluid-be-list > .rex-slice-select .rex-button, .fluid-be-add .rex-button { font-size: var(--rex-font-size-small); }
+.fluid-be-gcol .blocks-be-col { display: none; }   /* Spalte steht schon am Raster */
+.fluid-be-gcol .rex-section { box-shadow: 0 1px 3px rgb(0 0 0 / .12); }
+.fluid-be-add { margin-top: auto; }
+/* Ein Spalten-Block wird bearbeitet: Spalten untereinander, Formular in voller Breite */
+.fluid-be-grid[data-editing] { flex-direction: column; align-items: stretch; }
+.fluid-be-item.is-editing { outline: 2px solid var(--fluid-be-orange); outline-offset: 4px; border-radius: 4px; }
+@media (max-width: 991px) { .fluid-be-grid { flex-direction: column; align-items: stretch; } }
+.fluid-be-gcol .rex-section-header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.fluid-be-gcol .rex-section-title { order: -1; flex: 1 1 auto; min-width: 0; margin: 0; font-size: 1rem; }
+.fluid-be-gcol .rex-section-options { float: none; margin: 0; }

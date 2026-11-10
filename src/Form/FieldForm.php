@@ -70,7 +70,9 @@ final class FieldForm
         $h .= self::row('Abstand unten', self::select($p2 . '[spaceBottom]', $space, (string) ($tunes['spaceBottom'] ?? 'normal')), '', true);
         if ($module::nestable()) {
             $cols = ['' => 'Nicht in einem Layout', '1' => 'Spalte 1', '2' => 'Spalte 2', '3' => 'Spalte 3', '4' => 'Spalte 4'];
-            $h .= self::row('Spalte im Layout', self::select($p2 . '[col]', $cols, (string) ($tunes['col'] ?? '')),
+            // neuer Block über „Block in Spalte n“ im Backend: Spalte vorgewählt
+            $col = (string) ($tunes['col'] ?? (\FriendsOfRedaxo\Fluid\Backend\SliceGrid::requestedCol() ?? ''));
+            $h .= self::row('Spalte im Layout', self::select($p2 . '[col]', $cols, $col),
                 'Wirkt, wenn der Block direkt hinter einem Block „Layout (Spalten)“ steht (oder hinter weiteren Blöcken dieses Layouts).', false);
         }
         $h .= '</div></details>';

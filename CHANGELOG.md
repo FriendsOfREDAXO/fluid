@@ -4,6 +4,16 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Backend: Layout als Raster wie auf der Website
+
+- In der Slice-Liste stehen die Blöcke eines Layouts jetzt im Layout-Panel nebeneinander in ihren Spalten (Breiten wie
+  auf der Website), jeder mit Kopf und Knöpfen des Cores – weiter echte Slices. Je Spalte „+ Block in Spalte n“;
+  „Block hinzufügen“ in einer Spalte gibt die Spalte mit (`fluid_col`, im Formular vorgewählt). Wird ein Spalten-Block
+  bearbeitet, stehen die Spalten untereinander (Formular in voller Breite). Hell und dunkel über `light-dark()`.
+- Von außen, ohne den Core zu ändern: `Backend\SliceGrid` sammelt die Panels über `SliceOutput` ein, das Fragment
+  `core/structure/content/slice_list.php` (in `fragments/` des AddOns) setzt sie ins Raster, `ContentPageModuleSelect`
+  ergänzt die Spalte. Ohne Raster (z. B. anderes Fragment) bleibt die Baumansicht.
+
 ### Übersicht bei verschachtelten Blöcken
 
 - Backend: Spalten-Blöcke fehlten in der Slice-Liste ganz – fluid hat im Bearbeiten-Modus des Backends den Extension
