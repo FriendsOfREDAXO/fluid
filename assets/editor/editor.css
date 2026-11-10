@@ -50,6 +50,9 @@ html.blocks-editing [data-blocks-editable]:empty::before { content: "…"; opaci
 
 /* Layout (Spalten) im Bearbeiten-Modus */
 html.blocks-editing [data-lay-col] { min-height: 80px; outline: 1px dashed color-mix(in srgb, var(--blocks-accent) 35%, transparent); outline-offset: 6px; border-radius: 4px; }
+/* Spaltenmarke oben links an jeder Layout-Spalte (Übersicht: welcher Block steht in welcher Spalte) */
+html.blocks-editing :where([data-lay-col]) { position: relative; }
+html.blocks-editing [data-lay-col]::before { content: "Spalte " attr(data-lay-col); position: absolute; top: -17px; left: -2px; z-index: 2; padding: 1px 6px; border-radius: 4px; background: color-mix(in srgb, var(--blocks-accent) 14%, #fff); color: var(--blocks-accent); font: 600 10px/1.4 system-ui, sans-serif; letter-spacing: .02em; pointer-events: none; }
 html.blocks-editing .lay-item[data-block] { position: relative; outline-offset: 4px; }
 html.blocks-editing .lay-item[data-block]:hover { outline: 1px dashed color-mix(in srgb, var(--blocks-accent) 70%, transparent); }
 html.blocks-editing .lay-item[data-blocks-selected], html.blocks-editing .lay-item[data-blocks-panel] { outline: 2px solid var(--blocks-accent); }

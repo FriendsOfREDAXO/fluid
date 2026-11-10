@@ -122,6 +122,7 @@
     </header>`);
   const blockbar = h(`
     <div class="bb" hidden>
+      <button type="button" class="bb__parent" data-bb-parent hidden title="Das Layout auswählen, in dessen Spalte dieser Block steht">Layout ›</button>
       <span class="bb__label" data-bb-label draggable="true" title="Ziehen zum Verschieben"></span>
       <button type="button" data-bb-edit class="bb__main">Bearbeiten</button>
       <button type="button" data-bb-up title="Nach oben" aria-label="Nach oben">↑</button>
@@ -1631,7 +1632,14 @@
     blockbar.hidden = r.bottom < barH + 40 || r.top > innerHeight - 40;
     blockbar.style.top = `${Math.max(r.top + 8, barH + 8)}px`;
     blockbar.style.left = `${Math.max(8, r.left + 8)}px`;
-    $('[data-bb-label]').textContent = sec.dataset.label || sec.dataset.type;
+    // Verschachtelt (Spalte eines Layouts): Pfad „Layout › Spalte n/m · Block“, „Layout ›“ wählt das Layout aus
+    const col = sec.closest('[data-lay-col]');
+    const parentSec = col?.parentElement?.closest('[data-block]') || null;
+    const cols = col ? col.parentElement.querySelectorAll(':scope > [data-lay-col]').length : 0;
+    $('[data-bb-label]').textContent = (col ? `Spalte ${col.dataset.layCol}/${cols} · ` : '') + (sec.dataset.label || sec.dataset.type);
+    const pb = $('[data-bb-parent]');
+    pb.hidden = !parentSec;
+    pb.onclick = parentSec ? () => { select(parentSec); parentSec.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } : null;
     const offline = sec.hasAttribute('data-offline');
     const st = $('[data-bb-status]');
     // Datensatz-Blöcke: kein Online-Schalter, keine Spalten

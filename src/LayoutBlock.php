@@ -68,10 +68,19 @@ abstract class LayoutBlock extends BlockModule
         $b = $this->context();
         // Backend: Kurzinfo statt Raster – die Spalten-Blöcke folgen als eigene Slices
         if (self::backendPreview()) {
-            $n = count(Layout::children($b->slice));
+            $children = Layout::children($b->slice);
+            $cols = array_fill(1, Layout::count($b->data), []);
+            foreach ($children as $child) {
+                $cols[min(Layout::col($child), Layout::count($b->data))][] = escape(BlockModule::summary($child));
+            }
+            $list = '';
+            foreach ($cols as $i => $names) {
+                $list .= '<li><strong>Spalte ' . $i . ':</strong> ' . ([] !== $names ? implode(' · ', $names) : '<em>leer</em>') . '</li>';
+            }
+            $n = count($children);
 
             return '<p class="blocks-be-layout"><i class="rex-icon fa-table-columns"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
-                . ' · ' . $n . ' ' . (1 === $n ? 'Block' : 'Blöcke') . ' in den Spalten (folgen unten, „Spalte im Layout“ unter „Abschnitt“)</p>';
+                . ' · ' . $n . ' ' . (1 === $n ? 'Block' : 'Blöcke') . ' in den Spalten – sie folgen eingerückt darunter</p><ul class="blocks-be-cols">' . $list . '</ul>';
         }
 
         return Layout::render($b);

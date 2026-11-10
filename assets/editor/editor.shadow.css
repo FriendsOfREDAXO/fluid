@@ -111,7 +111,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .bb button:hover:not(:disabled) { background: rgb(255 255 255 / .14); }
 .bb button:disabled { opacity: .35; cursor: default; }
-.bb__label { padding: 0 8px; font-size: 12px; opacity: .75; max-width: 16ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb__label { padding: 0 8px; font-size: 12px; opacity: .75; max-width: 26ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bb__main { background: var(--accent) !important; color: var(--accent-ink) !important; }
 .bb .is-off { color: #ffb4a8; }
 .bb__danger:hover { background: var(--danger) !important; }
@@ -453,3 +453,7 @@ textarea[data-blocks-rte] { display: none !important; }
 
 /* Seitenleiste: Formular eines gewöhnlichen REDAXO-Moduls (Backend im Rahmen) statt der Block-Felder */
 .panel__frame { flex: 1 1 auto; width: 100%; border: 0; background: var(--bg); }
+
+/* Verschachtelte Blöcke: Sprung zum Layout, in dessen Spalte der Block steht */
+.bb__parent { padding: 0 6px 0 10px !important; font-size: 12px; opacity: .85; background: transparent !important; }
+.bb__parent:hover { opacity: 1; text-decoration: underline; }

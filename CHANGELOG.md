@@ -4,6 +4,15 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Übersicht bei verschachtelten Blöcken
+
+- Backend: Spalten-Blöcke fehlten in der Slice-Liste ganz – fluid hat im Bearbeiten-Modus des Backends den Extension
+  Point `SliceOutput` (dort das ganze Panel des Cores) wie auf der Website behandelt. Behoben; jetzt listet ein Layout
+  seine Spalten mit den Blöcken darin („Spalte 1: Diagramm „…““), und die Spalten-Blöcke stehen eingerückt mit Linie und
+  „Spalte 1 von 2 · im Layout „½ + ½“ darüber“.
+- Website (Bearbeiten-Modus): Spaltenmarke oben an jeder Layout-Spalte, die Leiste eines Spalten-Blocks zeigt
+  „Layout › Spalte 1/2 · Block“ – „Layout ›“ wählt das Layout aus.
+
 ### Seitenwechsel: Überblenden und Morphen (optional)
 
 - Neue Design-Einstellung „Seitenwechsel“ im Kit fluid (Bewegung & Farbschema, Standard „Wie gewohnt“): „Überblenden“

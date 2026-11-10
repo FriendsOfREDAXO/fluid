@@ -46,3 +46,7 @@ textarea[data-blocks-rte] { display: none !important; }
 /* Absprung „Auf der Website bearbeiten“ über den Slices, Hinweise zu Layout-Spalten */
 .blocks-frontend-link { margin: 0 0 12px; text-align: right; }
 .blocks-be-col, .blocks-be-layout { margin: 0 0 8px; padding: 6px 10px; background: var(--rex-color-accent-subtle); color: var(--rex-color-link); font-size: var(--rex-font-size-small); font-weight: 700; }
+/* Verschachtelung in der Slice-Liste: Layout listet seine Spalten, Spalten-Blöcke stehen eingerückt mit Linie (eigenes Markup) */
+.blocks-be-cols { margin: 0; padding: 0 0 0 10px; list-style: none; font-size: var(--rex-font-size-small); }
+.blocks-be-cols li { padding: 2px 0; }
+.blocks-be-nest { margin-left: 16px; padding-left: 14px; border-left: 3px solid var(--rex-color-link); }

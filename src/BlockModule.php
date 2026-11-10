@@ -5,6 +5,7 @@ namespace FriendsOfRedaxo\Fluid;
 use FriendsOfRedaxo\Fluid\Form\FieldForm;
 use FriendsOfRedaxo\Fluid\Form\Stored;
 use Override;
+use Redaxo\Core\Content\ArticleContentEditor;
 use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\ExtensionPoint\SliceOutput;
 use Redaxo\Core\Content\ExtensionPoint\SlicePreview;
@@ -358,11 +359,18 @@ abstract class BlockModule extends Module
         return $m;
     }
 
-    /** @internal Abschnitt um die Ausgabe eines Blocks (Frontend) */
+    /**
+     * @internal Abschnitt um die Ausgabe eines Blocks (Frontend). Nicht in der Slice-Liste des Backends: Dort ist der Inhalt
+     * das ganze Panel des Cores (Kopf, Knöpfe, Vorschau) – Spalten-Blöcke verschwanden sonst samt Panel.
+     */
     #[AsExtension(SliceOutput::class, ExtensionLevel::Early)]
     public static function wrapOutput(SliceOutput $ep): string
     {
-        return null !== self::classFor($ep->slice->moduleKey) ? self::of($ep->slice)->wrap((string) $ep->subject) : (string) $ep->subject;
+        if (null === self::classFor($ep->slice->moduleKey) || $ep->content instanceof ArticleContentEditor) {
+            return (string) $ep->subject;
+        }
+
+        return self::of($ep->slice)->wrap((string) $ep->subject);
     }
 
     /** @internal Vorschau in der Slice-Liste des Backends: Hinweis auf die Spalte im Layout */
@@ -373,7 +381,24 @@ abstract class BlockModule extends Module
             return (string) $ep->subject;
         }
 
-        return '<p class="blocks-be-col"><i class="rex-icon fa-table-columns"></i> Spalte ' . Layout::col($ep->slice) . ' im Layout darüber</p>' . $ep->subject;
+        $parent = Layout::parentOf($ep->slice);
+        $data = null !== $parent ? self::of($parent)->context()->data : [];
+
+        return '<div class="blocks-be-nest"><p class="blocks-be-col"><i class="rex-icon fa-turn-up fa-rotate-90" aria-hidden="true"></i> Spalte ' . Layout::col($ep->slice)
+            . ' von ' . Layout::count($data) . ' · im Layout „' . escape(Layout::PRESET_LABELS[Layout::preset($data)]) . '“ darüber</p>' . $ep->subject . '</div>';
+    }
+
+    /** Kurzbezeichnung eines Slices für Übersichten: Name des Blocks und – falls vorhanden – Überschrift bzw. Titel */
+    public static function summary(ArticleSlice $slice): string
+    {
+        $class = self::classFor($slice->moduleKey);
+        if (null === $class) {
+            return $slice->moduleKey;
+        }
+        $data = self::of($slice)->context()->data;
+        $title = trim(strip_tags((string) ($data['title'] ?? $data['name'] ?? '')));
+
+        return $class::label() . ('' !== $title ? ' „' . mb_strimwidth((string) preg_replace('~\*([^*]+)\*~u', '$1', $title), 0, 60, '…') . '“' : '');
     }
 
     /** Ausgabe eines Slices (output()) als Abschnitt – Spalten-Blöcke gibt ihr Layout aus */
