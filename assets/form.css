@@ -157,3 +157,11 @@ textarea[data-blocks-rte] { display: none !important; }
 .fluid-be-bar .fluid-be-more { min-width: 28px; height: 28px; padding: 0 6px; }
 .fluid-be-bar .fluid-be-acts { gap: 3px; }
 .fluid-be-bar > .rex-section-title { padding: 4px 8px; font-size: .85rem; }
+/* Umschalter „Spalten | Baum“ im Layout-Panel */
+.fluid-be-layouthead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 0 10px; }
+.fluid-be-layouthead > .blocks-be-layout { margin: 0; }
+.fluid-be-view { display: inline-flex; margin: 0; padding: 2px; border: 1px solid var(--rex-color-border-strong); border-radius: 8px; background: var(--rex-color-surface); }
+.fluid-be-view a { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; color: var(--rex-color-text); font-size: var(--rex-font-size-small); text-decoration: none; }
+.fluid-be-view a:hover { background: var(--rex-color-surface-subtle); }
+.fluid-be-view a[aria-current] { background: var(--fluid-be-orange); color: var(--fluid-be-on-orange); font-weight: 700; }
+.fluid-be-view a:focus-visible { outline: 2px solid var(--rex-color-focus); outline-offset: 1px; }

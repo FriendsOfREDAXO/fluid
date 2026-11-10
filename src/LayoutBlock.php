@@ -70,8 +70,8 @@ abstract class LayoutBlock extends BlockModule
         if (self::backendPreview() && Backend\SliceGrid::active() && null !== $b->slice) {
             $count = count(Layout::children($b->slice));
 
-            return '<p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
-                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . '</p>' . Backend\SliceGrid::grid($b->slice, $b->data);
+            return '<div class="fluid-be-layouthead"><p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
+                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . '</p>' . Backend\SliceGrid::switcher($b->slice) . '</div>' . Backend\SliceGrid::grid($b->slice, $b->data);
         }
         if (self::backendPreview()) {
             // Rasterskizze: Spalten in ihrer Breite (Zwölftel), darin die Blöcke als Sprungmarken zu ihren Slices darunter
@@ -90,8 +90,8 @@ abstract class LayoutBlock extends BlockModule
             }
             $count = count($children);
 
-            return '<p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
-                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . ' in den Spalten</p><div class="blocks-be-grid">' . $grid . '</div>';
+            return '<div class="fluid-be-layouthead"><p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
+                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . ' in den Spalten</p>' . (null !== $b->slice && Backend\SliceGrid::booted() ? Backend\SliceGrid::switcher($b->slice) : '') . '</div><div class="blocks-be-grid">' . $grid . '</div>';
         }
 
         return Layout::render($b);

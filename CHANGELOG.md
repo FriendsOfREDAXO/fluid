@@ -35,6 +35,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   (Esc/✕ wie „Abbrechen“; auf dem Telefon bildschirmfüllend), ohne Skript stehen die Spalten untereinander. Schmaler
   Platz (iPad hochkant, Telefon): Container Query auf das Layout-Panel – unter 560 px untereinander. Hell und dunkel
   über `light-dark()`.
+- Umschalter „Spalten | Baum“ im Layout-Panel (gemerkt im Cookie `fluid_view`): „Baum“ zeigt die Rasterskizze und die
+  Spalten-Blöcke eingerückt am Ast darunter – für viele Spalten oder schmale Bildschirme.
 - Von außen, ohne den Core zu ändern: `Backend\SliceGrid` sammelt die Panels über `SliceOutput` ein, das Fragment
   `core/structure/content/slice_list.php` (in `fragments/` des AddOns) setzt sie ins Raster, `ContentPageModuleSelect`
   ergänzt die Spalte. Ohne Raster (z. B. anderes Fragment) bleibt die Baumansicht.
