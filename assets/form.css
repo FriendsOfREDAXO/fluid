@@ -51,4 +51,4 @@ textarea[data-blocks-rte] { display: none !important; }
 .blocks-be-cols li { padding: 2px 0; }
 /* Ganze Slice eingerückt (nur Slices mit Spalten-Markup von fluid), Linie links ordnet sie dem Layout darüber zu */
 .rex-slice-output:has(.blocks-be-nest) { margin-left: 40px; position: relative; }
-.rex-slice-output:has(.blocks-be-nest)::before { content: ""; position: absolute; left: -22px; top: 0; bottom: 0; border-left: 3px solid var(--rex-color-link); border-radius: 2px; opacity: .45; }
+.rex-slice-output:has(.blocks-be-nest)::before { content: ""; position: absolute; left: -22px; top: 0; bottom: 0; border-left: 3px solid #EE7F2D; border-radius: 2px; }
