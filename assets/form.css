@@ -88,11 +88,11 @@ textarea[data-blocks-rte] { display: none !important; }
 .fluid-be-item.is-editing { outline: 2px solid var(--fluid-be-orange); outline-offset: 4px; border-radius: 4px; }
 /* Schmaler Platz (iPad hochkant mit Seitenleiste, Telefon): nach der Breite des Layout-Panels, nicht des Bildschirms */
 .rex-slice-output:has(> .rex-section .fluid-be-grid) > .rex-section { container: fluid-be / inline-size; }
-@container fluid-be (max-width: 560px) {
-  .fluid-be-grid { flex-direction: column; align-items: stretch; }
-  .fluid-be-gcol { padding: 8px; }
-  .fluid-be-gcol__label, .blocks-be-gcol__label { font-size: 12px; }
-}
+/* Jede Spalte braucht etwa 260 px – sonst untereinander (2 Spalten ab 560 px, 3 ab 830 px, 4 ab 1100 px Panelbreite) */
+@container fluid-be (max-width: 560px) { .fluid-be-grid { flex-direction: column; align-items: stretch; } }
+@container fluid-be (max-width: 830px) { .fluid-be-grid:is(.fluid-be-cols3, .fluid-be-cols4) { flex-direction: column; align-items: stretch; } }
+@container fluid-be (max-width: 1100px) { .fluid-be-grid.fluid-be-cols4 { flex-direction: column; align-items: stretch; } }
+
 .fluid-be-gcol .rex-section-header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .fluid-be-gcol .rex-section-title { order: -1; flex: 1 1 auto; min-width: 0; margin: 0; font-size: 1rem; }
 .fluid-be-gcol .rex-section-options { float: none; margin: 0; }

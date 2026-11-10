@@ -114,7 +114,7 @@ final class SliceGrid
                 . self::addButton($layout, $next, $i) . '</div>';
         }
 
-        return '<div class="fluid-be-grid' . (isset(self::$editing[$layout->id]) ? ' is-editing' : '') . '" data-fluid-grid="' . $layout->id . '">' . $h . '</div>';
+        return '<div class="fluid-be-grid fluid-be-cols' . $n . (isset(self::$editing[$layout->id]) ? ' is-editing' : '') . '" data-fluid-grid="' . $layout->id . '">' . $h . '</div>';
     }
 
     /** Fragment slice_list.php: Panels der Spalten-Blöcke in die Platzhalter setzen */
