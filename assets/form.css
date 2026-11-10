@@ -198,3 +198,6 @@ textarea[data-blocks-rte] { display: none !important; }
    über den Inhaltsbereich hinaus (der Core gibt ihm overflow: auto) */
 .rex-slice-output > .rex-section > .rex-section-body:has(.fluid-be-grid) { overflow: visible; }
 .fluid-be-acts { z-index: 20; }
+/* Erfolgsmeldungen in Spalten: ausblenden (assets/slice-grid.js) */
+.fluid-be-grid .rex-alert { transition: opacity .4s, max-height .4s, margin .4s, padding .4s; max-height: 12rem; overflow: hidden; }
+.fluid-be-grid .rex-alert.fluid-be-fade { opacity: 0; max-height: 0; margin-block: 0; padding-block: 0; }

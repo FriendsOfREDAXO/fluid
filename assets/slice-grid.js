@@ -276,6 +276,23 @@
     });
   };
 
-  const init = () => { bars(); clips(); run(); };
+
+  /*
+   * Erfolgsmeldungen des Cores in den Spalten eines Layouts („Block eingefügt.“ …) nach kurzer Zeit ausblenden – sie
+   * stehen dort im schmalen Panel des Blocks und verdecken die Vorschau. Fehler und Warnungen bleiben; Blöcke außerhalb
+   * eines Layouts behalten das Verhalten des Cores.
+   */
+  const fades = () => {
+    document.querySelectorAll('.fluid-be-grid .rex-alert[data-variant="success"], .fluid-be-grid .rex-alert[data-variant="info"]').forEach((el) => {
+      setTimeout(() => {
+        el.classList.add('fluid-be-fade');
+        const gone = () => el.remove();
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) gone();
+        else { el.addEventListener('transitionend', gone, { once: true }); setTimeout(gone, 800); }
+      }, 4000);
+    });
+  };
+
+  const init = () => { bars(); clips(); fades(); run(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
