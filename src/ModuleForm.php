@@ -152,8 +152,8 @@ final class ModuleForm
             $stored[$f['name']] = $f['field']->encode($module->{$f['prop']});
         }
         $module->beforeSave();
-        ContentHandler::editSlice($slice->id, $stored);
-        $module->afterSave();
+        // afterSave() auf einer frischen Instanz des gespeicherten Slices (wie im Backend)
+        Module::of(ContentHandler::editSlice($slice->id, $stored))->afterSave();
     }
 
     /** @return array<string, string> */
