@@ -653,4 +653,8 @@ completely: modules, templates, schema',
     'image_editor: zuschneiden, drehen, Fokuspunkt – das Original bleibt.' => 'image_editor: crop, rotate, focal point – the original stays.',
     'Navigation' => 'Navigation',
     'navigation_array gibt es schon für REDAXO 6.' => 'navigation_array is already available for REDAXO 6.',
+    'Konsole' => 'Console',
+    'package:install/activate, install:download, config:set
+migrate (auch :status, :make, :cleanup), content:rebuild-references, mailer:test, system:check' => 'package:install/activate, install:download, config:set
+migrate (also :status, :make, :cleanup), content:rebuild-references, mailer:test, system:check',
 ];

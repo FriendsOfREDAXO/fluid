@@ -809,6 +809,8 @@ Redaxo\\Core\\Content\\Article …'],
 eigene Komponenten, hell und dunkel, CSP'],
                     ['label' => 'Sicherung', 'values' => 'AddOn backup (Backend, Cronjob)
 kein Backup-AddOn: mariadb-dump mit console db:connection-options'],
+                    ['label' => 'Konsole', 'values' => 'package:install/activate, install:download, config:set
+migrate (auch :status, :make, :cleanup), content:rebuild-references, mailer:test, system:check'],
                     ['label' => 'Code im Git', 'values' => 'teilweise (Developer-AddOn)
 vollständig: Module, Templates, Schema'],
                 ], 'note' => 'Stand: Branch 6.x von redaxo/core, November 2026.']],
