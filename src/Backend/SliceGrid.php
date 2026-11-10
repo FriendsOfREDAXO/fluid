@@ -9,6 +9,7 @@ use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\ExtensionPoint\ContentPageModuleSelect;
 use Redaxo\Core\Content\ExtensionPoint\SliceOutput;
 use Redaxo\Core\Core;
+use Redaxo\Core\View\Asset;
 use Redaxo\Core\ExtensionPoint\Extension;
 use Redaxo\Core\Http\Request;
 use Redaxo\Core\Filesystem\Url;
@@ -36,7 +37,8 @@ use function Redaxo\Core\View\escape;
  *  - ContentPageModuleSelect: „Block hinzufügen“ in einer Spalte gibt die Spalte mit (fluid_col) – das Formular wählt
  *    sie vor (Form\FieldForm). Je Spalte zusätzlich „+ Block in Spalte n“ am Ende.
  *
- * Wird ein Spalten-Block bearbeitet, stehen die Spalten untereinander (Formular in voller Breite).
+ * Wird ein Spalten-Block bearbeitet oder neu angelegt, öffnet assets/slice-grid.js das Formular in einem Dialog über dem
+ * Raster; ohne Skript stehen die Spalten untereinander (Formular in voller Breite).
  */
 final class SliceGrid
 {
@@ -56,6 +58,7 @@ final class SliceGrid
     {
         self::$on = true;
         Fragment::addDirectory(FluidAddon::instance()->getPath('fragments/'));
+        Asset::addJsFile(FluidAddon::instance()->getAssetsUrl('slice-grid.js'));   // Formular im Dialog über dem Raster
         Extension::register(ContentPageModuleSelect::class, self::moduleSelect(...));
     }
 

@@ -9,7 +9,10 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 - In der Slice-Liste stehen die Blöcke eines Layouts jetzt im Layout-Panel nebeneinander in ihren Spalten (Breiten wie
   auf der Website), jeder mit Kopf und Knöpfen des Cores – weiter echte Slices. Je Spalte „+ Block in Spalte n“;
   „Block hinzufügen“ in einer Spalte gibt die Spalte mit (`fluid_col`, im Formular vorgewählt). Wird ein Spalten-Block
-  bearbeitet, stehen die Spalten untereinander (Formular in voller Breite). Hell und dunkel über `light-dark()`.
+  bearbeitet oder über „+ Block in Spalte n“ angelegt, öffnet das Formular des Cores in einem Dialog über dem Raster
+  (Esc/✕ wie „Abbrechen“; auf dem Telefon bildschirmfüllend), ohne Skript stehen die Spalten untereinander. Schmaler
+  Platz (iPad hochkant, Telefon): Container Query auf das Layout-Panel – unter 560 px untereinander. Hell und dunkel
+  über `light-dark()`.
 - Von außen, ohne den Core zu ändern: `Backend\SliceGrid` sammelt die Panels über `SliceOutput` ein, das Fragment
   `core/structure/content/slice_list.php` (in `fragments/` des AddOns) setzt sie ins Raster, `ContentPageModuleSelect`
   ergänzt die Spalte. Ohne Raster (z. B. anderes Fragment) bleibt die Baumansicht.
