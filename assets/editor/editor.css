@@ -98,3 +98,17 @@ html.blocks-editing .fluid-mod:hover, html.blocks-editing .fluid-mod.is-editing 
 html.blocks-editing .fluid-mod__btn { position: absolute; z-index: 5; top: .5rem; right: .5rem; padding: .3em .8em; border: 0; border-radius: 999px; background: var(--blocks-accent); color: #fff; font: 600 13px/1.4 system-ui, sans-serif; cursor: pointer; opacity: 0; transition: opacity .15s; }
 html.blocks-editing .fluid-mod:hover > .fluid-mod__btn, html.blocks-editing .fluid-mod.is-editing > .fluid-mod__btn, html.blocks-editing .fluid-mod__btn:focus-visible { opacity: 1; }
 html:not(.blocks-editing) .fluid-mod__btn { display: none; }
+
+/* „Ziel bearbeiten“ an Karten und Kacheln (TargetEdit, $b->targetEdit(); aus KLXM Studio): oben rechts in der Karte, sichtbar bei Zeiger/Fokus, auf Touch-Geräten immer. Reset + doppelte Klasse gegen Link-Regeln der Kits. */
+:where(:has(>.cms-target-edit)){position:relative}
+.cms-target-edit.cms-target-edit{all:unset;box-sizing:border-box;position:absolute;top:10px;right:10px;z-index:2147482990;display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px 0 10px;border-radius:999px;background:#1E2840;color:#fff;box-shadow:0 0 0 2px #fff,0 4px 14px rgba(0,0,0,.25);font:700 13px/1 Lato,"Segoe UI",Tahoma,Geneva,Verdana,system-ui,sans-serif;letter-spacing:0;text-transform:none;text-decoration:none;white-space:nowrap;cursor:pointer;opacity:0;transition:opacity .15s,background-color .15s;-webkit-user-modify:read-only;user-select:none}
+.cms-target-edit.cms-target-edit::before,.cms-target-edit.cms-target-edit::after{content:none}
+.cms-target-edit.cms-target-edit svg{all:unset;display:block;flex:none;width:14px;height:14px}
+.cms-target-edit.cms-target-edit span{all:unset}
+:has(>.cms-target-edit):is(:hover,:focus-within)>.cms-target-edit.cms-target-edit,.cms-target-edit.cms-target-edit:focus-visible{opacity:1}
+.cms-target-edit.cms-target-edit:hover{background:#314164}
+.cms-target-edit.cms-target-edit:focus-visible{outline:3px solid #EDE9E3;outline-offset:2px;box-shadow:0 0 0 2px #1E2840,0 4px 14px rgba(0,0,0,.25)}
+/* Touch: immer sichtbar; auf schmalen Bildschirmen nur das Symbol (die Bezeichnung trägt aria-label) – kleine Kacheln bleiben lesbar */
+@media (hover:none){.cms-target-edit.cms-target-edit{opacity:1}}
+@media (hover:none) and (max-width:767px){.cms-target-edit.cms-target-edit{width:36px;min-height:36px;padding:0;justify-content:center}.cms-target-edit.cms-target-edit span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}}
+@media (forced-colors:active){.cms-target-edit.cms-target-edit{border:1px solid ButtonText;background:ButtonFace;color:ButtonText;opacity:1}}

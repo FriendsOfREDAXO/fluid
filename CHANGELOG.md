@@ -4,6 +4,13 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Ziel bearbeiten an Karten und Kacheln
+
+- `$b->targetEdit($link, $titel)` (bisher ohne Funktion) zeigt im Bearbeiten-Modus an Karten und Kacheln, die auf eine
+  Seite oder einen Datensatz zeigen, „Seite“ bzw. „Datensatz“: die Seite öffnet im Bearbeiten-Modus (ungespeicherte
+  Änderungen werden vorher geklärt), der Datensatz in der YForm-Maske im Overlay. Nur mit Recht auf die Kategorie bzw.
+  die Tabelle; Besucher bekommen kein Markup (aus KLXM Studio, `TargetEdit`).
+
 ### Diagramme
 
 - Neuer Block „Diagramm“ (`fluid.chart`): Balken, waagerechte Balken, Linie, Fläche, Torte, Ring – Werte von Hand

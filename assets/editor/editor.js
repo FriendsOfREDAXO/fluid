@@ -1480,6 +1480,22 @@
     document.execCommand('insertText', false, el.dataset.editMode ? text : text.replace(/\s*\n\s*/g, ' '));
   });
 
+  // „Ziel bearbeiten“ (TargetEdit) an Karten: Seite im Bearbeiten-Modus öffnen – erst ungespeicherte Änderungen klären.
+  // Datensätze (zusätzlich .fdl-edit) öffnet das Overlay der YForm-Maske weiter unten.
+  main.addEventListener('click', async (e) => {
+    const a = e.target.closest('a.cms-target-edit[data-cms-target="page"]');
+    if (!a) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.metaKey || e.ctrlKey) { window.open(a.href, '_blank', 'noopener'); return; }
+    if (dirty.size) {
+      const r = await ask({ title: 'Ungespeicherte Änderungen', body: 'Vor dem Wechsel zur anderen Seite speichern?', ok: 'Speichern', cancel: 'Weiter bearbeiten', alt: 'Verwerfen' });
+      if (r === 'alt') dirty.clear();
+      else if (r !== true || !(await saveAll())) return;
+    }
+    location.href = a.href;
+  }, true);
+
   // Links und Formulare im Inhalt im Bearbeiten-Modus nicht auslösen
   main.addEventListener('click', (e) => {
     const sec = e.target.closest('[data-block]');

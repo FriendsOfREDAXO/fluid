@@ -127,10 +127,13 @@ final class Block
         return Editing::active() ? ' data-central="' . escape($label ?? 'Einstellungen') . '"' : '';
     }
 
-    /** „Ziel bearbeiten“ an Karten – im Prototyp noch ohne Funktion */
+    /**
+     * „Ziel bearbeiten“ an Karten und Kacheln, die auf eine Seite oder einen Datensatz zeigen – als erstes Kind der Karte:
+     * `<?= $b->targetEdit($it['link'], $it['title']) ?>`. Für Besucher und ohne Recht leer (siehe TargetEdit).
+     */
     public function targetEdit(?string $ref, ?string $label = null): string
     {
-        return '';
+        return TargetEdit::html($ref, $label);
     }
 
     public function dark(): bool
