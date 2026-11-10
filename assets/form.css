@@ -93,9 +93,10 @@ textarea[data-blocks-rte] { display: none !important; }
 @container fluid-be (max-width: 830px) { .fluid-be-grid:is(.fluid-be-cols3, .fluid-be-cols4) { flex-direction: column; align-items: stretch; } }
 @container fluid-be (max-width: 1100px) { .fluid-be-grid.fluid-be-cols4 { flex-direction: column; align-items: stretch; } }
 
-.fluid-be-gcol .rex-section-header { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
-.fluid-be-gcol .rex-section-title { order: -1; flex: 1 1 auto; min-width: 0; margin: 0; font-size: 1rem; }
-.fluid-be-gcol .rex-section-options { float: none; margin: 0; }
+.fluid-be-gcol .rex-section-header { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; }
+.fluid-be-gcol .rex-section-title { order: -1; flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; font-size: 1rem; text-overflow: ellipsis; white-space: nowrap; }
+.fluid-be-gcol .rex-section-options { display: flex; flex: none; flex-wrap: nowrap; gap: 4px; float: none; margin: 0; }
+.fluid-be-gcol .rex-section-options > * { margin: 0; }
 /* Formular eines Spalten-Blocks im Dialog über dem Raster (assets/slice-grid.js) */
 .fluid-be-dlg { width: min(980px, 100vw - 32px); max-height: min(92dvh, 1200px); margin: auto; padding: 0; border: 1px solid var(--rex-color-border-strong); border-radius: 12px; background: var(--rex-color-bg); color: var(--rex-color-text); box-shadow: 0 30px 80px rgb(0 0 0 / .35); overflow: auto; overscroll-behavior: contain; }
 .fluid-be-dlg::backdrop { background: rgb(12 14 20 / .55); }

@@ -7,6 +7,7 @@ use FriendsOfRedaxo\Fluid\FluidAddon;
 use FriendsOfRedaxo\Fluid\Layout;
 use Redaxo\Core\Content\ArticleSlice;
 use Redaxo\Core\Content\ExtensionPoint\ContentPageModuleSelect;
+use Redaxo\Core\Content\ExtensionPoint\SliceMenu;
 use Redaxo\Core\Content\ExtensionPoint\SliceOutput;
 use Redaxo\Core\Core;
 use Redaxo\Core\View\Asset;
@@ -23,6 +24,7 @@ use function min;
 use function preg_replace;
 use function str_contains;
 use function str_replace;
+use function strip_tags;
 
 use function Redaxo\Core\View\escape;
 
@@ -60,6 +62,7 @@ final class SliceGrid
         Fragment::addDirectory(FluidAddon::instance()->getPath('fragments/'));
         Asset::addJsFile(FluidAddon::instance()->getAssetsUrl('slice-grid.js'));   // Formular im Dialog über dem Raster
         Extension::register(ContentPageModuleSelect::class, self::moduleSelect(...));
+        Extension::register(SliceMenu::NAME, self::compactMenu(...));   // meldet sich als SLICE_MENU an
     }
 
     public static function active(): bool
@@ -150,6 +153,33 @@ final class SliceGrid
         }
 
         return str_replace('function=add&amp;', 'function=add&amp;' . self::PARAM . '=' . Layout::col($slice) . '&amp;', $select);
+    }
+
+    /**
+     * Knöpfe eines Spalten-Blocks als Symbole (Stift, Papierkorb, Status) – Titel und Knöpfe passen in eine Zeile der
+     * schmalen Spalte. Die Beschriftung bleibt für Screenreader (hidden_label) und als Tooltip.
+     */
+    public static function compactMenu(SliceMenu $ep): void
+    {
+        $slice = ArticleSlice::getArticleSliceById($ep->sliceId, $ep->languageId, 0) ?? ArticleSlice::getArticleSliceById($ep->sliceId, $ep->languageId, 1);
+        if (null === $slice || null === Layout::parentOf($slice)) {
+            return;
+        }
+        $icon = static function (array $action, string $name): array {
+            if ([] === $action || !isset($action['label'])) {
+                return $action;
+            }
+            $label = (string) $action['label'];
+            unset($action['label']);
+            $action['hidden_label'] = $label;
+            $action['icon'] = $name;
+            $action['attributes'] = ['title' => strip_tags($label)] + (array) ($action['attributes'] ?? []);
+
+            return $action;
+        };
+        $ep->menuEditAction = $icon($ep->menuEditAction, 'edit');
+        $ep->menuDeleteAction = $icon($ep->menuDeleteAction, 'delete');
+        $ep->menuStatusAction = $icon($ep->menuStatusAction, 1 === $slice->status ? 'online' : 'offline');
     }
 
     /** Spalte für ein neues Block-Formular (Hinzufügen in einer Spalte) – oder null */
