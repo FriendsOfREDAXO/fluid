@@ -92,6 +92,84 @@ public/redaxo/index.php   Backend
 src/                      Dein Code: Project.php, Module, Templates …
 var/                      Cache, Daten, Logs
 CODE,
+    'umblock' => <<<'CODE'
+// Beim Übernehmen der Inhalte aus REDAXO 5: MBlock-Wert (JSON in REX_VALUE[1]) → Collection
+$old = json_decode((string) $row['value1'], true) ?: [];    // [{"titel": "…", "bild": "a.jpg", "link": "12"}, …]
+$map = ['titel' => 'title', 'bild' => 'image', 'link' => 'link'];   // Feld im MBlock-Formular → Schlüssel in Slide
+
+$slides = [];
+foreach ($old as $item) {
+    $entry = [];
+    foreach ($map as $from => $to) {
+        $entry[$to] = $item[$from] ?? '';                  // Bild = Dateiname, Link = Artikel-ID – wie im Core
+    }
+    $slides[] = $entry;
+}
+
+ContentHandler::addSlice($articleId, $languageId, 1, 'slider', [
+    'headline' => (string) $row['value2'],
+    'slides' => $slides,                                  // Liste der Einträge, Werte je Feldschlüssel
+]);
+CODE,
+    'mcollection' => <<<'CODE'
+<?php
+
+namespace Project\Module;
+
+use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\Content\Module;
+use Redaxo\Core\Form\Field\Collection;
+use Redaxo\Core\Form\Field\Text;
+
+use function Redaxo\Core\View\escape;
+
+#[AsModule('slider', 'Slider')]
+final class SliderModule extends Module
+{
+    #[Text('Überschrift')]
+    public string $headline = '';
+
+    /** @var list<Slide> */
+    #[Collection('Slides', item: Slide::class, min: 1, max: 8)]
+    public array $slides = [];
+
+    public function output(): string
+    {
+        $html = '<div class="slider">';
+        foreach ($this->slides as $slide) {
+            $html .= '<figure>'
+                . ($slide->image ? '<img src="' . escape($slide->image->getUrl()) . '" alt="">' : '')
+                . '<figcaption>' . escape($slide->title) . '</figcaption></figure>';
+        }
+
+        return $html . '</div>';
+    }
+}
+CODE,
+    'mslide' => <<<'CODE'
+<?php
+
+namespace Project\Module;
+
+use Redaxo\Core\Content\Article;
+use Redaxo\Core\Form\Field\ArticlePicker;
+use Redaxo\Core\Form\Field\MediaPicker;
+use Redaxo\Core\Form\Field\Text;
+use Redaxo\Core\MediaPool\Media;
+
+/** Ein Eintrag der Wiederholgruppe – eine kleine Klasse mit eigenen Feldern */
+final class Slide
+{
+    #[Text('Titel', required: true, maxLength: 80)]
+    public string $title = '';
+
+    #[MediaPicker('Bild', types: ['jpg', 'png', 'webp'], preview: true)]
+    public ?Media $image = null;
+
+    #[ArticlePicker('Link (optional)')]
+    public ?Article $link = null;
+}
+CODE,
     'module' => <<<'CODE'
 <?php
 
@@ -860,11 +938,15 @@ vollständig: Module, Templates, Schema'],
                         ['icon' => 'signpost', 'title' => 'Adressen und SEO', 'text' => 'Stand 10.11.2026: mit fluid dessen Rewriter (auch für Datensätze), ohne fluid yrewrite 3.x – nicht beide zusammen. Ein URL-AddOn für REDAXO 6 gibt es nicht.', 'link_label' => 'Ansehen', 'link' => '/adressen'],
                         ['icon' => 'magnifying-glass', 'title' => 'Suche', 'text' => 'Die Suche von fluid mit Index über alle Sprachen – ohne eigene Datenbank.', 'link_label' => 'Ansehen', 'link' => '/suche'],
                         ['icon' => 'map-pin', 'title' => 'Karten', 'text' => 'Der Block „Karte“ mit eigenem Proxy: Besucher verbinden sich nie mit Dritten.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'puzzle-piece', 'title' => 'MBlock, MForm', 'text' => 'Wiederholgruppen bringt der Core mit: das Feld Collection, je Eintrag eine Klasse mit eigenen Feldern. fluid zeigt es in der Seitenleiste – in Blöcken und gewöhnlichen Modulen.', 'link_label' => 'Ansehen', 'link' => '/module-templates'],
+                        ['icon' => 'puzzle-piece', 'title' => 'MBlock, MForm', 'text' => 'Ersetzt durch den Core: Modulfelder als Attribute statt MForm, das Feld Collection für Wiederholgruppen statt MBlock. Mit fluid zusätzlich auf der Website bearbeitbar – als Block oder gewöhnliches Modul.', 'link_label' => 'Ansehen', 'link' => '/module-templates'],
                         ['icon' => 'image', 'title' => 'Bilder bearbeiten', 'text' => 'image_editor: zuschneiden, drehen, Fokuspunkt – das Original bleibt.', 'link_label' => '', 'link' => ''],
                         ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'navigation_array gibt es schon für REDAXO 6.', 'link_label' => 'Ansehen', 'link' => '/navigation'],
                     ],
                 ]],
+                ['type' => 'code', 'data' => ['eyebrow' => 'Beispiel', 'title' => 'Von MBlock zu Collection', 'intro' => 'Wiederholgruppen werden zum Feld Collection des Cores: ein Modul mit einer Eintragsklasse wie auf der Seite „Module und Templates“. Die Daten aus MBlock lassen sich beim Übernehmen der Inhalte direkt umsetzen.', 'note' => 'Für jedes Modul mit MBlock einmal die Zuordnung der Felder festlegen – den Rest erledigt eine Schleife über alle Slices.',
+                    'items' => [
+                        $c('umblock', 'Import (PHP)', 'php'),
+                    ]]],
                 ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => 'Deployment', 'title' => 'Veröffentlichen: So kommt ein Projekt auf den Server', 'intro' => '', 'meta' => '',
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<p>In REDAXO 5 kamen AddOns über den Installer und Änderungen an der Datenbank per Hand oder mit ydeploy auf den Server. In REDAXO 6 liegt alles im Code: Composer bringt Core und AddOns, <code>console migrate</code> bringt die Datenbank auf den Stand des Codes. Jeder Weg auf den Server macht im Kern dasselbe – nur wo Composer und <code>migrate</code> laufen, unterscheidet sich.</p><h3>Mit Shell auf dem Server</h3><p>Neuen Stand holen, <code>composer install --no-dev</code>, <code>cache:clear</code>, <code>migrate</code> – siehe unten. Einfach und schnell; nötig sind SSH und Composer beim Hoster.</p><h3>Deployer, z. B. mit ydeploy</h3><p><a href="https://deployer.org">Deployer</a> legt jede Fassung in einen eigenen Ordner und schaltet per Symlink um – mit Rollback. ydeploy von Yakamara bringt dafür eine Konfiguration für REDAXO und gleicht die Datenbank per <code>ydeploy:diff</code> und <code>ydeploy:migrate</code> ab. Stand 10.11.2026 ist ydeploy für REDAXO 5 (ab 5.13). In REDAXO 6 übernimmt <code>console migrate</code> den Abgleich der Datenbank; Deployer selbst lässt sich genauso nutzen.</p><h3>Nur SFTP oder FTP: klxm_deploy</h3><p>Für Webspaces ohne Shell und Composer: klxm_deploy baut den Stand lokal mit <code>composer install --no-dev</code>, lädt nur geänderte Dateien hoch (viele auf einmal als ZIP) und gleicht danach die Datenbank über den Web-Zugang des Cores an (<code>REX_MIGRATE_TOKEN</code>, nicht im Modus hardened). Es läuft nur lokal, im Backend und in der Konsole. klxm_deploy ist in Entwicklung und noch nicht veröffentlicht.</p><h3>Automatisch per CI</h3><p>Dieselben Schritte als Pipeline (GitHub Actions, Gitea …): bei jedem Push auf den Hauptzweig bauen, testen und ausrollen.</p>']],
@@ -1044,6 +1126,14 @@ vollständig: Module, Templates, Schema'],
                     'items' => [
                         $c('module', 'src/Module/TeaserModule.php', 'php'),
                     ]]],
+                ['type' => 'code', 'data' => ['eyebrow' => 'Statt MBlock', 'title' => 'Wiederholgruppen mit Collection', 'intro' => 'Ein Feld des Cores für Listen von Einträgen: Jeder Eintrag ist ein Objekt einer kleinen Klasse mit eigenen Feldern.', 'note' => 'Gespeichert wird eine Liste der Werte je Feldschlüssel in der Spalte data des Slices.',
+                    'items' => [
+                        $c('mcollection', 'src/Module/SliderModule.php', 'php'),
+                        $c('mslide', 'src/Module/Slide.php', 'php'),
+                    ]]],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Was Collection gegenüber MBlock bringt', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<ul><li><strong>Kein Zusatz-AddOn:</strong> <code>Collection</code> gehört zum Core – Felder, Formular, Speichern und Prüfen wie bei jedem anderen Feld.</li><li><strong>Felder des Cores je Eintrag:</strong> Text, Auswahl, Bild, Seite, Datum … mit Pflichtfeldern und Längen. Ist ein Eintrag ungültig, zeigt das Formular den Fehler am Eintrag.</li><li><strong>Werte als Objekte:</strong> <code>$this->slides</code> ist eine Liste von <code>Slide</code> – mit <code>?Media</code> und <code>?Article</code> statt Dateinamen und IDs aus einem JSON.</li><li><strong>Verweise inklusive:</strong> Bilder und Seiten in den Einträgen kennt der Core – Löschschutz im Medienpool und „Verwendet in“ funktionieren.</li><li><strong>Hinzufügen, sortieren, entfernen</strong> mit <code>min</code> und <code>max</code>, per Tastatur bedienbar. Mit fluid auch in der Seitenleiste auf der Website.</li></ul><p><strong>Umstieg von MBlock:</strong> MBlock speichert die Einträge als JSON in einem <code>REX_VALUE</code>. <code>Collection</code> speichert eine Liste von Einträgen mit Werten je Feldschlüssel in der Spalte <code>data</code> des Slices – die alten Daten lassen sich deshalb mit einem kleinen Skript übernehmen: Schlüssel der MBlock-Felder auf die Eigenschaften der Eintragsklasse abbilden.</p>']],
                 ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein Template mit zwei Inhaltsbereichen', 'intro' => 'Das Template legt fest, welche Inhaltsbereiche es gibt und welche Module darin erlaubt sind. Das Markup steht in einer View-Datei daneben.', 'note' => '',
                     'items' => [
                         $c('template', 'src/Template/PageTemplate.php', 'php'),
@@ -1191,10 +1281,10 @@ vollständig: Module, Templates, Schema'],
                     'measure' => 'wide', 'meta' => '', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<p>Die bewährten AddOns lösen je eine Aufgabe im Backend: <strong>MForm</strong> baut Eingabeformulare für Module, <strong>MBlock</strong> macht Feldgruppen innerhalb eines Slices wiederholbar, <strong>blÖcks</strong> ergänzt die Slice-Liste um Verschieben, Kopieren und Online/Offline.</p>'
                         . '<p><strong>fluid</strong> setzt eine Ebene tiefer an – beim Modul selbst:</p>'
-                        . '<ul><li><strong>Ein Schema für alles:</strong> Die Felder eines Blocks stehen einmal im Kit. Daraus entstehen das Formular im Backend, das Bearbeiten auf der Website, die Vorschau und die Daten der Ausgabe.</li>'
+                        . '<ul><li><strong>Felder wie im Core:</strong> Ein Block ist ein Modul des Cores mit Feld-Attributen. Daraus entstehen das Formular im Backend, das Bearbeiten auf der Website, die Vorschau und die Werte der Ausgabe.</li>'
                         . '<li><strong>Echte Slices:</strong> Jeder Block ist ein Slice – auch die Blöcke in Layout-Spalten. Modulrechte, Arbeitsversion, Historie, Online/Offline und das Backend gelten wie immer.</li>'
-                        . '<li><strong>Native Werte:</strong> Gespeichert wird wie bei jedem Modul des Cores in der JSON-Spalte data des Slices (Felder und Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
-                        . '<li><strong>Wiederholgruppen eingebaut:</strong> Einträge hinzufügen, sortieren, entfernen – im Backend und in der Seitenleiste gleich.</li>'
+                        . '<li><strong>Native Werte:</strong> Gespeichert wird wie bei jedem Modul des Cores in der JSON-Spalte data des Slices (je Feld unter seinem Schlüssel, dazu der Abschnitt). Keine eigenen Tabellen, nichts neben REDAXO vorbei.</li>'
+                        . '<li><strong>Wiederholgruppen mit Collection:</strong> dem Feld des Cores statt MBlock – Einträge hinzufügen, sortieren, entfernen, im Backend und in der Seitenleiste gleich.</li>'
                         . '<li><strong>Medienpool und Linkmap:</strong> Die Auswahl öffnet Medienpool und Linkmap des Cores als Overlay; Links auf Artikel bleiben als redaxo://ID gültig, auch wenn der Artikel umzieht.</li>'
                         . '<li><strong>Kit mit Design-System:</strong> Blöcke, Template und CSS gehören zusammen – mit Style-Editor und Vorlagen.</li></ul>',
                 ]],
