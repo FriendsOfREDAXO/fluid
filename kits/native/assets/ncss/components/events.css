@@ -163,3 +163,4 @@
   font-size: var(--ncss-font-size-sm);
   color: var(--ncss-color-text-muted);
 }
+.ncss-events-grid { --ncss-grid-min: 16rem; }

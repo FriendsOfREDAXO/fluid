@@ -283,7 +283,7 @@ function img(?string $name, string $sizes = '100vw', array $opt = []): string
     $style = $editable ? $editor::imgStyle($m->fileName) : '';
 
     return '<img src="' . e($src) . '"' . $srcset . ' alt="' . e($alt) . '"' . $wh . ($eager ? ' fetchpriority="high"' : ' loading="lazy"') . ' decoding="async"'
-        . (!empty($opt['class']) ? ' class="' . e($opt['class']) . '"' : '') . ('' !== $style ? ' style="' . e($style) . '"' : '') . $ie . '>';
+        . \FriendsOfRedaxo\Fluid\InlineStyle::attr($style, (string) ($opt['class'] ?? '')) . $ie . '>';   // Fokuspunkt als Klasse (CSP: keine style-Attribute)
 }
 
 /** Rich Text sicher ausgeben (Klassenvertrag der Formatierungsleiste, RichText) */

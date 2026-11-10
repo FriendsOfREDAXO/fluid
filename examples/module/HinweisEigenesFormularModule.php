@@ -7,6 +7,7 @@ use Redaxo\Core\Content\Module;
 use Redaxo\Core\Form\Field\Text;
 use Redaxo\Core\Form\Field\Textarea;
 use Redaxo\Core\Form\Form;
+use Redaxo\Core\Http\Response;
 
 use function Redaxo\Core\View\escape;
 
@@ -30,8 +31,13 @@ final class HinweisEigenesFormularModule extends Module
 
     public function output(): string
     {
-        return '<div class="wrap"><aside style="margin-block:2rem;padding:1.25rem 2rem;border:2px dashed var(--f-line-strong, #94a3b8);border-radius:var(--f-radius, 6px)">'
-            . '<strong>' . escape($this->title) . '</strong>' . ('' !== $this->text ? '<p style="margin:.5rem 0 0">' . nl2br(escape($this->text)) . '</p>' : '')
+        // Keine style-Attribute (Content-Security-Policy des Backends): Klasse und einmal je Seite ein <style nonce>
+        static $css = false;
+        $style = $css ? '' : '<style nonce="' . escape(Response::getNonce()) . '">.hinweis-eigen{margin-block:2rem;padding:1.25rem 2rem;border:2px dashed var(--f-line-strong,#94a3b8);border-radius:var(--f-radius,6px)}.hinweis-eigen p{margin:.5rem 0 0}</style>';
+        $css = true;
+
+        return $style . '<div class="wrap"><aside class="hinweis-eigen">'
+            . '<strong>' . escape($this->title) . '</strong>' . ('' !== $this->text ? '<p>' . nl2br(escape($this->text)) . '</p>' : '')
             . '</aside></div>';
     }
 }

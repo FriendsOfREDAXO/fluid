@@ -246,7 +246,7 @@
       return;
     }
 
-    var html = '<div class="ncss-grid" style="--ncss-grid-min: 16rem;">';
+    var html = '<div class="ncss-grid ncss-events-grid">';   // Mindestbreite per CSS (keine style-Attribute – CSP)
     upcoming.forEach(function (ev) {
       html +=
         '<article class="ncss-card"><div class="ncss-card-header ncss-cluster">' +

@@ -21,7 +21,7 @@ $min = ['s' => '14rem', 'm' => '18rem', 'l' => '24rem'][$d['size'] ?? 'm'] ?? '1
 <div class="wrap">
   <?= fluid_head($b) ?>
   <?php if ($items): ?>
-  <ul class="ncss-grid nv-cards nv-cards--<?= e($v) ?>" role="list" style="--ncss-grid-min: <?= e($min) ?>">
+  <ul class="ncss-grid nv-cards nv-cards--<?= e($v) ?> <?= e(\FriendsOfRedaxo\Fluid\InlineStyle::class('--ncss-grid-min:' . $min)) ?>" role="list">
     <?php foreach ($items as $i => $it):
         $link = trim((string) ($it['link'] ?? ''));
         $label = trim((string) ($it['link_label'] ?? ''));

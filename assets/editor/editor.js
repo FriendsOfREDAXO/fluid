@@ -62,6 +62,14 @@
   const host = document.createElement('div');
   host.id = 'blocks-ui';
   const root = host.attachShadow({ mode: 'open' });
+  // Keine style-Attribute im erzeugten Markup (Content-Security-Policy): Farbfelder (data-sw) und Einrückung im
+  // Seitenbaum (data-d) setzt das Skript über CSSOM – das erlaubt die CSP
+  const cssom = (scope) => {
+    scope.querySelectorAll?.('[data-sw]').forEach((el) => { el.style.background = el.dataset.sw; });
+    scope.querySelectorAll?.('[data-d]').forEach((el) => { el.style.setProperty('--d', el.dataset.d); });
+  };
+  new MutationObserver((list) => list.forEach((m) => m.addedNodes.forEach((n) => { if (n.nodeType === 1) { cssom(n); if (n.matches('[data-sw], [data-d]')) cssom(n.parentNode); } })))
+    .observe(root, { childList: true, subtree: true });
   const h = (html) => {
     const t = document.createElement('template');
     t.innerHTML = html.trim();
@@ -446,7 +454,7 @@
     let seq = 0;
     const body = $('[data-design-body]');
     const openBtn = $('[data-design-open]');
-    const sw = (c) => `<span class="sw" style="background:${esc(c)}"></span>`;
+    const sw = (c) => `<span class="sw" data-sw="${esc(c)}"></span>`;
 
     const control = (t) => {
       const v = values[t.name];
@@ -738,7 +746,7 @@
     const menuBefore = (all, i) => all.slice(0, i).findLast((x) => x.menu) || null;
     const row = (n, depth, prev = null) => `
       <li role="treeitem" aria-expanded="${n.children?.length ? 'true' : 'false'}" data-id="${n.id}" data-menu="${n.menu ? 1 : 0}" class="tree__item${n.online ? '' : ' is-offline'}${n.id === cfg.article.id ? ' is-current' : ''}">
-        <div class="tree__row" style="--d:${depth}">
+        <div class="tree__row" data-d="${depth}">
           ${mv(n) ? '<span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>' : '<span class="tree__grip" aria-hidden="true"></span>'}
           <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a><span data-presence-slot></span>
           <span class="tree__badge${n.hidden ? ' is-hidden' : ''}">${n.home ? 'Startseite' : n.menu ? (n.hidden ? 'nicht im Menü' : 'Menü') : 'Seite'}${n.online ? '' : n.status > 1 ? ` · <b class="st-locked">${esc(n.statusLabel || 'gesperrt')}</b>` : ' · offline'}</span>
@@ -753,7 +761,7 @@
             ${n.home || !may(n.menu ? 'deleteCategory' : 'deleteArticle') ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
           </span>
         </div>
-        ${n.children?.length && n.blog ? `<button type="button" class="tree__more" data-tree-toggle style="--d:${depth + 1}" aria-expanded="${open.has(n.id)}">${n.children.length} ${n.children.length === 1 ? 'Beitrag' : 'Beiträge'} ${open.has(n.id) ? '▾' : '▸'}</button>` : ''}
+        ${n.children?.length && n.blog ? `<button type="button" class="tree__more" data-tree-toggle data-d="${depth + 1}" aria-expanded="${open.has(n.id)}">${n.children.length} ${n.children.length === 1 ? 'Beitrag' : 'Beiträge'} ${open.has(n.id) ? '▾' : '▸'}</button>` : ''}
         ${n.children?.length ? `<ul role="group"${n.blog && !open.has(n.id) ? ' hidden' : ''}>${n.children.map((c, i, all) => row(c, depth + 1, menuBefore(all, i))).join('')}</ul>` : ''}
       </li>`;
     // Startseite immer oben (REDAXO sortiert je Ebene erst Menüpunkte, dann Seiten – die Startseite gehört davor)
@@ -941,7 +949,7 @@
         ? '<p class="site-intro">Seiten mit Änderungen, die noch nicht veröffentlicht sind.</p><ul class="site-list" role="list">'
           + res.drafts.map((d) => `<li class="site-list__item"><span class="site-list__main"><a href="${esc(editHref(d.url))}"><b>${esc(d.name)}</b></a><small>zuletzt ${esc(when(d.changed))}${d.user ? ' · ' + esc(d.user) : ''}</small></span><a class="btn" href="${esc(editHref(d.url))}">Öffnen</a></li>`).join('') + '</ul>'
         : '<p class="site-intro">Keine offenen Entwürfe – alles ist veröffentlicht.</p>'),
-      activity: (res) => (cfg.presence ? `<div data-presence-board-box hidden><h3 class="site-h" style="margin-top:0">Gerade aktiv</h3><ul class="site-list cms-presence-board"${cfg.presence.board}></ul><h3 class="site-h">Zuletzt</h3></div>` : '') + (res.activity?.length
+      activity: (res) => (cfg.presence ? `<div data-presence-board-box hidden><h3 class="site-h site-h--first">Gerade aktiv</h3><ul class="site-list cms-presence-board"${cfg.presence.board}></ul><h3 class="site-h">Zuletzt</h3></div>` : '') + (res.activity?.length
         ? '<ul class="site-list" role="list">' + res.activity.map((a) => `<li class="site-list__item"><span class="site-list__main"><span><b>${esc(a.user || 'Jemand')}</b> hat ${a.page ? `<a href="${esc(editHref(a.url))}">${esc(a.page)}</a> ` : ''}${esc(a.action)}</span><small>${esc(when(a.when))}${a.detail ? ' · ' + esc(a.detail) : ''}</small></span></li>`).join('') + '</ul>'
         : '<p class="site-intro">Noch keine Aktivität.</p>'),
     };

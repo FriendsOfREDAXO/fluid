@@ -102,7 +102,7 @@ return static function (ArticleContent $content): void {
 <title><?= e($title) ?></title>
 <meta name="color-scheme" content="light dark">
 <?= PageSettings::head($article, $name) ?>
-<style>@layer wa-native, wa-base, wa-utilities, wa-color-palette, wa-color-variant, wa-theme, wa-theme-dimension, wa-theme-overrides, tokens, reset, base, fluid, helpers, components, webawesome-bridge, browser-fixes, native;
+<style nonce="<?= e(\Redaxo\Core\Http\Response::getNonce()) ?>">@layer wa-native, wa-base, wa-utilities, wa-color-palette, wa-color-variant, wa-theme, wa-theme-dimension, wa-theme-overrides, tokens, reset, base, fluid, helpers, components, webawesome-bridge, browser-fixes, native;
 <?php if ('' !== $fluidCss): ?>@import url("<?= e($fluidCss) ?>") layer(fluid);<?php endif; ?></style>
 <?php foreach ($css as $href): ?><link rel="stylesheet" href="<?= e($href) ?>"<?= str_contains($href, '/opt-') ? ' data-fluid-opt' : '' ?>>
 <?php endforeach; ?>
@@ -145,7 +145,7 @@ return static function (ArticleContent $content): void {
 <?= $isPost ? fluid_post_footer($article) : '' ?>
 </main>
 <footer class="ncss-footer nv-footer">
-  <div class="ncss-footer-inner ncss-grid" style="--ncss-grid-min: 13rem;">
+  <div class="ncss-footer-inner ncss-grid <?= e(\FriendsOfRedaxo\Fluid\InlineStyle::class('--ncss-grid-min:13rem')) ?>">
     <div class="ncss-stack nv-footer__about">
       <?= $brand('nv-brand--footer') ?>
       <?php if ('' !== $tagline): ?><p class="nv-footer__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>

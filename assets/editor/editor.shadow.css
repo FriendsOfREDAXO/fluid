@@ -289,6 +289,7 @@ textarea[data-blocks-rte] { display: none !important; }
 .spanel__tabs button:focus-visible { outline: 2px solid var(--accent, #4f46e5); outline-offset: 2px; }
 .site-intro { margin: 0 0 12px; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .site-h { margin: 18px 0 8px; font-size: 14px; }
+.site-h--first { margin-top: 0; }
 .site-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
 .site-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; position: sticky; bottom: 0; }
 .site-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }

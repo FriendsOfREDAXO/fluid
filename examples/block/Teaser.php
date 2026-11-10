@@ -2,6 +2,7 @@
 
 namespace Project\Block;
 
+use FriendsOfRedaxo\Fluid\InlineStyle;
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
 use FriendsOfRedaxo\Fluid\Field\Link;
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
@@ -31,7 +32,8 @@ final class Teaser extends FluidBlock
     #[Override]
     public function output(): string
     {
-        return '<div class="wrap"><div class="card" style="padding:var(--f-s-l)">'
+        // keine style-Attribute (CSP): InlineStyle vergibt eine Klasse, die Regel steht im <style nonce> der Seite
+        return '<div class="wrap"><div class="card ' . InlineStyle::class('padding:var(--f-s-l)') . '">'
             . '<h2 class="h3"' . $this->edit('title') . '>' . escape($this->title) . '</h2>'
             . '<p' . $this->edit('text', 'lines') . '>' . nl2br(escape($this->text), false) . '</p>'
             . ('' !== trim($this->link) ? '<a class="btn btn--primary" ' . \fluid_link_attrs($this->link) . '>Mehr</a>' : '')

@@ -81,7 +81,7 @@ final class Welcome
             : '<h1>' . $name . '</h1><p>Diese Website wird gerade eingerichtet.</p>'
                 . '<p class="small"><a href="' . $backend . '">Anmelden</a></p>';
         echo '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex">'
-            . '<title>' . $name . '</title><style>'
+            . '<title>' . $name . '</title><style nonce="' . \Redaxo\Core\View\escape(\Redaxo\Core\Http\Response::getNonce()) . '">'
             . 'body{margin:0;min-height:100vh;display:grid;place-items:center;font:16px/1.55 system-ui,sans-serif;background:#f6f7fb;color:#1c1d26}'
             . 'main{max-width:34rem;margin:1rem;padding:2.25rem;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgb(20 20 50/.08)}'
             . 'h1{margin:0 0 .5rem;font-size:1.6rem;letter-spacing:-.01em}form{display:flex;flex-wrap:wrap;gap:.6rem;margin:1.25rem 0}'

@@ -4,6 +4,17 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Keine Inline-Styles (Content-Security-Policy)
+
+- `InlineStyle`: Werte, die sich nicht über feste Klassen abbilden lassen (Fokuspunkt eines Bildes, Rasterbreite …),
+  bekommen eine Klasse; die Regeln stehen gesammelt in einem `<style nonce>` im Kopf der Seite (OUTPUT_FILTER, Website
+  und Backend). `img()` des Kits, Kit native (Raster, Termine), Beispielblöcke `Hinweis`/`Teaser` nutzen sie.
+- Beispielmodule `Hinweis`/`HinweisEigenesFormular` (ohne fluid): Klassen und einmal je Seite ein `<style nonce>` mit
+  `Response::getNonce()` – im Backend wurden ihre Vorschauen bisher ohne Gestaltung gezeigt (CSP blockte die
+  style-Attribute). Nonce auch für die `<style>`-Blöcke im Kit native und auf der Willkommensseite.
+- Editor auf der Website: Farbfelder und Einrückung im Seitenbaum über CSSOM statt style-Attributen im Markup.
+- E-Mails behalten Inline-Styles (Mailprogramme laden keine Stylesheets, dort gilt keine CSP).
+
 ### Kopieren, Ausschneiden, Einfügen, Verdoppeln – auch im Backend
 
 - Jeder Block – fluid-Blöcke und gewöhnliche Module des Cores – hat in der Slice-Liste ein Menü „⋯“: Verdoppeln (auch ohne Skript), Kopieren, Ausschneiden und

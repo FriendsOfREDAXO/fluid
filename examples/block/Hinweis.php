@@ -2,6 +2,7 @@
 
 namespace Project\Block;
 
+use FriendsOfRedaxo\Fluid\InlineStyle;
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
 use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, DatePicker, Link, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
@@ -48,7 +49,9 @@ final class Hinweis extends FluidBlock
     public function output(): string
     {
         $color = ['warn' => '#dc2626', 'ok' => '#16a34a'][$this->kind] ?? 'var(--f-a)';
-        $html = '<div class="wrap"><aside class="card" style="padding:var(--f-s-l);border-left:6px solid ' . $color . ($this->strong ? ';box-shadow:0 0 0 2px ' . $color : '') . '">'
+        // keine style-Attribute (CSP): InlineStyle vergibt eine Klasse, die Regel steht im <style nonce> der Seite
+        $style = 'padding:var(--f-s-l);border-left:6px solid ' . $color . ($this->strong ? ';box-shadow:0 0 0 2px ' . $color : '');
+        $html = '<div class="wrap"><aside class="card ' . InlineStyle::class($style) . '">'
             . '<h2 class="h3"' . $this->edit('headline') . '>' . escape($this->headline) . '</h2>'
             . '<p' . $this->edit('text', 'lines') . '>' . nl2br(escape($this->text), false) . '</p>';
         if ($this->until) {
