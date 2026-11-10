@@ -757,6 +757,7 @@ return [
                     'variant' => 'icons', 'eyebrow' => 'Themen', 'title' => 'Die Seiten in diesem Bereich', 'intro' => '', 'size' => 'm',
                     'items' => [
                         ['icon' => 'arrows-clockwise', 'title' => 'Was sich ändert', 'text' => 'REDAXO 5 und 6 im Vergleich: Module, Templates, AddOns, Struktur, Konfiguration.', 'link_label' => 'Vergleichen', 'link' => '/was-sich-aendert'],
+                        ['icon' => 'path', 'title' => 'Umstieg von REDAXO 5', 'text' => 'Gegenüberstellung und Fahrplan: was anders ist, was leicht geht – und wann YForm oder fluid ein AddOn ersetzen.', 'link_label' => 'Planen', 'link' => '/umstieg'],
                         ['icon' => 'gear', 'title' => 'Technik', 'text' => 'Das Fundament: Namespaces, Module und Templates als Klassen, AddOns mit Composer, Symfony-Komponenten.', 'link_label' => 'Lesen', 'link' => '/technik'],
                         ['icon' => 'browsers', 'title' => 'Backend', 'text' => 'Rundgang mit Screenshots – hell und dunkel, Medienpool, Linkmap, auf dem Telefon.', 'link_label' => 'Ansehen', 'link' => '/backend'],
                         ['icon' => 'terminal-window', 'title' => 'Projekt anlegen', 'text' => 'Von composer create-project bis zum ersten migrate.', 'link_label' => 'Lesen', 'link' => '/projekt'],
@@ -795,6 +796,100 @@ return [
         ],
 
         // ------------------------------------------------------------------ Technik
+        [
+            'slug' => 'umstieg', 'title' => 'Umstieg von REDAXO 5', 'menu' => true, 'parent' => 'redaxo-6',
+            'blocks' => [
+                ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'REDAXO 5 → 6',
+                    'title' => 'Umstieg von REDAXO 5: vergleichen und planen', 'text' => 'Was in REDAXO 6 anders ist – und wie ein Projekt Schritt für Schritt hinüberkommt.']],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => '', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p class="t-warn"><strong>In Entwicklung:</strong> REDAXO 6 entsteht im Branch 6.x von redaxo/core. Die Beispiele entsprechen dem Stand vom November 2026 – Namen und Details können sich bis zur Veröffentlichung noch ändern.</p><p>REDAXO 6 ist kein Update, das man im Backend einspielt. Der Core ist neu gebaut: Module und Templates werden Klassen, AddOns kommen per Composer, die Datenbank beschreibt der Code. Ein fertiges Werkzeug für den Umstieg von 5.x gibt es noch nicht – plane ihn deshalb wie einen Umzug in ein neues Projekt.</p><p>Die gute Nachricht: Inhalte, Medien und YForm-Daten ziehen mit. Neu geschrieben wird vor allem Code – und der wird dabei meist kürzer.</p>']],
+                ['type' => 'pricing', 'data' => ['variant' => 'table', 'eyebrow' => 'Gegenüberstellung', 'title' => 'REDAXO 5 und REDAXO 6', 'intro' => 'Die wichtigsten Unterschiede auf einen Blick.', 'items' => [
+                    ['name' => 'REDAXO 5', 'badge' => '', 'price' => '', 'period' => '', 'text' => '', 'features' => '', 'highlight' => false, 'button_label' => '', 'button_link' => ''],
+                    ['name' => 'REDAXO 6', 'badge' => '', 'price' => '', 'period' => '', 'text' => '', 'features' => '', 'highlight' => true, 'button_label' => '', 'button_link' => ''],
+                ], 'rows' => [
+                    ['label' => 'Installation', 'values' => 'ZIP hochladen, Setup im Browser
+composer create-project, console setup'],
+                    ['label' => 'Konfiguration', 'values' => 'config.yml im Datenordner
+.env: Datenbank, Modus, Mailer'],
+                    ['label' => 'Betrieb', 'values' => 'Debug-Modus an oder aus
+Modi dev, live und hardened'],
+                    ['label' => 'AddOns', 'values' => 'Installer: laden, installieren, aktivieren
+Composer-Paket = installiert und aktiv'],
+                    ['label' => 'Updates', 'values' => 'Im Backend über den Installer
+composer update und console migrate'],
+                    ['label' => 'Datenbank', 'values' => 'install.php und update.php je AddOn
+install() beschreibt Tabellen, Migrationen für Einmaliges'],
+                    ['label' => 'Module', 'values' => 'PHP-Code in der Datenbank, REX_VALUE
+Klasse mit #[AsModule], Felder als Attribute'],
+                    ['label' => 'Templates', 'values' => 'Code in der Datenbank
+Klasse mit #[AsTemplate] und Inhaltsbereichen'],
+                    ['label' => 'Slice-Daten', 'values' => 'value1–20, media, link
+eine Spalte data je Slice'],
+                    ['label' => 'Sprachen', 'values' => 'eine Artikelzeile je Sprache
+Artikel plus Übersetzung je Sprache'],
+                    ['label' => 'Meta-Infos', 'values' => 'Felder im Backend anlegen
+Klassen mit #[AsMetaSchema]'],
+                    ['label' => 'Media Manager', 'values' => 'Typen und Effekte im Backend
+Typen als Klassen mit #[AsMediaType]'],
+                    ['label' => 'Cronjobs', 'values' => 'AddOn cronjob im Backend
+#[AsCronjob], console cronjob:run'],
+                    ['label' => 'E-Mail', 'values' => 'AddOn PHPMailer
+Symfony Mailer, MAILER_DSN'],
+                    ['label' => 'Klassen', 'values' => 'rex_article, rex_sql …
+Redaxo\\Core\\Content\\Article …'],
+                    ['label' => 'Backend', 'values' => 'Bootstrap 3, be_style
+eigene Komponenten, hell und dunkel, CSP'],
+                    ['label' => 'Sicherung', 'values' => 'AddOn backup
+Werkzeuge des Servers, z. B. mariadb-dump'],
+                    ['label' => 'Code im Git', 'values' => 'teilweise (Developer-AddOn)
+vollständig: Module, Templates, Schema'],
+                ], 'note' => 'Stand: Branch 6.x von redaxo/core, November 2026.']],
+                ['type' => 'steps', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'process', 'eyebrow' => 'Planen', 'title' => 'So planst du den Umstieg', 'intro' => 'Die REDAXO-5-Website bleibt online, bis die neue fertig ist.',
+                    'marker' => 'auto', 'colors' => 'auto', 'motion' => 'auto',
+                    'items' => [
+                        ['meta' => 'Schritt 1', 'title' => 'Bestand aufnehmen', 'text' => 'AddOns, Module, Templates, Meta-Infos, Media-Manager-Typen, Cronjobs, YForm-Tabellen und eigener Code mit rex_-Klassen und Extension Points.', 'icon' => ''],
+                        ['meta' => 'Schritt 2', 'title' => 'AddOns prüfen', 'text' => 'Gibt es eine Version für REDAXO 6? Wenn nicht: Ersatz suchen – oder prüfen, ob YForm oder fluid die Aufgabe schon erledigen.', 'icon' => ''],
+                        ['meta' => 'Schritt 3', 'title' => 'Neues Projekt aufsetzen', 'text' => 'composer create-project, .env, console setup – von Anfang an im Git.', 'icon' => ''],
+                        ['meta' => 'Schritt 4', 'title' => 'Module und Templates neu schreiben', 'text' => 'Als Klassen mit Feldern als Attributen – oder gleich als Blöcke von fluid.', 'icon' => ''],
+                        ['meta' => 'Schritt 5', 'title' => 'YForm übernehmen', 'text' => 'Jede Tabelle wird eine Klasse mit fields(). Die Tabellen mit den Daten bleiben.', 'icon' => ''],
+                        ['meta' => 'Schritt 6', 'title' => 'Inhalte übernehmen', 'text' => 'Struktur, Sprachen und Medien übernehmen, Slices den neuen Feldern zuordnen.', 'icon' => ''],
+                        ['meta' => 'Schritt 7', 'title' => 'Testen und umstellen', 'text' => 'Alte Adressen auf neue weiterleiten, Sitemap prüfen, Deploy mit composer und console migrate.', 'icon' => ''],
+                    ],
+                ]],
+                ['type' => 'features', 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Aufwand', 'title' => 'Was leicht geht – und was Arbeit macht', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'list-checks', 'title' => 'YForm: meist einfach', 'text' => 'Die Definition aus der Tabellenverwaltung wird eine Klasse mit fields() und list(). Die Daten-Tabellen bleiben, Abfragen über die Record-API.', 'link_label' => 'Mehr', 'link' => '/yform'],
+                        ['icon' => 'package', 'title' => 'AddOns: nur mit Version für 6', 'text' => 'AddOns kommen per Composer. Fehlt eine Version für REDAXO 6, nach Alternativen suchen – oft reicht YForm oder fluid.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'code', 'title' => 'Module und Templates: Handarbeit', 'text' => 'Kein 1:1-Umbau: Module werden Klassen mit Feldern als Attributen. Eine gute Gelegenheit, Altlasten loszuwerden.', 'link_label' => 'Mehr', 'link' => '/module-templates'],
+                        ['icon' => 'database', 'title' => 'Inhalte: Struktur zuerst', 'text' => 'Kategorien, Artikel, Sprachen und Medien lassen sich übernehmen. Slices brauchen eine Zuordnung von value1–20 zu den neuen Feldern.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'brackets-curly', 'title' => 'Eigener Code: Namespaces', 'text' => 'rex_-Klassen werden Klassen unter Redaxo\\Core\\…, viele Extension Points sind jetzt Klassen.', 'link_label' => 'Mehr', 'link' => '/technik'],
+                        ['icon' => 'signpost', 'title' => 'Adressen: weiterleiten', 'text' => 'Alte Adressen sauber auf die neuen leiten, damit Suchmaschinen und Links nichts verlieren.', 'link_label' => 'Mehr', 'link' => '/adressen'],
+                    ],
+                ]],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'AddOn fehlt?', 'title' => 'Erst prüfen, ob YForm oder fluid es schon können', 'intro' => 'Viele AddOns aus REDAXO 5 lösen Aufgaben, die in REDAXO 6 mit YForm oder fluid erledigt sind.', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'list-checks', 'title' => 'Formulare', 'text' => 'YForm 6 – auf der Website mit dem Block „Formular“ von fluid und Postfach.', 'link_label' => 'Ansehen', 'link' => '/anmeldung'],
+                        ['icon' => 'newspaper', 'title' => 'News, Termine, Referenzen', 'text' => 'Eine YForm-Tabelle und der Block „Datenliste“ mit Detailseiten und eigener Adresse.', 'link_label' => 'Ansehen', 'link' => '/daten'],
+                        ['icon' => 'article', 'title' => 'Blog', 'text' => 'Der Blog von fluid: Seiten einer Kategorie mit Datum, Autor, Schlagworten und RSS.', 'link_label' => 'Ansehen', 'link' => '/neuigkeiten'],
+                        ['icon' => 'signpost', 'title' => 'Adressen und SEO', 'text' => 'Stand 10.11.2026: mit fluid dessen Rewriter (auch für Datensätze), ohne fluid yrewrite 3.x – nicht beide zusammen. Ein URL-AddOn für REDAXO 6 gibt es nicht.', 'link_label' => 'Ansehen', 'link' => '/adressen'],
+                        ['icon' => 'magnifying-glass', 'title' => 'Suche', 'text' => 'Die Suche von fluid mit Index über alle Sprachen – ohne eigene Datenbank.', 'link_label' => 'Ansehen', 'link' => '/suche'],
+                        ['icon' => 'map-pin', 'title' => 'Karten', 'text' => 'Der Block „Karte“ mit eigenem Proxy: Besucher verbinden sich nie mit Dritten.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'puzzle-piece', 'title' => 'MBlock, MForm', 'text' => 'Wiederholgruppen als Feld Repeater – in Blöcken von fluid und als Attribut am Modul.', 'link_label' => 'Ansehen', 'link' => '/fluid-projekt'],
+                        ['icon' => 'image', 'title' => 'Bilder bearbeiten', 'text' => 'image_editor: zuschneiden, drehen, Fokuspunkt – das Original bleibt.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'navigation_array gibt es schon für REDAXO 6.', 'link_label' => 'Ansehen', 'link' => '/navigation'],
+                    ],
+                ]],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Tipps aus der Praxis', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<ul><li><strong>Klein anfangen:</strong> erst ein überschaubares Projekt umziehen, dabei eine eigene Vorlage für Module und Templates entwickeln.</li><li><strong>Nicht 1:1 übertragen:</strong> Module, die kaum genutzt werden, nicht neu bauen. Was mehrere Module ähnlich machen, wird ein Block mit Darstellungen.</li><li><strong>Inhalte einfrieren:</strong> für die Übernahme einen Stichtag festlegen; Änderungen danach direkt in der neuen Website pflegen.</li><li><strong>Adressen sichern:</strong> eine Liste aller alten Adressen (Sitemap) mitnehmen und jede auf die neue Adresse weiterleiten.</li><li><strong>Code ins Git:</strong> Module, Templates, YForm-Tabellen und Meta-Infos liegen jetzt als Dateien im Projekt – versioniert und mit dem Deploy ausgerollt.</li><li><strong>Deploy üben:</strong> composer install, console migrate und cache:clear gehören in jeden Ablauf, der eine neue Fassung live stellt.</li></ul>']],
+                $cta,
+            ],
+        ],
+
         [
             'slug' => 'technik', 'title' => 'Technik', 'menu' => true, 'parent' => 'redaxo-6',
             'blocks' => [
