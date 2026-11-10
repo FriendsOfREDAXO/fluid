@@ -192,3 +192,5 @@ textarea[data-blocks-rte] { display: none !important; }
 .rex-slice-output:has(> .rex-section .is-inherited-offline) > .rex-section { opacity: .55; transition: opacity .15s; }
 .rex-slice-output:has(> .rex-section .is-inherited-offline):is(:hover, :focus-within) > .rex-section { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .rex-slice-output:has(> .rex-section .is-inherited-offline) > .rex-section { transition: none; } }
+/* Titel-Reiter der schwebenden Leiste: eigene Schriftfarbe (in Offline-Slices setzt der Core die Kopfschrift auf Weiß) */
+.fluid-be-bar > .rex-section-title { color: var(--rex-color-text); }
