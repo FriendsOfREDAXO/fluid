@@ -601,9 +601,9 @@ Redaxo\\Core\\Content\\Article …',
 eigene Komponenten, hell und dunkel, CSP' => 'Bootstrap 3, be_style
 own components, light and dark, CSP',
     'Sicherung' => 'Backup',
-    'AddOn backup
-Werkzeuge des Servers, z. B. mariadb-dump' => 'AddOn backup
-Server tools, e.g. mariadb-dump',
+    'AddOn backup (Backend, Cronjob)
+kein Backup-AddOn: mariadb-dump mit console db:connection-options' => 'AddOn backup (backend, cronjob)
+no backup AddOn: mariadb-dump with console db:connection-options',
     'Code im Git' => 'Code in Git',
     'teilweise (Developer-AddOn)
 vollständig: Module, Templates, Schema' => 'partly (developer AddOn)

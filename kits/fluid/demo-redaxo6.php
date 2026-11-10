@@ -807,8 +807,8 @@ Symfony Mailer, MAILER_DSN'],
 Redaxo\\Core\\Content\\Article …'],
                     ['label' => 'Backend', 'values' => 'Bootstrap 3, be_style
 eigene Komponenten, hell und dunkel, CSP'],
-                    ['label' => 'Sicherung', 'values' => 'AddOn backup
-Werkzeuge des Servers, z. B. mariadb-dump'],
+                    ['label' => 'Sicherung', 'values' => 'AddOn backup (Backend, Cronjob)
+kein Backup-AddOn: mariadb-dump mit console db:connection-options'],
                     ['label' => 'Code im Git', 'values' => 'teilweise (Developer-AddOn)
 vollständig: Module, Templates, Schema'],
                 ], 'note' => 'Stand: Branch 6.x von redaxo/core, November 2026.']],
