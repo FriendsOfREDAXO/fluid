@@ -35,6 +35,9 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   (Esc/✕ wie „Abbrechen“; auf dem Telefon bildschirmfüllend), ohne Skript stehen die Spalten untereinander. Schmaler
   Platz (iPad hochkant, Telefon): Container Query auf das Layout-Panel – unter 560 px untereinander. Hell und dunkel
   über `light-dark()`.
+- Vorschauen in der Slice-Liste in der Höhe begrenzt (360 px, in Spalten 300 px) und in sich scrollbar – unten
+  ausgeblendet, „Ganze Vorschau“ klappt auf; überlaufende Vorschauen sind per Tastatur erreichbar (für alle Blöcke und
+  Module, nicht bei geöffnetem Formular).
 - Umschalter „Spalten | Baum“ im Layout-Panel (gemerkt im Cookie `fluid_view`): „Baum“ zeigt die Rasterskizze und die
   Spalten-Blöcke eingerückt am Ast darunter – für viele Spalten oder schmale Bildschirme.
 - Von außen, ohne den Core zu ändern: `Backend\SliceGrid` sammelt die Panels über `SliceOutput` ein, das Fragment

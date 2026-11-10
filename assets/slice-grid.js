@@ -215,6 +215,52 @@
     document.body.append(dlg);
     dlg.showModal();
   };
-  const init = () => { bars(); run(); };
+
+  /*
+   * Vorschauen in der Höhe begrenzt (form.css): überlaufende markieren (Ausblenden unten), per Tastatur scrollbar machen
+   * (tabindex, Name) und „Ganze Vorschau“ zum Aufklappen anbieten. Neu prüfen, wenn sich die Größe ändert (Diagramme,
+   * Bilder laden nach).
+   */
+  const clips = () => {
+    const check = (body) => {
+      const over = body.scrollHeight > body.clientHeight + 4 && !body.classList.contains('is-open');
+      body.classList.toggle('is-clipped', over);
+      let btn = body.nextElementSibling?.classList.contains('fluid-be-expand') ? body.nextElementSibling : null;
+      if (over || body.classList.contains('is-open')) {
+        if (!body.hasAttribute('tabindex')) {
+          body.tabIndex = 0;
+          body.setAttribute('role', 'region');
+          body.setAttribute('aria-label', 'Vorschau: ' + (body.parentElement.querySelector('.rex-section-title')?.textContent.trim() || 'Block'));
+        }
+        if (!btn) {
+          btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'fluid-be-expand';
+          btn.addEventListener('click', () => {
+            const open = body.classList.toggle('is-open');
+            btn.setAttribute('aria-expanded', String(open));
+            btn.textContent = open ? '▴ Vorschau begrenzen' : '▾ Ganze Vorschau';
+            check(body);
+          });
+          body.after(btn);
+        }
+        btn.setAttribute('aria-expanded', String(body.classList.contains('is-open')));
+        btn.textContent = body.classList.contains('is-open') ? '▴ Vorschau begrenzen' : '▾ Ganze Vorschau';
+      } else if (btn) {
+        btn.remove();
+        body.removeAttribute('tabindex');
+        body.removeAttribute('role');
+        body.removeAttribute('aria-label');
+      }
+    };
+    const ro = 'ResizeObserver' in window ? new ResizeObserver((list) => list.forEach((e) => check(e.target.closest('.rex-section-body') || e.target))) : null;
+    document.querySelectorAll('.rex-slice-output > .rex-section > .rex-section-body').forEach((body) => {
+      if (body.querySelector('.fluid-be-grid')) return;
+      check(body);
+      if (ro) { ro.observe(body); if (body.firstElementChild) ro.observe(body.firstElementChild); }
+    });
+  };
+
+  const init = () => { bars(); clips(); run(); };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
