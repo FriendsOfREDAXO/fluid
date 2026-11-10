@@ -8,7 +8,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
 - Neue Seite im Kapitel fluid mit Beispielen: Abschnitte mit Hintergründen, Spalten ½ + ½ (mittig), ⅓ × 3 (gestreckt,
   Karten durch Hintergrund), ⅔ + ⅓ (gestreckt, mobil umgekehrt), ¼ × 4 (schon auf Tablets untereinander), Bento als
-  Raster, Kacheln als flexibles Raster und „So baut man es“ (freie Grid-/Flex-Container sind geplant).
+  Raster, Kacheln als flexibles Raster, „Im Backend“ (Galerie mit Raster, Baum, Menü ⋯ und Overlay, Demo-Bilder
+  fluid-backend-*.jpg) und „So baut man es“ (freie Grid-/Flex-Container sind geplant).
 
 ### Keine Inline-Styles (Content-Security-Policy)
 
