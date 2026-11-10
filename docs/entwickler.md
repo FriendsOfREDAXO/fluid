@@ -9,7 +9,7 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 - [YForm: Formulare und Datenlisten](#yform-formulare-und-datenlisten)
 - [Blöcke in YForm-Tabellen](#blöcke-in-yform-tabellen-feld-fluid-blöcke)
 - [Adressen, Domains, SEO](#adressen-domains-seo)
-- [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten) · [Diagramme](#diagramme)
+- [Sprachen](#sprachen) · [Videos](#videos) · [Blog](#blog) · [Karten](#karten) · [Diagramme](#diagramme) · [Rechtstexte](#rechtstexte)
 - [Versionen](#versionen) · [MCP-Server](#mcp-server) · [E-Mail](#e-mail)
 - [Suche](#suche) · [Neu laden auf Aktion](#neu-laden-auf-aktion) · [Live-Aktualisierung](#live-aktualisierung) · [Präsenz der Redaktion](#präsenz-der-redaktion)
 - [Konsole](#konsole) · [Rechte](#rechte) · [Gastzugang](#gastzugang-für-addons) · [Bausteine](#bausteine-später-eigene-addons) · [Aufbau des AddOns](#aufbau-des-addons) · [Mitentwickeln](#mitentwickeln)
@@ -526,6 +526,23 @@ Teaserbild = Bild für soziale Netzwerke, Kurztext = Beschreibung. Sortierung na
 
 MapLibre GL und OpenFreeMap über den eigenen Proxy `/proxy/ofm/…` (Cache im Cache-Ordner des AddOns). Besucher verbinden
 sich nicht mit Dritten. Detailkacheln gibt es nur rund um Orte, die auf der Website als Karte vorkommen.
+
+## Rechtstexte
+
+`FriendsOfRedaxo\Fluid\Legal\Legal` liefert Impressum, Datenschutz und Barrierefreiheit aus Website → Einstellungen →
+„Recht & Suchmaschinen“ (`Legal::url('privacy')`, `Legal::links()`, `Legal::article('imprint')`). Ohne Einstellung gilt für
+den Datenschutz eine Seite der obersten Ebene, deren Name mit „Datenschutz“ bzw. „Privacy“ beginnt.
+
+**Datenschutz im Dialog** (optional, Standard aus) – in `Project::configure()`:
+
+```php
+Legal::$config = new LegalConfig(dialog: true);
+```
+
+Dann öffnet der Link „Datenschutzhinweise“ unter Formularen die Erklärung im Dialog über dem Formular (Eingaben bleiben
+erhalten). Eigene Links: `<a href="<?= escape(Legal::url('privacy')) ?>"<?= LegalDialog::attrs() ?>>…</a><?= LegalDialog::script() ?>`.
+Der Endpunkt `/_legal/privacy?lang=ID` liefert Titel und bereinigtes HTML; das geht nur mit einer Seite der Website
+(nicht mit einer externen Adresse) und ohne JavaScript bleibt es ein gewöhnlicher Link.
 
 ## Diagramme
 

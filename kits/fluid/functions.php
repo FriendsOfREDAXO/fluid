@@ -197,18 +197,10 @@ function fluid_quick_contact(string $class = 'quick'): string
     return $h . '</ul>';
 }
 
-/** Impressum, Datenschutz, Barrierefreiheit (Website → Recht) @return list<array{label: string, href: string}> */
+/** Impressum, Datenschutz, Barrierefreiheit (Website → Recht; FriendsOfRedaxo\Fluid\Legal\Legal) @return list<array{label: string, href: string}> */
 function fluid_legal_links(): array
 {
-    $out = [];
-    foreach (['imprint_page' => 'Impressum', 'privacy_page' => 'Datenschutz', 'accessibility_page' => 'Barrierefreiheit'] as $k => $label) {
-        $l = trim((string) setting($k, ''));
-        if ('' !== $l) {
-            $out[] = ['label' => lt($label), 'href' => link_href($l)];
-        }
-    }
-
-    return $out;
+    return \FriendsOfRedaxo\Fluid\Legal\Legal::links();
 }
 
 function fluid_header_cta(): ?array
@@ -500,21 +492,10 @@ function strip_emphasis(string $text): string
     return (string) preg_replace('~\*([^*]+)\*~u', '$1', $text);
 }
 
-/** Datenschutzerklärung: Artikel „Datenschutz“ der Struktur, sonst leer */
+/** Datenschutzerklärung (Website → Recht, sonst Seite „Datenschutz“ der obersten Ebene) – oder '' */
 function privacy_url(): string
 {
-    static $url = null;
-    if (null === $url) {
-        $url = '' !== trim((string) setting('privacy_page', '')) ? link_href((string) setting('privacy_page')) : '';
-        foreach ('' !== $url ? [] : \Redaxo\Core\Content\Article::getRootArticles(true) as $a) {
-            if (preg_match('~^datenschutz~i', $a->name)) {
-                $url = $a->getUrl();
-                break;
-            }
-        }
-    }
-
-    return $url;
+    return \FriendsOfRedaxo\Fluid\Legal\Legal::url('privacy');
 }
 
 /**

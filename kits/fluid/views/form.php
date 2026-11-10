@@ -24,11 +24,13 @@ if ($def) {
     $form = '<p class="empty-hint">' . e(YFormBridge::available() ? 'Bitte in der Seitenleiste Felder anlegen oder ein Formular wählen.' : 'Für diesen Block wird das AddOn YForm benötigt.') . '</p>';
 }
 $note = trim((string) ($d['note'] ?? ''));
+$privacy = '' !== $form ? \FriendsOfRedaxo\Fluid\Legal\Legal::url('privacy') : '';
 ?>
 <div class="wrap fform fform--<?= e($v) ?>">
   <?= fluid_head($b, $v === 'split' ? 'fform__head' : '') ?>
   <div class="fform__body dff-wrap">
     <?= $form ?>
     <?php if ($note !== '' || (is_editing() && $def)): ?><p class="dff-note fform__note"<?= $b->edit('note', 'lines') ?>><?= nl2br(e($note), false) ?></p><?php endif; ?>
+    <?php if ($privacy !== ''): ?><p class="dff-note fform__privacy"><a href="<?= e($privacy) ?>"<?= \FriendsOfRedaxo\Fluid\Legal\LegalDialog::attrs() ?>><?= e(lt('Datenschutzhinweise')) ?></a></p><?= \FriendsOfRedaxo\Fluid\Legal\LegalDialog::script() ?><?php endif; ?>
   </div>
 </div>

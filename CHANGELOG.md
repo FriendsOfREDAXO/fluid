@@ -4,6 +4,16 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Rechtstexte zentral, Datenschutz im Dialog (optional)
+
+- `Legal\Legal`: Impressum, Datenschutz und Barrierefreiheit aus Website → Einstellungen → „Recht“ an einer Stelle
+  (`Legal::url()`, `Legal::links()`, `Legal::article()`), in der Sprache der Seite; die Helfer des Kits
+  (`privacy_url()`, `fluid_legal_links()`) nutzen sie.
+- `Legal\LegalDialog` (optional, Standard aus): Der Link „Datenschutzhinweise“ unter Formularen öffnet die
+  Datenschutzerklärung im Dialog über dem Formular – Eingaben bleiben erhalten. Einschalten in `Project::configure()`:
+  `Legal::$config = new LegalConfig(dialog: true)`. Endpunkt `/_legal/privacy` liefert den bereinigten Text der Seite;
+  ohne JavaScript bleibt es ein Link (aus KLXM Studio).
+
 ### Ziel bearbeiten an Karten und Kacheln
 
 - `$b->targetEdit($link, $titel)` (bisher ohne Funktion) zeigt im Bearbeiten-Modus an Karten und Kacheln, die auf eine
