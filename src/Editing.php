@@ -86,7 +86,21 @@ final class Editing
     /** Bearbeiten-Modus angefordert und erlaubt */
     public static function requested(): bool
     {
-        return 1 === Request::get(self::PARAM, 'int', 0) && null !== self::user();
+        // Bearbeitungssperre: hält jemand anderes die Seite, nur Ansehen – auch mit ?fluid_edit=1
+        return 1 === Request::get(self::PARAM, 'int', 0) && null !== self::user() && null === self::lockedBy();
+    }
+
+    /**
+     * Bearbeitungssperre: Eintrag der Person, die die aktuelle Seite gerade hält – null, wenn sie frei ist oder man sie
+     * selbst hält.
+     *
+     * @return array<string, mixed>|null
+     */
+    public static function lockedBy(): ?array
+    {
+        $article = \Redaxo\Core\Content\Article::getCurrent();
+
+        return null !== $article ? EditLock::blockedFor($article) : null;
     }
 
     /** Gerade wird Bearbeiten-Markup ausgegeben (Seite im Bearbeiten-Modus oder Vorschau eines Blocks) */

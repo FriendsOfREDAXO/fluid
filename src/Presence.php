@@ -46,6 +46,20 @@ final class Presence
         return $new;
     }
 
+    /** Beginn eines Eintrags setzen (Bearbeitungssperre übernehmen: vor den bisherigen Inhaber rücken) */
+    public static function setSince(array $who, int $since): void
+    {
+        $k = self::key($who);
+        self::edit(static function (array $all) use ($k, $since): array {
+            if (isset($all[$k])) {
+                $all[$k]['since'] = $since;
+            }
+
+            return $all;
+        });
+        Live::touch('presence:' . $who['site']);
+    }
+
     /** Abmelden (Seite verlassen) */
     public static function leave(array $who): void
     {

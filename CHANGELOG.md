@@ -4,6 +4,16 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Bearbeitungssperre
+
+- Optional (Website → Einstellungen → Redaktion, Standard aus): Eine Seite bearbeitet immer nur eine Person – wer sie
+  zuerst im Bearbeiten-Modus hat. Alle anderen sehen sie nur an (Hinweis unter der Leiste, „Jetzt bearbeiten“, sobald
+  sie frei ist); Speichern über Editor, Seitenleiste und MCP lehnt fluid mit 423 ab. Administratoren übernehmen, die
+  bisherige Person erfährt es sofort. Abgeleitet aus der Präsenz, ohne Tabelle und ohne hängende Sperren (aus KLXM
+  Studio, `EditLock`). Selbsttest in `fluid:selftest`.
+- Präsenz: Die Live-Aktualisierung von Seitenbaum und „Gerade aktiv“ lief ins Leere (Funktion `lists()` durch eine
+  Konstante verdeckt) – behoben. Der Bearbeiten-Modus wurde am Parameter `?edit` statt `?fluid_edit` erkannt.
+
 ### Blöcke wie Module des Cores
 
 - **Ein Block ist ein Modul des Cores mit anderer Basisklasse:** Felder als Attribute des Cores, Ausgabe in `output()`,

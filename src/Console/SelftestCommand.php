@@ -2,6 +2,7 @@
 
 namespace FriendsOfRedaxo\Fluid\Console;
 
+use FriendsOfRedaxo\Fluid\EditLock;
 use FriendsOfRedaxo\Fluid\Live;
 use FriendsOfRedaxo\Fluid\Presence;
 use Redaxo\Core\Console\AbstractCommand;
@@ -9,13 +10,13 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'fluid:selftest', description: 'Prüft Live-Aktualisierung (Versionen, signierte Abos) und Präsenz der Redaktion')]
+#[AsCommand(name: 'fluid:selftest', description: 'Prüft Live-Aktualisierung (Versionen, signierte Abos), Präsenz der Redaktion und Bearbeitungssperre')]
 final class SelftestCommand extends AbstractCommand
 {
     public function __invoke(SymfonyStyle $io): int
     {
         $fails = 0;
-        foreach (['Live' => Live::selftest(...), 'Präsenz' => Presence::selftest(...)] as $name => $test) {
+        foreach (['Live' => Live::selftest(...), 'Präsenz' => Presence::selftest(...), 'Sperre' => EditLock::selftest(...)] as $name => $test) {
             $r = $test();
             $fails += \count($r['fails']);
             $io->writeln(sprintf('%s: %d in Ordnung%s', $name, $r['ok'], $r['fails'] ? ', ' . \count($r['fails']) . ' Fehler' : ''));

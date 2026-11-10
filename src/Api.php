@@ -42,6 +42,10 @@ final class Api
     public const string PARAM = 'fluid_api';
     public const string CSRF = 'fluid_editor';
 
+    /** Aktionen, die die Seite ändern – gesperrt, solange jemand anderes sie bearbeitet (EditLock) */
+    private const array LOCKED = ['save', 'module_save', 'add', 'move', 'reorder', 'col_move', 'paste', 'duplicate', 'status', 'delete',
+        'publish', 'discard', 'page_save', 'lang_copy', 'version_restore'];
+
     public static function handle(): never
     {
         $user = Editing::user();
@@ -70,6 +74,10 @@ final class Api
             }
             if (Editing::isGuest()) {
                 self::fail('Für Gäste nicht verfügbar.', 403);
+            }
+            // Bearbeitungssperre: Änderungen an der Seite nur für die Person, die sie gerade hält (HTTP 423)
+            if (\in_array($action, self::LOCKED, true)) {
+                EditLock::assert($article);
             }
             $result = self::dispatch($action, $article, $user);
             self::send(['ok' => true, 'state' => self::state($article)] + $result);

@@ -674,17 +674,33 @@ Wer arbeitet gerade wo – aus KLXM Studio (`Core\Presence`, `presence.mjs`), da
 
 - In der Leiste: „Anna bearbeitet gerade“ (Initialen), sonst „Zuletzt gespeichert: Ben, vor 5 Min.“ (aus der Aktivität).
 - Konflikt: Hat jemand anderes seit dem Öffnen gespeichert, zeigt die Leiste ⚠. Vor dem nächsten Speichern fragt fluid
-  nach. Es gibt keine Sperre, „Trotzdem speichern“ ist erlaubt, der vorige Stand bleibt als Version.
+  nach. Ohne Bearbeitungssperre ist „Trotzdem speichern“ erlaubt, der vorige Stand bleibt als Version.
 - Im Seitenbaum ein Kürzel an Seiten, die gerade jemand bearbeitet. Unter „Verlauf & Entwürfe“ → Aktivität die Liste
   „Gerade aktiv“.
 - Nur für angemeldete Backend-Benutzer mit Recht auf die Seite. Gespeichert werden nur Name, Ort und Zeitpunkt der letzten
   Meldung (Cache des AddOns, 45 Sekunden), es gibt kein Protokoll. Abschalten: Config `presence` des AddOns auf `false`.
 
+**Bearbeitungssperre** (`EditLock`, aus Studio; Website → Einstellungen → Redaktion, Standard aus, braucht die Präsenz):
+Eine Seite in einer Sprache bearbeitet immer nur eine Person. Gesperrt hält, wer sie am längsten ohne Unterbrechung im
+Bearbeiten-Modus hat – abgeleitet aus der Präsenz, ohne eigene Tabelle und ohne hängende Sperren (frei spätestens etwa
+45 Sekunden nach dem Schließen).
+
+- Andere sehen die Seite nur an, auch mit `?fluid_edit=1` (`Editing::requested()`), mit Hinweiszeile unter der Leiste;
+  wird sie frei: „Jetzt bearbeiten“.
+- Speichern lehnt fluid mit HTTP 423 ab – alle Aktionen des Editors, die die Seite ändern (`Api::LOCKED`), die
+  Seitenleiste gewöhnlicher Module und MCP (Schlüssel ohne Person gelten als fremd). Gäste und Abläufe ohne Person
+  (Konsole, Cronjob) sperrt nichts; das Backend des Cores kennt die Sperre nicht.
+- Administratoren können übernehmen („Übernehmen“ in der Hinweiszeile): Ihr Eintrag rückt vor den bisherigen Inhaber,
+  dem der Editor beim nächsten Herzschlag sagt, dass er nicht mehr speichern kann. Vermerk in der Aktivität.
+- Im Code: `EditLock::on()`, `holder($article)`, `blockedFor($article, $userId)`, `assert($article, $userId)`,
+  `take($article, $userId)`; Selbsttest in `console fluid:selftest`.
+
 Teile:
 
 | Teil | Aufgabe |
 |---|---|
-| `src/Presence.php` | Speicher: `beat($who, $meta)`, `leave($who)`, `list($filter)`; Schlüssel `site/type/id/user`, kennt keine Artikel |
+| `src/Presence.php` | Speicher: `beat($who, $meta)`, `leave($who)`, `list($filter)`, `setSince($who, $since)`; Schlüssel `site/type/id/user`, kennt keine Artikel |
+| `src/EditLock.php` | Bearbeitungssperre aus der Präsenz: Inhaber, Prüfung beim Speichern (423), Übernehmen |
 | `src/PresenceApi.php` | Anbindung: Endpunkt `/fluid-presence`, Rechte, „zuletzt gespeichert“, Attribute für die Leiste |
 | `assets/editor/presence.js` | Oberfläche, nur über data-Attribute und Ereignisse gekoppelt |
 | `Live` | Kanal `presence:default` – Kommen und Gehen sofort statt nach 15 Sekunden |
@@ -693,7 +709,8 @@ Schema (wie in Studio):
 
 ```
 POST /fluid-presence  {type: "article", id: "{sprache}:{artikel}", label?, url?, leave?, peek?, _csrf?}
-                      → {on, me, here: [Person], last: Stand|null, live: Abo}
+POST /fluid-presence  {…, take: 1}   Bearbeitungssperre übernehmen (Administration)
+                      → {on, me, here: [Person], last: Stand|null, lock: {on, by: Person|null, mine, canTake}, live: Abo}
 GET  /fluid-presence  → {on, me, items: [{type, id, label, url, …Person}], live: Abo}
 Person = {user, name, initials, avatar, since, at, self}     Stand = {user, name, at, self}
 ```
@@ -704,7 +721,9 @@ Person = {user, name, initials, avatar, since, at, self}     Stand = {user, name
 - `[data-presence-board]` – Liste „Gerade aktiv“, `[data-presence-board-box]` wird ohne Einträge ausgeblendet.
 - Später eingefügte Listen (Seitenleisten): Ereignis `cms:presence-scan` am `document`.
 - Konflikt: Der Editor löst vor schreibenden Aktionen `cms:before-save` aus (`detail.waitUntil(promise)`; `false` bricht ab).
-  Die Rückfrage läuft über `window.FluidEditor.ask`. Ereignis `cms:presence` am `document`: `{here, last, conflict}`.
+  Die Rückfrage läuft über `window.FluidEditor.ask`. Ereignis `cms:presence` am `document`: `{here, last, conflict, lock}`.
+- Gesperrt: `[data-presence-here]` trägt `data-presence-locked="1"`, die Hinweiszeile `.cms-lock-note` (mit
+  `[data-presence-take]`) liegt in derselben Wurzel wie die Leiste.
 
 Einbau in andere Systeme: `Presence.php` und `presence.js` kopieren, einen Endpunkt nach dem Schema oben schreiben
 (Rechte prüfen, `beat`/`leave`/`list`, „zuletzt gespeichert“ aus der eigenen Historie) und die Attribute ausgeben.

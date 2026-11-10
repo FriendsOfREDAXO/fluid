@@ -104,6 +104,10 @@ final class Settings
                 ['name' => 'robots_previews', 'label' => 'Linkvorschau beim Teilen erlauben, auch wenn Suchmaschinen gesperrt sind', 'type' => 'bool', 'default' => false,
                     'help' => 'Nur wirksam, wenn der Text oben alles sperrt („User-agent: *“ mit „Disallow: /“) – etwa vor dem Start einer Live-Website. Facebook, LinkedIn, WhatsApp & Co. dürfen dann Titel, Text und Bild geteilter Seiten lesen, Suchmaschinen nicht. Für Test- und Vorschau-Websites aus lassen.'],
             ]],
+            'editorial' => ['label' => 'Redaktion', 'fields' => [
+                ['name' => 'edit_lock', 'label' => 'Bearbeitungssperre: Eine Seite bearbeitet immer nur eine Person', 'type' => 'bool', 'default' => false,
+                    'help' => 'Wer eine Seite zuerst im Bearbeiten-Modus öffnet, hält sie; alle anderen sehen sie nur an, bis die Person fertig ist (spätestens etwa eine Minute nach dem Schließen). Administratoren können übernehmen. Ohne Sperre warnt fluid nur, wenn inzwischen jemand anderes gespeichert hat. Braucht die Präsenz der Redaktion.'],
+            ]],
         ];
     }
 

@@ -14,7 +14,9 @@
  *   [data-presence-board]  Liste „Gerade aktiv“ (Übersicht/Dashboard): Personen mit Link zum Ort.
  *
  * Konflikt: hat jemand anderes seit dem Öffnen gespeichert, fragt das Modul beim Ereignis „cms:before-save“ nach
- * (detail.waitUntil) – keine Sperre, „Trotzdem speichern“ ist erlaubt. Ereignis „cms:presence“ am document: {here, last, conflict}.
+ * (detail.waitUntil) – keine Sperre, „Trotzdem speichern“ ist erlaubt. Ereignis „cms:presence“ am document: {here, last, conflict, lock}.
+ * Bearbeitungssperre (optional, lock.on, EditLock): fremder Inhaber → Hinweiszeile „nur Ansehen“ (+ „Übernehmen“ für die
+ * Administration); wieder frei → „Jetzt bearbeiten“; Sperre beim Bearbeiten verloren → einmal deutlich sagen.
  * Rückfrage über window.CMSAdmin.bar.ask bzw. window.FluidEditor.ask ({title, body, ok, cancel, danger} → Promise<bool>), sonst confirm().
  * Wurzeln: document und offene Schatten-Wurzeln (z. B. die Werkzeugleiste). Später eingefügte Übersichten/Leisten:
  * Ereignis „cms:presence-scan“ am document auslösen.
@@ -63,13 +65,21 @@ function here(el) {
   el._presence = true;
   const T = { ...T0, ...JSON.parse(el.dataset.presenceTexts || '{}') };
   const body = (extra = {}) => JSON.stringify({ type: el.dataset.presenceType, id: el.dataset.presenceId, label: el.dataset.presenceLabel || '', url: el.dataset.presenceUrl || '', ...extra });
-  const editing = () => el.dataset.presenceEditing === '1' || d.documentElement.classList.contains('cms-editing') || new URLSearchParams(location.search).has('edit');
-  let base = null, last = null, conflict = false, liveOn = false, timer = 0, ack = 0;
+  // Gesperrt (data-presence-locked): ?fluid_edit in der Adresse zählt nicht – der Server zeigt nur die Ansicht
+  const editing = () => el.dataset.presenceEditing === '1' || d.documentElement.classList.contains('cms-editing')
+    || (!el.dataset.presenceLocked && new URLSearchParams(location.search).has('fluid_edit'));
+  let base = null, last = null, conflict = false, liveOn = false, timer = 0, ack = 0, lock = null, wasMine = false, toldTaken = false;
+  const ask = (o) => { const f = window.CMSAdmin?.bar?.ask || window.FluidEditor?.ask; return f ? f(o) : Promise.resolve(window.confirm(o.title + '\n\n' + (o.body || ''))); };
+  const editUrl = () => { const u = new URL(location.href); u.searchParams.set('fluid_edit', '1'); return u.toString(); };
 
   const render = (hereList) => {
     const others = hereList.filter((p) => !p.self);
     let h = '';
-    if (others.length) {
+    const lockedHere = lock?.on && lock.by && !editing();
+    if (lockedHere) {
+      // Bearbeitungssperre: in der Leiste Kürzel + Schloss, Text und „Übernehmen“ in der Hinweiszeile darunter
+      h = `<span class="cms-presence__avas">${badge(lock.by)}</span><span class="cms-presence__lock" aria-hidden="true">🔒</span><span class="cms-presence__sr">${esc(fill(T.locked, { name: lock.by.name }))}</span>`;
+    } else if (others.length) {
       h += `<span class="cms-presence__avas">${others.slice(0, 4).map(badge).join('')}</span>`
         + `<span class="cms-presence__t">${esc(fill(others.length === 1 ? T.editing1 : T.editingN, { names: names(others) }))}</span>`;
     } else if (last && !last.self && last.name) {
@@ -79,7 +89,44 @@ function here(el) {
     el.innerHTML = h;
     el.hidden = !h;
     el.classList.toggle('is-conflict', conflict);
-    el.title = [conflict ? fill(T.conflict, { name: last.name || '?' }) : '', ...others.map((p) => p.name + ' – ' + ago(p.since, T))].filter(Boolean).join('\n');
+    el.classList.toggle('is-locked', !!lockedHere);
+    el.title = [lockedHere ? fill(T.locked, { name: lock.by.name }) : '', conflict ? fill(T.conflict, { name: last.name || '?' }) : '', ...others.map((p) => p.name + ' – ' + ago(p.since, T))].filter(Boolean).join('\n');
+    // Hinweiszeile unter der Leiste: gesperrt (mit „Übernehmen“ für die Administration) bzw. wieder frei
+    if (lockedHere) {
+      note(`<span aria-hidden="true">🔒</span><span>${esc(fill(T.lockedNotePage, { name: lock.by.name }))}</span>`
+        + (lock.canTake ? `<button type="button" class="cms-lock-note__btn" data-presence-take>${esc(T.take)}</button>` : ''));
+    } else if (lock?.on && !lock.by && el.dataset.presenceLocked && !editing()) {
+      note(`<span>${esc(T.freeNote)}</span><a class="cms-lock-note__btn" href="${esc(editUrl())}">${esc(T.editNow)}</a>`, true);
+    } else {
+      note(null);
+    }
+  };
+
+  // Hinweiszeile (in derselben Wurzel wie die Leiste, fest unter ihr)
+  let noteEl = null;
+  const note = (html, free = false) => {
+    if (!html) { if (noteEl) noteEl.hidden = true; return; }
+    if (!noteEl) {
+      noteEl = d.createElement('div');
+      noteEl.className = 'cms-lock-note';
+      noteEl.setAttribute('role', 'status');
+      noteEl.addEventListener('click', takeClick);
+      const root = el.getRootNode();
+      (root instanceof ShadowRoot ? root : d.body).append(noteEl);
+    }
+    noteEl.classList.toggle('cms-lock-note--free', free);
+    noteEl.innerHTML = html;
+    noteEl.hidden = false;
+  };
+  // Übernehmen (nur Administration – der Server prüft das Recht): nachfragen, Sperre übernehmen, in den Bearbeiten-Modus
+  const takeClick = async (e) => {
+    if (!e.target.closest('[data-presence-take]') || !lock?.by) return;
+    const by = lock.by.name;
+    if (!(await ask({ title: fill(T.takeAsk, { name: by }), body: fill(T.takeBody, { name: by }), ok: T.take, cancel: T.cancel, danger: true }))) return;
+    try {
+      await fetch(el.dataset.presenceEndpoint, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-Token': el.dataset.presenceCsrf || '' }, body: body({ take: 1 }) });
+    } catch { /* neu laden zeigt den Stand */ }
+    location.href = editUrl();
   };
 
   const tick = async (peek = !editing()) => {
@@ -94,8 +141,17 @@ function here(el) {
         if (last.self) base = Math.max(base, last.at);           // eigene Speicherung ist kein Konflikt
         conflict = !last.self && last.at > Math.max(base, ack);
       }
+      lock = j.lock || null;
+      // Sperre verloren (Administration hat übernommen), während hier noch bearbeitet wird: einmal deutlich sagen
+      if (lock?.on && editing()) {
+        if (lock.mine) wasMine = true;
+        else if (lock.by && wasMine && !toldTaken) {
+          toldTaken = true;
+          ask({ title: fill(T.taken, { name: lock.by.name }), body: T.takenBody, ok: T.ok, cancel: false });
+        }
+      }
       render(j.here || []);
-      d.dispatchEvent(new CustomEvent('cms:presence', { detail: { here: j.here || [], last, conflict } }));
+      d.dispatchEvent(new CustomEvent('cms:presence', { detail: { here: j.here || [], last, conflict, lock } }));
       if (!liveOn && j.live) { liveOn = true; live(el.dataset.presenceLive, j.live, () => tick()); }
     } catch { /* nächster Versuch */ }
     timer = setTimeout(() => tick(), BEAT);

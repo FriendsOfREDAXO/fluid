@@ -52,7 +52,15 @@ final class PresenceApi
             'now' => 'gerade eben', 'min' => 'vor {n} Min.', 'hour' => 'vor {n} Std.', 'day' => 'am {date}',
             'conflict' => '{name} hat inzwischen gespeichert', 'conflictShort' => 'Inzwischen gespeichert', 'conflictTitle' => 'Inzwischen von {name} gespeichert',
             'conflictBody' => 'Seit Sie diese Seite geöffnet haben, hat {name} gespeichert ({ago}). Wenn Sie jetzt speichern, kann das diese Änderungen überschreiben – der vorige Stand bleibt als Version erhalten.',
-            'conflictOk' => 'Trotzdem speichern', 'cancel' => 'Abbrechen'];
+            'conflictOk' => 'Trotzdem speichern', 'cancel' => 'Abbrechen',
+            // Bearbeitungssperre (EditLock)
+            'locked' => '{name} bearbeitet gerade – nur Ansehen',
+            'lockedNotePage' => '{name} bearbeitet diese Seite gerade. Sie sehen nur die Ansicht – Speichern ist gesperrt, bis {name} fertig ist.',
+            'take' => 'Übernehmen', 'takeAsk' => 'Bearbeitung von {name} übernehmen?',
+            'takeBody' => '{name} kann danach nicht mehr speichern. Nicht gespeicherte Änderungen von {name} gehen nicht verloren, werden aber auch nicht übernommen.',
+            'taken' => '{name} hat die Bearbeitung übernommen',
+            'takenBody' => 'Sie können nicht mehr speichern. Kopieren Sie wichtige, noch nicht gespeicherte Änderungen, bevor Sie die Seite verlassen.',
+            'freeNote' => 'Wieder frei – niemand bearbeitet gerade.', 'editNow' => 'Jetzt bearbeiten', 'ok' => 'Verstanden'];
     }
 
     private static function common(): string
@@ -77,7 +85,8 @@ final class PresenceApi
         return [
             'here' => ' data-presence-here data-presence-type="article" data-presence-id="' . $article->languageId . ':' . $article->id . '"'
                 . ' data-presence-label="' . escape($article->name) . '" data-presence-url="' . escape(Url::article($article->id, $article->languageId, [Editing::PARAM => 1])) . '"'
-                . ' data-presence-csrf="' . escape(CsrfToken::factory(Api::CSRF)->getValue()) . '" data-presence-editing="' . ($editing ? '1' : '0') . '"' . self::common(),
+                . ' data-presence-csrf="' . escape(CsrfToken::factory(Api::CSRF)->getValue()) . '" data-presence-editing="' . ($editing ? '1' : '0') . '"'
+                . (null !== EditLock::blockedFor($article) ? ' data-presence-locked="1"' : '') . self::common(),   // Bearbeitungssperre: nur Ansehen
             'list' => ' data-presence-list data-presence-type="article" data-presence-prefix="' . $article->languageId . ':"' . self::common(),
             'board' => ' data-presence-board' . self::common(),
             'js' => $a->getAssetsUrl('editor/presence.js') . '?v=' . (is_file($file) ? substr(md5((string) filemtime($file)), 0, 8) : '0'),
@@ -118,12 +127,34 @@ final class PresenceApi
             Presence::leave($who);
             self::send(['on' => true, 'left' => true]);
         }
+        // Bearbeitungssperre übernehmen (Administration): melden und vor den bisherigen Inhaber rücken
+        $take = !empty($in['take']) && EditLock::on() && EditLock::canTake($user);
         // peek: nur nachsehen (Ansehen-Modus) – ohne sich selbst als „bearbeitet gerade“ zu melden
-        if (empty($in['peek'])) {
+        if (empty($in['peek']) || $take) {
             Presence::beat($who, self::person($user) + ['label' => mb_substr((string) ($in['label'] ?? $article->name), 0, 120), 'url' => self::localUrl((string) ($in['url'] ?? ''))]);
         }
+        if ($take) {
+            EditLock::take($article, $user->id);
+        }
         $here = array_map(static fn ($e) => self::out($e, $me), Presence::list(['site' => self::SITE, 'type' => $type, 'id' => $id]));
-        self::send(['on' => true, 'me' => $me, 'here' => $here, 'last' => self::last($article, $user), 'live' => Live::token(['presence:' . self::SITE])]);
+        self::send(['on' => true, 'me' => $me, 'here' => $here, 'last' => self::last($article, $user), 'lock' => self::lock($article, $user),
+            'live' => Live::token(['presence:' . self::SITE])]);
+    }
+
+    /**
+     * Stand der Bearbeitungssperre für die Leiste: {on, by: fremder Inhaber|null, mine, canTake}.
+     *
+     * @return array<string, mixed>
+     */
+    private static function lock(Article $article, User $user): array
+    {
+        if (!EditLock::on()) {
+            return ['on' => false];
+        }
+        $holder = EditLock::holder($article);
+        $mine = null !== $holder && (string) $holder['user'] === (string) $user->id;
+
+        return ['on' => true, 'by' => null !== $holder && !$mine ? self::out($holder, (string) $user->id) : null, 'mine' => $mine, 'canTake' => EditLock::canTake($user)];
     }
 
     /** Artikel zu type/id, wenn die Person ihn bearbeiten darf – sonst null */

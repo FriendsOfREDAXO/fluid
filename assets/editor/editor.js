@@ -272,13 +272,16 @@
       const okBtn = $('[data-dlg-ok]');
       okBtn.textContent = ok;
       okBtn.classList.toggle('btn--danger', danger);
-      $('[data-dlg-cancel]').textContent = cancel;
+      // cancel: false = nur ein Knopf (Hinweis zum Bestätigen, z. B. Bearbeitung wurde übernommen)
+      const cancelBtn = $('[data-dlg-cancel]');
+      cancelBtn.textContent = cancel || '';
+      cancelBtn.hidden = false === cancel;
       const altBtn = $('[data-dlg-alt]');
       altBtn.textContent = alt;
       altBtn.hidden = !alt;
       const back = root.activeElement || document.activeElement;
       dialog.hidden = false;
-      $('[data-dlg-cancel]').focus();
+      (false === cancel ? okBtn : cancelBtn).focus();
       const done = (v) => {
         dialog.hidden = true;
         dialog.removeEventListener('click', onClick);

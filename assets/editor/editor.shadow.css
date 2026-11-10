@@ -372,6 +372,15 @@ textarea[data-blocks-rte] { display: none !important; }
 /* Präsenz (presence.js): wer bearbeitet gerade – Initialen, „zuletzt gespeichert“, Konflikt; Kürzel im Seitenbaum, „Gerade aktiv“ */
 .cms-presence { display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto; min-width: 0; max-width: 260px; overflow: hidden; font-size: 12px; color: var(--muted); }
 .cms-presence[hidden] { display: none; }
+/* Bearbeitungssperre (presence.js): Hinweiszeile fest unter der Leiste – gesperrt (gelb) bzw. wieder frei (grün) */
+.cms-presence__lock { flex: none; font-size: 13px; }
+.cms-lock-note { position: fixed; inset: var(--bar-h) 0 auto 0; z-index: 2147482990; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px;
+  padding: 8px 16px; background: #FFF4E5; color: #5C3A00; border-bottom: 1px solid #F2D3A6; font: 500 14px/1.4 system-ui, sans-serif; }
+.cms-lock-note[hidden] { display: none; }
+.cms-lock-note--free { background: #E8F5EC; color: #14532D; border-bottom-color: #B7DEC3; }
+.cms-lock-note__btn { all: unset; box-sizing: border-box; padding: 3px 12px; border-radius: 999px; background: #1E2840; color: #fff; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none; }
+.cms-lock-note__btn:hover { background: #2E3B5C; }
+.cms-lock-note__btn:focus-visible { outline: 2px solid #1E2840; outline-offset: 2px; }
 .cms-presence__avas { display: inline-flex; flex: none; }
 .cms-presence__ava { display: inline-grid; place-items: center; width: 24px; height: 24px; margin-left: -6px; border-radius: 50%; border: 2px solid var(--bg); object-fit: cover; background: #4F6FD6; color: #fff; font: 700 10px/1 system-ui, sans-serif; }
 .cms-presence__ava:first-child { margin-left: 0; }

@@ -220,6 +220,8 @@ final class Content
         if (!$this->access->canWritePage($a)) {
             throw new ApiError('Dieser Zugang darf die Seite „' . $a->name . '“ nicht ändern.');
         }
+        // Bearbeitungssperre: Schlüssel ohne Person gelten als fremd
+        \FriendsOfRedaxo\Fluid\EditLock::assert($a, $this->access->user->id ?? false);
     }
 
     private function slice(Article $a, int $id): ArticleSlice
