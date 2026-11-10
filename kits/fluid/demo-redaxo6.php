@@ -812,8 +812,8 @@ return [
 composer create-project, console setup'],
                     ['label' => 'Konfiguration', 'values' => 'config.yml im Datenordner
 .env: Datenbank, Modus, Mailer'],
-                    ['label' => 'Betrieb', 'values' => 'Debug-Modus an oder aus
-Modi dev, live und hardened'],
+                    ['label' => 'Betrieb', 'values' => 'Debug-Modus und Live-Modus in der config.yml
+Modi dev, live und hardened über REX_MODE in der .env'],
                     ['label' => 'AddOns', 'values' => 'Installer: laden, installieren, aktivieren
 Composer-Paket = installiert und aktiv'],
                     ['label' => 'Updates', 'values' => 'Im Backend über den Installer

@@ -547,9 +547,9 @@ composer create-project, console setup',
 .env: Datenbank, Modus, Mailer' => 'config.yml in the data folder
 .env: database, mode, mailer',
     'Betrieb' => 'Operation',
-    'Debug-Modus an oder aus
-Modi dev, live und hardened' => 'Debug mode on or off
-Modes dev, live and hardened',
+    'Debug-Modus und Live-Modus in der config.yml
+Modi dev, live und hardened über REX_MODE in der .env' => 'Debug mode and live mode in config.yml
+Modes dev, live and hardened via REX_MODE in .env',
     'AddOns' => 'AddOns',
     'Installer: laden, installieren, aktivieren
 Composer-Paket = installiert und aktiv' => 'Installer: download, install, activate
