@@ -145,6 +145,16 @@ CODE,
     'hblock' => (string) file_get_contents(__DIR__ . '/../../examples/block/Hinweis.php'),
     // Adressen (Routing): die Datei, die auch im Projekt liegt (examples/routing)
     'rnews' => (string) file_get_contents(__DIR__ . '/../../examples/routing/NewsRoutes.php'),
+    'udeploy' => <<<'CODE'
+# Sicherung der Datenbank – Verbindungsdaten liefert die Konsole
+mariadb-dump --single-transaction $(php bin/console db:connection-options | tr '\n' ' ') | gzip > backup.sql.gz
+
+# neuen Stand holen (git pull, Paket entpacken …), dann:
+composer install --no-dev --optimize-autoloader
+php bin/console cache:clear
+php bin/console migrate            # Tabellen von Core, AddOns und Projekt angleichen
+php bin/console migrate:cleanup    # Daten entfernter AddOns löschen (nach dem Umschalten)
+CODE,
     'rconfig' => <<<'CODE'
 use FriendsOfRedaxo\Fluid\Routing\Router;
 use FriendsOfRedaxo\Fluid\Routing\RoutingConfig;
@@ -827,6 +837,9 @@ vollständig: Module, Templates, Schema'],
                         ['meta' => 'Schritt 7', 'title' => 'Testen und umstellen', 'text' => 'Alte Adressen auf neue weiterleiten, Sitemap prüfen, Deploy mit composer und console migrate.', 'icon' => ''],
                     ],
                 ]],
+                ['type' => 'richtext', 'tunes' => ['background' => 'tint'], 'data' => ['variant' => 'standard', 'eyebrow' => 'Empfehlung', 'title' => 'Den Umstieg von einem Agenten erledigen lassen', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p>Ein großer Teil des Umstiegs ist Handwerk mit klaren Regeln: Module und Templates in Klassen umschreiben, YForm-Tabellen beschreiben, Inhalte übertragen, Adressen weiterleiten. Genau das kann ein KI-Agent (z. B. Claude Code) zügig und gründlich erledigen – mit dir als Prüfer.</p><ul><li><strong>Kontext geben:</strong> das Projekt in REDAXO 5, ein frisches Projekt in REDAXO 6, diese Seite und die Anleitung für Agenten, die der Core mitbringt (<code>AGENTS.md</code> in redaxo/core).</li><li><strong>Erst planen lassen:</strong> Bestand aufnehmen, für jedes AddOn einen Ersatz oder YForm/fluid vorschlagen – du entscheidest, bevor Code entsteht.</li><li><strong>In kleinen Schritten, im Git:</strong> je Modul, Template oder Tabelle ein Commit. So bleibt jeder Schritt nachvollziehbar und umkehrbar.</li><li><strong>Vergleichen statt glauben:</strong> alle Adressen der alten Sitemap auf beiden Websites abrufen und die Ausgaben vergleichen lassen – Abweichungen sind die Liste der offenen Punkte.</li><li><strong>Grenzen ziehen:</strong> lokal und auf einer Kopie der Daten arbeiten lassen; Zugangsdaten, Server und Veröffentlichen bleiben bei dir.</li></ul>']],
                 ['type' => 'features', 'data' => [
                     'variant' => 'icons', 'eyebrow' => 'Aufwand', 'title' => 'Was leicht geht – und was Arbeit macht', 'intro' => '', 'size' => 'm',
                     'items' => [
@@ -852,6 +865,13 @@ vollständig: Module, Templates, Schema'],
                         ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'navigation_array gibt es schon für REDAXO 6.', 'link_label' => 'Ansehen', 'link' => '/navigation'],
                     ],
                 ]],
+                ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => 'Deployment', 'title' => 'Veröffentlichen: So kommt ein Projekt auf den Server', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p>In REDAXO 5 kamen AddOns über den Installer und Änderungen an der Datenbank per Hand oder mit ydeploy auf den Server. In REDAXO 6 liegt alles im Code: Composer bringt Core und AddOns, <code>console migrate</code> bringt die Datenbank auf den Stand des Codes. Jeder Weg auf den Server macht im Kern dasselbe – nur wo Composer und <code>migrate</code> laufen, unterscheidet sich.</p><h3>Mit Shell auf dem Server</h3><p>Neuen Stand holen, <code>composer install --no-dev</code>, <code>cache:clear</code>, <code>migrate</code> – siehe unten. Einfach und schnell; nötig sind SSH und Composer beim Hoster.</p><h3>Deployer, z. B. mit ydeploy</h3><p><a href="https://deployer.org">Deployer</a> legt jede Fassung in einen eigenen Ordner und schaltet per Symlink um – mit Rollback. ydeploy von Yakamara bringt dafür eine Konfiguration für REDAXO und gleicht die Datenbank per <code>ydeploy:diff</code> und <code>ydeploy:migrate</code> ab. Stand 10.11.2026 ist ydeploy für REDAXO 5 (ab 5.13). In REDAXO 6 übernimmt <code>console migrate</code> den Abgleich der Datenbank; Deployer selbst lässt sich genauso nutzen.</p><h3>Nur SFTP oder FTP: klxm_deploy</h3><p>Für Webspaces ohne Shell und Composer: klxm_deploy baut den Stand lokal mit <code>composer install --no-dev</code>, lädt nur geänderte Dateien hoch (viele auf einmal als ZIP) und gleicht danach die Datenbank über den Web-Zugang des Cores an (<code>REX_MIGRATE_TOKEN</code>, nicht im Modus hardened). Es läuft nur lokal, im Backend und in der Konsole. klxm_deploy ist in Entwicklung und noch nicht veröffentlicht.</p><h3>Automatisch per CI</h3><p>Dieselben Schritte als Pipeline (GitHub Actions, Gitea …): bei jedem Push auf den Hauptzweig bauen, testen und ausrollen.</p>']],
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein Deploy mit Shell', 'intro' => 'Die Reihenfolge, die auch diese Demo nutzt.', 'note' => 'Im Modus hardened ist der Web-Zugang für migrate abgeschaltet – dann nur über die Konsole.',
+                    'items' => [
+                        $c('udeploy', 'Terminal', 'bash'),
+                    ]]],
                 ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'Tipps aus der Praxis', 'intro' => '', 'meta' => '',
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<ul><li><strong>Klein anfangen:</strong> erst ein überschaubares Projekt umziehen, dabei eine eigene Vorlage für Module und Templates entwickeln.</li><li><strong>Nicht 1:1 übertragen:</strong> Module, die kaum genutzt werden, nicht neu bauen. Was mehrere Module ähnlich machen, wird ein Block mit Darstellungen.</li><li><strong>Inhalte einfrieren:</strong> für die Übernahme einen Stichtag festlegen; Änderungen danach direkt in der neuen Website pflegen.</li><li><strong>Adressen sichern:</strong> eine Liste aller alten Adressen (Sitemap) mitnehmen und jede auf die neue Adresse weiterleiten.</li><li><strong>Code ins Git:</strong> Module, Templates, YForm-Tabellen und Meta-Infos liegen jetzt als Dateien im Projekt – versioniert und mit dem Deploy ausgerollt.</li><li><strong>Deploy üben:</strong> composer install, console migrate und cache:clear gehören in jeden Ablauf, der eine neue Fassung live stellt.</li></ul>']],
