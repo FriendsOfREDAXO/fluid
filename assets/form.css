@@ -176,3 +176,15 @@ textarea[data-blocks-rte] { display: none !important; }
 .fluid-be-expand { display: block; width: 100%; margin: 0; padding: 6px; border: 0; border-top: 1px solid var(--rex-color-border); background: var(--rex-color-surface-subtle); color: var(--rex-color-link); font-size: var(--rex-font-size-small); cursor: pointer; }
 .fluid-be-expand:hover { background: var(--rex-color-surface-strong); }
 .fluid-be-expand:focus-visible { outline: 2px solid var(--rex-color-focus); outline-offset: -2px; }
+/* Layout offline → seine Spalten-Blöcke sind es auf der Website auch: Hinweis und (Baumansicht) abgeblendet wie offline */
+.blocks-be-inherited { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; padding: 6px 10px; border-radius: 6px; background: var(--rex-color-warning-subtle, color-mix(in srgb, var(--rex-color-warning) 15%, transparent)); color: var(--rex-color-warning-text); font-size: var(--rex-font-size-small); font-weight: 700; }
+/* Layout offline: Blöcke darin bleiben voll lesbar und bearbeitbar – nur der Kopf des Layouts gedämpft (statt der
+   Abblendung des Cores für den ganzen Slice, die sonst auch die Spalten träfe) */
+.rex-slice-offline:has(> .rex-section .fluid-be-grid) { opacity: 1; }
+.rex-slice-offline:has(> .rex-section .fluid-be-grid) > .rex-section > .rex-section-header { opacity: .7; }
+/* Schleier und Klicksperre des Cores für Offline-Slices gelten auch für Nachfahren – im Raster aufheben: Layout-Fläche und
+   Spalten-Blöcke, die nicht selbst offline sind, bleiben bedienbar */
+.rex-slice-offline:has(> .rex-section .fluid-be-grid) > .rex-section > .rex-section-body,
+.rex-slice-offline .fluid-be-list > .rex-slice-output:not(.rex-slice-offline) > .rex-section > .rex-section-body { pointer-events: auto; }
+.rex-slice-offline:has(> .rex-section .fluid-be-grid) > .rex-section > .rex-section-body::before,
+.rex-slice-offline .fluid-be-list > .rex-slice-output:not(.rex-slice-offline) > .rex-section > .rex-section-body::before { content: none; }

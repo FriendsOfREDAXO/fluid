@@ -387,7 +387,11 @@ abstract class BlockModule extends Module
         $parent = Layout::parentOf($ep->slice);
         $data = null !== $parent ? self::of($parent)->context()->data : [];
 
-        return '<div class="blocks-be-nest"><p class="blocks-be-col"><span class="blocks-be-col__n">Spalte ' . Layout::col($ep->slice) . ' / ' . Layout::count($data) . '</span>'
+        // Layout offline: seine Spalten-Blöcke sind auf der Website ebenfalls weg (nur das Layout gibt sie aus)
+        $inherited = null !== $parent && 1 !== $parent->status && 1 === $ep->slice->status
+            ? '<p class="blocks-be-inherited"><i class="rex-icon rex-icon-offline" aria-hidden="true"></i> Offline über das Layout – auf der Website nicht sichtbar</p>' : '';
+
+        return '<div class="blocks-be-nest' . ('' !== $inherited ? ' is-inherited-offline' : '') . '">' . $inherited . '<p class="blocks-be-col"><span class="blocks-be-col__n">Spalte ' . Layout::col($ep->slice) . ' / ' . Layout::count($data) . '</span>'
             . ' im Layout ' . escape(Layout::PRESET_LABELS[Layout::preset($data)]) . ($parent ? ' <a href="#slice' . $parent->id . '">↑ zum Layout</a>' : '') . '</p>' . $ep->subject . '</div>';
     }
 

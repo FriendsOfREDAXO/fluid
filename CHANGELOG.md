@@ -38,6 +38,9 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 - Vorschauen in der Slice-Liste in der Höhe begrenzt (360 px, in Spalten 300 px) und in sich scrollbar – unten
   ausgeblendet, „Ganze Vorschau“ klappt auf; überlaufende Vorschauen sind per Tastatur erreichbar (für alle Blöcke und
   Module, nicht bei geöffnetem Formular).
+- Layout offline: Seine Spalten-Blöcke sind auf der Website ebenfalls nicht sichtbar (nur das Layout gibt sie aus) –
+  das zeigt jetzt ein Hinweis am Layout und an jedem Spalten-Block. Im Raster bleiben die Blöcke voll lesbar und
+  bedienbar: Schleier und Klicksperre des Cores für Offline-Slices trafen bisher auch die Spalten.
 - Umschalter „Spalten | Baum“ im Layout-Panel (gemerkt im Cookie `fluid_view`): „Baum“ zeigt die Rasterskizze und die
   Spalten-Blöcke eingerückt am Ast darunter – für viele Spalten oder schmale Bildschirme.
 - Von außen, ohne den Core zu ändern: `Backend\SliceGrid` sammelt die Panels über `SliceOutput` ein, das Fragment

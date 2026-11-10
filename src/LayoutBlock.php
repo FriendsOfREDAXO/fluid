@@ -70,8 +70,11 @@ abstract class LayoutBlock extends BlockModule
         if (self::backendPreview() && Backend\SliceGrid::active() && null !== $b->slice) {
             $count = count(Layout::children($b->slice));
 
+            $offline = 1 !== $b->slice->status && $count > 0
+                ? '<p class="blocks-be-inherited"><i class="rex-icon rex-icon-offline" aria-hidden="true"></i> Layout offline – die Blöcke darin sind auf der Website ebenfalls nicht sichtbar</p>' : '';
+
             return '<div class="fluid-be-layouthead"><p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
-                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . '</p>' . Backend\SliceGrid::switcher($b->slice) . '</div>' . Backend\SliceGrid::grid($b->slice, $b->data);
+                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . '</p>' . Backend\SliceGrid::switcher($b->slice) . '</div>' . $offline . Backend\SliceGrid::grid($b->slice, $b->data);
         }
         if (self::backendPreview()) {
             // Rasterskizze: Spalten in ihrer Breite (Zwölftel), darin die Blöcke als Sprungmarken zu ihren Slices darunter
