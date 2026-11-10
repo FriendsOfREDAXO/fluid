@@ -25,12 +25,36 @@ use function in_array;
  */
 final class Structure
 {
+    /** Menüpunkte, die nicht im Menü erscheinen (Kategorien – Stelle, Unterseiten und Status bleiben) */
+    private const string HIDDEN = 'menu_hidden';
+
+    /** @return list<int> */
+    public static function hiddenIds(): array
+    {
+        return array_values(array_map('intval', (array) FluidAddon::instance()->getConfig(self::HIDDEN, [])));
+    }
+
+    public static function isHidden(int $categoryId): bool
+    {
+        return in_array($categoryId, self::hiddenIds(), true);
+    }
+
+    private static function setHidden(int $categoryId, bool $hidden): void
+    {
+        $ids = array_values(array_diff(self::hiddenIds(), [$categoryId]));
+        if ($hidden) {
+            $ids[] = $categoryId;
+        }
+        FluidAddon::instance()->setConfig(self::HIDDEN, $ids);
+    }
+
     /** @return list<array<string, mixed>> */
     public static function tree(int $languageId): array
     {
         $home = Article::getSiteStartArticleId();
         $node = static function (Article $a, bool $menu, array $children = []) use ($home): array {
             return ['id' => $a->id, 'name' => $a->name, 'url' => $a->getUrl(), 'online' => $a->isOnline(), 'menu' => $menu,
+                'hidden' => $menu && self::isHidden($a->id),
                 'home' => $a->id === $home, 'blog' => $menu && Blog\Blog::isBlog($a->id), 'parent' => $a->categoryId && !$menu ? $a->categoryId : ($menu ? (Category::get($a->id)->parentId ?? 0) : 0),
                 'children' => $children];
         };
@@ -84,12 +108,12 @@ final class Structure
                     break;
                 case 'tree_menu':
                     if ($isCat) {
-                        if (count(Category::get($a->id)->getChildren()) || count(array_filter(Category::get($a->id)->getArticles(), static fn (Article $x) => !$x->isStartArticle()))) {
-                            throw new ApiError('„' . $a->name . '“ hat Unterseiten – erst diese verschieben, dann aus dem Menü nehmen.');
-                        }
-                        CategoryHandler::convertToArticle($a->id);   // wirft bei Fehlern (UserMessageException → Meldung)
-                        $msg = '„' . $a->name . '“ steht nicht mehr im Menü.';
+                        // Menüpunkt: nur aus dem Menü ausblenden bzw. wieder zeigen – Stelle, Unterseiten und Status bleiben
+                        $hide = !self::isHidden($a->id);
+                        self::setHidden($a->id, $hide);
+                        $msg = $hide ? '„' . $a->name . '“ erscheint nicht mehr im Menü – die Seite bleibt online und an ihrer Stelle.' : '„' . $a->name . '“ steht wieder im Menü.';
                     } else {
+                        // Seite ohne Menüeintrag: Menüpunkte sind in REDAXO Kategorien
                         ArticleHandler::convertToCategory($a->id);
                         $msg = '„' . $a->name . '“ steht jetzt im Menü.';
                     }
@@ -99,6 +123,9 @@ final class Structure
                         throw new ApiError('Startseite und Seite „nicht gefunden“ lassen sich nicht löschen.');
                     }
                     $isCat ? CategoryHandler::delete($a->id) : ArticleHandler::delete($a->id);
+                    if ($isCat) {
+                        self::setHidden($a->id, false);
+                    }
                     $msg = '„' . $a->name . '“ gelöscht.';
                     break;
             }

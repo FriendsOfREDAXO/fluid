@@ -134,7 +134,7 @@ return static function (ArticleContent $content): void {
   <div class="hdr__bar">
     <?= $brand('hdr__brand') ?>
     <?php if ($menu): ?>
-    <div class="hdr__nav"><nav class="hnav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="hnav__list" role="list"><?= implode('', array_map($navItem, $menu)) ?></ul></nav></div>
+    <div class="hdr__nav"><nav class="hnav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><ul class="hnav__list" role="list" data-fluid-nav="main"><?= implode('', array_map($navItem, $menu)) ?></ul></nav></div>
     <?php endif; ?>
     <div class="hdr__tools">
       <?php if (\count($langs) > 2): $curLang = array_values(array_filter($langs, static fn ($l) => $l['current']))[0] ?? $langs[0]; // ab drei Sprachen: Menü (Popover) statt Leiste ?>
@@ -173,7 +173,7 @@ return static function (ArticleContent $content): void {
     <div class="ftr__row">
       <?= $brand('brand--footer') ?>
       <?php if ('' !== $tagline): ?><p class="ftr__tagline"><?= fluid_title($tagline) ?></p><?php endif; ?>
-      <?php if ($menu): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list"><?= $pageList() ?></ul></nav><?php endif; ?>
+      <?php if ($menu): ?><nav aria-label="<?= e(lt('Seiten')) ?>" class="ftr__inline"><ul class="cluster" role="list" data-fluid-nav="footer"><?= $pageList() ?></ul></nav><?php endif; ?>
     </div>
     <?php if ('' !== $ftrText): ?><p class="ftr__text"><?= nl2br(fluid_title($ftrText), false) ?></p><?php endif; ?>
   <?php else: ?>
@@ -193,7 +193,7 @@ return static function (ArticleContent $content): void {
       <?php if ($menu): ?>
       <nav class="ftr__col" aria-labelledby="ftr-pages">
         <h2 class="ftr__h" id="ftr-pages"><?= e(lt('Seiten')) ?></h2>
-        <ul class="ftr__list" role="list"><?= $pageList() ?></ul>
+        <ul class="ftr__list" role="list" data-fluid-nav="footer"><?= $pageList() ?></ul>
       </nav>
       <?php endif; ?>
       <?php if ($social): ?>
@@ -219,7 +219,7 @@ return static function (ArticleContent $content): void {
     <p class="mnav__title" id="mnav-title"><?= e(lt('Menü')) ?></p>
     <button type="button" class="mnav__close" popovertarget="mnav" popovertargetaction="hide" autofocus><?= icon('x') ?><span class="sr-only"><?= e(lt('Menü schließen')) ?></span></button>
   </div>
-  <nav class="mnav__nav" aria-label="<?= e(lt('Hauptnavigation')) ?>"><?= fluid_nav_sheet($menu) ?></nav>
+  <nav class="mnav__nav" aria-label="<?= e(lt('Hauptnavigation')) ?>" data-fluid-nav="sheet"><?= fluid_nav_sheet($menu) ?></nav>
   <?php if (\count($langs) > 1): ?><ul class="langswitch langswitch--wide" role="list" aria-label="<?= e(lt('Sprache')) ?>"><?php foreach ($langs as $l): ?><li><a href="<?= e($l['url']) ?>" hreflang="<?= e($l['code']) ?>" lang="<?= e($l['code']) ?>"<?= $l['current'] ? ' aria-current="true"' : '' ?>><?= e($l['name']) ?></a></li><?php endforeach; ?></ul><?php endif; ?>
 </div>
 <?php endif; ?>

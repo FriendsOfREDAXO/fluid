@@ -126,7 +126,7 @@ return static function (ArticleContent $content): void {
       <button type="button" class="ncss-nav-toggle" command="show-modal" commandfor="nv-menu" aria-haspopup="dialog" aria-label="<?= e(lt('Menü')) ?>"><span class="ncss-icon ncss-icon-menu" aria-hidden="true"></span></button>
       <dialog id="nv-menu" class="ncss-nav-panel ncss-offcanvas ncss-offcanvas--start" aria-label="<?= e(lt('Menü')) ?>">
         <button type="button" class="ncss-dialog-close" command="close" commandfor="nv-menu" aria-label="<?= e(lt('Menü schließen')) ?>"><span class="ncss-icon ncss-icon-close" aria-hidden="true"></span></button>
-        <ul class="ncss-nav-list"><?= implode('', array_map($navItem, $menu)) ?></ul>
+        <ul class="ncss-nav-list" data-fluid-nav="main"><?= implode('', array_map($navItem, $menu)) ?></ul>
         <?= $langList('nv-nav__langs') ?>
       </dialog>
     </nav>
@@ -161,7 +161,7 @@ return static function (ArticleContent $content): void {
     <?php if ($menu): ?>
     <div class="ncss-stack">
       <h2 class="nv-footer__h" id="nv-footer-pages"><?= e(lt('Seiten')) ?></h2>
-      <nav class="ncss-nav ncss-nav--tree" aria-labelledby="nv-footer-pages"><ul class="ncss-nav-list"><?php foreach ($menu as $m): ?><li class="ncss-nav-item"><a href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?></ul></nav>
+      <nav class="ncss-nav ncss-nav--tree" aria-labelledby="nv-footer-pages"><ul class="ncss-nav-list" data-fluid-nav="footer"><?php foreach ($menu as $m): ?><li class="ncss-nav-item"><a href="<?= e($m['href']) ?>"<?= $m['current'] ? ' aria-current="page"' : '' ?>><?= e($m['label']) ?></a></li><?php endforeach; ?></ul></nav>
     </div>
     <?php endif; ?>
     <?php if ($social): ?>

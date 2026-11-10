@@ -734,14 +734,14 @@
         <div class="tree__row" style="--d:${depth}">
           ${mv(n) ? '<span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>' : '<span class="tree__grip" aria-hidden="true"></span>'}
           <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a><span data-presence-slot></span>
-          <span class="tree__badge">${n.home ? 'Startseite' : n.menu ? 'Menü' : 'Seite'}${n.online ? '' : ' · offline'}</span>
+          <span class="tree__badge">${n.home ? 'Startseite' : n.menu ? (n.hidden ? 'nicht im Menü' : 'Menü') : 'Seite'}${n.online ? '' : ' · offline'}</span>
           <span class="tree__tools">
             ${n.home || !mv(n) ? '' : `<button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
             <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>`}
             ${depth && mv(n) ? `<button type="button" class="tree__btn" data-tree-act="out" title="Eine Ebene höher" aria-label="${esc(n.name)} eine Ebene höher">←</button>` : ''}
             ${prev?.menu && !n.home && mv(n) ? `<button type="button" class="tree__btn" data-tree-act="in" title="Unter „${esc(prev.name)}“ einordnen" aria-label="${esc(n.name)} unter ${esc(prev.name)} einordnen">→</button>` : ''}
             ${!may(n.menu ? 'publishCategory' : 'publishArticle') ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_status" title="${n.online ? 'Offline schalten' : 'Online schalten'}" aria-label="${esc(n.name)}: ${n.online ? 'offline schalten' : 'online schalten'}">${n.online ? '●' : '○'}</button>`}
-            ${n.home || !may('article2category') ? '' : `<button type="button" class="tree__btn" data-tree-act="tree_menu" title="${n.menu ? 'Aus dem Menü nehmen' : 'Ins Menü aufnehmen'}" aria-label="${esc(n.name)}: ${n.menu ? 'aus dem Menü nehmen' : 'ins Menü aufnehmen'}">☰</button>`}
+            ${n.home || (!n.menu && !may('article2category')) ? '' : `<button type="button" class="tree__btn${n.hidden ? ' is-off' : ''}" data-tree-act="tree_menu" title="${n.menu ? (n.hidden ? 'Wieder im Menü zeigen' : 'Nicht im Menü zeigen – Seite bleibt online und an ihrer Stelle') : 'Ins Menü aufnehmen'}" aria-label="${esc(n.name)}: ${n.menu ? (n.hidden ? 'wieder im Menü zeigen' : 'nicht im Menü zeigen') : 'ins Menü aufnehmen'}" aria-pressed="${n.menu ? String(!n.hidden) : 'false'}">☰</button>`}
             ${n.menu && (may('addArticle') || may('addCategory')) ? `<button type="button" class="tree__btn" data-tree-new="${n.id}" title="Unterseite anlegen" aria-label="Unterseite von ${esc(n.name)} anlegen">+</button>` : ''}
             ${n.home || !may(n.menu ? 'deleteCategory' : 'deleteArticle') ? '' : `<button type="button" class="tree__btn tree__btn--danger" data-tree-act="tree_delete" title="Löschen" aria-label="${esc(n.name)} löschen">✕</button>`}
           </span>
@@ -762,6 +762,8 @@
         openCurrent(tree);
         draw();
         if (res.message) say(res.message);
+        // online/offline, Menü, Verschieben, Löschen: Menüs der Seite (Kopf, Menü-Blatt, Fuß) gleich mitziehen
+        if (['tree_move', 'tree_status', 'tree_menu', 'tree_delete'].includes(action)) refreshNav();
         return true;
       } catch (err) { say(err.message, true); return false; }
     };
@@ -1162,6 +1164,24 @@
   let current = null;   // Block unter der Maus bzw. ausgewählt
   let selected = null;  // ausgewählter Block (Klick)
   let panelBlock = null;
+
+  // ------------------------------------------------------------------ Menüs der Seite nach Änderungen der Struktur
+  // Die Vorlage markiert ihre Menüs mit data-fluid-nav (main, sheet, footer). Die Seite wird im Hintergrund neu geladen
+  // und nur der Inhalt dieser Bereiche ersetzt; site.js misst den Kopf danach neu (fluid:nav-updated).
+  async function refreshNav() {
+    const mine = [...document.querySelectorAll('[data-fluid-nav]')];
+    try {
+      const res = await fetch(location.href, { credentials: 'same-origin', headers: { 'X-Requested-With': 'fluid-nav' } });
+      if (!res.ok) return;
+      const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
+      const fresh = [...doc.querySelectorAll('[data-fluid-nav]')];
+      const key = (el) => el.dataset.fluidNav;
+      // Menü ganz neu oder ganz weg: das ändert den Aufbau des Kopfes – nur nach Neuladen sichtbar
+      if (fresh.map(key).join() !== mine.map(key).join()) { say('Das Menü hat sich geändert – nach dem Neuladen der Seite sichtbar.'); return; }
+      mine.forEach((el, i) => { if (el.innerHTML !== fresh[i].innerHTML) el.innerHTML = fresh[i].innerHTML; });
+      window.dispatchEvent(new Event('fluid:nav-updated'));
+    } catch { /* Netzwerk: beim nächsten Laden aktuell */ }
+  }
 
   // ------------------------------------------------------------------ Text direkt auf der Seite
 

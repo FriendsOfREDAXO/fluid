@@ -64,6 +64,9 @@ final class FluidTemplate extends Template
             return ['label' => $i->name, 'href' => $i->url, 'current' => $i->current, 'active' => $i->active, 'children' => array_map($map, $i->children)];
         };
 
-        return array_map($map, new Navigation(start: $start, depth: $depth - 1)->items());
+        // Menüpunkte „nicht im Menü“ (Seitenbaum) samt ihrer Unterseiten weglassen
+        $hidden = \FriendsOfRedaxo\Fluid\Structure::hiddenIds();
+
+        return array_map($map, new Navigation(start: $start, depth: $depth - 1, exclude: $hidden)->items());
     }
 }
