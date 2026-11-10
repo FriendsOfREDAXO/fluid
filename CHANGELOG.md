@@ -49,7 +49,7 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   das zeigt jetzt ein Hinweis am Layout und an jedem Spalten-Block; die Blöcke sind leicht gedämpft, bei Zeiger oder
   Fokus voll da. Im Raster bleiben sie lesbar und
   bedienbar: Schleier und Klicksperre des Cores für Offline-Slices trafen bisher auch die Spalten.
-- Umschalter „Spalten | Baum“ im Layout-Panel (gemerkt im Cookie `fluid_view`): „Baum“ zeigt die Rasterskizze und die
+- Umschalter „Spalten | Baum“ je Layout (gemerkt im Cookie `fluid_view`): „Baum“ zeigt die Rasterskizze und die
   Spalten-Blöcke eingerückt am Ast darunter – für viele Spalten oder schmale Bildschirme.
 - Von außen, ohne den Core zu ändern: `Backend\SliceGrid` sammelt die Panels über `SliceOutput` ein, das Fragment
   `core/structure/content/slice_list.php` (in `fragments/` des AddOns) setzt sie ins Raster, `ContentPageModuleSelect`

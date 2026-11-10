@@ -16,7 +16,14 @@ use Redaxo\Core\Http\Request;
 use Redaxo\Core\Filesystem\Url;
 use Redaxo\Core\View\Fragment;
 
+use function array_diff;
+use function array_filter;
 use function array_key_exists;
+use function array_map;
+use function array_slice;
+use function array_unique;
+use function array_values;
+use function explode;
 use function implode;
 use function in_array;
 use function max;
@@ -50,6 +57,9 @@ final class SliceGrid
     /** Parameter und Cookie für die Ansicht der Layouts (grid | tree) */
     public const string VIEW = 'fluid_view';
 
+    /** Parameter: Layout, dessen Ansicht umgeschaltet wird */
+    public const string LAYOUT = 'fluid_layout';
+
     /** @var array<int, array<int, list<string>>> Layout-ID → Spalte → HTML der Spalten-Blöcke */
     private static array $cols = [];
 
@@ -65,11 +75,18 @@ final class SliceGrid
     public static function boot(): void
     {
         self::$on = true;
-        // Ansicht der Layouts: Spalten (Raster) oder Baum – per Knopf im Layout-Panel, gemerkt im Cookie
+        // Ansicht je Layout: Spalten (Raster, Standard) oder Baum – per Knopf im Layout-Panel; das Cookie merkt sich die
+        // Layouts in der Baumansicht
         $view = Request::get(self::VIEW, 'string');
-        if (in_array($view, ['grid', 'tree'], true)) {
-            setcookie(self::VIEW, $view, ['expires' => time() + 365 * 86400, 'path' => '/', 'samesite' => 'Lax', 'httponly' => true, 'secure' => Request::isHttps()]);
-            $_COOKIE[self::VIEW] = $view;
+        $layout = Request::get(self::LAYOUT, 'int', 0);
+        if (in_array($view, ['grid', 'tree'], true) && $layout > 0) {
+            $tree = array_diff(self::treeIds(), [$layout]);
+            if ('tree' === $view) {
+                $tree[] = $layout;
+            }
+            $value = implode(',', array_slice(array_values(array_unique($tree)), -200));   // Cookie klein halten
+            setcookie(self::VIEW, $value, ['expires' => time() + 365 * 86400, 'path' => '/', 'samesite' => 'Lax', 'httponly' => true, 'secure' => Request::isHttps()]);
+            $_COOKIE[self::VIEW] = $value;
         }
         Fragment::addDirectory(FluidAddon::instance()->getPath('fragments/'));
         Asset::addJsFile(FluidAddon::instance()->getAssetsUrl('slice-grid.js'));   // Formular im Dialog über dem Raster
@@ -77,27 +94,35 @@ final class SliceGrid
         Extension::register(SliceMenu::NAME, self::compactMenu(...));   // meldet sich als SLICE_MENU an
     }
 
-    /** Raster aktiv (Ansicht „Spalten“); in der Ansicht „Baum“ folgen die Spalten-Blöcke eingerückt unter dem Layout */
+    /** Raster-Funktionen im Backend aktiv (Inhaltsseite) */
     public static function active(): bool
     {
-        return self::$on && Core::isBackend() && 'tree' !== ($_COOKIE[self::VIEW] ?? 'grid');
+        return self::$on && Core::isBackend();
     }
 
-    /** Raster-Funktionen im Backend geladen (Inhaltsseite) – unabhängig von der gewählten Ansicht */
-    public static function booted(): bool
+    /** Zeigt dieses Layout seine Blöcke im Raster (Ansicht „Spalten“) – sonst als Baum darunter */
+    public static function showsGrid(ArticleSlice $layout): bool
     {
-        return self::$on && Core::isBackend();
+        return self::active() && !in_array($layout->id, self::treeIds(), true);
+    }
+
+    /** @return list<int> Layouts in der Baumansicht (Cookie) */
+    private static function treeIds(): array
+    {
+        $raw = (string) ($_COOKIE[self::VIEW] ?? '');
+
+        return array_values(array_filter(array_map('intval', explode(',', $raw)), static fn (int $id): bool => $id > 0));
     }
 
     /** Umschalter „Spalten | Baum“ im Layout-Panel */
     public static function switcher(ArticleSlice $layout): string
     {
-        $grid = self::active();
+        $grid = self::showsGrid($layout);
         $url = static fn (string $v): string => escape(Url::backendPage('content/edit', [
-            'article_id' => $layout->articleId, 'language' => $layout->languageId, 'content_section_id' => $layout->contentSectionId, self::VIEW => $v,
+            'article_id' => $layout->articleId, 'language' => $layout->languageId, 'content_section_id' => $layout->contentSectionId, self::VIEW => $v, self::LAYOUT => $layout->id,
         ]) . '#slice' . $layout->id);
 
-        return '<nav class="fluid-be-view" aria-label="Ansicht der Layouts">'
+        return '<nav class="fluid-be-view" aria-label="Ansicht dieses Layouts">'
             . '<a href="' . $url('grid') . '"' . ($grid ? ' aria-current="true"' : '') . '><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Spalten</a>'
             . '<a href="' . $url('tree') . '"' . (!$grid ? ' aria-current="true"' : '') . '><i class="rex-icon fa-sitemap" aria-hidden="true"></i> Baum</a></nav>';
     }
@@ -111,8 +136,8 @@ final class SliceGrid
             return null;
         }
         $parent = Layout::parentOf($ep->slice);
-        if (null === $parent) {
-            return null;
+        if (null === $parent || !self::showsGrid($parent)) {
+            return null;   // kein Spalten-Block bzw. Layout in der Baumansicht
         }
         $editing = in_array(Request::get('function', 'string'), ['edit', 'add'], true) && Request::get('slice_id', 'int') === $ep->slice->id;
         if ($editing) {
@@ -213,7 +238,8 @@ final class SliceGrid
                 'attributes' => ['title' => 'Verdoppeln', 'data-fluid-op' => 'duplicate', 'data-slice' => (string) $slice->id],
             ];
         }
-        if (null === Layout::parentOf($slice) || !self::active()) {
+        $parent = Layout::parentOf($slice);
+        if (null === $parent || !self::showsGrid($parent)) {
             return;
         }
         $icon = static function (array $action, string $name): array {

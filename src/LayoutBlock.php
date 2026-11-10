@@ -67,7 +67,7 @@ abstract class LayoutBlock extends BlockModule
     {
         $b = $this->context();
         // Backend: Kurzinfo statt Raster – die Spalten-Blöcke folgen als eigene Slices
-        if (self::backendPreview() && Backend\SliceGrid::active() && null !== $b->slice) {
+        if (self::backendPreview() && null !== $b->slice && Backend\SliceGrid::showsGrid($b->slice)) {
             $count = count(Layout::children($b->slice));
 
             $offline = 1 !== $b->slice->status && $count > 0
@@ -94,7 +94,7 @@ abstract class LayoutBlock extends BlockModule
             $count = count($children);
 
             return '<div class="fluid-be-layouthead"><p class="blocks-be-layout"><i class="rex-icon fa-table-columns" aria-hidden="true"></i> Raster ' . escape(Layout::PRESET_LABELS[Layout::preset($b->data)])
-                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . ' in den Spalten</p>' . (null !== $b->slice && Backend\SliceGrid::booted() ? Backend\SliceGrid::switcher($b->slice) : '') . '</div><div class="blocks-be-grid">' . $grid . '</div>';
+                . ' · ' . $count . ' ' . (1 === $count ? 'Block' : 'Blöcke') . ' in den Spalten</p>' . (null !== $b->slice && Backend\SliceGrid::active() ? Backend\SliceGrid::switcher($b->slice) : '') . '</div><div class="blocks-be-grid">' . $grid . '</div>';
         }
 
         return Layout::render($b);
