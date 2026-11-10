@@ -734,7 +734,7 @@
         <div class="tree__row" style="--d:${depth}">
           ${mv(n) ? '<span class="tree__grip" draggable="true" title="Ziehen zum Sortieren/Verschieben" aria-hidden="true">⠿</span>' : '<span class="tree__grip" aria-hidden="true"></span>'}
           <a class="tree__name" href="${esc(unamp(n.url))}${cfg.editing ? (n.url.includes('?') ? '&' : '?') + 'fluid_edit=1' : ''}">${n.home ? '⌂ ' : ''}${esc(n.name)}</a><span data-presence-slot></span>
-          <span class="tree__badge">${n.home ? 'Startseite' : n.menu ? (n.hidden ? 'nicht im Menü' : 'Menü') : 'Seite'}${n.online ? '' : ' · offline'}</span>
+          <span class="tree__badge${n.hidden ? ' is-hidden' : ''}">${n.home ? 'Startseite' : n.menu ? (n.hidden ? 'nicht im Menü' : 'Menü') : 'Seite'}${n.online ? '' : ' · offline'}</span>
           <span class="tree__tools">
             ${n.home || !mv(n) ? '' : `<button type="button" class="tree__btn" data-tree-act="up" title="Nach oben" aria-label="${esc(n.name)} nach oben">↑</button>
             <button type="button" class="tree__btn" data-tree-act="down" title="Nach unten" aria-label="${esc(n.name)} nach unten">↓</button>`}
