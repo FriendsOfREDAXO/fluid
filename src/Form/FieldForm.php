@@ -136,6 +136,7 @@ final class FieldForm
                 ? self::select($name, $fo, (string) $value, ['id' => $id], !$req)
                 : '<p class="rex-field-note">' . (YFormBridge::available() ? 'Noch kein Formular – im Projekt eine Klasse mit #[AsForm] anlegen (siehe YForm-README).' : 'Dafür wird das AddOn YForm benötigt.') . '</p>',
             'time' => '<input class="rex-input" type="time" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
+            'date' => '<input class="rex-input" type="date" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
             // Standort „Breite, Länge“ mit Geokodierung aus den Adressfeldern (Website-Einstellungen)
             'geo' => '<div class="blocks-geo rex-input-group"><input class="rex-input" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '" placeholder="51.4512, 6.6263" pattern="^-?\\d{1,2}(\\.\\d+)?,\\s*-?\\d{1,3}(\\.\\d+)?$" data-geo>'
                 . '<span class="rex-input-group-actions"><button type="button" class="blocks-btn rex-button" data-variant="field" data-geocode>Aus Adresse ermitteln</button></span></div>',

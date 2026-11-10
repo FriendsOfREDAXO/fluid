@@ -190,6 +190,9 @@ final class Api
             'design' => self::design($article, $user, false),
             'design_save' => self::design($article, $user, true),
             'record_field' => Data\RecordInline::save($user, $article),   // Textfeld eines Datensatzes in der Detailansicht
+            // gewöhnliche REDAXO-Module (keine fluid-Blöcke) in der Seitenleiste; html null = Formular des Cores im Rahmen
+            'module_form' => ['html' => ModuleForm::form(self::plainSlice($article, $user))],
+            'module_save' => (static function () use ($article, $user): array { ModuleForm::save(self::plainSlice($article, $user), (array) Request::post('m', 'array', [])); return []; })(),
             default => self::fail('Unbekannte Aktion.', 400),
         });
         // Aktivitätsprotokoll (Speichern, Veröffentlichen, Verwerfen und Wiederherstellen protokollieren die Aktionen selbst)
@@ -593,6 +596,21 @@ final class Api
     private static function parentBackground(ArticleSlice $parent): string
     {
         return null !== BlockModule::classFor($parent->moduleKey) ? (string) BlockModule::of($parent)->block()->tunes['background'] : '';
+    }
+
+    /** Slice eines gewöhnlichen Moduls (kein fluid-Block) – mit Modulrecht, nicht für Gäste */
+    private static function plainSlice(Article $article, \Redaxo\Core\Security\User $user): \Redaxo\Core\Content\ArticleSlice
+    {
+        $slice = self::reload($article, Request::post('slice', 'int', 0));
+        if (null !== BlockModule::classFor($slice->moduleKey) || Editing::isGuest()) {
+            self::fail('Dieses Modul lässt sich hier nicht bearbeiten.');
+        }
+        $perm = $user->getComplexPerm('modules');
+        if (!$user->admin && (!$perm instanceof \Redaxo\Core\Content\ModulePermission || !$perm->hasPerm($slice->moduleKey))) {
+            self::fail('Dafür fehlt Ihnen das Recht an diesem Modul.');
+        }
+
+        return $slice;
     }
 
     /** @return array{ArticleSlice, BlockModule} */

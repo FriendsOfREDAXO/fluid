@@ -21,7 +21,7 @@
   // ------------------------------------------------------------------ Server
 
   // Schreibende Aktionen: vorher „cms:before-save“ (z. B. Präsenz: jemand anderes hat inzwischen gespeichert → Rückfrage)
-  const WRITES = new Set(['save', 'add', 'move', 'reorder', 'col_move', 'paste', 'duplicate', 'status', 'delete', 'publish', 'discard', 'page_save', 'lang_copy', 'version_restore']);
+  const WRITES = new Set(['save', 'module_save', 'add', 'move', 'reorder', 'col_move', 'paste', 'duplicate', 'status', 'delete', 'publish', 'discard', 'page_save', 'lang_copy', 'version_restore']);
   async function beforeSave(action) {
     const waits = [];
     document.dispatchEvent(new CustomEvent('cms:before-save', { detail: { action, waitUntil: (p) => waits.push(p) } }));
@@ -1189,7 +1189,7 @@
   // des Cores für diesen Slice in der Seitenleiste (Backend-Seite im Rahmen, nur das Formular – assets/frame.css).
   // „Block speichern“ schließt die Leiste, „Block übernehmen“ lässt sie offen; die Ausgabe auf der Seite wird erneuert.
   const modFrame = panel.querySelector('[data-panel-frame]');
-  let modId = 0, modLoads = 0, modMode = false;
+  let modId = 0, modLoads = 0, modMode = false;   // modMode: 'native' (Formular von fluid) oder 'frame' (Formular des Cores)
   function initModules(scope) {
     scope.querySelectorAll('[data-fluid-slice]').forEach((el) => {
       if (el.querySelector(':scope > .fluid-mod__btn')) return;
@@ -1203,6 +1203,7 @@
   }
   // Seitenleiste wieder für Blöcke: Rahmen leeren und ausblenden
   function modReset() {
+    if (modMode) form.innerHTML = '';
     modMode = false;
     modFrame.hidden = true;
     modFrame.src = 'about:blank';
@@ -1229,27 +1230,53 @@
     if (!panel.hidden) await cancelPanel();
     const el = b.closest('[data-fluid-slice]');
     el.classList.add('is-editing');
-    modMode = true;
     modId = +el.dataset.fluidSlice;
     modLoads = 0;
-    const u = new URL(unamp(cfg.backendUrl), location.href);
-    u.searchParams.delete('mode');
-    u.searchParams.set('slice_id', String(modId));
-    u.searchParams.set('content_section_id', el.dataset.section || '1');
-    u.searchParams.set('function', 'edit');
-    u.searchParams.set('fluid_frame', '1');
-    u.hash = 'slice' + modId;
     $('[data-panel-title]').textContent = el.dataset.label;
     $('[data-panel-vis]').hidden = true;
-    form.hidden = true;
-    modFrame.hidden = false;
-    modFrame.src = u.href;
-    panel.hidden = false;
+    // zuerst im Formular von fluid (Feldtypen des Cores), sonst das Formular des Cores im Rahmen
+    let res = null;
+    try { res = await api('module_form', { slice: modId }); } catch (err) { say(err.message, true); el.classList.remove('is-editing'); return; }
+    if (res.html) {
+      modMode = 'native';
+      modFrame.hidden = true;
+      form.hidden = false;
+      form.innerHTML = res.html;
+      window.BlocksForm?.init(form, () => {});
+      Rich?.initFields(form);
+      panel.hidden = false;
+      form.querySelectorAll('textarea.rex-input').forEach(grow);
+      form.querySelector('input:not([type=hidden]),textarea,select')?.focus({ preventScroll: true });
+    } else {
+      modMode = 'frame';
+      const u = new URL(unamp(cfg.backendUrl), location.href);
+      u.searchParams.delete('mode');
+      u.searchParams.set('slice_id', String(modId));
+      u.searchParams.set('content_section_id', el.dataset.section || '1');
+      u.searchParams.set('function', 'edit');
+      u.searchParams.set('fluid_frame', '1');
+      u.hash = 'slice' + modId;
+      form.hidden = true;
+      modFrame.hidden = false;
+      modFrame.src = u.href;
+      panel.hidden = false;
+    }
     document.documentElement.classList.add('blocks-panel-open');
     el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   });
   // „Übernehmen“ der Seitenleiste: Formular des Cores absenden („Block speichern“)
-  function modApply() {
+  async function modApply() {
+    if ('native' === modMode) {
+      const fd = new FormData(form);
+      fd.append('slice', String(modId));
+      try {
+        await api('module_save', fd);
+        await refreshSlice(modId);
+        closePanel();
+        say('Modul gespeichert.');
+      } catch (err) { say(err.message, true); }
+      return;
+    }
     try {
       const btn = modFrame.contentDocument?.querySelector('#REX_FORM [name="btn_save"]');
       if (!btn) { say('Das Formular ist noch nicht geladen.', true); return; }
@@ -1257,7 +1284,7 @@
     } catch { say('Das Formular ließ sich nicht absenden.', true); }
   }
   modFrame.addEventListener('load', async () => {
-    if (!modMode) return;
+    if ('frame' !== modMode) return;
     let doc;
     try { doc = modFrame.contentDocument; if (!doc || modFrame.contentWindow.location.href === 'about:blank') return; } catch { return; }
     modLoads++;
