@@ -3,9 +3,11 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Choice, File, Icon, Link, Media, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Choice, Collection, Icon, Link, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\HeroCard;
+use Redaxo\Core\MediaPool\Media;
 
 #[AsModule('fluid.hero', 'Einstieg (Hero)')]
 #[AsBlock(
@@ -70,8 +72,13 @@ final class Hero extends FluidBlock
     )]
     public string $points = '';
 
-    #[Media('Bild', width: 'half', note: 'Min. 1600 px breit. Alt-Text in der Mediathek pflegen.')]
-    public string $image = '';
+    #[MediaPicker(
+        'Bild',
+        width: 'half',
+        note: 'Min. 1600 px breit. Alt-Text in der Mediathek pflegen.',
+        preview: true,
+    )]
+    public ?Media $image = null;
 
     #[Choice(
         'Bildformat',
@@ -82,13 +89,13 @@ final class Hero extends FluidBlock
     )]
     public string $ratio = '4:5';
 
-    #[File(
+    #[MediaPicker(
         'Hintergrundvideo (MP4, stumm, nur „Vollflächig“)',
         width: 'half',
         variants: ['fullbleed'],
         note: 'Kurz und klein (< 8 MB). Startet nur ohne „Bewegung reduzieren“ und hat eine Pause-Schaltfläche. Das Bild dient als Standbild.',
     )]
-    public string $video = '';
+    public ?Media $video = null;
 
     #[Choice(
         'Abdunkelung (nur „Vollflächig“)',
@@ -99,17 +106,13 @@ final class Hero extends FluidBlock
     )]
     public string $overlay = 'strong';
 
-    #[Repeater(
+    #[Collection(
         'Karten (nur „Mit gestapelten Karten“)',
-        item: 'Karte',
+        item: HeroCard::class,
+        itemLabel: 'Karte',
         titleField: 'title',
         max: 3,
         variants: ['cards'],
-        fields: [
-            new Icon('Symbol', key: 'icon', width: 'half'),
-            new Text('Titel', key: 'title', required: true, maxLength: 50, width: 'half'),
-            new Text('Text', key: 'text', maxLength: 120),
-        ],
     )]
     public array $cards = [];
 

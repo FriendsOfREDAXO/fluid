@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Choice, Link, Media, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Choice, Collection, Link, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\CardsItem;
 
 #[AsModule('fluid.cards', 'Karten')]
 #[AsBlock(
@@ -43,20 +44,7 @@ final class Cards extends FluidBlock
     #[Choice('Bildformat', required: true, choices: self::RATIOS, width: 'half')]
     public string $ratio = '3:2';
 
-    #[Repeater(
-        'Karten',
-        item: 'Karte',
-        titleField: 'title',
-        max: 12,
-        fields: [
-            new Media('Bild', key: 'image'),
-            new Text('Dachzeile (optional)', key: 'eyebrow', maxLength: 40, width: 'half'),
-            new Text('Titel', key: 'title', required: true, maxLength: 90, width: 'half'),
-            new Textarea('Text', key: 'text', maxLength: 240, rows: 2),
-            new Text('Link – Beschriftung (optional)', key: 'link_label', maxLength: 32, width: 'half'),
-            new Link('Link', key: 'link', width: 'half'),
-        ],
-    )]
+    #[Collection('Karten', item: CardsItem::class, itemLabel: 'Karte', titleField: 'title', max: 12)]
     public array $items = [];
 
     #[Text('Button unter den Karten (optional)', maxLength: 32, width: 'half')]

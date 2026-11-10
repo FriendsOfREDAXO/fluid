@@ -16,13 +16,15 @@ use function Redaxo\Core\View\escape;
 /**
  * Formular aus dem Feldschema eines Blocks (Format der Studio-Kits).
  *
- * Feldtypen: text, textarea, richtext, select, bool, number, media, file, link, icon, repeater.
- * Optionen je Feld: name, label, type, help, required, default, max, rows, placeholder, options, width (half),
- * variants (nur bei diesen Varianten sichtbar), fields/item_label/title_field/max_items (repeater).
+ * Das Schema entsteht aus den Feld-Attributen (Field\BlockSchema). Feldtypen: text, email, url, textarea, richtext,
+ * select, bool, number, date, time, datetime, media, file, article, link, icon, geo, repeater (Collection) und die
+ * Auswahlen für Blog, Medienkategorie und YForm. Optionen je Feld: name, label, type, help, required, default, max
+ * (Zeichen), min/max_value/step (Zahl), rows, placeholder, options, multiple, width (half), variants (nur bei diesen
+ * Darstellungen sichtbar), fields/item_label/title_field/min_items/max_items (repeater).
  *
  * Feldnamen: `{prefix}[1][feld]` für die Felder, `{prefix}[2][option]` für die Abschnitts-Optionen. Im Backend
- * (BlockModule::input()) `slice[values][feld]` und `slice[tunes][option]` – das Formular des Cores schreibt sie in die
- * Eigenschaften des Moduls (Feldtyp BlockValues).
+ * (BlockModule::input()) wie beim Core `slice[feld]` und `slice[tunes][option]` – das Formular des Cores liest sie in die
+ * Eigenschaften des Moduls.
  */
 final class FieldForm
 {
@@ -32,9 +34,10 @@ final class FieldForm
      * @param array<string, mixed> $data
      * @param array<string, mixed> $tunes
      */
-    public static function render(string $module, array $data, array $tunes, string $prefix, bool $backend = true, string $dataKey = '1', string $tunesKey = '2'): string
+    /** @param bool $byProp Eingaben nach Eigenschaft benennen (Formular des Cores) statt nach Speicherschlüssel */
+    public static function render(string $module, array $data, array $tunes, string $prefix, bool $backend = true, string $dataKey = '1', string $tunesKey = '2', bool $byProp = false): string
     {
-        $p1 = $prefix . '[' . $dataKey . ']';
+        $p1 = '' === $dataKey ? $prefix : $prefix . '[' . $dataKey . ']';
         $p2 = $prefix . '[' . $tunesKey . ']';
         $variants = $module::variants();
         $data = self::withDefaults($module::fields(), $data, $variants);
@@ -48,7 +51,7 @@ final class FieldForm
         if ($variants) {
             $h .= self::row('Darstellung', self::select($p1 . '[variant]', $variants, $variant, ['data-blocks-variant' => '']), '', false);
         }
-        $h .= self::fields($module::fields(), $data, $p1, $backend);
+        $h .= self::fields($module::fields(), $data, $p1, $backend, $byProp);
         // Layout: gezogene Spaltenbreiten (Griff auf der Website) beim Speichern des Formulars behalten
         if (is_array($data['widths'] ?? null) && is_array($data['widths']['w'] ?? null)) {
             $h .= '<input type="hidden" name="' . escape($p1 . '[widths][preset]') . '" value="' . escape((string) ($data['widths']['preset'] ?? '')) . '">';
@@ -80,12 +83,12 @@ final class FieldForm
      * @param array<string, mixed> $data
      */
     /** Beliebige Felder (z. B. Website-Einstellungen) als Formular auf der Website */
-    public static function standalone(array $fields, array $data, string $base): string
+    public static function standalone(array $fields, array $data, string $base, bool $byProp = false): string
     {
-        return '<div class="blocks-form" data-blocks-form>' . self::fields($fields, self::withDefaults($fields, $data), $base, false) . '</div>';
+        return '<div class="blocks-form" data-blocks-form>' . self::fields($fields, self::withDefaults($fields, $data), $base, false, $byProp) . '</div>';
     }
 
-    private static function fields(array $fields, array $data, string $base, bool $backend): string
+    private static function fields(array $fields, array $data, string $base, bool $backend, bool $byProp = false): string
     {
         $h = '<div class="blocks-form__grid">';
         foreach ($fields as $f) {
@@ -93,7 +96,7 @@ final class FieldForm
             $only = isset($f['variants']) ? ' data-variants="' . escape(implode(' ', (array) $f['variants'])) . '"' : '';
             $half = 'half' === ($f['width'] ?? '');
             $h .= '<div class="blocks-form__field' . ($half ? ' is-half' : '') . '"' . $only . '>'
-                . self::control($f, $data[$name] ?? null, $base . '[' . $name . ']', $backend)
+                . self::control($f, $data[$name] ?? null, $base . '[' . ($byProp ? (string) ($f['prop'] ?? $name) : $name) . ']', $backend, $byProp)
                 . '</div>';
         }
 
@@ -101,7 +104,7 @@ final class FieldForm
     }
 
     /** @param array<string, mixed> $f */
-    private static function control(array $f, mixed $value, string $name, bool $backend): string
+    private static function control(array $f, mixed $value, string $name, bool $backend, bool $byProp = false): string
     {
         $type = (string) ($f['type'] ?? 'text');
         $label = (string) ($f['label'] ?? $f['name']);
@@ -115,9 +118,17 @@ final class FieldForm
         $input = match ($type) {
             'textarea' => '<textarea class="rex-input" id="' . $id . '" name="' . $n . '" rows="' . (int) ($f['rows'] ?? 3) . '"' . $req . $max . $ph . '>' . escape((string) $value) . '</textarea>',
             'richtext' => '<textarea class="rex-input blocks-rich" id="' . $id . '" name="' . $n . '" rows="8" data-blocks-rich' . $req . '>' . escape((string) $value) . '</textarea>',
-            'select' => self::select($name, (array) ($f['options'] ?? []), (string) $value, ['id' => $id], !$req),
+            'select' => !empty($f['multiple'])
+                ? self::select($name . '[]', (array) ($f['options'] ?? []), is_array($value) ? array_map('strval', $value) : [], ['id' => $id, 'multiple' => ''])
+                : self::select($name, (array) ($f['options'] ?? []), (string) $value, ['id' => $id], !$req || isset($f['placeholder']), (string) ($f['placeholder'] ?? '–')),
             'bool' => '<input type="hidden" name="' . $n . '" value="0"><div class="rex-check"><label class="blocks-form__check"><input type="checkbox" id="' . $id . '" name="' . $n . '" value="1"' . ($value ? ' checked' : '') . '> ' . escape($label) . '</label></div>',
-            'number' => '<input class="rex-input" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . '>',
+            'number' => '<input class="rex-input" type="number" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req
+                . (isset($f['min']) ? ' min="' . escape((string) $f['min']) . '"' : '') . (isset($f['max_value']) ? ' max="' . escape((string) $f['max_value']) . '"' : '')
+                . (isset($f['step']) ? ' step="' . escape((string) $f['step']) . '"' : '') . '>',
+            'email' => '<input class="rex-input" type="email" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
+            'datetime' => '<input class="rex-input" type="datetime-local" id="' . $id . '" name="' . $n . '" value="' . escape(str_replace(' ', 'T', substr((string) $value, 0, 16))) . '"' . $req . '>',
+            // Seite (ArticlePicker des Cores): Linkmap, gespeichert wird die ID
+            'article' => Picker::link(self::nameId($name), $name, '' !== (string) $value && ctype_digit((string) $value) ? 'redaxo://' . $value : (string) $value, $backend),
             // Medienpool und Linkmap (REDAXO-Popups); ID aus dem Feldnamen, damit neue Einträge von Wiederholgruppen eindeutig bleiben
             'media', 'file' => Picker::media(self::nameId($name), $name, (string) $value, 'media' === $type, $backend, isset($f['types']) ? (array) $f['types'] : null),
             // Medienkategorie des Medienpools (z. B. Downloads „alle Dateien einer Kategorie“)
@@ -142,7 +153,7 @@ final class FieldForm
                 . '<span class="rex-input-group-actions"><button type="button" class="blocks-btn rex-button" data-variant="field" data-geocode>Aus Adresse ermitteln</button></span></div>',
             'url' => '<input class="rex-input" type="url" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $ph . ' placeholder="https://…">',
             'link' => Picker::link(self::nameId($name), $name, (string) $value, $backend),
-            'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend),
+            'repeater' => self::repeater($f, is_array($value) ? $value : [], $name, $backend, $byProp),
             default => '<input class="rex-input" type="text" id="' . $id . '" name="' . $n . '" value="' . escape((string) $value) . '"' . $req . $max . $ph . '>',
         };
 
@@ -162,7 +173,7 @@ final class FieldForm
      * @param array<string, mixed> $f
      * @param array<array-key, mixed> $items
      */
-    private static function repeater(array $f, array $items, string $name, bool $backend): string
+    private static function repeater(array $f, array $items, string $name, bool $backend, bool $byProp = false): string
     {
         /** @var list<array<string, mixed>> $sub */
         $sub = $f['fields'] ?? [];
@@ -170,7 +181,7 @@ final class FieldForm
         $titleField = (string) ($f['title_field'] ?? ($sub[0]['name'] ?? ''));
         $maxItems = (int) ($f['max_items'] ?? 0);
 
-        $row = static function (array $item, string $key) use ($sub, $name, $itemLabel, $titleField, $backend): string {
+        $row = static function (array $item, string $key) use ($sub, $name, $itemLabel, $titleField, $backend, $byProp): string {
             $title = trim((string) ($item[$titleField] ?? ''));
             // Auswahlfeld als Titel: Beschriftung der Option (z. B. „Montag“ statt „1“)
             foreach ($sub as $sf) {
@@ -180,8 +191,14 @@ final class FieldForm
             }
 
             $label = escape('' !== $title ? $title : $itemLabel);
-            $titleAttr = 'data-blocks-item-title data-field="' . escape($titleField) . '"';
-            $fields = self::fields($sub, self::withDefaults($sub, $item), $name . '[' . $key . ']', $backend);
+            $titleProp = $titleField;
+            foreach ($sub as $sf) {
+                if ($byProp && ($sf['name'] ?? '') === $titleField) {
+                    $titleProp = (string) ($sf['prop'] ?? $titleField);
+                }
+            }
+            $titleAttr = 'data-blocks-item-title data-field="' . escape($titleProp) . '"';
+            $fields = self::fields($sub, self::withDefaults($sub, $item), $name . '[' . $key . ']', $backend, $byProp);
             // Knöpfe wie die Sammelfelder des Cores (CollectionInput): im Backend Icons, auf der Website Zeichen
             $tool = static fn (string $attr, string $label, string $icon, string $sign, string $class = 'blocks-btn'): string => '<button type="button" class="' . $class . '" ' . $attr
                 . ' title="' . $label . '" aria-label="' . $label . '">' . ($backend ? '<i class="rex-icon ' . $icon . '" aria-hidden="true"></i>' : $sign) . '</button>';
@@ -232,18 +249,27 @@ final class FieldForm
      * @param array<array-key, mixed> $options
      * @param array<string, string> $attrs
      */
-    private static function select(string $name, array $options, string $value, array $attrs = [], bool $empty = false): string
+    private static function select(string $name, array $options, string|array $value, array $attrs = [], bool $empty = false, string $emptyLabel = '–'): string
     {
+        $selected = is_array($value) ? $value : [$value];
         $a = '';
         foreach ($attrs as $k => $v) {
             $a .= ' ' . $k . ('' !== $v ? '="' . escape($v) . '"' : '');
         }
         $h = '<select class="rex-input" name="' . escape($name) . '"' . $a . '>';
         if ($empty) {
-            $h .= '<option value="">–</option>';
+            $h .= '<option value="">' . escape($emptyLabel) . '</option>';
         }
         foreach ($options as $k => $label) {
-            $h .= '<option value="' . escape((string) $k) . '"' . ((string) $k === $value ? ' selected' : '') . '>' . escape((string) $label) . '</option>';
+            if (is_array($label)) {   // Gruppe (Choice des Cores)
+                $h .= '<optgroup label="' . escape((string) $k) . '">';
+                foreach ($label as $k2 => $l2) {
+                    $h .= '<option value="' . escape((string) $k2) . '"' . (in_array((string) $k2, $selected, true) ? ' selected' : '') . '>' . escape((string) $l2) . '</option>';
+                }
+                $h .= '</optgroup>';
+                continue;
+            }
+            $h .= '<option value="' . escape((string) $k) . '"' . (in_array((string) $k, $selected, true) ? ' selected' : '') . '>' . escape((string) $label) . '</option>';
         }
 
         return $h . '</select>';
@@ -266,7 +292,7 @@ final class FieldForm
     }
 
     /** @return array<int, string> Medienkategorien als Baum (eingerückt) */
-    private static function mediaCategories(): array
+    public static function mediaCategories(): array
     {
         $out = [];
         $walk = static function (array $cats, int $depth) use (&$walk, &$out): void {
@@ -290,6 +316,34 @@ final class FieldForm
     {
         return '<div class="blocks-form__field' . ($half ? ' is-half' : '') . '"><label class="rex-field-label">' . escape($label) . '</label>' . $control
             . ('' !== $help ? '<p class="rex-field-note">' . escape($help) . '</p>' : '') . '</div>';
+    }
+
+    /**
+     * Eingaben (Seitenleiste, Bearbeiten auf der Seite) in die Speicherform der Felder des Cores bringen: Seite als ID,
+     * Zahl als Zahl, Ja/Nein als bool, Wiederholgruppen je Eintrag.
+     *
+     * @param list<array<string, mixed>> $fields
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public static function normalize(array $fields, array $data): array
+    {
+        foreach ($fields as $f) {
+            $name = (string) $f['name'];
+            if (!array_key_exists($name, $data)) {
+                continue;
+            }
+            $v = $data[$name];
+            $data[$name] = match ((string) ($f['type'] ?? 'text')) {
+                'repeater' => is_array($v) ? array_values(array_map(static fn ($it) => self::normalize((array) ($f['fields'] ?? []), is_array($it) ? $it : []), $v)) : [],
+                'article' => is_string($v) && preg_match('~^(?:redaxo://)?(\d+)$~', $v, $m) ? (int) $m[1] : ('' === $v ? null : $v),
+                'number' => is_numeric($v) ? $v + 0 : null,
+                'bool' => in_array($v, [true, 1, '1', 'on'], true),
+                default => $v,
+            };
+        }
+
+        return $data;
     }
 
     /**

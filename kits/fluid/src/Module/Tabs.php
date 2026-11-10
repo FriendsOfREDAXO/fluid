@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Media, Repeater, RichText, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Collection, MediaPicker, RichText, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\TabsItem;
 
 #[AsModule('fluid.tabs', 'Reiter (Tabs)')]
 #[AsBlock(
@@ -25,16 +26,6 @@ final class Tabs extends FluidBlock
     #[Textarea('Einleitung (optional)', maxLength: 400, rows: 2)]
     public string $intro = '';
 
-    #[Repeater(
-        'Reiter',
-        item: 'Reiter',
-        titleField: 'label',
-        max: 8,
-        fields: [
-            new Text('Beschriftung des Reiters', key: 'label', required: true, maxLength: 40),
-            new RichText('Inhalt', key: 'text'),
-            new Media('Bild (optional, 4:3)', key: 'image'),
-        ],
-    )]
+    #[Collection('Reiter', item: TabsItem::class, itemLabel: 'Reiter', titleField: 'label', max: 8)]
     public array $items = [];
 }

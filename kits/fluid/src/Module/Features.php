@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Choice, Icon, Link, Media, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Choice, Collection, Icon, Link, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\FeaturesItem;
 
 #[AsModule('fluid.features', 'Merkmale / Leistungen')]
 #[AsBlock(
@@ -40,19 +41,6 @@ final class Features extends FluidBlock
     )]
     public string $size = 'm';
 
-    #[Repeater(
-        'Einträge',
-        item: 'Eintrag',
-        titleField: 'title',
-        max: 12,
-        fields: [
-            new Icon('Symbol', key: 'icon', width: 'half'),
-            new Media('oder Bild (3:2)', key: 'image', width: 'half'),
-            new Text('Titel', key: 'title', required: true, maxLength: 70),
-            new Textarea('Text', key: 'text', maxLength: 320, rows: 3),
-            new Text('Link – Beschriftung (optional)', key: 'link_label', maxLength: 32, width: 'half'),
-            new Link('Link', key: 'link', width: 'half'),
-        ],
-    )]
+    #[Collection('Einträge', item: FeaturesItem::class, itemLabel: 'Eintrag', titleField: 'title', max: 12)]
     public array $items = [];
 }

@@ -21,7 +21,7 @@ $cta = [
 $yform = [
     'rex_yf_termin' => ['rows' => [
         ['title' => 'Online-Demo: Bearbeiten auf der Website', 'date' => '2026-11-12', 'place' => 'Online', 'image' => 'fluid-formular-schritte.jpg', 'text' => "Eine Stunde fluid live: Texte direkt auf der Seite ändern, Blöcke einfügen, Design anpassen und veröffentlichen.\n\nBeispieltermin – zeigt, wie eine YForm-Tabelle als Datenliste erscheint.", 'online' => true],
-        ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => null, 'text' => 'Ein Block ist eine Modulklasse: Felder als Attribute, Ausgabe in view(). Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => true],
+        ['title' => 'Workshop: Eigene Blöcke bauen', 'date' => '2026-11-26', 'place' => 'Online', 'image' => null, 'text' => 'Ein Block ist eine Modulklasse: Felder als Attribute, Ausgabe in output(). Wir bauen gemeinsam einen Block mit Bild, Text und Wiederholgruppe.', 'online' => true],
         ['title' => 'Sprechstunde: Von REDAXO 5 nach 6', 'date' => '2026-12-03', 'place' => 'Online', 'image' => null, 'text' => 'Fragen zu Composer, Modulen als Klassen und console migrate – mitbringen, was im eigenen Projekt ansteht.', 'online' => true],
         ['title' => 'Entwurf: noch nicht veröffentlicht', 'date' => '2026-12-17', 'place' => 'Online', 'image' => null, 'text' => 'Dieser Eintrag ist offline und erscheint nicht in der Liste.', 'online' => false],
     ]],
@@ -399,41 +399,8 @@ CODE,
 # Demo-Inhalte mit Bildern und Design „REDAXO · Blau“ (nur in einer leeren Installation)
 php bin/console fluid:demo --set=redaxo6 --media --design=redaxo
 CODE,
-    'fblock' => <<<'CODE'
-<?php
-
-namespace Project\Block;
-
-use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Link, Text, Textarea};
-use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
-use Redaxo\Core\Content\AsModule;
-
-/** Eigener Block im Projekt: Felder als Attribute, Ausgabe in Teaser.view.php daneben – das Kit bleibt unverändert. */
-#[AsModule('fluid.teaser', 'Teaser (Projekt)')]
-#[AsBlock(icon: 'star', group: 'Inhalt', nestable: true, help: 'Beispiel für einen eigenen Block im Projekt.')]
-final class Teaser extends FluidBlock
-{
-    #[Text('Überschrift', required: true, maxLength: 80)]
-    public string $title = '';
-
-    #[Textarea('Text', rows: 3)]
-    public string $text = '';
-
-    #[Link('Link')]
-    public string $link = '';
-}
-CODE,
-    'fview' => <<<'CODE'
-<?php /** @var \FriendsOfRedaxo\Fluid\Block $b  @var array $d */ ?>
-<div class="wrap">
-  <div class="card" style="padding:var(--f-s-l)">
-    <h2 class="h3"<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
-    <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
-    <?php if ('' !== trim((string) $d['link'])): ?><a class="btn btn--primary" <?= fluid_link_attrs($d['link']) ?>>Mehr</a><?php endif; ?>
-  </div>
-</div>
-CODE,
+    // eigener Block: die Datei, die auch im Projekt liegt (examples/block)
+    'fblock' => (string) file_get_contents(__DIR__ . '/../../examples/block/Teaser.php'),
     'beModule' => <<<'CODE'
 <?php
 
@@ -878,7 +845,7 @@ vollständig: Module, Templates, Schema'],
                         ['icon' => 'signpost', 'title' => 'Adressen und SEO', 'text' => 'Stand 10.11.2026: mit fluid dessen Rewriter (auch für Datensätze), ohne fluid yrewrite 3.x – nicht beide zusammen. Ein URL-AddOn für REDAXO 6 gibt es nicht.', 'link_label' => 'Ansehen', 'link' => '/adressen'],
                         ['icon' => 'magnifying-glass', 'title' => 'Suche', 'text' => 'Die Suche von fluid mit Index über alle Sprachen – ohne eigene Datenbank.', 'link_label' => 'Ansehen', 'link' => '/suche'],
                         ['icon' => 'map-pin', 'title' => 'Karten', 'text' => 'Der Block „Karte“ mit eigenem Proxy: Besucher verbinden sich nie mit Dritten.', 'link_label' => '', 'link' => ''],
-                        ['icon' => 'puzzle-piece', 'title' => 'MBlock, MForm', 'text' => 'Wiederholgruppen als Feld Repeater – in Blöcken von fluid und als Attribut am Modul.', 'link_label' => 'Ansehen', 'link' => '/fluid-projekt'],
+                        ['icon' => 'puzzle-piece', 'title' => 'MBlock, MForm', 'text' => 'Wiederholgruppen bringt der Core mit: das Feld Collection, je Eintrag eine Klasse mit eigenen Feldern. fluid zeigt es in der Seitenleiste – in Blöcken und gewöhnlichen Modulen.', 'link_label' => 'Ansehen', 'link' => '/module-templates'],
                         ['icon' => 'image', 'title' => 'Bilder bearbeiten', 'text' => 'image_editor: zuschneiden, drehen, Fokuspunkt – das Original bleibt.', 'link_label' => '', 'link' => ''],
                         ['icon' => 'tree-structure', 'title' => 'Navigation', 'text' => 'navigation_array gibt es schon für REDAXO 6.', 'link_label' => 'Ansehen', 'link' => '/navigation'],
                     ],
@@ -1098,11 +1065,11 @@ vollständig: Module, Templates, Schema'],
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<p>Ein natives Modul funktioniert mit fluid ohne Änderung. Soll es sich anfühlen wie die Blöcke von fluid, sind es drei Schritte:</p>'
                         . '<ol><li><strong>Klasse:</strong> erbt von <code>FluidBlock</code> statt von <code>Module</code>; der Schlüssel beginnt mit <code>fluid.</code>.</li>'
-                        . '<li><strong>Felder:</strong> bleiben Attribute an Eigenschaften – mit denselben Namen und Parametern, nur aus <code>FriendsOfRedaxo\\Fluid\\Field</code>. Dazu kommen Felder von fluid wie <code>Link</code>, <code>Media</code>, <code>RichText</code> oder <code>Repeater</code>.</li>'
-                        . '<li><strong>Ausgabe:</strong> <code>view()</code> statt <code>output()</code> – in der Klasse oder als View-Datei daneben; <code>$b-&gt;edit(\'feld\')</code> macht ein Feld direkt auf der Seite bearbeitbar.</li></ol>'
+                        . '<li><strong>Felder:</strong> bleiben, wie sie sind – die Attribute des Cores samt <code>Collection</code>. Wer mag, nimmt die gleichnamigen aus <code>FriendsOfRedaxo\\Fluid\\Field</code>: dieselben Parameter, dazu optional <code>width</code>, <code>variants</code> oder <code>placeholder</code> für die Seitenleiste. Felder nur von fluid: <code>Link</code>, <code>RichText</code>, <code>Icon</code> und andere.</li>'
+                        . '<li><strong>Ausgabe:</strong> <code>output()</code> bleibt <code>output()</code>; <code>$this-&gt;edit(\'feld\')</code> macht ein Feld direkt auf der Seite bearbeitbar.</li></ol>'
                         . '<p><strong>Was man gewinnt:</strong> Texte direkt auf der Seite, Vorschau beim Tippen, der Block erscheint in der Blockauswahl der Website, Hintergrund und Abstände je Abschnitt, Layout-Spalten, Kopieren und Einfügen, Greifer – und die Gestaltung kommt aus dem Kit, auch beim Wechsel der Design-Vorlage.</p>'
                         . '<p><strong>Gut zu wissen:</strong> Der Schlüssel ändert sich, vorhandene Slices des nativen Moduls werden nicht von selbst zu Blöcken. Beides darf nebeneinander bestehen – neue Inhalte mit dem Block, alte bleiben, bis sie ersetzt sind.</p>']],
-                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Derselbe Hinweis als fluid-Block', 'intro' => 'Eine Klasse: Felder als Attribute, Ausgabe in view() – mehr braucht ein Block nicht.', 'note' => 'Mehr dazu in der Entwickler-Referenz (docs/entwickler.md, „Ein eigener Block“) und auf der Seite „Eigenes Kit“.',
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Derselbe Hinweis als fluid-Block', 'intro' => 'Eine Klasse: Felder als Attribute, Ausgabe in output() – wie das Modul, nur mit anderer Basisklasse.', 'note' => 'Mehr dazu in der Entwickler-Referenz (docs/entwickler.md, „Ein eigener Block“) und auf der Seite „Eigenes Kit“.',
                     'items' => [
                         $c('hblock', 'src/Block/Hinweis.php', 'php'),
                     ]]],
@@ -1270,10 +1237,9 @@ vollständig: Module, Templates, Schema'],
                     'items' => [
                         $c('fdemo', 'Terminal', 'bash'),
                     ]]],
-                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein eigener Block', 'intro' => 'Felder ins Schema, Ausgabe als View-Datei daneben. Formular im Backend, Bearbeiten auf der Website und Vorschau kommen von fluid.', 'note' => 'Mit $b->edit() wird ein Feld direkt auf der Website bearbeitbar.',
+                ['type' => 'code', 'data' => ['eyebrow' => '', 'title' => 'Ein eigener Block', 'intro' => 'Felder als Attribute wie bei jedem Modul des Cores, Ausgabe in output(). Formular im Backend, Bearbeiten auf der Website und Vorschau kommen von fluid.', 'note' => 'Mit $this->edit() wird ein Feld direkt auf der Website bearbeitbar.',
                     'items' => [
                         $c('fblock', 'src/Block/Teaser.php', 'php'),
-                        $c('fview', 'src/Block/Teaser.view.php', 'php'),
                     ]]],
                 $cta,
             ],

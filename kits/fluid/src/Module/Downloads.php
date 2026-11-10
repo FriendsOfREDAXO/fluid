@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, File, MediaCategory, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, Collection, MediaCategory, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\DownloadsFile;
 
 #[AsModule('fluid.downloads', 'Downloads')]
 #[AsBlock(
@@ -36,15 +37,11 @@ final class Downloads extends FluidBlock
     #[MediaCategory('Medienkategorie', width: 'half')]
     public string $collection = '';
 
-    #[Repeater(
+    #[Collection(
         'Dateien (bei „Einzelne Dateien“)',
-        item: 'Datei',
+        item: DownloadsFile::class,
+        itemLabel: 'Datei',
         titleField: 'label',
-        fields: [
-            new Text('Bezeichnung', key: 'label', width: 'half', note: 'Leer = Titel der Datei'),
-            new File('Datei', key: 'file', width: 'half'),
-            new Text('Hinweis (optional)', key: 'note'),
-        ],
     )]
     public array $files = [];
 

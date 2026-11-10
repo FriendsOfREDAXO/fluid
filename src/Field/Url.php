@@ -3,35 +3,39 @@
 namespace FriendsOfRedaxo\Fluid\Field;
 
 use Attribute;
+use Redaxo\Core\Form\Field\Url as CoreUrl;
+use Redaxo\Core\View\Renderable;
 
-/** Adresse (https://…) */
+/**
+ * Feld des Cores (`Url`) mit den Ergänzungen von fluid – alle zusätzlichen Parameter sind optional, ohne sie
+ * verhält es sich genau wie das Feld des Cores (siehe docs/entwickler.md, „Felder“).
+ */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-final class Url extends Field
+class Url extends CoreUrl implements FluidField
 {
+    /**
+     * @param 'half'|null $width fluid: halbe Breite im Formular
+     * @param list<string>|null $variants fluid: nur in diesen Darstellungen des Blocks
+     * @param string|null $placeholder fluid: Platzhalter im Eingabefeld
+     */
     public function __construct(
-        string $label,
-        ?string $note = null,
+        string|Renderable $label,
+        string|Renderable|null $note = null,
         bool $required = false,
         ?string $key = null,
+        ?int $maxLength = null,
+        /** @var non-empty-list<lowercase-string> */
+        array $schemes = ['http', 'https'],
+        public readonly ?string $width = null,
+        /** @var list<string>|null */
+        public readonly ?array $variants = null,
         public readonly ?string $placeholder = null,
-        ?string $width = null,
-        ?array $variants = null,
-        mixed $default = null,
     ) {
-        parent::__construct($label, $note, $required, $key, $width, $variants, $default);
+        parent::__construct($label, $note, $required, $key, $maxLength, $schemes);
     }
 
-    #[\Override]
-    public function type(): string
+    public function fluid(): array
     {
-        return 'url';
-    }
-
-    #[\Override]
-    protected function extra(): array
-    {
-        return [
-            ...(null !== $this->placeholder ? ['placeholder' => $this->placeholder] : []),
-        ];
+        return array_filter(['width' => $this->width, 'variants' => $this->variants, 'placeholder' => $this->placeholder], static fn ($v) => null !== $v);
     }
 }

@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Choice, Icon, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Choice, Collection, Icon, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\StepsItem;
 
 #[AsModule('fluid.steps', 'Ablauf / Zeitleiste')]
 #[AsBlock(
@@ -69,23 +70,6 @@ final class Steps extends FluidBlock
     )]
     public string $motion = 'auto';
 
-    #[Repeater(
-        'Schritte',
-        item: 'Schritt',
-        titleField: 'title',
-        max: 12,
-        fields: [
-            new Text(
-                'Phase / Datum (optional)',
-                key: 'meta',
-                maxLength: 40,
-                placeholder: 'z. B. Woche 1',
-                width: 'half',
-            ),
-            new Text('Titel', key: 'title', required: true, maxLength: 80, width: 'half'),
-            new Textarea('Text', key: 'text', maxLength: 400, rows: 3),
-            new Icon('Symbol statt Nummer (optional)', key: 'icon'),
-        ],
-    )]
+    #[Collection('Schritte', item: StepsItem::class, itemLabel: 'Schritt', titleField: 'title', max: 12)]
     public array $items = [];
 }

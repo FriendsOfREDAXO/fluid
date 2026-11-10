@@ -125,14 +125,14 @@ function here(el) {
 let listTimer = 0, listLive = false;
 async function lists() {
   clearTimeout(listTimer);
-  const lists = all('[data-presence-list]'), boards = all('[data-presence-board]');
-  if (!lists.length && !boards.length) return;
-  const first = lists[0] || boards[0];
+  const boxes = all('[data-presence-list]'), boards = all('[data-presence-board]');
+  if (!boxes.length && !boards.length) return;
+  const first = boxes[0] || boards[0];
   let j = null;
   try { const r = await fetch(first.dataset.presenceEndpoint, { credentials: 'same-origin', headers: { Accept: 'application/json' } }); j = r.ok ? await r.json() : null; } catch { /* später */ }
   if (j && j.on !== false) {
     const items = (j.items || []).filter((p) => !p.self);
-    lists.forEach((box) => {
+    boxes.forEach((box) => {
       const T = { ...T0, ...JSON.parse(box.dataset.presenceTexts || '{}') };
       const type = box.dataset.presenceType, pre = box.dataset.presencePrefix || '';
       box.querySelectorAll('.cms-presence-mark').forEach((x) => x.remove());

@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Repeater, RichText, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Collection, RichText, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\FaqItem;
 
 #[AsModule('fluid.faq', 'Fragen & Antworten')]
 #[AsBlock(
@@ -27,14 +28,6 @@ final class Faq extends FluidBlock
     #[Textarea('Einleitung (optional)', maxLength: 400, rows: 2)]
     public string $intro = '';
 
-    #[Repeater(
-        'Fragen',
-        item: 'Frage',
-        titleField: 'q',
-        fields: [
-            new Text('Frage', key: 'q', required: true, maxLength: 160),
-            new RichText('Antwort', key: 'a', required: true),
-        ],
-    )]
+    #[Collection('Fragen', item: FaqItem::class, itemLabel: 'Frage', titleField: 'q')]
     public array $items = [];
 }

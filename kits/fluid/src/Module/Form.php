@@ -4,9 +4,10 @@ namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Data\YFormBridge;
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, Link, Repeater, Text, Textarea, YFormForm, YFormTable};
+use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, Collection, Link, Text, Textarea, YFormForm, YFormTable};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\FormField;
 
 #[AsModule('fluid.form', 'Formular')]
 #[AsBlock(
@@ -31,37 +32,12 @@ final class Form extends FluidBlock
     #[YFormForm('Formular aus dem Projekt (optional)', note: 'Leer = eigenes Formular aus den Feldern unten.')]
     public string $form = '';
 
-    #[Repeater(
+    #[Collection(
         'Felder des eigenen Formulars',
-        item: 'Feld',
+        item: FormField::class,
+        itemLabel: 'Feld',
         titleField: 'label',
         note: '„— Neuer Schritt —“ teilt das Formular in Schritte mit „Weiter“ und „Zurück“.',
-        fields: [
-            new Choice(
-                'Art',
-                key: 'type',
-                required: true,
-                choices: [YFormBridge::class, 'builderTypes'],
-                width: 'half',
-                default: 'text',
-            ),
-            new Checkbox('Pflichtfeld', key: 'required', width: 'half'),
-            new Text(
-                'Bezeichnung (bei „Neuer Schritt“: Titel, bei Hinweis: Text)',
-                key: 'label',
-                maxLength: 300,
-            ),
-            new Textarea('Auswahl: eine Möglichkeit je Zeile', key: 'options', rows: 3),
-            new Text('Platzhalter (optional)', key: 'placeholder', maxLength: 120, width: 'half'),
-            new Text('Hilfetext (optional)', key: 'help', maxLength: 200, width: 'half'),
-            new Text(
-                'Feldname (optional, für eine YForm-Tabelle)',
-                key: 'name',
-                maxLength: 40,
-                placeholder: 'automatisch aus der Bezeichnung',
-                search: false,
-            ),
-        ],
     )]
     public array $fields = [
         ['type' => 'text', 'label' => 'Name', 'required' => true],

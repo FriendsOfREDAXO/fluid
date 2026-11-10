@@ -3,9 +3,11 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, File, Media, Repeater, RichText, Text, Textarea, Url};
+use FriendsOfRedaxo\Fluid\Field\{Checkbox, Choice, Collection, MediaPicker, RichText, Text, Textarea, Url};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\VideoTrack;
+use Redaxo\Core\MediaPool\Media;
 
 #[AsModule('fluid.video', 'Video')]
 #[AsBlock(
@@ -29,54 +31,28 @@ final class Video extends FluidBlock
     #[Url('YouTube- oder Vimeo-Link', width: 'half')]
     public string $videoUrl = '';
 
-    #[File(
+    #[MediaPicker(
         'oder eigene Videodatei',
         types: ['mp4', 'm4v', 'webm', 'mov'],
         width: 'half',
         note: 'Datei aus dem Medienpool (MP4 oder WebM).',
     )]
-    public string $videoFile = '';
+    public ?Media $videoFile = null;
 
-    #[Media(
+    #[MediaPicker(
         'Eigenes Vorschaubild (optional)',
         width: 'half',
         note: 'Ohne Auswahl zeigt eine eigene Videodatei automatisch ein Standbild aus dem Video.',
+        preview: true,
     )]
-    public string $poster = '';
+    public ?Media $poster = null;
 
-    #[Repeater(
+    #[Collection(
         'Untertitel und Kapitel (eigene Videodatei)',
-        item: 'Spur',
+        item: VideoTrack::class,
+        itemLabel: 'Spur',
         titleField: 'lang',
         note: 'WebVTT- (.vtt) oder SubRip-Datei (.srt) aus dem Medienpool – Besucher schalten sie im Player ein.',
-        fields: [
-            new File('Datei (.vtt oder .srt)', key: 'file', required: true, types: ['vtt', 'srt']),
-            new Text(
-                'Sprache (Kürzel)',
-                key: 'lang',
-                required: true,
-                maxLength: 10,
-                placeholder: 'de',
-                width: 'half',
-            ),
-            new Choice(
-                'Art',
-                key: 'kind',
-                choices: [
-                    'subtitles' => 'Untertitel',
-                    'captions' => 'Untertitel für Gehörlose (mit Geräuschen)',
-                    'chapters' => 'Kapitel',
-                ],
-                width: 'half',
-                default: 'subtitles',
-            ),
-            new Text(
-                'Bezeichnung im Player (optional)',
-                key: 'label',
-                maxLength: 40,
-                placeholder: 'automatisch, z. B. „Deutsch“',
-            ),
-        ],
     )]
     public array $tracks = [];
 

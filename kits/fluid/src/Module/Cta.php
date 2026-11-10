@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Link, Media, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Link, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\MediaPool\Media;
 
 #[AsModule('fluid.cta', 'Handlungsaufruf')]
 #[AsBlock(
@@ -47,6 +48,6 @@ final class Cta extends FluidBlock
     #[Link('Button 2 – Link', width: 'half')]
     public string $button2Link = '';
 
-    #[Media('Bild (bei „Mit Bild“)')]
-    public string $image = '';
+    #[MediaPicker('Bild (bei „Mit Bild“)', preview: true)]
+    public ?Media $image = null;
 }

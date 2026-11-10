@@ -3,39 +3,39 @@
 namespace FriendsOfRedaxo\Fluid\Field;
 
 use Attribute;
+use Redaxo\Core\Form\Field\Text as CoreText;
+use Redaxo\Core\View\Renderable;
 
-/** Einzeiliger Text */
+/**
+ * Feld des Cores (`Text`) mit den Ergänzungen von fluid – alle zusätzlichen Parameter sind optional, ohne sie
+ * verhält es sich genau wie das Feld des Cores (siehe docs/entwickler.md, „Felder“).
+ */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-final class Text extends Field
+class Text extends CoreText implements FluidField
 {
+    /**
+     * @param 'half'|null $width fluid: halbe Breite im Formular
+     * @param list<string>|null $variants fluid: nur in diesen Darstellungen des Blocks
+     * @param string|null $placeholder fluid: Platzhalter im Eingabefeld
+     * @param bool $search fluid: in den Suchindex aufnehmen
+     */
     public function __construct(
-        string $label,
-        ?string $note = null,
+        string|Renderable $label,
+        string|Renderable|null $note = null,
         bool $required = false,
         ?string $key = null,
-        public readonly ?int $maxLength = null,
+        ?int $maxLength = null,
+        public readonly ?string $width = null,
+        /** @var list<string>|null */
+        public readonly ?array $variants = null,
         public readonly ?string $placeholder = null,
         public readonly bool $search = true,
-        ?string $width = null,
-        ?array $variants = null,
-        mixed $default = null,
     ) {
-        parent::__construct($label, $note, $required, $key, $width, $variants, $default);
+        parent::__construct($label, $note, $required, $key, $maxLength);
     }
 
-    #[\Override]
-    public function type(): string
+    public function fluid(): array
     {
-        return 'text';
-    }
-
-    #[\Override]
-    protected function extra(): array
-    {
-        return [
-            ...(null !== $this->maxLength ? ['max' => $this->maxLength] : []),
-            ...(null !== $this->placeholder ? ['placeholder' => $this->placeholder] : []),
-            ...($this->search ? [] : ['search' => false]),
-        ];
+        return array_filter(['width' => $this->width, 'variants' => $this->variants, 'placeholder' => $this->placeholder, 'search' => $this->search ? null : false], static fn ($v) => null !== $v);
     }
 }

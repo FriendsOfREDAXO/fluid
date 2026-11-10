@@ -31,8 +31,10 @@ use function str_starts_with;
  * Der Core migriert Entwicklungs-Datenbanken nicht selbst: Die festen Spalten value1–20, media1–10 … gibt es nicht mehr,
  * die Werte der Module stehen als JSON in `data`, und `ctype_id` heißt `content_section_id`. `migrate` legt die neuen
  * Spalten leer an. Dieser Befehl benennt um (oder überträgt, wenn `migrate` schon lief), legt `data` an und füllt sie
- * aus den alten Spalten: Block-Module von fluid → {values, tunes}, YForm-Formular → {form}. Mehrfach ausführbar; die
- * alten Spalten bleiben, bis --drop-old sie entfernt.
+ * aus den alten Spalten. Mehrfach ausführbar; die alten Spalten bleiben, bis --drop-old sie entfernt.
+ *
+ * Außerdem: Blöcke im früheren Format von fluid `{values: {…}, tunes: {…}}` → Speicherung des Cores (je Feld unter seinem
+ * Schlüssel, dazu `tunes`) – damit der Core die Eigenschaften der Blöcke selbst befüllt.
  */
 #[AsCommand(name: 'fluid:upgrade:slices', description: 'Übernimmt Blöcke älterer REDAXO-6-Datenbanken in die Spalte data (vor oder nach migrate)')]
 final class UpgradeSlicesCommand extends AbstractCommand
@@ -69,6 +71,7 @@ final class UpgradeSlicesCommand extends AbstractCommand
 
             $count = $table->hasColumn('value1') ? self::fill($name) : 0;
             $io->text($count . ' Slices übernommen');
+            $io->text(self::flatten($name) . ' Blöcke auf die Speicherung des Cores umgestellt');
 
             if ($dropOld) {
                 $table = Table::get($name);
@@ -108,6 +111,23 @@ final class UpgradeSlicesCommand extends AbstractCommand
                 continue;
             }
             Sql::factory()->setQuery('UPDATE ' . $table . ' SET data = ? WHERE id = ?', [ArticleSlice::encodeData($data), (int) $r['id']]);
+            ++$count;
+        }
+
+        return $count;
+    }
+
+    /** Blöcke im Format {values, tunes} → je Feld unter seinem Schlüssel (BlockModule::store) */
+    private static function flatten(string $table): int
+    {
+        $count = 0;
+        foreach (Sql::factory()->getArray('SELECT id, data FROM ' . $table . " WHERE data IS NOT NULL AND module LIKE '%.%'") as $r) {
+            $data = self::json($r['data']);
+            if (!BlockModule::isLegacy($data)) {
+                continue;
+            }
+            $tunes = is_array($data['tunes'] ?? null) ? $data['tunes'] : [];
+            Sql::factory()->setQuery('UPDATE ' . $table . ' SET data = ? WHERE id = ?', [ArticleSlice::encodeData(BlockModule::store($data['values'], $tunes)), (int) $r['id']]);
             ++$count;
         }
 

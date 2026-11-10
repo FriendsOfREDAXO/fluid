@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Link, Media, Repeater, Text};
+use FriendsOfRedaxo\Fluid\Field\{Collection, Link, MediaPicker, Text};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\LogosItem;
 
 #[AsModule('fluid.logos', 'Logos (Partner, Kunden)')]
 #[AsBlock(
@@ -23,16 +24,6 @@ final class Logos extends FluidBlock
     #[Text('Überschrift', maxLength: 110, width: 'half')]
     public string $title = '';
 
-    #[Repeater(
-        'Logos',
-        item: 'Logo',
-        titleField: 'name',
-        max: 16,
-        fields: [
-            new Text('Name', key: 'name', required: true, width: 'half'),
-            new Link('Link (optional)', key: 'link', width: 'half'),
-            new Media('Logo (SVG oder PNG, transparent)', key: 'image'),
-        ],
-    )]
+    #[Collection('Logos', item: LogosItem::class, itemLabel: 'Logo', titleField: 'name', max: 16)]
     public array $items = [];
 }

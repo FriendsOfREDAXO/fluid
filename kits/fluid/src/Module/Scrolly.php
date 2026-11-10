@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Choice, Media, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Choice, Collection, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\ScrollyItem;
 
 #[AsModule('fluid.scrolly', 'Scrollytelling')]
 #[AsBlock(
@@ -28,17 +29,6 @@ final class Scrolly extends FluidBlock
     #[Choice('Bildformat', required: true, choices: self::RATIOS, width: 'half')]
     public string $ratio = '4:5';
 
-    #[Repeater(
-        'Abschnitte',
-        item: 'Abschnitt',
-        titleField: 'title',
-        max: 8,
-        fields: [
-            new Text('Dachzeile (optional)', key: 'eyebrow', maxLength: 40, width: 'half'),
-            new Text('Titel', key: 'title', required: true, maxLength: 90, width: 'half'),
-            new Textarea('Text', key: 'text', maxLength: 600, rows: 4),
-            new Media('Bild', key: 'image'),
-        ],
-    )]
+    #[Collection('Abschnitte', item: ScrollyItem::class, itemLabel: 'Abschnitt', titleField: 'title', max: 8)]
     public array $items = [];
 }

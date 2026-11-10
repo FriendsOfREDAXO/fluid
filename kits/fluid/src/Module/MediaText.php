@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Choice, Link, Media, RichText, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Choice, Link, MediaPicker, RichText, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\MediaPool\Media;
 
 #[AsModule('fluid.media_text', 'Text + Bild')]
 #[AsBlock(
@@ -59,8 +60,8 @@ final class MediaText extends FluidBlock
     #[Link('Button 2 – Link', width: 'half')]
     public string $button2Link = '';
 
-    #[Media('Bild', width: 'half', note: 'Min. 1200 px breit.')]
-    public string $image = '';
+    #[MediaPicker('Bild', width: 'half', note: 'Min. 1200 px breit.', preview: true)]
+    public ?Media $image = null;
 
     #[Choice('Bildformat', required: true, choices: self::RATIOS, width: 'half')]
     public string $ratio = '4:3';

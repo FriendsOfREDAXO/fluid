@@ -17,18 +17,20 @@ Technische Doku zu fluid für REDAXO 6. Einstieg und Installation: [README](../R
 
 ## Ein eigener Block
 
-Ein Block ist eine Modulklasse: die Felder als Attribute an Eigenschaften (wie bei den Modulen des Cores), die Ausgabe in
-`view()` – oder als View-Datei daneben. Im Projekt, ohne das Kit zu ändern:
+Ein Block ist ein Modul des Cores mit anderer Basisklasse: die Felder als Attribute an Eigenschaften, die Ausgabe in
+`output()`. Der Core befüllt die Eigenschaften, speichert und prüft wie bei jedem Modul; fluid gibt Bearbeiten auf der
+Website, Abschnitt (Hintergrund, Abstände, Sprungmarke), Darstellungen, Layout-Spalten und das Kit dazu. Im Projekt,
+ohne das Kit zu ändern (`examples/block/`):
 
 ```php
 // src/Block/Teaser.php
 namespace Project\Block;
 
-use FriendsOfRedaxo\Fluid\Block;
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Link, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\Link;
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use Redaxo\Core\Form\Field\{Text, Textarea};
 
 use function Redaxo\Core\View\escape;
 
@@ -42,61 +44,81 @@ final class Teaser extends FluidBlock
     #[Textarea('Text', rows: 3)]
     public string $text = '';
 
-    #[Link('Link')]
+    #[Link('Link')]                                           // Feld nur von fluid
     public string $link = '';
 
-    protected static function view(Block $b, array $d): string
+    public function output(): string
     {
-        return '<div class="wrap"><h2 class="h3"' . $b->edit('title') . '>' . escape($d['title']) . '</h2>'
-            . '<p' . $b->edit('text', 'lines') . '>' . nl2br(escape($d['text']), false) . '</p></div>';
+        return '<div class="wrap"><h2 class="h3"' . $this->edit('title') . '>' . escape($this->title) . '</h2>'
+            . '<p' . $this->edit('text', 'lines') . '>' . nl2br(escape($this->text), false) . '</p></div>';
     }
 }
 ```
 
-Statt `view()` geht auch eine Datei neben der Klasse (`Teaser.view.php`, `$b` = Block, `$d` = Daten) – praktisch bei
-längerem Markup:
-
-```php
-<div class="wrap">
-  <h2 class="h3"<?= $b->edit('title') ?>><?= e($d['title']) ?></h2>
-  <p<?= $b->edit('text', 'lines') ?>><?= nl2br(e($d['text']), false) ?></p>
-</div>
-```
-
-Reihenfolge der Ausgabe: `view()` der Klasse → `{Klasse}.view.php` → `views/{typ}.php` des Kits. Die Blöcke von fluid
-haben ihre Ausgabe im Kit, damit jedes Kit sie anders gestalten kann.
-
-- `$b->edit('feld')` macht ein Feld direkt auf der Seite bearbeitbar (`'lines'` mehrzeilig, `'rich'` mit Formatierung).
-- Schlüssel eines Felds ist der Name der Eigenschaft in snake_case (`$buttonLink` → `button_link`, anders mit `key:`),
-  der Standardwert ihr Vorgabewert. Die Reihenfolge der Eigenschaften ist die Reihenfolge im Formular; Felder einer
-  Basisklasse kommen zuerst.
-- Daten liegen in der JSON-Spalte `data` des Slices: Felder unter `values`, Abschnitts-Optionen (Hintergrund, Abstände,
-  Spalte) unter `tunes` – echte Slices mit Rechten, Arbeitsversion und Historie des Cores. Im Code:
-  `BlockModule::of($slice)->values` bzw. `->data()` (mit Standardwerten), `->tunes`. Die Eigenschaften selbst
-  beschreiben nur die Felder, sie werden nicht befüllt.
-- Was den Blocktyp betrifft, ist statisch: `kit()`, `fields()`, `definition()`, `label()`, `view()`.
-  `BlockModule::classFor($key)` liefert die Klasse eines Block-Moduls, `BlockModule::all()` alle.
-- Vorlagen: `examples/block/` (`Hinweis.php` in einer Datei, `Teaser.php` mit View-Datei).
+- `$this->edit('feld')` macht ein Feld direkt auf der Seite bearbeitbar (`'lines'` mehrzeilig, `'rich'` mit
+  Formatierung; in Listen `items.0.title`). `$this->context()` ist der Block mit Darstellung (`variant()`) und Abschnitt.
+- Ohne eigenes `output()` gibt der Block die View seines Kits aus: `views/{typ}.php` mit `$b` (Block), `$d` (Werte als
+  Array, mit Standardwerten) und `$m` (das Modul mit den typisierten Eigenschaften). So haben die Blöcke von fluid ihre
+  Ausgabe im Kit, damit jedes Kit sie anders gestalten kann. Den Abschnitt (`<section>`) legt fluid um die Ausgabe.
+- Gespeichert wird wie beim Core: in der JSON-Spalte `data` des Slices je Feld unter seinem Schlüssel (Name der
+  Eigenschaft in snake_case, `$buttonLink` → `button_link`, anders mit `key:`), dazu `variant` (Darstellung) und `tunes`
+  (Abschnitt). Echte Slices mit Rechten, Arbeitsversion, Historie und Verwendungsliste (Medien, Seiten) des Cores.
+  Datenbanken mit dem früheren Format von fluid (`{values, tunes}`) stellt `console fluid:upgrade:slices` um.
+- Was den Blocktyp betrifft, ist statisch: `kit()`, `fields()`, `definition()`, `label()`, `variants()`.
+  `BlockModule::classFor($key)` liefert die Klasse eines Blocks, `BlockModule::all()` alle; `->data()` die Werte eines
+  Slices als Array.
 
 **Vom Modul des Cores zum Block:** von `FluidBlock` statt `Module` erben, Schlüssel mit `fluid.`, `#[AsBlock]` an die
-Klasse, die Feld-Attribute aus `FriendsOfRedaxo\Fluid\Field` statt aus `Redaxo\Core\Form\Field` (Namen und Parameter sind
-gleich), `view()` statt `output()`. Werte sind dabei Zeichenketten wie im Formular (Datum `2026-11-10`, Bild = Dateiname,
-Link = `redaxo://12` oder Adresse).
+Klasse – Felder und `output()` bleiben, wie sie sind. Für das Bearbeiten direkt auf der Seite `$this->edit('feld')` an
+die Elemente setzen. Vorhandene Slices behalten ihren Modulschlüssel; neue Inhalte kommen mit dem Block.
 
-**Felder** (`FriendsOfRedaxo\Fluid\Field\…`; alle mit `label`, `note`, `required`, `key`, `width: 'half'`,
-`variants: [...]` – nur bei diesen Darstellungen – und `default:` für Felder ohne Eigenschaft):
+**Felder.** Alle Felder des Cores (`Redaxo\Core\Form\Field\…`) funktionieren in Blöcken und in der Seitenleiste – auch
+in gewöhnlichen Modulen. fluid bietet dieselben Felder unter **gleichem Namen** in `FriendsOfRedaxo\Fluid\Field\…` an: als
+Unterklassen mit allen Parametern des Cores und **zusätzlichen, optionalen** Parametern. Ohne sie verhalten sie sich
+genau wie die des Cores; der Core kann sie überall verwenden (im Backend zeigt er sein eigenes Formular).
 
-| Attribut | | weitere Parameter |
+| Feld (Core) | Ergänzungen von fluid (optional) |
+|---|---|
+| `Text`, `Email`, `Url`, `Textarea` | `placeholder`, `search: false` (nicht in den Suchindex; Text/Textarea) |
+| `Number`, `Checkbox`, `Choice`, `DatePicker`, `TimePicker`, `DateTimePicker`, `ArticlePicker` | – |
+| `MediaPicker` | `preview: true` (Core) zeigt in fluid ein Bildfeld mit Bildbearbeitung, sonst eine Dateiauswahl |
+| `Collection` | `itemLabel` (Bezeichnung eines Eintrags, „+ Karte“), `titleField` (Feld als Titel des zugeklappten Eintrags) |
+| alle | `width: 'half'` (halbe Breite in der Seitenleiste), `variants: ['…']` (nur in diesen Darstellungen) |
+
+Warum Ergänzungen: Die Seitenleiste ist schmal und zeigt je Darstellung andere Felder – Breite und Darstellung gibt es
+im Formular des Cores nicht. `placeholder` fehlt dem Core bei Textfeldern; `search` steuert die Suche von fluid;
+`itemLabel` und `titleField` machen lange Listen in der Seitenleiste übersichtlich.
+
+**Wiederholgruppen** sind die `Collection` des Cores: jeder Eintrag ist ein Objekt einer kleinen Klasse mit eigenen
+Feldern, die Ausgabe bekommt eine Liste dieser Objekte, gespeichert wird eine Liste der Werte je Schlüssel.
+
+```php
+final class Card
+{
+    #[MediaPicker('Bild', preview: true)]
+    public ?Media $image = null;
+
+    #[Text('Titel', required: true, maxLength: 90)]
+    public string $title = '';
+}
+
+/** @var list<Card> */
+#[Collection('Karten', item: Card::class, itemLabel: 'Karte', titleField: 'title', max: 12)]
+public array $items = [];
+```
+
+**Felder nur von fluid** (eigene Namen; Unterklassen von `Text`, `Textarea` bzw. `Choice` des Cores):
+
+| Feld | | Wert |
 |---|---|---|
-| `Text`, `Textarea` | Text | `maxLength`, `placeholder`, `rows` (Textarea), `search: false` (nicht in die Suche) |
-| `RichText` | formatierter Text | |
-| `Choice` | Auswahl | `choices: [...]` oder `choices: [Klasse::class, 'methode']` |
-| `Checkbox`, `Number`, `DatePicker`, `TimePicker`, `Url` | wie im Core | |
-| `Link` | Seite, `#anker`, `https://…`, `mailto:` | |
-| `Media`, `File` | Bild bzw. Datei aus dem Medienpool | `types: ['vtt', 'srt']` |
-| `Repeater` | Wiederholgruppe | `fields: [new Text('Titel', key: 'title'), …]`, `item`, `titleField`, `min`, `max` |
-| `Icon`, `Geo`, `MediaCategory`, `Blog` | Symbol, Ort mit Adresssuche, Kategorie des Medienpools, Blog | |
-| `YFormTable`, `YFormForm`, `YFormField` | Tabelle, Formular-Klasse, Feld der gewählten Tabelle | |
+| `RichText` | formatierter Text | bereinigtes HTML |
+| `Link` | Seite (Linkmap), `#anker`, `https://…`, `mailto:`, `tel:` | `redaxo://12` bzw. Adresse |
+| `Icon`, `Geo` | Symbol des Kits, Ort mit Adresssuche | Name, „Breite, Länge“ |
+| `MediaCategory`, `Blog` | Kategorie des Medienpools, Blog | ID |
+| `YFormTable`, `YFormForm`, `YFormField` | Tabelle, Formular-Klasse, Feld der gewählten Tabelle | Name |
+
+Auswahlen aus Code: `choices: static function (): array { return Klasse::liste(); }` (wie beim Core; Pfeilfunktionen
+sind in Attributen nicht erlaubt) oder ein `ChoiceProvider`.
 
 **Block** (`#[AsBlock]`): `icon`, `group`, `help`, `label` (Standard: Name aus `AsModule`), `variants` (Darstellungen,
 erste = Standard), `variantHelp`, `nestable` (`true` oder Liste der Varianten), `background`, `requires` (`'yform'`),
@@ -104,7 +126,13 @@ erste = Standard), `variantHelp`, `nestable` (`true` oder Liste der Varianten), 
 `['type' => 'faq', 'items' => 'items', 'question' => 'q', 'answer' => 'a']`), `drags` (Greifer auf der Seite:
 `[['field' => 'measure', 'target' => '.prose', 'class' => 'prose--m-{v}', 'label' => 'Textbreite']]`).
 
-Felder ergänzen oder Beschriftungen ändern, ohne die Klasse anzufassen: Extension Point `FLUID_BLOCK_DEFINITION`.
+Beschriftungen und Darstellungen ändern, ohne die Klasse anzufassen: Kit (`kit.php` → `'blocks'`) oder Extension Point
+`FLUID_BLOCK_DEFINITION`. Neue Felder gehören als Eigenschaften in die Klasse (bzw. eine abgeleitete) – nur sie speichert
+der Core.
+
+**Gewöhnliche Module in der Seitenleiste:** fluid zeigt die Felder jedes Moduls mit Feld-Attributen (auch `Collection`
+und die Felder von fluid) in seinem Formular und speichert über das Formular des Cores – mit dessen Prüfungen und
+`validate()`. Nur Module mit eigenem `input()` und Mehrfachauswahlen von Medien bzw. Seiten öffnen das Formular des Cores.
 
 ## Eigene Kits
 
@@ -794,7 +822,7 @@ Addon-Klasse, `Schema::TABLES` in `getOwnedSchema()`; alles andere hängt schon 
 |---|---|
 | `src/` | Namespace `FriendsOfRedaxo\Fluid`: Editor-API (`Api`), Blöcke (`BlockModule`, `Block`, `BlockData`), Routing, Blog, Daten (YForm), Medien, Suche |
 | `src/Data/` | YForm-Anbindung: `YFormBridge`, Formular-Baukasten `BuiltForm`, Feld `FluidBlocks`, `RecordBlocks`, `Detail`, Postfach |
-| `src/Field/` | Feld-Attribute der Blöcke (`Text`, `Media`, `Repeater` …), `AsBlock`, `BlockSchema` (Definition aus den Attributen) |
+| `src/Field/` | Felder: gleichnamige Unterklassen der Felder des Cores mit Ergänzungen, Felder nur von fluid (`RichText`, `Link` …), `AsBlock`, `BlockSchema` (Schema für fluid aus den Attributen) |
 | `kits/fluid/` | das Grund-Kit: `src/Module/` (Blockklassen mit Feld-Attributen), `views/` (Ausgaben), `kit.php` (Assets, Hintergründe), `design.php` (Design-Tokens, Vorlagen), `functions.php`, `lang/` |
 | `src/Kit.php`, `src/AsKit.php` | Kits: Anmeldung, Auswahl (`Kit::active()`), Vererbung, Assets |
 | `kits/native/` | Kit „NativeCSS“: `template.view.php`, `views/`, `kit.php`, `assets/css/native.css`, NativeCSS in `assets/ncss/` |

@@ -32,26 +32,6 @@ final class Layout
         '1-1' => '½ + ½', '2-1' => '⅔ + ⅓', '1-2' => '⅓ + ⅔', '1-1-1' => '⅓ × 3', '1-1-1-1' => '¼ × 4', '1-3' => '¼ + ¾', '3-1' => '¾ + ¼',
     ];
 
-    /** @return array<string, mixed> Block-Definition (Felder im Format der Kits) */
-    public static function definition(): array
-    {
-        return [
-            'label' => 'Layout (Spalten)', 'group' => 'Layout',
-            'help' => 'Blöcke in Spalten nebeneinander: Raster wählen, dann in jede Spalte Blöcke einfügen („+ Block in diese Spalte“). Auf schmalen Bildschirmen stehen die Spalten untereinander. Hintergrund, Abstände und Sprungmarke gelten für den ganzen Abschnitt.',
-            'fields' => [
-                ['name' => 'preset', 'label' => 'Raster', 'type' => 'select', 'required' => true, 'default' => '1-1', 'options' => self::PRESET_LABELS,
-                    'help' => 'Weniger Spalten als bisher: Die Blöcke der wegfallenden Spalten wandern in die letzte Spalte – es geht nichts verloren.'],
-                ['name' => 'valign', 'label' => 'Ausrichtung vertikal', 'type' => 'select', 'required' => true, 'default' => 'top', 'width' => 'half',
-                    'options' => ['top' => 'Oben', 'center' => 'Mitte', 'bottom' => 'Unten', 'stretch' => 'Gestreckt (gleich hoch)']],
-                ['name' => 'gap', 'label' => 'Abstand zwischen den Spalten', 'type' => 'select', 'required' => true, 'default' => 'normal', 'width' => 'half',
-                    'options' => ['small' => 'Klein', 'normal' => 'Normal', 'large' => 'Groß']],
-                ['name' => 'stack', 'label' => 'Auf schmalen Bildschirmen', 'type' => 'select', 'required' => true, 'default' => 'default',
-                    'options' => ['default' => 'Untereinander (unter ca. 768 px)', 'tablet' => 'Schon auf Tablets untereinander (unter ca. 1024 px)']],
-                ['name' => 'reverse', 'label' => 'Reihenfolge mobil umkehren (letzte Spalte zuerst)', 'type' => 'bool', 'default' => false],
-            ],
-        ];
-    }
-
     /** Gezogene Spaltenbreiten in Zwölfteln (Griff zwischen den Spalten, wie Core\Layout in Studio) */
     public const int UNITS = 12;
     public const int MIN_UNITS = 2;

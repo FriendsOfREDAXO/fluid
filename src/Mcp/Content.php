@@ -294,6 +294,7 @@ final class Content
         if ([] === $new) {
             throw new ApiError('Keine bekannten Felder in „data“ (Felder des Blocktyps mit list_block_types).');
         }
+        $new = FieldForm::normalize($m::fields(), $new);
         $merged = $replace ? FieldForm::withDefaults($m::fields(), $new, $m::variants()) + (isset($old['widths']) ? ['widths' => $old['widths']] : []) : array_replace($old, $new);
         $this->store($a, $s->id, $merged, BlockModule::tunesOf($s), $m::name());
 
@@ -321,7 +322,7 @@ final class Content
             $after = (int) (Sql::factory()->getArray('SELECT id FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY priority DESC LIMIT 1',
                 [$a->id, $a->languageId, FluidAddon::revision()])[0]['id'] ?? 0);
         }
-        $values = FieldForm::withDefaults($m::fields(), self::clean($m::fields(), $data), $m::variants());
+        $values = FieldForm::withDefaults($m::fields(), FieldForm::normalize($m::fields(), self::clean($m::fields(), $data)), $m::variants());
         $tunes = isset($m::definition()['background']) ? ['background' => $m::definition()['background']] : [];
         $id = BlockOps::insert($a, $this->access->user, $after, ['module' => $m::key(), 'values' => $values, 'tunes' => $tunes]);
         Versions::snapshot($a->id, $a->languageId, FluidAddon::revision(), 'fluid_save');

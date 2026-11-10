@@ -4,6 +4,30 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Blöcke wie Module des Cores
+
+- **Ein Block ist ein Modul des Cores mit anderer Basisklasse:** Felder als Attribute des Cores, Ausgabe in `output()`,
+  der Core befüllt die Eigenschaften (typisiert: `?Media`, `DateTimeImmutable`, Objekte einer `Collection`). Vom Modul
+  zum Block: `FluidBlock` statt `Module`, Schlüssel `fluid.…`, `#[AsBlock]` – Felder und `output()` bleiben.
+  `$this->edit('feld')` für das Bearbeiten auf der Seite. Ohne eigenes `output()` die View des Kits (`$b`, `$d`, `$m`).
+- **Felder:** die des Cores, oder die gleichnamigen von fluid (`FriendsOfRedaxo\Fluid\Field\…`) als Unterklassen mit
+  zusätzlichen, optionalen Parametern: `width`, `variants`, `placeholder`, `search`, bei `Collection` `itemLabel` und
+  `titleField`. Felder nur von fluid: `RichText`, `Link`, `Icon`, `Geo`, `MediaCategory`, `Blog`, `YFormTable`,
+  `YFormForm`, `YFormField` – auch in gewöhnlichen Modulen nutzbar. Neu in der Seitenleiste: `Email`,
+  `DateTimePicker`, `ArticlePicker`, Zahl mit `min`/`max`/`step`, Auswahl mit Platzhalter und Gruppen.
+- **`Repeater` → `Collection` des Cores** (Eintrag = Klasse mit eigenen Feldern); `Media`/`File` → `MediaPicker`
+  (`preview: true` = Bildfeld). Die 17 Wiederholgruppen der Blöcke haben Eintragsklassen in `Kit\Fluid\Module\Item`.
+- **Speicherung wie beim Core:** je Feld unter seinem Schlüssel in `data`, dazu `variant` und `tunes` (vorher
+  `{values, tunes}`). `console fluid:upgrade:slices` stellt vorhandene Slices samt Historie um; gelesen wird das alte
+  Format weiterhin. Verweise (Medien, Seiten) kommen jetzt von den Feldern des Cores bzw. `Link`/`RichText`.
+- Formular im Backend benennt die Eingaben wie der Core nach Eigenschaft (`slice[moreLink]`) – vorher hätte ein
+  Speichern im Backend Felder mit zusammengesetzten Namen verloren.
+- **Gewöhnliche Module** zeigt die Seitenleiste mit derselben Abbildung – jetzt auch mit `Collection` und den Feldern
+  von fluid; gespeichert und geprüft vom Formular des Cores.
+- Entfernt: `view(Block $b, array $d)` und `{Klasse}.view.php` (→ `output()`), `Field\Field`, `Field\Repeater`,
+  `Field\Media`, `Field\File`, `Form\BlockValues` (→ internes `Form\Stored`), Felder anhängen über das Kit
+  (Felder gehören als Eigenschaften in die Klasse).
+
 ### Adressen (Rewriter)
 
 - **Für alle AddOns:** Einträge eigener Quellen (News, Termine, Produkte …) bekommen eine Adresse unter ihrer Seite –

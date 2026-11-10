@@ -230,7 +230,7 @@ final class Api
         [$slice, $module] = self::slice($article);
 
         return [
-            'html' => Form\FieldForm::render($module::class, $module->values, $module->tunes, 'f', false),
+            'html' => Form\FieldForm::render($module::class, $module->values(), $module->tunes, 'f', false),
             'label' => $module::label(),
         ];
     }
@@ -725,7 +725,9 @@ final class Api
      */
     private static function input(BlockModule $module): array
     {
-        return self::applyInput($module->values, $module->tunes);
+        [$data, $tunes] = self::applyInput($module->values(), $module->tunes);
+
+        return [Form\FieldForm::normalize($module::fields(), $data), $tunes];
     }
 
     /**
@@ -740,10 +742,10 @@ final class Api
         $f = Request::post('f', 'array', []);
         if (isset($f[1]) && is_array($f[1])) {
             // gezogene Spaltenbreiten stehen nicht im Formular: behalten (ein anderes Raster verwirft sie beim Ausgeben)
-            $data = Form\BlockValues::clean($f[1]) + (isset($data['widths']) ? ['widths' => $data['widths']] : []);
+            $data = Form\Stored::clean($f[1]) + (isset($data['widths']) ? ['widths' => $data['widths']] : []);
         }
         if (isset($f[2]) && is_array($f[2])) {
-            $tunes = Form\BlockValues::clean($f[2]);
+            $tunes = Form\Stored::clean($f[2]);
         }
         foreach (Request::post('patch', 'array', []) as $path => $value) {
             $path = (string) $path;

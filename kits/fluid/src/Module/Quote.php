@@ -3,9 +3,10 @@
 namespace FriendsOfRedaxo\Fluid\Kit\Fluid\Module;
 
 use FriendsOfRedaxo\Fluid\Field\AsBlock;
-use FriendsOfRedaxo\Fluid\Field\{Media, Repeater, Text, Textarea};
+use FriendsOfRedaxo\Fluid\Field\{Collection, MediaPicker, Text, Textarea};
 use FriendsOfRedaxo\Fluid\Kit\Fluid\FluidBlock;
 use Redaxo\Core\Content\AsModule;
+use FriendsOfRedaxo\Fluid\Kit\Fluid\Module\Item\QuoteItem;
 
 #[AsModule('fluid.quote', 'Zitat / Stimmen')]
 #[AsBlock(
@@ -28,17 +29,6 @@ final class Quote extends FluidBlock
     #[Text('Überschrift', maxLength: 110, width: 'half')]
     public string $title = '';
 
-    #[Repeater(
-        'Zitate',
-        item: 'Zitat',
-        titleField: 'name',
-        max: 12,
-        fields: [
-            new Textarea('Zitat', key: 'text', required: true, maxLength: 480, rows: 3),
-            new Text('Name', key: 'name', width: 'half'),
-            new Text('Funktion / Organisation', key: 'role', width: 'half'),
-            new Media('Porträt (optional, 1:1)', key: 'image'),
-        ],
-    )]
+    #[Collection('Zitate', item: QuoteItem::class, itemLabel: 'Zitat', titleField: 'name', max: 12)]
     public array $items = [];
 }

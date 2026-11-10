@@ -163,7 +163,7 @@ final class RecordBlocks
                 $i = $index($uid);
                 $m = $module($blocks[$i]['module']);
                 [$data, $tunes] = Api::applyInput($blocks[$i]['data'], $blocks[$i]['tunes']);
-                $blocks[$i]['data'] = FieldForm::withDefaults($m::fields(), $data, $m::variants());
+                $blocks[$i]['data'] = FieldForm::withDefaults($m::fields(), FieldForm::normalize($m::fields(), $data), $m::variants());
                 $blocks[$i]['tunes'] = $tunes;
                 $store();
 

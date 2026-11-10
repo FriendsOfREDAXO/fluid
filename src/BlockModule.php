@@ -2,18 +2,27 @@
 
 namespace FriendsOfRedaxo\Fluid;
 
-use Redaxo\Core\ExtensionPoint\Extension;
-use Redaxo\Core\ExtensionPoint\ExtensionPoint;
-use FriendsOfRedaxo\Fluid\Form\BlockValues;
 use FriendsOfRedaxo\Fluid\Form\FieldForm;
+use FriendsOfRedaxo\Fluid\Form\Stored;
 use Override;
 use Redaxo\Core\Content\ArticleSlice;
+use Redaxo\Core\Content\ExtensionPoint\SliceOutput;
+use Redaxo\Core\Content\ExtensionPoint\SlicePreview;
 use Redaxo\Core\Content\Module;
 use Redaxo\Core\Core;
+use Redaxo\Core\ExtensionPoint\AsExtension;
+use Redaxo\Core\ExtensionPoint\Extension;
+use Redaxo\Core\ExtensionPoint\ExtensionLevel;
+use Redaxo\Core\ExtensionPoint\ExtensionPoint;
 use Redaxo\Core\Form\Form;
+use Redaxo\Core\Form\FormSchema;
 use Redaxo\Core\Http\Request;
+use ReflectionClass;
 
+use function array_diff_key;
 use function array_filter;
+use function array_keys;
+use function count;
 use function in_array;
 use function is_a;
 use function is_array;
@@ -21,23 +30,12 @@ use function json_decode;
 use function Redaxo\Core\View\escape;
 
 /**
- * Basis für Module mit Feldschema („Block-Module“).
- *
- * Ein Block-Modul beschreibt nur seine Felder (Attribute an den Eigenschaften, siehe Field\Field) und seine Ausgabe
- * (view() in der Klasse, View-Datei daneben oder View des Kits).
- * Eingabeformular, Speichern und Bearbeiten auf der Website ergeben sich daraus. Gespeichert wird in der JSON-Spalte
- * `data` des Slices:
- *
- *   values  Felder des Blocks (laut Feld-Attributen)
- *   tunes   Abschnitts-Optionen (Hintergrund, Sprungmarke, Abstände, Spalte im Layout)
- *
- * Was den Blocktyp betrifft (Definition, Felder, Kit), ist statisch; eine Instanz gehört zu einem Slice
- * (`BlockModule::of($slice)`, wie bei allen Modulen des Cores).
- *
- * Beispiel:
+ * Basis der Blöcke von fluid. Ein Block ist ein Modul des Cores – Felder als Attribute an den Eigenschaften, Ausgabe in
+ * output() – mit dem, was fluid dazugibt: Bearbeiten direkt auf der Website, Abschnitt (Hintergrund, Abstände,
+ * Sprungmarke), Darstellungen, Layout-Spalten und die Gestaltung durch ein Kit.
  *
  *     #[AsModule('fluid.hinweis', 'Hinweis')]
- *     #[AsBlock(icon: 'info', group: 'Inhalt', nestable: true)]
+ *     #[AsBlock(icon: 'info', nestable: true)]
  *     final class Hinweis extends FluidBlock
  *     {
  *         #[Text('Überschrift', required: true, maxLength: 120)]
@@ -46,22 +44,33 @@ use function Redaxo\Core\View\escape;
  *         #[Choice('Art', choices: ['info' => 'Information', 'warn' => 'Warnung'])]
  *         public string $kind = 'info';
  *
- *         protected static function view(Block $b, array $d): string
+ *         public function output(): string
  *         {
- *             return '<div class="wrap"><p class="note note--' . escape($d['kind']) . '"' . $b->edit('headline') . '>'
- *                 . escape($d['headline']) . '</p></div>';
+ *             return '<div class="wrap"><p class="note note--' . escape($this->kind) . '"' . $this->edit('headline') . '>'
+ *                 . escape($this->headline) . '</p></div>';
  *         }
  *     }
+ *
+ * Die Felder sind die des Cores (Redaxo\Core\Form\Field\…) oder die gleichnamigen von fluid mit optionalen Ergänzungen
+ * (FriendsOfRedaxo\Fluid\Field\…: width, variants, placeholder …), dazu Felder, die es nur in fluid gibt (RichText,
+ * Link, Icon …). Gespeichert wird wie beim Core: je Feld unter seinem Schlüssel in der JSON-Spalte `data` des Slices,
+ * dazu `variant` (Darstellung) und `tunes` (Abschnitt).
+ *
+ * Ohne eigenes output() gibt der Block die View seines Kits aus (views/{typ}.php mit `$b` = Block, `$d` = Werte als
+ * Array, `$m` = das Modul). Den Abschnitt um die Ausgabe legt fluid selbst (Extension Points SliceOutput/SlicePreview).
  */
 abstract class BlockModule extends Module
 {
-    /** @var array<string, mixed> Felder des Blocks, wie gespeichert (ohne Standardwerte, siehe data()) */
-    #[BlockValues]
-    public array $values = [];
+    /** Darstellung (Variante) des Blocks – Auswahl „Darstellung“ im Formular */
+    #[Stored]
+    public string $variant = '';
 
-    /** @var array<string, mixed> Abschnitts-Optionen */
-    #[BlockValues]
+    /** @var array<string, mixed> Abschnitts-Optionen: Hintergrund, Sprungmarke, Abstände, Spalte im Layout */
+    #[Stored]
     public array $tunes = [];
+
+    /** Block, der gerade ausgegeben wird (Kontext für output(): edit(), Darstellung, Abschnitt) */
+    public ?Block $block = null;
 
     /** @var array<class-string<self>, array<string, mixed>> */
     private static array $definitions = [];
@@ -100,9 +109,9 @@ abstract class BlockModule extends Module
     }
 
     /**
-     * Definition des Blocks: #[AsBlock] an der Klasse und die Feld-Attribute an den Eigenschaften (Field\BlockSchema),
-     * darüber die Angaben des Kits zum Blocktyp (kit.php 'blocks' – z. B. zusätzliche Varianten) und der Extension
-     * Point FLUID_BLOCK_DEFINITION (Felder ergänzen, Beschriftungen ändern …).
+     * Definition des Blocks: #[AsBlock] an der Klasse und die Felder an den Eigenschaften (Field\BlockSchema), darüber
+     * die Angaben des Kits zum Blocktyp (kit.php 'blocks' – z. B. zusätzliche Darstellungen) und der Extension Point
+     * FLUID_BLOCK_DEFINITION (Beschriftungen ändern …).
      *
      * @return array<string, mixed>
      */
@@ -117,27 +126,6 @@ abstract class BlockModule extends Module
     public static function label(): string
     {
         return (string) (static::definition()['label'] ?? static::name());
-    }
-
-    /**
-     * Ausgabe direkt in der Klasse – wie output() bei gewöhnlichen Modulen. `$b` ist der Block (`$b->edit('feld')`
-     * macht ein Feld auf der Seite bearbeitbar), `$d` sind die Felder mit Standardwerten. null = View-Datei
-     * ({@see viewFile()}); die Blöcke des Kits nutzen Views im Kit, damit jedes Kit sie anders gestalten kann.
-     *
-     * @param array<string, mixed> $d
-     */
-    protected static function view(Block $b, array $d): ?string
-    {
-        return null;
-    }
-
-    /** View-Datei: {Klasse}.view.php neben der Klasse, sonst views/{typ}.php des Kits; überschreibbar per FLUID_BLOCK_VIEW */
-    public static function viewFile(Block $b): string
-    {
-        $own = substr((string) new \ReflectionClass(static::class)->getFileName(), 0, -4) . '.view.php';
-        $file = is_file($own) ? $own : static::kit()->view($b->type);
-
-        return (string) Extension::dispatch(new ExtensionPoint('FLUID_BLOCK_VIEW', $file, ['type' => $b->type, 'variant' => $b->variant(), 'block' => $b]));
     }
 
     /** Benötigte AddOns vorhanden? (#[AsBlock(requires: …)], z. B. 'yform') – sonst fehlt der Block in der Auswahl */
@@ -164,63 +152,51 @@ abstract class BlockModule extends Module
         return static::definition()['variants'] ?? [];
     }
 
+    // ------------------------------------------------------------------ Werte
+
     /**
-     * Felder des Slices mit Standardwerten.
+     * Gespeicherte Werte des Slices (ohne Abschnitt), wie in der Spalte `data` – mit `variant` und ggf. `widths`.
+     *
+     * @return array<string, mixed>
+     */
+    public function values(): array
+    {
+        return self::valuesOf($this->slice);
+    }
+
+    /**
+     * Werte des Slices mit Standardwerten – das `$d` der Views.
      *
      * @return array<string, mixed>
      */
     public function data(): array
     {
-        return FieldForm::withDefaults(static::fields(), $this->values, static::variants());
-    }
-
-    #[Override]
-    public function input(Form $form): string
-    {
-        return FieldForm::render(static::class, $this->values, $this->tunes, 'slice', dataKey: 'values', tunesKey: 'tunes');
-    }
-
-    #[Override]
-    public function output(): string
-    {
-        $slice = $this->slice;
-        $parent = Layout::parentOf($slice);
-        // Slice-Liste im Backend: Spalten-Blöcke mit Hinweis auf ihre Spalte, Layouts als Kurzinfo (keine doppelte Ausgabe)
-        if (self::backendPreview()) {
-            $badge = $parent ? '<p class="blocks-be-col"><i class="rex-icon fa-table-columns"></i> Spalte ' . Layout::col($slice) . ' im Layout darüber</p>' : '';
-
-            return $badge . $this->renderBlock();
-        }
-        // Spalten-Blöcke gibt ihr Layout aus (Layout::render)
-        if (null !== $parent) {
-            return '';
-        }
-
-        return $this->renderBlock();
+        return FieldForm::withDefaults(static::fields(), $this->values(), static::variants());
     }
 
     /**
-     * Werte für die Spalte `data` eines Slices (z. B. ContentHandler::addSlice()).
+     * Werte für die Spalte `data` eines Slices (z. B. ContentHandler::addSlice()): Felder je Schlüssel wie beim Core,
+     * dazu `tunes`.
      *
      * @param array<string, mixed> $values
      * @param array<string, mixed> $tunes
-     * @return array{values: array<string, mixed>, tunes: array<string, mixed>}
+     * @return array<string, mixed>
      */
     public static function store(array $values, array $tunes = []): array
     {
-        return ['values' => $values, 'tunes' => $tunes];
+        unset($values['tunes']);
+
+        return $values + ['tunes' => $tunes];
     }
 
     /**
-     * Gespeicherte Werte aus der Spalte `data` (direkte Abfragen ohne ArticleSlice).
+     * Werte und Abschnitt aus der Spalte `data` (direkte Abfragen ohne ArticleSlice).
      *
      * @return array{values: array<string, mixed>, tunes: array<string, mixed>}
      */
     public static function stored(?string $json): array
     {
-        $d = self::decode($json);
-
-        return ['values' => is_array($d['values'] ?? null) ? $d['values'] : [], 'tunes' => is_array($d['tunes'] ?? null) ? $d['tunes'] : []];
+        return self::split(self::decode($json));
     }
 
     /**
@@ -230,23 +206,211 @@ abstract class BlockModule extends Module
      */
     public static function tunesOf(ArticleSlice $slice): array
     {
-        return is_array($slice->data['tunes'] ?? null) ? $slice->data['tunes'] : [];
+        return self::split($slice->data)['tunes'];
     }
 
     /**
-     * Gespeicherte Felder eines Slices (ohne Standardwerte), ohne das Modul zu erzeugen.
+     * Gespeicherte Werte eines Slices (ohne Standardwerte und Abschnitt), ohne das Modul zu erzeugen.
      *
      * @return array<string, mixed>
      */
     public static function valuesOf(ArticleSlice $slice): array
     {
-        return is_array($slice->data['values'] ?? null) ? $slice->data['values'] : [];
+        return self::split($slice->data)['values'];
     }
 
     /** Werte als JSON für die Spalte `data` (direkte Updates ohne Handler) */
     public static function encodeStore(array $values, array $tunes = []): ?string
     {
         return ArticleSlice::encodeData(self::store($values, $tunes));
+    }
+
+    /**
+     * Spalte `data` → Werte und Abschnitt. Liest auch das frühere Format `{values: {…}, tunes: {…}}` (vor dem Umstieg
+     * auf die Speicherung des Cores – `console fluid:upgrade:slices` stellt um).
+     *
+     * @param array<array-key, mixed> $data
+     * @return array{values: array<string, mixed>, tunes: array<string, mixed>}
+     */
+    private static function split(array $data): array
+    {
+        $tunes = is_array($data['tunes'] ?? null) ? $data['tunes'] : [];
+        if (self::isLegacy($data)) {
+            return ['values' => $data['values'], 'tunes' => $tunes];
+        }
+        unset($data['tunes']);
+
+        return ['values' => $data, 'tunes' => $tunes];
+    }
+
+    /** Frühere Speicherung `{values: {…}, tunes: {…}}`? */
+    public static function isLegacy(array $data): bool
+    {
+        return is_array($data['values'] ?? null) && [] === array_diff_key($data, ['values' => 1, 'tunes' => 1]);
+    }
+
+    /** @return array<string, mixed> */
+    public static function decode(?string $json): array
+    {
+        if (null === $json || '' === $json) {
+            return [];
+        }
+        $v = json_decode($json, true);
+
+        return is_array($v) ? $v : [];
+    }
+
+    // ------------------------------------------------------------------ Formular und Ausgabe
+
+    #[Override]
+    public function input(Form $form): string
+    {
+        // wie beim Core: Eingaben nach Eigenschaft (slice[moreLink]), das Formular des Cores liest sie in die Eigenschaften
+        return FieldForm::render(static::class, $this->values(), $this->tunes, 'slice', dataKey: '', tunesKey: 'tunes', byProp: true);
+    }
+
+    /**
+     * Inhalt des Blocks (ohne Abschnitt) – wie output() bei jedem Modul des Cores. Ohne eigene Methode: die View des
+     * Kits (views/{typ}.php). In eigenen Blöcken: Eigenschaften lesen, `$this->edit('feld')` für das Bearbeiten auf der
+     * Seite, `$this->context()` für Darstellung und Abschnitt.
+     */
+    #[Override]
+    public function output(): string
+    {
+        $b = $this->context();
+        // Spalten-Blöcke gibt ihr Layout aus (Layout::render) – nicht noch einmal als eigener Slice
+        if (null === Block::$rendering && null !== $b->slice && null !== Layout::parentOf($b->slice) && !self::backendPreview()) {
+            return '';
+        }
+
+        return static::view($b);
+    }
+
+    /** Block, der gerade ausgegeben wird – für eine Ausgabe durch den Core aus dem Slice */
+    final public function context(): Block
+    {
+        return $this->block ??= $this->block();
+    }
+
+    /**
+     * Macht ein Feld im Bearbeiten-Modus direkt auf der Seite bearbeitbar (Attribut am Element).
+     * Pfad mit Punkten für Listen: `items.0.title`. Modus: `plain`, `lines` (mehrzeilig), `rich` (Formatierung).
+     */
+    final protected function edit(string $path, string $mode = 'plain'): string
+    {
+        return $this->context()->edit($path, $mode);
+    }
+
+    /** View des Kits (views/{typ}.php), überschreibbar per FLUID_BLOCK_VIEW */
+    public static function viewFile(Block $b): string
+    {
+        return (string) Extension::dispatch(new ExtensionPoint('FLUID_BLOCK_VIEW', static::kit()->view($b->type), ['type' => $b->type, 'variant' => $b->variant(), 'block' => $b]));
+    }
+
+    /** View des Kits ausgeben: `$b` Block, `$d` Werte, `$m` Modul */
+    protected function view(Block $b): string
+    {
+        $outer = Block::$rendering;   // Layout: Spalten-Blöcke werden innerhalb seiner View ausgegeben
+        Block::$rendering = $b;
+        try {
+            return (static function (string $__file, Block $b, array $d, BlockModule $m): string {
+                ob_start();
+                try {
+                    require $__file;
+                } finally {
+                    $html = (string) ob_get_clean();
+                }
+
+                return $html;
+            })(static::viewFile($b), $b, $b->data, $this);
+        } finally {
+            Block::$rendering = $outer;
+        }
+    }
+
+    /** Inhalt eines Blocks über output() der Instanz – mit dem Block als Kontext */
+    private static function inner(self $m, Block $b): string
+    {
+        Seo\StructuredData::collect($b);   // schema.org der Blöcke (FAQ …) für den Seitenkopf
+        static::kit()->definition();   // lädt auch die Hilfsfunktionen des Kits (functions.php) – auch für eigene Blöcke
+        $m->block = $b;
+        $outer = Block::$rendering;
+        Block::$rendering = $b;
+        try {
+            return $m->output();
+        } finally {
+            Block::$rendering = $outer;
+        }
+    }
+
+    /**
+     * Instanz mit anderen Werten als gespeichert (Vorschau beim Bearbeiten, Blöcke aus Daten ohne Slice): befüllt wie
+     * beim Core, ohne Slice.
+     *
+     * @param array<string, mixed> $values
+     * @param array<string, mixed> $tunes
+     */
+    public static function withValues(array $values, array $tunes = []): static
+    {
+        $m = new ReflectionClass(static::class)->newInstanceWithoutConstructor();
+        FormSchema::of(static::class)->hydrate($m, self::store($values, $tunes));
+
+        return $m;
+    }
+
+    /** @internal Abschnitt um die Ausgabe eines Blocks (Frontend) */
+    #[AsExtension(SliceOutput::class, ExtensionLevel::Early)]
+    public static function wrapOutput(SliceOutput $ep): string
+    {
+        return null !== self::classFor($ep->slice->moduleKey) ? self::of($ep->slice)->wrap((string) $ep->subject) : (string) $ep->subject;
+    }
+
+    /** @internal Vorschau in der Slice-Liste des Backends: Hinweis auf die Spalte im Layout */
+    #[AsExtension(SlicePreview::class)]
+    public static function wrapPreview(SlicePreview $ep): string
+    {
+        if (null === self::classFor($ep->slice->moduleKey) || null === Layout::parentOf($ep->slice)) {
+            return (string) $ep->subject;
+        }
+
+        return '<p class="blocks-be-col"><i class="rex-icon fa-table-columns"></i> Spalte ' . Layout::col($ep->slice) . ' im Layout darüber</p>' . $ep->subject;
+    }
+
+    /** Ausgabe eines Slices (output()) als Abschnitt – Spalten-Blöcke gibt ihr Layout aus */
+    private function wrap(string $inner): string
+    {
+        if (null !== Layout::parentOf($this->slice)) {
+            return '';
+        }
+        $b = $this->context();
+        Seo\StructuredData::collect($b);
+        static::kit()->markUsed($b->type, $b->variant());
+
+        return $this->section($b, $inner);
+    }
+
+    /** Ausgabe eines Slices als Abschnitt, optional mit anderen Daten (Vorschau beim Bearbeiten) */
+    public function renderBlock(?array $data = null, ?array $tunes = null, int $depth = 0): string
+    {
+        $b = $this->block($data, $tunes, $depth);
+        static::kit()->markUsed($b->type, $b->variant());
+        $m = null === $data && null === $tunes ? $this : static::withValues($b->data, $b->tunes);
+
+        return $this->section($b, self::inner($m, $b));
+    }
+
+    /** Abschnitt (section) mit Hintergrund, Abständen und dem Markup des Editors; leer für Besucher bei leerem Inhalt */
+    private function section(Block $b, string $inner): string
+    {
+        if ('' === trim($inner) && !Editing::active()) {
+            return '';
+        }
+        // aria-labelledby nur, wenn die Überschrift wirklich ausgegeben wird
+        $titled = str_contains($inner, 'id="' . $b->titleId() . '"');
+
+        return '<section id="' . escape($b->domId()) . '" class="' . escape($b->sectionClass()) . '"'
+            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . $this->editAttrs($b->type) . '>'
+            . $b->sectionBg() . $inner . "</section>\n";
     }
 
     /** Vorschau in der Slice-Liste des Backends (nicht für den Cache – der entsteht im Frontend) */
@@ -261,35 +425,6 @@ abstract class BlockModule extends Module
         $n = static::definition()['nestable'] ?? false;
 
         return true === $n || (is_array($n) && ('' === $variant || in_array($variant, $n, true)));
-    }
-
-    /** Inhalt des Blocks (View des Kits) – ohne Abschnitts-Hülle */
-    protected static function renderInner(Block $b): string
-    {
-        Seo\StructuredData::collect($b);   // schema.org der Blöcke (FAQ …) für den Seitenkopf
-        static::kit()->definition();   // lädt auch die Hilfsfunktionen des Kits (functions.php) – auch für eigene Blöcke
-        $outer = Block::$rendering;   // Layout: Spalten-Blöcke werden innerhalb seiner View ausgegeben
-        Block::$rendering = $b;
-        try {
-            // Ausgabe in der Klasse (view()) – sonst View-Datei neben der Klasse bzw. des Kits
-            $own = static::view($b, $b->data);
-            if (null !== $own) {
-                return $own;
-            }
-
-            return (static function (string $__file, Block $b, array $d): string {
-                ob_start();
-                try {
-                    require $__file;
-                } finally {
-                    $html = (string) ob_get_clean();
-                }
-
-                return $html;
-            })(static::viewFile($b), $b, $b->data);
-        } finally {
-            Block::$rendering = $outer;
-        }
     }
 
     /** Attribute für den Editor (nur im Bearbeiten-Modus) */
@@ -318,7 +453,8 @@ abstract class BlockModule extends Module
         $t['background'] = $card ? $own : $parentBg;
         $b = $this->block($data, $t, 6);
         static::kit()->markUsed($b->type, $b->variant());
-        $inner = static::renderInner($b);
+        $m = null === $data && null === $tunes ? $this : static::withValues($b->data, $b->tunes);
+        $inner = self::inner($m, $b);
         if ('' === trim($inner) && !Editing::active()) {
             return '';
         }
@@ -334,29 +470,7 @@ abstract class BlockModule extends Module
             ? '<p class="blocks-invalid">„' . escape(static::label()) . '“ in dieser Darstellung ist für Spalten nicht vorgesehen.</p>'
             : '';
 
-        if ('' === trim($inner) && !Editing::active()) {
-            return '';
-        }
-
         return '<div' . $anchor . ' class="' . escape(implode(' ', $cls)) . '"' . $this->editAttrs($b->type, Layout::col($this->slice)) . '>' . $invalid . $inner . "</div>\n";
-    }
-
-    /** Ausgabe eines Slices als Abschnitt, optional mit anderen Daten (Vorschau beim Bearbeiten) */
-    public function renderBlock(?array $data = null, ?array $tunes = null, int $depth = 0): string
-    {
-        $b = $this->block($data, $tunes, $depth);
-        static::kit()->markUsed($b->type, $b->variant());
-        $inner = static::renderInner($b);
-        // Block ohne Ausgabe (z. B. Datenliste ohne Tabelle): für Besucher ganz weglassen
-        if ('' === trim($inner) && !Editing::active()) {
-            return '';
-        }
-        // aria-labelledby nur, wenn die Überschrift wirklich ausgegeben wird
-        $titled = str_contains($inner, 'id="' . $b->titleId() . '"');
-
-        return '<section id="' . escape($b->domId()) . '" class="' . escape($b->sectionClass()) . '"'
-            . ($titled ? ' aria-labelledby="' . escape($b->titleId()) . '"' : '') . $this->editAttrs($b->type) . '>'
-            . $b->sectionBg() . $inner . "</section>\n";
     }
 
     /** Block aus Daten (ohne Slice) – z. B. YForm-Feld „Fluid-Blöcke“, siehe BlockData */
@@ -372,7 +486,7 @@ abstract class BlockModule extends Module
     public static function renderData(Block $b, string $editId = ''): string
     {
         static::kit()->markUsed($b->type, $b->variant());
-        $inner = static::renderInner($b);
+        $inner = self::inner(static::withValues($b->data, $b->tunes), $b);
         if ('' === trim($inner)) {
             return '';
         }
@@ -402,16 +516,5 @@ abstract class BlockModule extends Module
             $tunes ?? $this->tunes,
             $prev,
         );
-    }
-
-    /** @return array<string, mixed> */
-    public static function decode(?string $json): array
-    {
-        if (null === $json || '' === $json) {
-            return [];
-        }
-        $v = json_decode($json, true);
-
-        return is_array($v) ? $v : [];
     }
 }
