@@ -181,6 +181,16 @@ final class DemoCommand extends AbstractCommand
             }
             // 'parent' => 'slug' bei einer Menüseite: Unterseite im Menü (Kategorie in der Kategorie)
             $parentCat = isset($def['parent']) ? ($ids[(string) $def['parent']] ?? $existing((string) $def['parent'])) : null;
+            // Menüseite gibt es nur noch als Seite ohne Menüeintrag (früher „aus dem Menü genommen“): wieder zum Menüpunkt
+            // machen, statt eine zweite anzulegen – Inhalte und Adresse bleiben
+            if ('' !== $page && null !== ($old = $existing($slug)) && null === \Redaxo\Core\Content\Category::get($old)) {
+                ArticleHandler::convertToCategory($old);
+                \Redaxo\Core\Content\Category::clearInstancePool();
+                \Redaxo\Core\Content\Category::clearInstanceListPool();
+                \Redaxo\Core\Content\Article::clearInstancePool();
+                \Redaxo\Core\Content\Article::clearInstanceListPool();
+                $io->note('„' . $def['title'] . '“ steht wieder im Menü.');
+            }
             // Seite gibt es schon (z. B. aus einem früheren Lauf auf oberster Ebene): mit --page an die neue Stelle verschieben,
             // Inhalte bleiben – mit --update werden die Blöcke ersetzt
             if ('' !== $page && null !== ($old = $existing($slug)) && null !== ($oldCat = \Redaxo\Core\Content\Category::get($old))) {

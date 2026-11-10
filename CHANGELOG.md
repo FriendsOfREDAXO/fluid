@@ -125,6 +125,8 @@ Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
   - `--page=…` hängt einzelne Seiten an und verschiebt vorhandene an ihre Stelle, `--update` befüllt sie neu.
   - `--media-dir=…` übernimmt weitere Dateien in den Medienpool (z. B. einen Trailer, der nicht zum Kit gehört);
     `--media` und `--media-dir` allein scheitern auf einer Website mit Seiten nicht mehr.
+  - Gibt es eine Menüseite der Demo nur noch als Seite ohne Menüeintrag, macht `--page=…` sie wieder zum Menüpunkt
+    (Inhalte und Adresse bleiben), statt eine zweite anzulegen.
   - Mit `--page=start` wird die vorhandene Startseite neu befüllt; vorher entstand ein zweiter Startartikel, der
     Start- und 404-Seite wurde.
   - Blöcke gewöhnlicher Module (`'native' => 'modul', 'values' => […]`), nur wenn das Modul im Projekt liegt –
