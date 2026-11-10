@@ -28,6 +28,8 @@ const TEXTS = {
   blocksNew: '{n} neu', blocksChanged: '{n} geändert', blocksRemoved: 'Entfernt: {list}',
   noDiff: 'Keine Änderung an den Blöcken gegenüber dem vorherigen Stand.', firstState: 'Ältester Stand – nichts zum Vergleichen.',
   diffHint: 'Hervorgehoben: Änderungen gegenüber dem vorherigen Stand.',
+  stageDraft: 'Entwurf', stageLive: 'Veröffentlicht', stageDraftHint: 'Zwischenstand des Entwurfs – wird beim Veröffentlichen geleert',
+  stageLiveHint: 'War so online (Archiv)',
   now: 'Jetzt', count: '{n} ältere Stände', count1: '1 älterer Stand', close: 'Schließen', timeline: 'Zeitleiste',
   older: 'Älterer Stand', newer: 'Neuerer Stand', restore: 'Wiederherstellen', back: 'Zurück', yes: 'Ja, wiederherstellen',
   restoring: 'Wird wiederhergestellt …',
@@ -108,7 +110,7 @@ export async function open({ data: source, restore: restoreFn, css: cssUrl = '',
       : '';
     return `<li class="vs-item${v.now ? ' is-now' : ''}" role="presentation"><button type="button" class="vs-card" role="option" data-i="${i}" aria-selected="false" tabindex="-1">
       <span class="vs-card__top"><span class="vs-card__time">${esc(v.time)}</span><span class="vs-card__ago">${esc(v.now ? '' : v.ago)}</span>${v.now ? `<span class="vs-badge">${esc(L('now'))}</span>` : ''}</span>
-      <span class="vs-card__note">${esc(v.note)}</span>
+      <span class="vs-card__note">${esc(v.note)}${v.stage ? ` <span class="vs-stage vs-stage--${esc(v.stage)}" title="${esc(L(v.stage === 'draft' ? 'stageDraftHint' : 'stageLiveHint'))}">${esc(L(v.stage === 'draft' ? 'stageDraft' : 'stageLive'))}</span>` : ''}</span>
       ${v.user ? `<span class="vs-card__user">${esc(v.user)}</span>` : ''}${chips}</button></li>`;
   };
   const box = vs.querySelector('.vs__box');

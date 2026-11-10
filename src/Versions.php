@@ -17,10 +17,17 @@ use function count;
 use function in_array;
 
 /**
- * Versionen einer Seite (Modell aus KLXM Studio – Pages::addRevision): Stände beim Speichern (Entwurf) und vor dem
- * Veröffentlichen (Live), gespeichert in der Historie-Tabelle des Cores (rex_article_slice_history, Spalte revision).
- * Wiederherstellen schreibt einen Stand in den Entwurf – live geht er erst mit „Veröffentlichen“. Je Seite bleiben die
- * letzten KEEP Stände; der aktuelle Entwurf wird vor dem Wiederherstellen selbst gesichert (nichts geht verloren).
+ * Versionen einer Seite (Modell aus KLXM Studio – Pages::addRevision), gespeichert in der Historie-Tabelle des Cores
+ * (rex_article_slice_history, Spalte revision):
+ *
+ *  - Live-Version = Archiv: Jede Live-Schaltung legt den Stand an, der live geht („Veröffentlicht“). Lag die bisherige
+ *    Live-Version noch nicht im Archiv (z. B. im Backend direkt geändert), wird sie vorher gesichert.
+ *  - Arbeitsversion = Zwischenstände zum Rückgängigmachen (Speichern, vor dem Wiederherstellen/Verwerfen). Sie waren nie
+ *    veröffentlicht und werden bei der Live-Schaltung geleert.
+ *  - Wiederherstellen schreibt einen Stand in den Entwurf – live geht er erst mit „Veröffentlichen“, Korrekturen davor
+ *    sind möglich. Der aktuelle Entwurf wird vorher selbst gesichert (nichts geht verloren).
+ *
+ * Je Seite und Fassung bleiben die letzten KEEP Stände.
  */
 final class Versions
 {
@@ -28,9 +35,53 @@ final class Versions
     /** Speichern innerhalb dieser Sekunden fasst ein Stand zusammen (Tippen, mehrere Blöcke) */
     private const int MERGE = 120;
 
-    public const array TYPES = ['fluid_save' => 'Gespeichert', 'fluid_publish' => 'Vor dem Veröffentlichen', 'fluid_restore' => 'Vor dem Wiederherstellen', 'fluid_discard' => 'Vor dem Verwerfen'];
+    public const array TYPES = ['fluid_save' => 'Gespeichert', 'fluid_published' => 'Veröffentlicht', 'fluid_publish' => 'Vor dem Veröffentlichen',
+        'fluid_restore' => 'Vor dem Wiederherstellen', 'fluid_discard' => 'Vor dem Verwerfen'];
 
-    public static function snapshot(int $articleId, int $languageId, int $revision, string $type): void
+    /**
+     * Live-Schaltung: Arbeitsversion live schalten ($copy), den Stand, der live geht, ins Archiv – und die Zwischenstände der
+     * Arbeitsversion leeren. Die bisherige Live-Version wird vorher gesichert, falls sie noch nicht im Archiv liegt.
+     *
+     * @param callable(): void $copy kopiert die Arbeitsversion in die Live-Version
+     */
+    public static function publish(int $articleId, int $languageId, callable $copy): void
+    {
+        if (!self::archived($articleId, $languageId)) {
+            // eine Sekunde früher: Stände unterscheidet die Historie nur nach ihrem Zeitpunkt
+            self::snapshot($articleId, $languageId, ArticleRevision::LIVE, 'fluid_publish', date(Sql::FORMAT_DATETIME, time() - 1));
+        }
+        $copy();
+        // je Veröffentlichung ein Stand – außer es ging unverändert live (dann liegt er schon im Archiv)
+        if (!self::archived($articleId, $languageId)) {
+            self::snapshot($articleId, $languageId, ArticleRevision::LIVE, 'fluid_published');
+        }
+        ArticleSliceHistory::checkTables();
+        Sql::factory()->setQuery('DELETE FROM ' . ArticleSliceHistory::getTable() . ' WHERE article_id = ? AND language_id = ? AND revision = ?',
+            [$articleId, $languageId, ArticleRevision::WORK]);
+    }
+
+    /** Liegt die aktuelle Live-Version schon als letzter Stand im Archiv? (gleiche Blöcke, Reihenfolge, Status, Werte) */
+    private static function archived(int $articleId, int $languageId): bool
+    {
+        ArticleSliceHistory::checkTables();
+        $sql = Sql::factory();
+        $table = ArticleSliceHistory::getTable();
+        $last = $sql->getArray('SELECT MAX(history_date) AS d FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ?',
+            [$articleId, $languageId, ArticleRevision::LIVE])[0]['d'] ?? null;
+        if (null === $last) {
+            return false;
+        }
+        $live = $sql->getArray('SELECT module, content_section_id, priority, status, data FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ? ORDER BY content_section_id, priority',
+            [$articleId, $languageId, ArticleRevision::LIVE]);
+        $archive = $sql->getArray('SELECT module, content_section_id, priority, status, data FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ? AND history_date = ? AND slice_id > 0 ORDER BY content_section_id, priority',
+            [$articleId, $languageId, ArticleRevision::LIVE, $last]);
+        $norm = static fn (array $rows): string => md5((string) json_encode(array_map(static fn (array $r): array => [(string) $r['module'], (int) $r['content_section_id'], (int) $r['priority'], (int) $r['status'], BlockModule::decode(null !== $r['data'] ? (string) $r['data'] : null)], $rows)));
+
+        return $norm($live) === $norm($archive);
+    }
+
+    /** @param string|null $date Zeitpunkt des Stands (Standard: jetzt) */
+    public static function snapshot(int $articleId, int $languageId, int $revision, string $type, ?string $date = null): void
     {
         ArticleSliceHistory::checkTables();
         $sql = Sql::factory();
@@ -43,7 +94,13 @@ final class Versions
                 $sql->setQuery('DELETE FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ? AND history_date = ?', [$articleId, $languageId, $revision, $last['history_date']]);
             }
         }
-        $date = date(Sql::FORMAT_DATETIME);
+        // Stände unterscheidet die Historie nur nach ihrem Zeitpunkt (Sekunde): belegt → nächste freie Sekunde
+        $time = null !== $date ? (int) strtotime($date) : time();
+        while ($sql->getArray('SELECT 1 FROM ' . $table . ' WHERE article_id = ? AND language_id = ? AND revision = ? AND history_date = ? LIMIT 1',
+            [$articleId, $languageId, $revision, date(Sql::FORMAT_DATETIME, $time)])) {
+            ++$time;
+        }
+        $date = date(Sql::FORMAT_DATETIME, $time);
         $rows = $sql->getArray('SELECT * FROM rex_article_slice WHERE article_id = ? AND language_id = ? AND revision = ?', [$articleId, $languageId, $revision]);
         $cols = array_map(static fn ($c) => $c->name, Table::get($table)->getColumns());
         foreach ($rows ?: [['__empty' => true]] as $row) {
@@ -281,6 +338,8 @@ final class Versions
             $d = self::diff($st['blocks'], $st['modules'], $older['blocks'] ?? null, $older['modules'] ?? []);
             $versions[] = [
                 'id' => $st['key'], 'now' => $st['now'],
+                // Fassung: Zwischenstand des Entwurfs (wird beim Veröffentlichen geleert) oder veröffentlichter Stand (Archiv)
+                'stage' => $st['now'] ? null : (ArticleRevision::WORK === (int) $st['revision'] ? 'draft' : 'live'),
                 ...self::when($st['date'], $now),
                 'note' => $st['now'] ? (self::isWorkVersion() && self::hasChanges($article) ? 'Entwurf mit unveröffentlichten Änderungen' : 'Aktueller Stand') : (self::TYPES[$st['type']] ?? 'Gespeichert'),
                 'user' => $st['user'],

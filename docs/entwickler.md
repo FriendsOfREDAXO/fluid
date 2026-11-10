@@ -529,9 +529,20 @@ sich nicht mit Dritten. Detailkacheln gibt es nur rund um Orte, die auf der Webs
 
 ## Versionen
 
-Stände entstehen beim Speichern (zusammengefasst, solange dieselbe Person innerhalb von 2 Minuten weiterarbeitet),
-vor dem Veröffentlichen, vor dem Verwerfen und vor dem Wiederherstellen. Sie liegen in der Historie-Tabelle des Cores
-(`rex_article_slice_history`), die letzten 40 je Seite und Sprache (`Versions::KEEP`).
+Zwei Arten von Ständen in der Historie-Tabelle des Cores (`rex_article_slice_history`, Spalte `revision`), je Seite,
+Sprache und Fassung die letzten 40 (`Versions::KEEP`):
+
+- **Veröffentlicht (Archiv, Live-Version):** Jede Live-Schaltung legt den Stand an, der live geht. Lag die bisherige
+  Live-Version noch nicht im Archiv (z. B. im Backend direkt geändert), wird sie vorher gesichert („Vor dem
+  Veröffentlichen“). Geht etwas unverändert noch einmal live, entsteht kein neuer Stand.
+- **Entwurf (Zwischenstände der Arbeitsversion):** beim Speichern (zusammengefasst, solange dieselbe Person innerhalb von
+  2 Minuten weiterarbeitet), vor dem Verwerfen und vor dem Wiederherstellen. Sie waren nie online und werden bei der
+  Live-Schaltung geleert (`Versions::publish()`).
+- **Wiederherstellen** holt jeden Stand in den Entwurf; live geht er erst mit „Veröffentlichen“, Korrekturen davor sind
+  möglich. Ohne Arbeitsversion (System → Einstellungen) schreibt es direkt live.
+- Die Historie unterscheidet Stände nur nach ihrem Zeitpunkt (Sekunde) – fluid weicht auf die nächste freie Sekunde aus.
+- Die Ansicht zeigt beide Arten getrennt (Seitenleiste: zwei Listen, Zeitleiste: Kennzeichen „Entwurf“/„Veröffentlicht“).
+  Die Historie im Backend des Cores zeigt nur die veröffentlichten Stände.
 
 - Ansicht: `assets/editor/versions.js` + `versions.css` (aus KLXM Studio übernommen), Daten von `?fluid_api=version_view`.
 - Vorschau eines Stands: `?fluid_version=now|live|<revision>-<YmdHis>` rendert die Seite aus der Historie. Dafür

@@ -4,6 +4,15 @@
 
 Erste Fassung für REDAXO 6 (`redaxo/core` 6.x, YForm 6).
 
+### Versionen: Live-Schaltung = Stand, Entwurf = Zwischenstände
+
+- Jede Live-Schaltung legt den Stand an, der live geht („Veröffentlicht“, Archiv). Vorher ein Stand der alten
+  Live-Version nur, wenn sie noch nicht im Archiv liegt; unverändert erneut veröffentlicht → kein neuer Stand.
+- Zwischenstände der Arbeitsversion (Speichern, vor Verwerfen/Wiederherstellen) werden bei der Live-Schaltung geleert –
+  sie waren nie online. Seitenleiste und Zeitleiste zeigen Entwurf und Archiv getrennt.
+- Stände in derselben Sekunde liefen unter einem Zeitpunkt zusammen (Wiederherstellen hätte Blöcke doppelt eingefügt) –
+  fluid weicht jetzt auf die nächste freie Sekunde aus.
+
 ### Bearbeitungssperre
 
 - Optional (Website → Einstellungen → Redaktion, Standard aus): Eine Seite bearbeitet immer nur eine Person – wer sie

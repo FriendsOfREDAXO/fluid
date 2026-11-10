@@ -923,13 +923,18 @@
     const when = (d) => { const t = new Date(String(d).replace(' ', 'T')); return isNaN(t) ? d : t.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); };
     const editHref = (u) => unamp(u) + (u.includes('?') ? '&' : '?') + 'fluid_edit=1';
     const draw = {
-      versions: (res) => (res.versions?.length
-        ? `<p class="site-intro">Stände beim Speichern und vor dem Veröffentlichen. „Wiederherstellen“ holt einen Stand in den <b>Entwurf</b> – live geht er erst mit „Veröffentlichen“. Der aktuelle Entwurf wird vorher gesichert.</p>
-            <p><button type="button" class="btn btn--primary" data-versions-view>Zeitleiste mit Vorschau öffnen</button></p><ul class="site-list" role="list">`
-          + res.versions.map((v) => `<li class="site-list__item"><span class="site-list__main"><b>${esc(when(v.date))}</b><small>${esc(v.label)} · ${v.revision ? 'Entwurf' : 'Live'} · ${v.blocks} Blöcke${v.user ? ' · ' + esc(v.user) : ''}</small></span>
+      versions: (res) => {
+        if (!res.versions?.length) return '<p class="site-intro">Noch keine gespeicherten Stände. Sie entstehen beim Speichern und Veröffentlichen.</p>';
+        const item = (v) => `<li class="site-list__item"><span class="site-list__main"><b>${esc(when(v.date))}</b><small>${esc(v.label)} · ${v.blocks} Blöcke${v.user ? ' · ' + esc(v.user) : ''}</small></span>
               <button type="button" class="btn" data-versions-view="${v.revision}-${esc(String(v.date).replace(/\D/g, ''))}">Ansehen</button>
-              <button type="button" class="btn" data-restore="${esc(v.date)}" data-rev="${v.revision}">Wiederherstellen</button></li>`).join('') + '</ul>'
-        : '<p class="site-intro">Noch keine gespeicherten Stände. Sie entstehen beim Speichern und Veröffentlichen.</p>'),
+              <button type="button" class="btn" data-restore="${esc(v.date)}" data-rev="${v.revision}">Wiederherstellen</button></li>`;
+        // Entwurf (Zwischenstände bis zur Live-Schaltung) und veröffentlichte Stände (Archiv) getrennt
+        const draft = res.versions.filter((v) => v.revision), live = res.versions.filter((v) => !v.revision);
+        return `<p class="site-intro">„Wiederherstellen“ holt einen Stand in den <b>Entwurf</b> – live geht er erst mit „Veröffentlichen“, Korrekturen davor sind möglich. Der aktuelle Entwurf wird vorher gesichert.</p>
+            <p><button type="button" class="btn btn--primary" data-versions-view>Zeitleiste mit Vorschau öffnen</button></p>`
+          + (draft.length ? `<h3 class="site-h">Entwurf – Zwischenstände seit dem letzten Veröffentlichen</h3><p class="site-intro">Nie online gewesen. Beim Veröffentlichen werden sie geleert – der veröffentlichte Stand kommt ins Archiv.</p><ul class="site-list" role="list">${draft.map(item).join('')}</ul>` : '')
+          + (live.length ? `<h3 class="site-h">Veröffentlicht – Archiv</h3><p class="site-intro">So war die Seite online, je Veröffentlichung ein Stand.</p><ul class="site-list" role="list">${live.map(item).join('')}</ul>` : '');
+      },
       drafts: (res) => (res.drafts?.length
         ? '<p class="site-intro">Seiten mit Änderungen, die noch nicht veröffentlicht sind.</p><ul class="site-list" role="list">'
           + res.drafts.map((d) => `<li class="site-list__item"><span class="site-list__main"><a href="${esc(editHref(d.url))}"><b>${esc(d.name)}</b></a><small>zuletzt ${esc(when(d.changed))}${d.user ? ' · ' + esc(d.user) : ''}</small></span><a class="btn" href="${esc(editHref(d.url))}">Öffnen</a></li>`).join('') + '</ul>'

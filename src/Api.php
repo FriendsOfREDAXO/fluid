@@ -399,8 +399,9 @@ final class Api
         if (ArticleRevision::LIVE === FluidAddon::revision()) {
             return [];
         }
-        Versions::snapshot($article->id, $article->languageId, ArticleRevision::LIVE, 'fluid_publish');
-        ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::WORK, ArticleRevision::LIVE);
+        // Live-Schaltung = Stand im Archiv; Zwischenstände der Arbeitsversion werden geleert (Versions::publish)
+        Versions::publish($article->id, $article->languageId,
+            static fn () => ArticleRevision::copyContent($article->id, $article->languageId, ArticleRevision::WORK, ArticleRevision::LIVE));
         ArticleCache::delete($article->id, $article->languageId);
         Live::touch('page:' . $article->id);   // Live-Kanal der Seite (z. B. eigenes JavaScript von Kits)
         Activity::log('publish', $article->id);
