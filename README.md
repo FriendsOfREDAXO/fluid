@@ -40,9 +40,10 @@ fluid läuft auch ohne.
 5. [fluid in ein bestehendes REDAXO-6-Projekt einbauen](#fluid-in-ein-bestehendes-projekt-einbauen)
 6. [Webserver: schöne Adressen](#webserver-schöne-adressen)
 7. [KI-Werkzeuge anbinden (MCP)](#ki-werkzeuge-anbinden-mcp)
-8. [Häufige Probleme](#häufige-probleme)
-9. [Für Entwickler](#für-entwickler)
-10. [Lizenz und Danke](#lizenz-und-danke)
+8. [Geplant: Anbindung an das API-AddOn](#geplant-anbindung-an-das-api-addon)
+9. [Häufige Probleme](#häufige-probleme)
+10. [Für Entwickler](#für-entwickler)
+11. [Lizenz und Danke](#lizenz-und-danke)
 
 ---
 
@@ -319,6 +320,50 @@ Werkzeuge:
 
 Jede Änderung erscheint im **Verlauf** (Aktivität und Versionen) wie eine Änderung auf der Website. Rich-Text läuft
 durch denselben Filter wie die Ausgabe, Bilder im Fließtext gibt es nicht.
+
+## Geplant: Anbindung an das API-AddOn
+
+> [!NOTE]
+> Noch nicht umgesetzt – Plan und Stand der Arbeit.
+
+[yakamara/api](https://github.com/yakamara/api) (Branch `2.x`) ist die REST-API für REDAXO 6: Token mit Scopes je
+Route, dieselben Routen unter `/api/backend/…` mit der Sitzung und den Rechten des Backends, OpenAPI-Beschreibung,
+Endpunkte für Struktur, Slices, Medien, Sprachen, Benutzer und Metadaten. fluid soll dort seine eigenen Routen
+anmelden, damit Integrationen, Skripte und KI-Werkzeuge fluid über denselben Zugang ansprechen wie den Rest von
+REDAXO.
+
+**Grundsätze**
+
+- **Optional:** `yakamara/api` nur unter `suggest` in der `composer.json`. Ohne das AddOn läuft fluid wie bisher; mit
+  ihm meldet fluid seine Routen an (`RouteCollection::registerRoutePackage()`, wenn die Klasse vorhanden ist).
+- **In die API gehört, was von außen genutzt wird:** Blöcke einer Seite lesen und schreiben, Entwurf und
+  Veröffentlichen, Versionen, Design, Blöcke in Datensätzen. Rechte über Scopes bzw. die Rechte des Backends.
+- **fluid behält seine eigene Editor-API:** Vorschau und Ausgabe der Blöcke im Kontext der Seite, Präsenz, Live,
+  Gastzugang (`fluid_demo`). Das ist Technik der Oberfläche, keine Schnittstelle für Integrationen.
+- **Blöcke werden gegen das Feldschema von fluid geprüft.** Die Slice-Endpunkte der API kennen die Felder von
+  fluid-Blöcken nicht (sie stehen im Kit, nicht als Feld-Attribute des Cores) und schreiben `data` ungeprüft – die
+  fluid-Routen prüfen wie der Editor.
+- **MCP darauf aufbauen:** Langfristig nutzt der MCP-Server von fluid dieselben Routen, statt eine zweite
+  Schnittstelle zu pflegen.
+
+**Todo**
+
+- [ ] Verträglichkeit prüfen: `yakamara/api` lokal installieren; erreichen `/api/…`-Adressen das AddOn, obwohl das
+      Routing von fluid alle Pfade der Website auflöst? (Die API greift bei `PACKAGES_INCLUDED` und `YREWRITE_PREPARE`.)
+      Falls nötig: Präfix `RouteCollection::$preRoute` im Routing von fluid durchlassen.
+- [ ] `composer.json`: `yakamara/api` unter `suggest`; Anmeldung der Routen nur, wenn das AddOn aktiv ist.
+- [ ] Route-Paket `fluid`, zuerst lesend: Blöcke einer Seite (Typ, Felder, Abschnitts-Optionen, Status, Reihenfolge),
+      Versionen einer Seite, Design-Werte und Vorlagen, Blocktypen mit Feldschema (wie `modules/{key}` der API).
+- [ ] Schreibend: Block anlegen, ändern, verschieben, löschen, online/offline – im Entwurf, mit Versionen und Aktivität
+      wie im Editor; Entwurf veröffentlichen oder verwerfen; Version wiederherstellen.
+- [ ] Datensätze: Blöcke im Feld „Fluid-Blöcke“ eines YForm-Eintrags lesen und schreiben.
+- [ ] Scopes sinnvoll schneiden (z. B. `fluid/blocks/list`, `fluid/blocks/edit`, `fluid/publish`) und in der
+      OpenAPI-Beschreibung beschreiben; Varianten unter `/api/backend/…` mit den Rechten des Benutzers (Struktur,
+      Module, „darf veröffentlichen“).
+- [ ] Gewöhnliche REDAXO-Module bleiben bei den Slice-Endpunkten der API (die prüfen wie das Backend).
+- [ ] MCP-Server: Werkzeuge schrittweise auf die API-Routen umstellen; danach prüfen, was vom eigenen Zugang
+      (`/fluid-mcp`, eigene Schlüssel) übrig bleibt.
+- [ ] Doku: Abschnitt „API“ in dieser README und in der Entwickler-Referenz; Changelog.
 
 ## Häufige Probleme
 
