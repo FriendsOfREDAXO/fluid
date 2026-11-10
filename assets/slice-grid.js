@@ -211,8 +211,15 @@
       li.closest("ul").before(ph);
       item.closest('.fluid-be-grid')?.removeAttribute('data-editing');
     }
+    // Hintergrund bleibt an der Stelle des Blocks (wie beim Bearbeiten im Core): Die Sprungmarke #slice… der Adresse zeigt
+    // auf das Panel, das in den Dialog wandert – ohne das sprang die Seite an den Anfang
+    const spot = item || document.querySelector(`.fluid-be-grid .fluid-be-gcol:nth-child(${+params.get('fluid_col') || 1})`) || li.closest('.rex-slice');
+    const keep = () => spot?.isConnected && spot.scrollIntoView({ block: 'center' });
     dlg.querySelector('ul').append(li);
     document.body.append(dlg);
+    keep();
+    if (location.hash) history.replaceState(history.state, '', location.pathname + location.search);
+    addEventListener('load', keep, { once: true });
     dlg.showModal();
   };
 
