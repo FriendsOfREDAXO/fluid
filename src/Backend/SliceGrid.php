@@ -171,7 +171,7 @@ final class SliceGrid
     public static function compactMenu(SliceMenu $ep): void
     {
         $slice = ArticleSlice::getArticleSliceById($ep->sliceId, $ep->languageId, 0) ?? ArticleSlice::getArticleSliceById($ep->sliceId, $ep->languageId, 1);
-        if (null === $slice || null === BlockModule::classFor($slice->moduleKey)) {
+        if (null === $slice || !\Redaxo\Core\Content\Module::exists($slice->moduleKey)) {
             return;
         }
         // Verdoppeln (auch ohne Skript); Kopieren, Ausschneiden, Einfügen ergänzt assets/slice-grid.js im Menü „⋯“

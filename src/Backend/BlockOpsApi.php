@@ -48,7 +48,7 @@ final class BlockOpsApi extends ApiFunction
         }
         $sliceId = Request::request('slice_id', 'int');
         $slice = ArticleSlice::getArticleSliceById($sliceId, $article->languageId, FluidAddon::revision());
-        if (null === $slice || $slice->articleId !== $article->id || null === BlockModule::classFor($slice->moduleKey)) {
+        if (null === $slice || $slice->articleId !== $article->id || !\Redaxo\Core\Content\Module::exists($slice->moduleKey)) {
             throw new ApiFunctionException('Block nicht gefunden.');
         }
         $op = Request::request('fluid_op', 'string');

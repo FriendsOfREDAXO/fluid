@@ -141,28 +141,44 @@ final class BlockOps
         if (Layout::isLayout($slice)) {
             $out['children'] = array_map($item, Layout::children($slice));
         }
-        $label = (($m = BlockModule::classFor($slice->moduleKey)) ? $m::label() : $slice->moduleKey);
+        $label = self::label($slice->moduleKey);
 
         return ['clip' => $out, 'label' => $label];
+    }
+
+    /** Darf der Block hier eingefügt werden? fluid-Blöcke und gewöhnliche Module des Cores – Rechte und Template */
+    private static function check(User $user, string $template, string $key): void
+    {
+        if (!Module::exists($key)) {
+            throw new ApiError('Dieser Block lässt sich hier nicht einfügen.');
+        }
+        $label = self::label($key);
+        $perm = $user->getComplexPerm('modules');
+        if (!$user->admin && (!$perm instanceof ModulePermission || !$perm->hasPerm($key))) {
+            throw new ApiError('Keine Berechtigung für den Block „' . $label . '“.');
+        }
+        if (!Template::checkModuleAllowed($template, 1, $key)) {
+            throw new ApiError('Der Block „' . $label . '“ ist im Template dieser Seite nicht erlaubt.');
+        }
+    }
+
+    /** Name eines Blocks bzw. Moduls */
+    public static function label(string $key): string
+    {
+        $m = BlockModule::classFor($key);
+        if (null !== $m) {
+            return $m::label();
+        }
+        $class = Module::getClass($key);
+
+        return null !== $class ? $class::name() : $key;
     }
 
     /** Einfügen hinter einem Block (oberste Ebene; 0 = ganz oben); gibt die ID des neuen Abschnitts zurück */
     public static function insert(Article $article, User $user, int $after, array $clip): int
     {
         $template = (string) $article->templateKey;
-        $check = static function (string $key) use ($user, $template): void {
-            $m = BlockModule::classFor($key);
-            if (null === $m) {
-                throw new ApiError('Dieser Block lässt sich hier nicht einfügen.');
-            }
-            $perm = $user->getComplexPerm('modules');
-            if (!$user->admin && (!$perm instanceof ModulePermission || !$perm->hasPerm($key))) {
-                throw new ApiError('Keine Berechtigung für den Block „' . $m::label() . '“.');
-            }
-            if (!Template::checkModuleAllowed($template, 1, $key)) {
-                throw new ApiError('Der Block „' . $m::label() . '“ ist im Template dieser Seite nicht erlaubt.');
-            }
-        };
+        $check = static fn (string $key) => self::check($user, $template, $key);
         $items = [$clip];
         foreach ((array) ($clip['children'] ?? []) as $c) {
             if (is_array($c)) {
@@ -186,7 +202,10 @@ final class BlockOps
             if (0 === $i) {
                 unset($tunes['col']);   // eingefügter Abschnitt steht auf oberster Ebene
             }
-            $new = ContentHandler::addSlice($article->id, $article->languageId, 1, (string) $it['module'], BlockModule::store($values, $tunes), $prio + $i, FluidAddon::revision());
+            $key = (string) $it['module'];
+            // gewöhnliche Module: Werte wie gespeichert (ohne Abschnitt von fluid)
+            $data = null !== BlockModule::classFor($key) ? BlockModule::store($values, $tunes) : $values;
+            $new = ContentHandler::addSlice($article->id, $article->languageId, 1, $key, $data, $prio + $i, FluidAddon::revision());
             self::place($new, $prio + $i);
             $id = $new->id;
             if (0 === $i) {
