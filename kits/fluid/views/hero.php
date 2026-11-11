@@ -41,7 +41,7 @@ if ($v === 'fullbleed'):
 <div class="hero-bleed hero-bleed--<?= e($overlay) ?>">
   <div class="hero-bleed__media" aria-hidden="true">
     <?= !empty($d['image']) ? img((string) $d['image'], '100vw', ['eager' => true, 'alt' => '']) : '' ?>
-    <?php if ($vid): ?><video class="hero-bleed__video" data-bg-video muted loop playsinline preload="none"<?= $poster ? ' poster="' . e(media_url($poster, 1600)) . '"' : '' ?>><?php foreach ($sources as $src): ?><source src="<?= e($src['url']) ?>" type="<?= e($src['type']) ?>"><?php endforeach; ?></video><?php endif; ?>
+    <?php if ($vid): ?><video class="hero-bleed__video" data-bg-video muted loop playsinline preload="none"<?= $poster ? ' poster="' . e(media_url($poster, 1600)) . '"' : '' ?>><?php foreach ($sources as $src): ?><source src="<?= e($src['url']) ?>" type="<?= e($src['type']) ?>"<?= ($src['media'] ?? '') !== '' ? ' media="' . e($src['media']) . '"' : '' ?>><?php endforeach; ?></video><?php endif; ?>
   </div>
   <div class="wrap hero-bleed__inner">
     <?= $textHtml() ?>

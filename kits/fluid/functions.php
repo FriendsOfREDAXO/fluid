@@ -546,7 +546,7 @@ function fluid_video_embed(string $url, string $file, string $poster, string $ra
 function fluid_video_file(Media $video, string $poster, string $ratio, string $label, array $tracks, bool $ccOn, bool $transcript): string
 {
     $mm = \Redaxo\Core\MediaManager\MediaManager::class;
-    // AddOn video_editor (optional): dort gewähltes Poster und Web-Fassungen (WebM, kleinere MP4) – ohne es das Original
+    // AddOn video_editor (optional): dort gewähltes Poster und Web-Fassungen (WebM, 480p/720p/1080p je nach Bildschirm) – ohne es das Original
     $ve = class_exists(\FriendsOfRedaxo\VideoEditor\VideoEditor::class);
     $p = '' !== $poster ? Media::get($poster) : ($ve ? \FriendsOfRedaxo\VideoEditor\VideoEditor::poster($video->fileName) : null);
     $posterUrl = $p ? $mm::getUrl('fluid_poster', $p) : (\FriendsOfRedaxo\Fluid\Media\Ffmpeg::available() ? $mm::getUrl('fluid_poster', $video) : '');
@@ -579,7 +579,8 @@ function fluid_video_file(Media $video, string $poster, string $ratio, string $l
     // Untertitel von derselben Adresse (crossorigin nötig, sobald Medien von einer anderen Domain kommen)
     $h = '<div class="vembed r-' . e($ratio) . '"><video controls preload="none" playsinline' . ('' !== $posterUrl ? ' poster="' . e($posterUrl) . '"' : '')
         . ('' !== $label ? ' aria-label="' . e($label) . '"' : '') . '>'
-        . implode('', array_map(static fn (array $src) => '<source src="' . e($src['url']) . '" type="' . e($src['type']) . '">', $sources)) . $out . '</video></div>';
+        . implode('', array_map(static fn (array $src) => '<source src="' . e($src['url']) . '" type="' . e($src['type']) . '"'
+            . (($src['media'] ?? '') !== '' ? ' media="' . e($src['media']) . '"' : '') . '>', $sources)) . $out . '</video></div>';
     if ($transcript && $first) {
         $paras = \FriendsOfRedaxo\Fluid\Media\Tracks::transcript(\FriendsOfRedaxo\Fluid\Media\Tracks::cuesOf($first['file']));
         if ($paras) {

@@ -810,4 +810,83 @@ migrate (also :status, :make, :cleanup), content:rebuild-references, mailer:test
     'Bearbeiten im Overlay – das Raster bleibt stehen' => 'Editing in an overlay – the grid stays in place',
     'Was das Backend dazu kann' => 'What the backend adds',
     '<ul><li><strong>Spalten oder Baum:</strong> Ein Umschalter je Layout wechselt zwischen Raster und eingerückter Liste – im Browser gemerkt.</li><li><strong>Schwebende Leiste:</strong> Titel, Bearbeiten, ↑ ↓ und ⋯ erscheinen bei Zeiger oder Tastaturfokus, wie die Blockleiste auf der Website.</li><li><strong>Zwischenablage:</strong> Verdoppeln, Kopieren, Ausschneiden und Einfügen für alle Blöcke und Module – dieselbe Zwischenablage wie auf der Website, auch seitenübergreifend. Ausschneiden entfernt das Original erst nach dem Einfügen.</li><li><strong>In Spalten einfügen:</strong> „+ Block in Spalte n“ wählt die Spalte im Formular vor; Einfügen hinter einem Spalten-Block landet in derselben Spalte.</li><li><strong>Übersicht:</strong> Vorschauen sind in der Höhe begrenzt und in sich scrollbar; ein Layout offline zeigt, dass seine Blöcke auf der Website ebenfalls fehlen.</li><li><strong>Ohne Eingriff in den Core:</strong> Fragment, Extension Points und eine API-Funktion – hell und dunkel, ohne Inline-Styles.</li></ul>' => '<ul><li><strong>Columns or tree:</strong> a switch per layout toggles between grid and indented list – remembered in the browser.</li><li><strong>Floating bar:</strong> title, edit, ↑ ↓ and ⋯ appear on hover or keyboard focus, like the block bar on the website.</li><li><strong>Clipboard:</strong> duplicate, copy, cut and paste for all blocks and modules – the same clipboard as on the website, across pages too. Cutting removes the original only after pasting.</li><li><strong>Pasting into columns:</strong> “+ Block in Spalte n” preselects the column in the form; pasting after a column block lands in the same column.</li><li><strong>Overview:</strong> previews are limited in height and scroll within; an offline layout shows that its blocks are missing on the website too.</li><li><strong>No changes to the core:</strong> a fragment, extension points and an API function – light and dark, without inline styles.</li></ul>',
+    // Seite „Video“
+    'Video-Block, Hintergrundvideo und der Video-Editor im Medienpool – mit einem Kätzchen.' => 'Video block, background video and the video editor in the media pool – with a kitten.',
+    'fluid · Video' => 'fluid · Video',
+    'Videos, die *mitspielen*' => 'Videos that *play along*',
+    'Hintergrundvideo, Player mit Untertiteln und Transkript, Fassungen für jeden Bildschirm – und ein Video-Editor im Medienpool, der schneidet, optimiert und Untertitel schreibt.' => 'Background video, a player with subtitles and transcript, versions for every screen – and a video editor in the media pool that trims, optimizes and writes subtitles.',
+    'Zum Video-Editor' => 'To the video editor',
+    'Block „Video“' => 'Block “Video”',
+    'Ein Kätzchen, zwölf Sekunden' => 'One kitten, twelve seconds',
+    'Video: Kätzchen beim Spielen, Pixabay (Inhaltslizenz). Untertitel als Beispiel.' => 'Video: kitten at play, Pixabay (content license). Subtitles as an example.',
+    '<p>Im Block ist nur die Datei gewählt. Den Rest bringt der Video-Editor mit:</p><ul><li><strong>Poster</strong> – im Medienpool auf das Bild genau gewählt</li><li><strong>Untertitel</strong> Deutsch und Englisch – die Sprache der Seite ist vorausgewählt</li><li><strong>Text zum Video</strong> darunter, aus den Untertiteln – für Suche und Barrierefreiheit</li><li><strong>Fassungen</strong> in 480p, 720p und 1080p sowie WebM – das Telefon lädt die kleine Datei, der große Bildschirm die scharfe</li></ul><p>Fehlt der Video-Editor, spielt der Block einfach das Original ab – mit Poster und Untertiteln, die im Block gewählt sind.</p>' => '<p>The block only has the file selected. The video editor brings the rest:</p><ul><li><strong>Poster</strong> – picked in the media pool down to the exact frame</li><li><strong>Subtitles</strong> in German and English – the page language is preselected</li><li><strong>Text of the video</strong> below, from the subtitles – for search and accessibility</li><li><strong>Versions</strong> in 480p, 720p and 1080p plus WebM – the phone loads the small file, the big screen the sharp one</li></ul><p>Without the video editor, the block simply plays the original – with the poster and subtitles chosen in the block.</p>',
+    'Ohne Zusatz' => 'Built in',
+    'Was fluid mit Videos kann' => 'What fluid does with videos',
+    'Diese Blöcke gehören zu fluid – der Video-Editor ist eine Ergänzung, keine Voraussetzung.' => 'These blocks are part of fluid – the video editor is an addition, not a requirement.',
+    'YouTube und Vimeo' => 'YouTube and Vimeo',
+    'Mit Zwei-Klick-Lösung: Der Player lädt erst nach Zustimmung, vorher nur ein Vorschaubild.' => 'With two-click consent: the player only loads after consent, before that just a preview image.',
+    'Eigene Dateien' => 'Your own files',
+    'MP4 oder WebM aus dem Medienpool – ohne Fremddienst, mit Poster und Seitenverhältnis.' => 'MP4 or WebM from the media pool – no third-party service, with poster and aspect ratio.',
+    'Untertitel und Kapitel' => 'Subtitles and chapters',
+    'WebVTT-Spuren je Sprache; auf Wunsch gleich eingeschaltet.' => 'WebVTT tracks per language; switched on right away if you like.',
+    'Text zum Video' => 'Text of the video',
+    'Das Transkript aus den Untertiteln – aufklappbar unter dem Player.' => 'The transcript from the subtitles – expandable below the player.',
+    'Kino' => 'Cinema',
+    'Variante „Kino“: randlos auf dunklem Grund, Titel darüber – wie der Trailer auf der Startseite.' => 'Variant “Cinema”: edge to edge on a dark background, title above – like the trailer on the home page.',
+    'Hintergrundvideo' => 'Background video',
+    'Im Einstieg „Vollflächig“: stumm und in Schleife, mit Pause-Knopf; bei „Bewegung reduzieren“ bleibt das Standbild.' => 'In the “Full-bleed” hero: muted and looping, with a pause button; with “reduce motion” the still image stays.',
+    'AddOn video_editor' => 'Addon video_editor',
+    'Bearbeiten im Medienpool' => 'Editing in the media pool',
+    '<p>Der <strong>Video-Editor</strong> (FriendsOfREDAXO/video_editor) ist ein eigenes AddOn für REDAXO 6 – das Gegenstück zum Bild-Editor. Er hängt sich in die Detailansicht jedes Videos im Medienpool und arbeitet mit ffmpeg, als Aufträge im Hintergrund.</p><p>fluid braucht ihn nicht. Ist er installiert, nutzt fluid seine Poster, Fassungen und Untertitel – und im Medienfeld der Seitenleiste erscheint bei Videos „Video bearbeiten“.</p>' => '<p>The <strong>video editor</strong> (FriendsOfREDAXO/video_editor) is a separate addon for REDAXO 6 – the counterpart to the image editor. It hooks into the detail view of every video in the media pool and works with ffmpeg, as jobs in the background.</p><p>fluid doesn’t need it. If it is installed, fluid uses its posters, versions and subtitles – and the media field in the sidebar gets “Edit video” for videos.</p>',
+    'Analyse' => 'Analysis',
+    'Auf einen Blick: taugt das Video fürs Web?' => 'At a glance: is the video fit for the web?',
+    '<p>Neben den Feldern des Mediums zeigt das Panel eine Vorschau, die wichtigsten Angaben und eine Note von 0 bis 100. Abzüge gibt es für Codecs, die Browser nicht abspielen, zu große Auflösung oder Datenrate und Videos, die erst nach dem vollständigen Laden starten – jeweils mit passender Vorlage zum Beheben.</p>' => '<p>Next to the fields of the medium, the panel shows a preview, the key facts and a score from 0 to 100. Points are deducted for codecs browsers don’t play, oversized resolution or bitrate and videos that only start once fully loaded – each with a matching preset to fix it.</p>',
+    'Vorschau mit Springen (auch ohne Range-Support des Servers)
+Auflösung, Codec, Datenrate, Dauer
+Empfehlungen mit einem Klick' => 'Preview with seeking (even without range support on the server)
+Resolution, codec, bitrate, duration
+Recommendations with one click',
+    'Optimieren' => 'Optimize',
+    'Mehrere Fassungen in einem Schritt' => 'Several versions in one step',
+    '<p>Web 1080p, 720p und 480p, WebM, Archiv, „Sofort abspielbar“, Ton entfernen, Lautstärke angleichen: ankreuzen, starten. Jede Vorlage wird ein eigener Auftrag, die Aufträge laufen nacheinander.</p><p>Das Ergebnis ist eine <strong>neue, verknüpfte Fassung</strong> – das Original bleibt. Nur wer das Recht dazu hat, darf stattdessen das Original ersetzen, und nur mit einer Vorlage.</p>' => '<p>Web 1080p, 720p and 480p, WebM, archive, “instant playback”, remove audio, normalize loudness: tick, start. Each preset becomes its own job, the jobs run one after another.</p><p>The result is a <strong>new, linked version</strong> – the original stays. Only those with the permission may replace the original instead, and only with a single preset.</p>',
+    'Nie größer als das Original
+Neue Fassung oder Original ersetzen (eigenes Recht)
+Website wählt die Fassung je Bildschirmbreite' => 'Never larger than the original
+New version or replace the original (own permission)
+The website picks the version by screen width',
+    'Schneiden' => 'Trim',
+    'Zeitleiste mit Vorschaubildern' => 'Timeline with thumbnails',
+    '<p>Abspielkopf setzen, teilen (S), Abschnitt anklicken und entfernen – oder an den Rändern ziehen. „Ergebnis abspielen“ überspringt die entfernten Teile.</p><p><strong>Genau</strong> schneidet bildgenau und kodiert neu. <strong>Schnell</strong> kopiert ohne Qualitätsverlust, kann aber nur an Schlüsselbildern beginnen – der Editor zeigt sie und markiert gelb, was dadurch mitkommt.</p>' => '<p>Set the playhead, split (S), click a section and remove it – or drag its edges. “Play result” skips the removed parts.</p><p><strong>Exact</strong> cuts frame-accurately and re-encodes. <strong>Fast</strong> copies without quality loss but can only start at keyframes – the editor shows them and marks in yellow what comes along.</p>',
+    'Tastatur: Leertaste, ← →, S, I/O, Entf, ⌘Z
+Untertitel werden mitgeschnitten
+Ergebnis als neue Fassung' => 'Keyboard: space, ← →, S, I/O, Del, ⌘Z
+Subtitles are trimmed along
+Result as a new version',
+    'Untertitel' => 'Subtitles',
+    'Untertitel schreiben – mit Live-Vorschau' => 'Writing subtitles – with live preview',
+    '<p>Untertitel, Untertitel für Gehörlose (mit Geräuschen) und Kapitel, je Sprache beliebig viele Spuren. Jede Änderung erscheint sofort im Video.</p><p>VTT- und SRT-Dateien lassen sich laden, auch in UTF-16 oder Windows-1252. Gespeichert wird gesäubertes WebVTT im Medienpool – ohne HTML, ohne Stilblöcke.</p>' => '<p>Subtitles, captions for the deaf and hard of hearing (with sounds) and chapters, any number of tracks per language. Every change shows up in the video right away.</p><p>VTT and SRT files can be loaded, also in UTF-16 or Windows-1252. Saved is sanitized WebVTT in the media pool – no HTML, no style blocks.</p>',
+    'Eintrag am Abspielkopf (N)
+Anfang und Ende per Knopf setzen
+Alles um ein paar Sekunden verschieben' => 'Entry at the playhead (N)
+Set start and end with a button
+Shift everything by a few seconds',
+    'Und außerdem' => 'And also',
+    'Poster, schneller Schnitt, Warteschlange' => 'Poster, fast cut, queue',
+    'Poster wählen: mit ±1 Bild auf die Stelle genau – ein neues ersetzt das alte überall' => 'Pick a poster: exact to the frame with ±1 frame – a new one replaces the old one everywhere',
+    'Schneller Schnitt: Schlüsselbilder auf der Zeitleiste, gelb was mitkommt' => 'Fast cut: keyframes on the timeline, in yellow what comes along',
+    'Medienliste: offene Aufträge oben und am Video, live aktualisiert' => 'Media list: open jobs at the top and on the video, updated live',
+    'Rechte und Betrieb' => 'Permissions and operation',
+    'Wer darf was – und wie läuft das?' => 'Who may do what – and how does it run?',
+    'Vorschau, Analyse, Aufträge und Fassungen – für alle mit Zugriff auf die Medienkategorie.' => 'Preview, analysis, jobs and versions – for everyone with access to the media category.',
+    'Mit dem Recht video_editor[]: optimieren, schneiden, Poster und Untertitel.' => 'With the permission video_editor[]: optimize, trim, poster and subtitles.',
+    'Original ersetzen' => 'Replace original',
+    'Nur zusätzlich mit video_editor[replace] – Verwendungen bleiben erhalten.' => 'Only additionally with video_editor[replace] – usages stay intact.',
+    'Warteschlange' => 'Queue',
+    'Immer nur ein Auftrag gleichzeitig, mit Fortschritt, Abbrechen und erneut Versuchen.' => 'Only one job at a time, with progress, cancel and retry.',
+    'Fassungen, Poster und Untertitel auch per Befehl – etwa für viele Videos auf einmal.' => 'Versions, posters and subtitles also by command – e.g. for many videos at once.',
+    'Sicher' => 'Secure',
+    'ffmpeg nur mit festen Vorlagen und Argumentlisten, keine Shell; keine Inline-Styles im Backend.' => 'ffmpeg only with fixed presets and argument lists, no shell; no inline styles in the backend.',
+    'Videos im eigenen Template' => 'Videos in your own template',
+    'Ein fertiges <video> mit Poster, Fassungen und Untertiteln – oder die Bausteine einzeln.' => 'A complete <video> with poster, versions and subtitles – or the building blocks one by one.',
+    'Die Fassungen erscheinen als <source> mit Media-Query: 480p bis 640 px Breite, 720p bis 1280 px, darüber WebM und 1080p.' => 'The versions appear as <source> with a media query: 480p up to 640 px width, 720p up to 1280 px, above that WebM and 1080p.',
 ];

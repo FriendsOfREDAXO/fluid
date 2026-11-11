@@ -771,6 +771,35 @@ use Redaxo\Core\Addon\Addon;
 // Leere AddOn-Klasse: damit REDAXO das Paket kennt und das Kit (src/NatureKit.php) findet
 final class NatureAddon extends Addon {}
 CODE,
+    'veHtml' => <<<'CODE'
+use FriendsOfRedaxo\VideoEditor\VideoEditor;
+
+// fertiges <video>: Poster, Web-Fassungen je Bildschirm, Untertitel in der Sprache der Seite
+echo VideoEditor::html('kaetzchen.mp4', ['label' => 'Kätzchen spielt', 'captions' => true]);
+
+// stumm, in Schleife, ohne Bedienelemente – kleinste passende Fassung
+echo VideoEditor::html('kaetzchen.mp4', ['background' => true]);
+
+// nur fragen, wenn das AddOn da ist – fluid macht es genauso
+if (class_exists(VideoEditor::class)) {
+    $poster = VideoEditor::poster('kaetzchen.mp4');   // Media|null
+    $sources = VideoEditor::sources('kaetzchen.mp4'); // url, type, media
+    $tracks = VideoEditor::tracks('kaetzchen.mp4');   // url (text/vtt), lang, kind, label
+}
+CODE,
+    'veConsole' => <<<'CODE'
+# Fassungen anlegen – laufen nacheinander im Hintergrund
+php bin/console video:optimize kaetzchen.mp4 web480,web720,web1080,webm
+
+# Standbild bei 4,6 Sekunden als Poster
+php bin/console video:poster kaetzchen.mp4 4.6
+
+# Untertitel aus VTT oder SRT übernehmen (gesäubert, als WebVTT verknüpft)
+php bin/console video:subtitles kaetzchen.mp4 untertitel-en.srt --lang=en --label=English
+
+# wartende Aufträge abarbeiten (sonst erledigt das der Cronjob)
+php bin/console video:work
+CODE,
 ];
 $c = static fn (string $key, string $file, string $lang): array => ['file' => $file, 'lang' => $lang, 'code' => $code[$key]];
 
@@ -1293,6 +1322,7 @@ vollständig: Module, Templates, Schema'],
                         ['icon' => 'signpost', 'title' => 'Adressen', 'text' => 'Feste Adressen, Weiterleitungen, Sitemap und Seitenkopf – auch für Einträge anderer AddOns.', 'link_label' => 'Lesen', 'link' => '/adressen'],
                         ['icon' => 'chart-line-up', 'title' => 'Diagramme', 'text' => 'Balken, Linie, Torte – von Hand oder live aus Daten, mit austauschbarer Engine.', 'link_label' => 'Ansehen', 'link' => '/diagramme'],
                         ['icon' => 'squares-four', 'title' => 'Abschnitte & Spalten', 'text' => 'Hintergründe, Spalten, Raster und flexible Kacheln – mit Beispielen.', 'link_label' => 'Ansehen', 'link' => '/abschnitte-spalten'],
+                        ['icon' => 'film-slate', 'title' => 'Video', 'text' => 'Video-Block, Hintergrundvideo und der Video-Editor im Medienpool – mit einem Kätzchen.', 'link_label' => 'Ansehen', 'link' => '/video'],
                     ],
                 ]],
                 $cta,
@@ -1623,6 +1653,82 @@ vollständig: Module, Templates, Schema'],
                 ['type' => 'richtext', 'data' => ['variant' => 'standard', 'eyebrow' => '', 'title' => 'So baut man es', 'intro' => '', 'meta' => '',
                     'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
                     'text' => '<ul><li><strong>Abschnitt:</strong> In jedem Block unter „Abschnitt“ – Hintergrund, Abstand oben und unten, Sprungmarke.</li><li><strong>Spalten:</strong> Block „Layout (Spalten)“ einfügen, Raster wählen (½ + ½, ⅔ + ⅓, ⅓ + ⅔, ⅓ × 3, ¼ × 4, ¼ + ¾, ¾ + ¼), dann „+ Block in diese Spalte“. Breiten am Griff ziehen.</li><li><strong>Verhalten:</strong> Ausrichtung oben, Mitte, unten oder gestreckt; Abstand zwischen den Spalten; auf schmalen Bildschirmen untereinander – auf Wunsch schon auf Tablets und mit umgekehrter Reihenfolge.</li><li><strong>Raster in Blöcken:</strong> Bento, Kacheln, Karten und Kennzahlen ordnen ihre Einträge selbst an – ohne Layout-Block.</li><li><strong>Im Backend:</strong> Das Layout zeigt seine Blöcke nebeneinander in den Spalten oder als Baum; Kopieren, Ausschneiden und Einfügen gehen auch dort.</li></ul><p class="t-tip"><strong>Geplant:</strong> freie Container für Grid (benannte Bereiche), Flex-Reihen und Abschnitte mit mehreren Blöcken – nach demselben Prinzip wie die Spalten: echte Blöcke in Bereichen eines Containers.</p>']],
+                $cta,
+            ],
+        ],
+
+        // ------------------------------------------------------------------ Video (Video-Block, Hintergrundvideo, AddOn video_editor)
+        [
+            'slug' => 'video', 'title' => 'Video', 'menu' => true, 'parent' => 'fluid',
+            'blocks' => [
+                // Kätzchen von Pixabay – liegt nicht im Kit: fluid:demo --media-dir=… (ohne die Datei ein Einstieg ohne Video)
+                is_file(\Redaxo\Core\Filesystem\Path::media('kaetzchen.mp4'))
+                    ? ['type' => 'hero', 'data' => ['variant' => 'fullbleed', 'eyebrow' => 'fluid · Video',
+                        'title' => 'Videos, die *mitspielen*', 'text' => 'Hintergrundvideo, Player mit Untertiteln und Transkript, Fassungen für jeden Bildschirm – und ein Video-Editor im Medienpool, der schneidet, optimiert und Untertitel schreibt.',
+                        'button_label' => 'Zum Video-Editor', 'button_link' => '#video-editor', 'button2_label' => '', 'button2_link' => '',
+                        'points' => '', 'image' => null, 'video' => 'kaetzchen.mp4', 'overlay' => 'gradient']]
+                    : ['type' => 'hero', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'compact', 'eyebrow' => 'fluid · Video',
+                        'title' => 'Videos, die *mitspielen*', 'text' => 'Hintergrundvideo, Player mit Untertiteln und Transkript, Fassungen für jeden Bildschirm – und ein Video-Editor im Medienpool.']],
+                ...(is_file(\Redaxo\Core\Filesystem\Path::media('kaetzchen.mp4')) ? [
+                    ['type' => 'video', 'data' => ['variant' => 'text', 'eyebrow' => 'Block „Video“', 'title' => 'Ein Kätzchen, zwölf Sekunden',
+                        'intro' => '', 'video_url' => '', 'video_file' => 'kaetzchen.mp4', 'poster' => null, 'tracks' => [],
+                        'cc_on' => true, 'transcript' => true, 'ratio' => '16-9',
+                        'caption' => 'Video: Kätzchen beim Spielen, Pixabay (Inhaltslizenz). Untertitel als Beispiel.',
+                        'text' => '<p>Im Block ist nur die Datei gewählt. Den Rest bringt der Video-Editor mit:</p><ul><li><strong>Poster</strong> – im Medienpool auf das Bild genau gewählt</li><li><strong>Untertitel</strong> Deutsch und Englisch – die Sprache der Seite ist vorausgewählt</li><li><strong>Text zum Video</strong> darunter, aus den Untertiteln – für Suche und Barrierefreiheit</li><li><strong>Fassungen</strong> in 480p, 720p und 1080p sowie WebM – das Telefon lädt die kleine Datei, der große Bildschirm die scharfe</li></ul><p>Fehlt der Video-Editor, spielt der Block einfach das Original ab – mit Poster und Untertiteln, die im Block gewählt sind.</p>']],
+                ] : []),
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Ohne Zusatz', 'title' => 'Was fluid mit Videos kann', 'intro' => 'Diese Blöcke gehören zu fluid – der Video-Editor ist eine Ergänzung, keine Voraussetzung.', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'youtube-logo', 'title' => 'YouTube und Vimeo', 'text' => 'Mit Zwei-Klick-Lösung: Der Player lädt erst nach Zustimmung, vorher nur ein Vorschaubild.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'film-slate', 'title' => 'Eigene Dateien', 'text' => 'MP4 oder WebM aus dem Medienpool – ohne Fremddienst, mit Poster und Seitenverhältnis.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'list-bullets', 'title' => 'Untertitel und Kapitel', 'text' => 'WebVTT-Spuren je Sprache; auf Wunsch gleich eingeschaltet.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'article', 'title' => 'Text zum Video', 'text' => 'Das Transkript aus den Untertiteln – aufklappbar unter dem Player.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'projector-screen', 'title' => 'Kino', 'text' => 'Variante „Kino“: randlos auf dunklem Grund, Titel darüber – wie der Trailer auf der Startseite.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'play-circle', 'title' => 'Hintergrundvideo', 'text' => 'Im Einstieg „Vollflächig“: stumm und in Schleife, mit Pause-Knopf; bei „Bewegung reduzieren“ bleibt das Standbild.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'richtext', 'tunes' => ['anchor' => 'video-editor'], 'data' => ['variant' => 'standard', 'eyebrow' => 'AddOn video_editor', 'title' => 'Bearbeiten im Medienpool', 'intro' => '', 'meta' => '',
+                    'measure' => 'normal', 'dropcap' => false, 'toc' => false, 'reveal' => 'off', 'scrollspy' => 'off',
+                    'text' => '<p>Der <strong>Video-Editor</strong> (FriendsOfREDAXO/video_editor) ist ein eigenes AddOn für REDAXO 6 – das Gegenstück zum Bild-Editor. Er hängt sich in die Detailansicht jedes Videos im Medienpool und arbeitet mit ffmpeg, als Aufträge im Hintergrund.</p><p>fluid braucht ihn nicht. Ist er installiert, nutzt fluid seine Poster, Fassungen und Untertitel – und im Medienfeld der Seitenleiste erscheint bei Videos „Video bearbeiten“.</p>']],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Analyse', 'title' => 'Auf einen Blick: taugt das Video fürs Web?',
+                    'text' => '<p>Neben den Feldern des Mediums zeigt das Panel eine Vorschau, die wichtigsten Angaben und eine Note von 0 bis 100. Abzüge gibt es für Codecs, die Browser nicht abspielen, zu große Auflösung oder Datenrate und Videos, die erst nach dem vollständigen Laden starten – jeweils mit passender Vorlage zum Beheben.</p>',
+                    'list' => "Vorschau mit Springen (auch ohne Range-Support des Servers)\nAuflösung, Codec, Datenrate, Dauer\nEmpfehlungen mit einem Klick",
+                    'image' => 'fluid-video-panel.jpg', 'ratio' => '3:4', 'split' => 'media']],
+                ['type' => 'media_text', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'left', 'eyebrow' => 'Optimieren', 'title' => 'Mehrere Fassungen in einem Schritt',
+                    'text' => '<p>Web 1080p, 720p und 480p, WebM, Archiv, „Sofort abspielbar“, Ton entfernen, Lautstärke angleichen: ankreuzen, starten. Jede Vorlage wird ein eigener Auftrag, die Aufträge laufen nacheinander.</p><p>Das Ergebnis ist eine <strong>neue, verknüpfte Fassung</strong> – das Original bleibt. Nur wer das Recht dazu hat, darf stattdessen das Original ersetzen, und nur mit einer Vorlage.</p>',
+                    'list' => "Nie größer als das Original\nNeue Fassung oder Original ersetzen (eigenes Recht)\nWebsite wählt die Fassung je Bildschirmbreite",
+                    'image' => 'fluid-video-optimieren.jpg', 'ratio' => '3:4', 'split' => 'media']],
+                ['type' => 'media_text', 'data' => ['variant' => 'right', 'eyebrow' => 'Schneiden', 'title' => 'Zeitleiste mit Vorschaubildern',
+                    'text' => '<p>Abspielkopf setzen, teilen (S), Abschnitt anklicken und entfernen – oder an den Rändern ziehen. „Ergebnis abspielen“ überspringt die entfernten Teile.</p><p><strong>Genau</strong> schneidet bildgenau und kodiert neu. <strong>Schnell</strong> kopiert ohne Qualitätsverlust, kann aber nur an Schlüsselbildern beginnen – der Editor zeigt sie und markiert gelb, was dadurch mitkommt.</p>',
+                    'list' => "Tastatur: Leertaste, ← →, S, I/O, Entf, ⌘Z\nUntertitel werden mitgeschnitten\nErgebnis als neue Fassung",
+                    'image' => 'fluid-video-schneiden.jpg', 'ratio' => '3:2', 'split' => 'media']],
+                ['type' => 'media_text', 'tunes' => ['background' => 'muted'], 'data' => ['variant' => 'left', 'eyebrow' => 'Untertitel', 'title' => 'Untertitel schreiben – mit Live-Vorschau',
+                    'text' => '<p>Untertitel, Untertitel für Gehörlose (mit Geräuschen) und Kapitel, je Sprache beliebig viele Spuren. Jede Änderung erscheint sofort im Video.</p><p>VTT- und SRT-Dateien lassen sich laden, auch in UTF-16 oder Windows-1252. Gespeichert wird gesäubertes WebVTT im Medienpool – ohne HTML, ohne Stilblöcke.</p>',
+                    'list' => "Eintrag am Abspielkopf (N)\nAnfang und Ende per Knopf setzen\nAlles um ein paar Sekunden verschieben",
+                    'image' => 'fluid-video-untertitel.jpg', 'ratio' => '3:2', 'split' => 'media']],
+                ['type' => 'gallery', 'data' => ['variant' => 'grid', 'eyebrow' => 'Und außerdem', 'title' => 'Poster, schneller Schnitt, Warteschlange', 'intro' => '',
+                    'images' => [
+                        ['image' => 'fluid-video-poster.jpg', 'caption' => 'Poster wählen: mit ±1 Bild auf die Stelle genau – ein neues ersetzt das alte überall'],
+                        ['image' => 'fluid-video-schnell.jpg', 'caption' => 'Schneller Schnitt: Schlüsselbilder auf der Zeitleiste, gelb was mitkommt'],
+                        ['image' => 'fluid-video-warteschlange.jpg', 'caption' => 'Medienliste: offene Aufträge oben und am Video, live aktualisiert'],
+                    ],
+                    'columns' => '3', 'ratio' => '3:2', 'captions' => true, 'lightbox' => true]],
+                ['type' => 'features', 'tunes' => ['background' => 'muted'], 'data' => [
+                    'variant' => 'icons', 'eyebrow' => 'Rechte und Betrieb', 'title' => 'Wer darf was – und wie läuft das?', 'intro' => '', 'size' => 'm',
+                    'items' => [
+                        ['icon' => 'eye', 'title' => 'Ansehen', 'text' => 'Vorschau, Analyse, Aufträge und Fassungen – für alle mit Zugriff auf die Medienkategorie.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'pencil-simple', 'title' => 'Bearbeiten', 'text' => 'Mit dem Recht video_editor[]: optimieren, schneiden, Poster und Untertitel.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'arrows-clockwise', 'title' => 'Original ersetzen', 'text' => 'Nur zusätzlich mit video_editor[replace] – Verwendungen bleiben erhalten.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'hourglass', 'title' => 'Warteschlange', 'text' => 'Immer nur ein Auftrag gleichzeitig, mit Fortschritt, Abbrechen und erneut Versuchen.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'terminal-window', 'title' => 'Konsole', 'text' => 'Fassungen, Poster und Untertitel auch per Befehl – etwa für viele Videos auf einmal.', 'link_label' => '', 'link' => ''],
+                        ['icon' => 'shield-check', 'title' => 'Sicher', 'text' => 'ffmpeg nur mit festen Vorlagen und Argumentlisten, keine Shell; keine Inline-Styles im Backend.', 'link_label' => '', 'link' => ''],
+                    ],
+                ]],
+                ['type' => 'code', 'data' => ['eyebrow' => 'Für Entwickler', 'title' => 'Videos im eigenen Template', 'intro' => 'Ein fertiges <video> mit Poster, Fassungen und Untertiteln – oder die Bausteine einzeln.', 'note' => 'Die Fassungen erscheinen als <source> mit Media-Query: 480p bis 640 px Breite, 720p bis 1280 px, darüber WebM und 1080p.',
+                    'items' => [
+                        $c('veHtml', 'Template (PHP)', 'php'),
+                        $c('veConsole', 'Terminal', 'bash'),
+                    ]]],
                 $cta,
             ],
         ],
