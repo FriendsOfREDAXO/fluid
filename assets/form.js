@@ -132,9 +132,11 @@
       const label = box.querySelector('[data-blocks-pick-name]');
       // Bearbeiten/Anpassen/Entfernen nur mit gewählter Datei
       // hidden für die Website; im Backend setzt .rex-button display, dort blendet die Hilfsklasse des Cores aus
-      const tools = () => box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust],[data-blocks-pick-clear]').forEach((b) => {
-        b.hidden = !input.value;
-        b.classList.toggle('rex-u-hidden', !input.value);
+      const isVideo = () => /\.(mp4|m4v|mov|webm|mkv|ogv|avi)$/i.test(input.value);
+      const tools = () => box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust],[data-blocks-pick-clear],[data-blocks-pick-video]').forEach((b) => {
+        const off = !input.value || (b.hasAttribute('data-blocks-pick-video') && !isVideo());
+        b.hidden = off;
+        b.classList.toggle('rex-u-hidden', off);
       });
       tools();
       input.addEventListener('input', tools);
@@ -160,6 +162,11 @@
         if (res) set(res.value, res.name);
       });
       box.querySelector('[data-blocks-pick-clear]')?.addEventListener('click', () => set(''));
+      // AddOn video_editor: Video im Medienpool öffnen (neuer Tab, die Eingaben hier bleiben erhalten)
+      box.querySelector('[data-blocks-pick-video]')?.addEventListener('click', () => {
+        if (!isVideo() || !box.dataset.veEdit) return;
+        window.open(box.dataset.veEdit.replace(/&amp;/g, '&').replace('__FILE__', encodeURIComponent(input.value)), '_blank', 'noopener');
+      });
       box.querySelectorAll('[data-blocks-pick-edit],[data-blocks-pick-adjust]').forEach((btn) => btn.addEventListener('click', async () => {
         if (!input.value) return;
         try {

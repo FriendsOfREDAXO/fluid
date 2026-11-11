@@ -30,11 +30,18 @@ if ($v === 'fullbleed'):
     $vid = $vid && str_starts_with((string) $vid['mime'], 'video/') ? $vid : null;
     $overlay = in_array($d['overlay'] ?? '', ['strong', 'medium', 'gradient'], true) ? $d['overlay'] : 'strong';
     $poster = !empty($d['image']) ? media((string) $d['image']) : null;
+    // AddOn video_editor (optional): kleinere Web-Fassung (720p/WebM) und dort gewähltes Poster
+    $sources = $vid ? [['url' => media_url($vid), 'type' => (string) $vid['mime']]] : [];
+    if ($vid && class_exists(\FriendsOfRedaxo\VideoEditor\VideoEditor::class)) {
+        $sources = \FriendsOfRedaxo\VideoEditor\VideoEditor::sources((string) $d['video'], small: true) ?: $sources;
+        $vePoster = $poster ? null : \FriendsOfRedaxo\VideoEditor\VideoEditor::poster((string) $d['video']);
+        $poster = $vePoster ? media($vePoster->fileName) : $poster;
+    }
 ?>
 <div class="hero-bleed hero-bleed--<?= e($overlay) ?>">
   <div class="hero-bleed__media" aria-hidden="true">
     <?= !empty($d['image']) ? img((string) $d['image'], '100vw', ['eager' => true, 'alt' => '']) : '' ?>
-    <?php if ($vid): ?><video class="hero-bleed__video" data-bg-video muted loop playsinline preload="none"<?= $poster ? ' poster="' . e(media_url($poster, 1600)) . '"' : '' ?>><source src="<?= e(media_url($vid)) ?>" type="<?= e((string) $vid['mime']) ?>"></video><?php endif; ?>
+    <?php if ($vid): ?><video class="hero-bleed__video" data-bg-video muted loop playsinline preload="none"<?= $poster ? ' poster="' . e(media_url($poster, 1600)) . '"' : '' ?>><?php foreach ($sources as $src): ?><source src="<?= e($src['url']) ?>" type="<?= e($src['type']) ?>"><?php endforeach; ?></video><?php endif; ?>
   </div>
   <div class="wrap hero-bleed__inner">
     <?= $textHtml() ?>

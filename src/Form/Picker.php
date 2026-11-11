@@ -21,6 +21,7 @@ use function Redaxo\Core\View\escape;
 final class Picker
 {
     public const array IMAGE_TYPES = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'];
+    public const array VIDEO_TYPES = ['mp4', 'm4v', 'mov', 'webm', 'mkv', 'ogv', 'avi'];
 
     /** @param list<string>|null $types erlaubte Endungen (Feldoption `types`, z. B. ['vtt', 'srt']) */
     public static function media(string $id, string $name, string $value, bool $images, bool $backend, ?array $types = null): string
@@ -31,12 +32,16 @@ final class Picker
         $thumb = $media && in_array(strtolower($media->getExtension()), self::IMAGE_TYPES, true) ? '<img src="' . escape(self::thumb($media->fileName)) . '" alt="">' : '';
         // Addon image_editor: „Bearbeiten“ öffnet den Bildeditor (Zuschneiden, Drehen …) – API im jeweiligen Bereich
         $ie = $images && class_exists(\FriendsOfRedaxo\ImageEditor\ImageEditorAddon::class) ? \FriendsOfRedaxo\ImageEditor\ImageEditorAddon::config() : null;
+        // Addon video_editor: „Video bearbeiten“ öffnet das Video im Medienpool (Optimieren, Poster …) – nur mit Recht
+        $ve = !$images && (null === $types || [] !== array_intersect($types, self::VIDEO_TYPES)) && class_exists(\FriendsOfRedaxo\VideoEditor\VideoEditor::class)
+            ? \FriendsOfRedaxo\VideoEditor\VideoEditor::editUrlTemplate() : null;
 
         return '<div class="blocks-pick blocks-pick--media" data-blocks-pick="media" data-types="' . escape(implode(',', $types ?? [])) . '" data-preview="' . escape($preview) . '"'
-            . ($ie ? ' data-ie-api="' . escape($ie['api']) . '" data-ie-js="' . escape($ie['js']) . '" data-ie-css="' . escape($ie['css']) . '"' : '') . '>'
+            . ($ie ? ' data-ie-api="' . escape($ie['api']) . '" data-ie-js="' . escape($ie['js']) . '" data-ie-css="' . escape($ie['css']) . '"' : '')
+            . ($ve ? ' data-ve-edit="' . escape($ve) . '"' : '') . '>'
             . '<div class="blocks-pick__row">'
             . '<span class="blocks-pick__thumb" data-blocks-pick-thumb' . ('' === $thumb ? ' hidden' : '') . '>' . $thumb . '</span>'
-            . self::group($backend, '<input class="rex-input" type="text" id="' . escape($id) . '" name="' . escape($name) . '" value="' . escape($value) . '" placeholder="Datei aus dem Medienpool">', 'Medien auswählen', 'rex-icon-open-mediapool', 'Auswählen', null !== $ie)
+            . self::group($backend, '<input class="rex-input" type="text" id="' . escape($id) . '" name="' . escape($name) . '" value="' . escape($value) . '" placeholder="Datei aus dem Medienpool">', 'Medien auswählen', 'rex-icon-open-mediapool', 'Auswählen', null !== $ie, null !== $ve)
             . '</div></div>';
     }
 
@@ -62,7 +67,7 @@ final class Picker
     }
 
     /** Eingabefeld mit Knöpfen – im Backend mit den Klassen der Core-Widgets (rex-input-group), auf der Website schlicht */
-    private static function group(bool $backend, string $input, string $title, string $icon, string $label, bool $edit = false): string
+    private static function group(bool $backend, string $input, string $title, string $icon, string $label, bool $edit = false, bool $video = false): string
     {
         if ($backend) {
             $btn = static fn (string $attr, string $title, string $icon): string => '<button type="button" class="rex-button" data-variant="field" ' . $attr
@@ -72,6 +77,7 @@ final class Picker
                 . $btn('data-blocks-pick-open', $title, $icon)
                 . ($edit ? $btn('data-blocks-pick-edit', 'Bild bearbeiten (Zuschneiden, Drehen …)', 'fa-solid fa-crop-simple')
                     . $btn('data-blocks-pick-adjust', 'Bild anpassen (Effekte, Fokuspunkt)', 'fa-solid fa-sliders') : '')
+                . ($video ? $btn('data-blocks-pick-video', 'Video bearbeiten (Optimieren, Poster …) – öffnet den Medienpool', 'fa-solid fa-film') : '')
                 . $btn('data-blocks-pick-clear', 'Entfernen', 'rex-icon-delete-media')
                 . '</span></div></div>';
         }
@@ -80,6 +86,7 @@ final class Picker
             . '<button type="button" class="blocks-btn" data-blocks-pick-open title="' . escape($title) . '">' . escape($label) . '</button>'
             . ($edit ? '<button type="button" class="blocks-btn" data-blocks-pick-edit title="Bild bearbeiten (Zuschneiden, Drehen …)">Bearbeiten</button>'
                 . '<button type="button" class="blocks-btn" data-blocks-pick-adjust title="Bild anpassen (Effekte, Fokuspunkt)">Anpassen</button>' : '')
+            . ($video ? '<button type="button" class="blocks-btn" data-blocks-pick-video title="Video bearbeiten (Optimieren, Poster …) – öffnet den Medienpool">Video bearbeiten</button>' : '')
             . '<button type="button" class="blocks-btn" data-blocks-pick-clear title="Entfernen" aria-label="Entfernen">✕</button>'
             . '</span>';
     }
