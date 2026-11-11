@@ -194,15 +194,27 @@ final class Api
             'page_save' => self::pageSave($article, $user),
             'page_add' => self::pageAdd($article, $user),
             'template_save' => (static function () use ($article, $user) {
-                $perm = $user->getComplexPerm('structure');
-                $cat = PageTemplates::categoryId();
-                if (!$user->admin && !($perm instanceof StructurePermission && $perm->hasCategoryPerm($cat))) {
+                if (!self::mayTemplates($user)) {
                     self::fail('Vorlagen dürfen nur Admins bzw. Benutzer mit Recht auf „Seitenvorlagen“ speichern.', 403);
                 }
 
                 return self::templateSave($article);
             })(),
-            'templates' => ['templates' => PageTemplates::all($article->languageId)],
+            'templates' => ['templates' => PageTemplates::all($article->languageId), 'canManage' => self::mayTemplates($user)],
+            'template_rename', 'template_delete' => (static function () use ($article, $user): array {
+                if (!self::mayTemplates($user)) {
+                    self::fail('Vorlagen dürfen nur Admins bzw. Benutzer mit Recht auf „Seitenvorlagen“ verwalten.', 403);
+                }
+                $id = Request::post('id', 'int', 0);
+                if ('template_rename' === Request::get(self::PARAM, 'string')) {
+                    PageTemplates::rename($id, Request::post('name', 'string', ''), $article->languageId);
+                    $msg = 'Vorlage umbenannt.';
+                } else {
+                    $msg = 'Vorlage „' . PageTemplates::delete($id, $article->languageId) . '“ gelöscht.';
+                }
+
+                return ['templates' => PageTemplates::all($article->languageId), 'canManage' => true, 'message' => $msg];
+            })(),
             'design' => self::design($article, $user, false),
             'design_save' => self::design($article, $user, true),
             'record_field' => Data\RecordInline::save($user, $article),   // Textfeld eines Datensatzes in der Detailansicht
@@ -214,7 +226,7 @@ final class Api
         // Aktivitätsprotokoll (Speichern, Veröffentlichen, Verwerfen und Wiederherstellen protokollieren die Aktionen selbst)
         $log = ['add' => 'block_add', 'delete' => 'block_delete', 'paste' => 'block_add', 'duplicate' => 'block_add', 'page_add' => 'page_add', 'page_save' => 'page_settings',
             'design_save' => 'design', 'site_save' => 'site', 'domain_save' => 'site', 'redirect_save' => 'site', 'tree_move' => 'tree', 'tree_status' => 'tree',
-            'tree_menu' => 'tree', 'tree_delete' => 'tree', 'template_save' => 'page_add'][Request::get(self::PARAM, 'string')] ?? null;
+            'tree_menu' => 'tree', 'tree_delete' => 'tree', 'template_save' => 'page_add', 'template_rename' => 'tree', 'template_delete' => 'tree'][Request::get(self::PARAM, 'string')] ?? null;
         if ($log) {
             Activity::log($log, $article->id, (string) ($result['message'] ?? ''));
         }
@@ -621,7 +633,15 @@ final class Api
         return ['url' => Url::article($id, $article->languageId, [Editing::PARAM => 1]), 'message' => 'Seite angelegt (offline).'];
     }
 
-    /** Aktuelle Seite als Vorlage speichern (Seitenvorlagen) */
+    /** Vorlagen speichern und verwalten: Admins oder Recht auf die Kategorie „Seitenvorlagen“ */
+    private static function mayTemplates(User $user): bool
+    {
+        $perm = $user->getComplexPerm('structure');
+
+        return $user->admin || ($perm instanceof StructurePermission && $perm->hasCategoryPerm(PageTemplates::categoryId()));
+    }
+
+        /** Aktuelle Seite als Vorlage speichern (Seitenvorlagen) */
     private static function templateSave(Article $article): array
     {
         $id = PageTemplates::saveFrom($article, Request::post('name', 'string', ''));

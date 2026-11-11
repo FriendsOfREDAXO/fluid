@@ -37,7 +37,7 @@ final class PageTemplates
         return $id;
     }
 
-    /** @return list<array{id: int, name: string}> */
+    /** @return list<array{id: int, name: string, url: string}> url = Bearbeiten auf der Website */
     public static function all(int $languageId): array
     {
         $cat = self::categoryId() ? Category::get((int) self::categoryId(), $languageId) : null;
@@ -45,8 +45,38 @@ final class PageTemplates
             return [];
         }
 
-        return array_values(array_map(static fn (Article $a) => ['id' => $a->id, 'name' => $a->name],
+        return array_values(array_map(static fn (Article $a) => ['id' => $a->id, 'name' => $a->name, 'url' => \Redaxo\Core\Filesystem\Url::article($a->id, $languageId, [Editing::PARAM => 1])],
             array_filter($cat->getArticles(false), static fn (Article $a) => !$a->isStartArticle())));
+    }
+
+    /** Vorlage umbenennen (nur Seiten in „Seitenvorlagen“, nicht die Kategorie selbst) */
+    public static function rename(int $id, string $name, int $languageId): void
+    {
+        $a = self::template($id, $languageId);
+        $name = trim($name);
+        if ('' === $name) {
+            throw new ApiError('Bitte einen Namen eingeben.');
+        }
+        ArticleHandler::edit($a->id, $languageId, ['name' => mb_substr($name, 0, 191), 'template' => (string) $a->templateKey]);
+    }
+
+    /** Vorlage löschen – vorhandene Seiten, die aus ihr entstanden sind, bleiben unberührt (sie haben eine Kopie) */
+    public static function delete(int $id, int $languageId): string
+    {
+        $a = self::template($id, $languageId);
+        ArticleHandler::delete($a->id);
+
+        return $a->name;
+    }
+
+    private static function template(int $id, int $languageId): Article
+    {
+        $a = Article::get($id, $languageId);
+        if (null === $a || $a->isStartArticle() || $a->categoryId !== self::categoryId()) {
+            throw new ApiError('Vorlage nicht gefunden.');
+        }
+
+        return $a;
     }
 
     /** Aktuelle Seite als Vorlage speichern; gibt die ID der Vorlage zurück */

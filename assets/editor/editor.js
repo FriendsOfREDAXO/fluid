@@ -120,6 +120,7 @@
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
             ${may('addArticle') || may('addCategory') ? '<button type="button" role="menuitem" data-page-add>Neue Seite …</button>' : ''}
             ${may('addArticle') ? '<button type="button" role="menuitem" data-template-save>Als Vorlage speichern …</button>' : ''}
+            ${may('addArticle') ? '<button type="button" role="menuitem" data-templates-open>Vorlagen …</button>' : ''}
             ${cfg.guest ? '' : `<a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>`}
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
             ${(cfg.notice?.buttons || []).map((b) => `<button type="button" role="menuitem" data-notice-event="${esc(b.event)}">${esc(b.label)} …</button>`).join('')}
@@ -211,6 +212,16 @@
         <div class="dlg__actions"><button type="button" class="btn" data-tpl-cancel>Abbrechen</button><button type="submit" class="btn btn--primary">Speichern</button></div>
       </form>
     </div>`);
+  // Vorlagen verwalten: umbenennen, bearbeiten, löschen
+  const mdlg = h(`
+    <div class="dlg" hidden role="dialog" aria-modal="true" aria-labelledby="fluid-tpls-t">
+      <div class="dlg__box newpage tpls">
+        <h2 id="fluid-tpls-t">Vorlagen</h2>
+        <p class="newpage__hint">Vorlagen sind Seiten in „Seitenvorlagen“ – für Besucher unsichtbar. Seiten, die aus einer Vorlage entstanden sind, behalten ihren Inhalt, auch wenn die Vorlage gelöscht wird.</p>
+        <div data-tpls-body></div>
+        <div class="dlg__actions"><button type="button" class="btn" data-tpls-close>Schließen</button></div>
+      </div>
+    </div>`);
   const hpanel = h(`
     <aside class="panel hpanel" hidden aria-labelledby="fluid-hist-title">
       <header class="panel__head"><h2 id="fluid-hist-title">Verlauf</h2><button type="button" class="btn btn--icon" data-history-close aria-label="Schließen">✕</button></header>
@@ -251,7 +262,7 @@
     </div>`);
   // Ebene für Menüs und Dialoge der Formatierungsleiste (Studio-Editor, assets/rte.js)
   const layer = h('<div class="layer"></div>');
-  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, hpanel, ipanel, picker, dialog, newdlg, tdlg, toast, layer);
+  root.append(bar, blockbar, addbtn, panel, dpanel, ppanel, spanel, tpanel, hpanel, ipanel, picker, dialog, newdlg, tdlg, mdlg, toast, layer);
   document.body.append(host);
   document.documentElement.classList.add('blocks-has-bar');
   // ohne Recht: Knöpfe ausblenden (die API prüft ohnehin)
@@ -660,6 +671,65 @@
       f.name.select();
     });
     $('[data-tpl-cancel]').addEventListener('click', () => { tdlg.hidden = true; });
+
+    // Vorlagen verwalten
+    const tbody = $('[data-tpls-body]');
+    let tpls = [];
+    const drawTpls = (canManage) => {
+      tbody.innerHTML = tpls.length ? '<ul class="site-list tpls__list" role="list">' + tpls.map((t, i) => `
+        <li class="tpls__item">
+          <label class="tpls__name"><span class="sr-only">Name der Vorlage</span><input type="text" value="${esc(t.name)}" maxlength="191" data-tpls-name="${i}"${canManage ? '' : ' readonly'}></label>
+          <span class="tpls__actions">
+            ${canManage ? `<button type="button" class="btn" data-tpls-rename="${i}" hidden>Umbenennen</button>` : ''}
+            <a class="btn" href="${esc(unamp(t.url))}">Bearbeiten</a>
+            ${canManage ? `<button type="button" class="btn tpls__del" data-tpls-delete="${i}" aria-label="${esc(t.name)} löschen">Löschen</button>` : ''}
+          </span>
+        </li>`).join('') + '</ul>'
+        : '<p class="site-intro">Noch keine Vorlagen. Über ⋯ → „Als Vorlage speichern …“ wird die aktuelle Seite zur Vorlage.</p>';
+    };
+    const loadTpls = async (action = 'templates', data = {}) => {
+      try {
+        const res = await api(action, data);
+        tpls = res.templates || [];
+        drawTpls(!!res.canManage);
+        if (res.message) say(res.message);
+      } catch (err) { say(err.message, true); }
+    };
+    $('[data-templates-open]')?.addEventListener('click', () => {
+      menu.hidden = true;
+      tbody.innerHTML = '';
+      mdlg.hidden = false;
+      $('[data-tpls-close]').focus();
+      loadTpls();
+    });
+    $('[data-tpls-close]').addEventListener('click', () => { mdlg.hidden = true; });
+    mdlg.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') mdlg.hidden = true;
+      const n = e.target.closest?.('[data-tpls-name]');
+      if (n && e.key === 'Enter') { e.preventDefault(); tbody.querySelector(`[data-tpls-rename="${n.dataset.tplsName}"]`)?.click(); }
+    });
+    // geänderter Name: „Umbenennen“ einblenden
+    tbody.addEventListener('input', (e) => {
+      const n = e.target.closest('[data-tpls-name]');
+      if (!n) return;
+      const b = tbody.querySelector(`[data-tpls-rename="${n.dataset.tplsName}"]`);
+      if (b) b.hidden = n.value.trim() === tpls[+n.dataset.tplsName].name || n.value.trim() === '';
+    });
+    tbody.addEventListener('click', async (e) => {
+      const r = e.target.closest('[data-tpls-rename]');
+      if (r) {
+        const i = +r.dataset.tplsRename;
+        return loadTpls('template_rename', { id: tpls[i].id, name: tbody.querySelector(`[data-tpls-name="${i}"]`).value });
+      }
+      const d = e.target.closest('[data-tpls-delete]');
+      if (d) {
+        const t = tpls[+d.dataset.tplsDelete];
+        mdlg.hidden = true;
+        const ok = await ask({ title: `Vorlage „${t.name}“ löschen?`, body: 'Die Vorlage wird gelöscht. Seiten, die aus ihr entstanden sind, bleiben unverändert.', ok: 'Löschen', danger: true });
+        mdlg.hidden = false;
+        if (ok) loadTpls('template_delete', { id: t.id });
+      }
+    });
     $('[data-tpl-form]').addEventListener('submit', async (e) => {
       e.preventDefault();
       const f = e.currentTarget;
