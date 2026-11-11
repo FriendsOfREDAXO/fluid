@@ -552,6 +552,11 @@ function fluid_video_file(Media $video, string $poster, string $ratio, string $l
     $posterUrl = $p ? $mm::getUrl('fluid_poster', $p) : (\FriendsOfRedaxo\Fluid\Media\Ffmpeg::available() ? $mm::getUrl('fluid_poster', $video) : '');
     $sources = $ve ? \FriendsOfRedaxo\VideoEditor\VideoEditor::sources($video->fileName) : [];
     $sources = $sources ?: [['url' => $video->getUrl(), 'type' => (string) $video->type]];
+    // Untertitel aus dem Video-Editor, wenn im Block keine gewählt sind
+    if ($ve && [] === $tracks) {
+        $tracks = array_map(static fn (array $t) => ['file' => $t['file'], 'lang' => $t['lang'], 'kind' => $t['kind'], 'label' => $t['label']],
+            \FriendsOfRedaxo\VideoEditor\VideoEditor::tracks($video->fileName));
+    }
     $lang = \Redaxo\Core\Language\Language::getCurrent()->code;
     $out = '';
     $first = null;
