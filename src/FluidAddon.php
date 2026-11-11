@@ -119,7 +119,7 @@ final class FluidAddon extends Addon
     #[Override]
     public function boot(): void
     {
-        // Kategorie „Seitenvorlagen“: nicht löschbar, im Backend nur für Admins sichtbar
+        // Kategorie „Seitenvorlagen“: nicht löschbar, solange fluid installiert ist
         PageTemplatesGuard::boot();
         // navigation_array: Start der Website (Navigation ohne start) = Unterseiten einer Landing-Domain mit eigenem Seitenbaum
         Extension::register(\FriendsOfRedaxo\NavigationArray\ExtensionPoint\NavigationStart::class, static function (\FriendsOfRedaxo\NavigationArray\ExtensionPoint\NavigationStart $ep): mixed {
