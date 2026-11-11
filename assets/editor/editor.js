@@ -110,6 +110,7 @@
         <div class="more">
           <button type="button" class="btn btn--icon" data-more aria-haspopup="menu" aria-expanded="false" title="Weitere">⋯</button>
           <div class="menu" role="menu" hidden>
+            ${cfg.editing && cfg.state.workVersion && !cfg.guest ? '<button type="button" role="menuitem" class="menu-danger" data-discard>Entwurf verwerfen …</button><hr class="menu-sep" role="separator">' : ''}
             ${cfg.design ? '<button type="button" role="menuitem" class="menu-sm" data-design-menu>Design …</button>' : ''}
             ${cfg.guest ? '' : '<button type="button" role="menuitem" data-tree-open>Seiten …</button>'}
             ${cfg.inbox ? `<button type="button" role="menuitem" data-inbox-open>Anfragen …${cfg.inbox.new ? ` <span class="badge">${cfg.inbox.new}</span>` : ''}</button>` : ''}
@@ -119,7 +120,6 @@
             ${cfg.site ? '<button type="button" role="menuitem" data-site-open>Website …</button>' : ''}
             ${may('addArticle') || may('addCategory') ? '<button type="button" role="menuitem" data-page-add>Neue Seite …</button>' : ''}
             ${may('addArticle') ? '<button type="button" role="menuitem" data-template-save>Als Vorlage speichern …</button>' : ''}
-            ${cfg.editing && cfg.state.workVersion && !cfg.guest ? '<button type="button" role="menuitem" data-discard>Entwurf verwerfen …</button>' : ''}
             ${cfg.guest ? '' : `<a role="menuitem" href="${esc(unamp(cfg.backendUrl))}">Im Backend öffnen</a>`}
             <a role="menuitem" href="${esc(unamp(cfg.viewUrl))}" target="_blank" rel="noopener">Live-Ansicht (neuer Tab)</a>
             ${(cfg.notice?.buttons || []).map((b) => `<button type="button" role="menuitem" data-notice-event="${esc(b.event)}">${esc(b.label)} …</button>`).join('')}
